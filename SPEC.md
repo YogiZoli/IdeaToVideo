@@ -1,6 +1,6 @@
 # SPEC: Studio (munkanév)
 
-Verzió: 0.1 vázlat, 2026-09-24
+Verzió: 0.1, 2026-09-24, jóváhagyva (Zoltan)
 Alapja: `PRD.md` 0.1 és `DECISIONS.md`
 Olvasója: a Claude Code, ami megvalósítja, és Zoltan, aki jóváhagyja
 
@@ -313,4 +313,8 @@ mérés alapján.
 
 A PowerShell pipeline Node-ra portolva a `brand-frames` repóban, a régi
 szkriptek mellé (`.mjs`). Minden szkript kimenete a régivel összevetve.
-Részletek: `STATUS.md`.
+
+2026-09-24: kész. A C2C videó egy szimulált tiszta gépen végigment a Node
+láncon (`scripts/phase0/e2e.mjs`). A 12.3 és 12.4 kérdésre mérésen alapuló
+javaslat van, Zoltan döntésére vár. Mérések, javaslatok, találatok:
+`docs/phase-0.md`.

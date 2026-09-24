@@ -18,3 +18,20 @@
 14. Ingyenes usernek nincs support, ez nyilvánosan kiírva. Free = nyilvános GitHub repó.
 15. Licenc: HyperFrames Apache-2.0 hivatkozással, Zoltan rétege zárt, a user brandje és videói a useréi.
 16. Pilotban aláíratlan telepítő, 0 fix költség.
+17. PRD 0.1 és SPEC 0.1 jóváhagyva (Zoltan).
+18. Saját brand (Zoltan Gero, VoxFlow) semmilyen formában nem kerül az appba, a
+    brand-réteg csak HyperFrames nyilvános preset. A HyperFrames marad az egyetlen
+    motor és framework, saját motor vagy saját framework nincs (Zoltan).
+19. A HyperFrames presetek lehetőleg nem másolatként kerülnek a repóba, hanem
+    hivatkozásként vagy első használatkor letöltve. A pontos mód a 2. fázisban dől
+    el, a presetek bekötésekor (Zoltan iránya).
+20. A 0. fázis kilépő tesztje a `scripts/phase0/e2e.mjs`: egy éles videó (C2C) a
+    Node láncon, friss brand-frames klónból, üres profillal, csak Node-dal a
+    PATH-ban. A C2C azért, mert minden bemenete megvan (hang, jelenet-tábla, avatar
+    klipek), új kreditet nem fogyaszt, és van jóváhagyott kimenete az összevetéshez.
+21. Az app a hyperframes CLI-t mindig `HYPERFRAMES_NO_TELEMETRY=1` és
+    `HYPERFRAMES_NO_UPDATE_CHECK=1` mellett hívja: a CLI alapból anonim render
+    telemetriát küld, a SPEC 9 szerint pedig nincs telemetria.
+22. Az avatar composite az éles láncban külön `--audio` nélkül fut, a render saját
+    hangjával. Külön hangsávval a `-shortest` levágja a végkártya kitartását (C2C:
+    71,29 mp a 72,27 helyett). A kánonban is javítva (brand-frames).

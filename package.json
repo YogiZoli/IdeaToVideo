@@ -1,0 +1,12 @@
+{
+  "name": "packaged-video-creator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "e2e": "node scripts/phase0/e2e.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
