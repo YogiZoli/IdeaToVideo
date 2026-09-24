@@ -35,3 +35,22 @@
 22. Az avatar composite az éles láncban külön `--audio` nélkül fut, a render saját
     hangjával. Külön hangsávval a `-shortest` levágja a végkártya kitartását (C2C:
     71,29 mp a 72,27 helyett). A kánonban is javítva (brand-frames).
+23. Brand: a videó a user saját brandjének színeit és assetjeit kapja (logó és
+    társai). Ha a usernek nincs brandje, a HyperFrames presetek vannak felajánlva
+    alapértelmezésként. A 39 archetípus ezekből veszi a színt és a betűt, nem
+    Zoltan brandjéből (Zoltan). A 18. pontot pontosítja.
+24. A HyperFrames presetek: az app első használatkor tölti le őket a HeyGen nyilvános
+    repójából, rögzített verzióban, a user gépére. A mi repónkba nem kerül másolat
+    (Zoltan). A 19. pontot pontosítja.
+25. Render böngésző (SPEC 12.3): Chrome. Alapból a hyperframes által letöltött,
+    rögzített verziójú chrome-headless-shell (a Google Chrome render változata).
+    Tartalék csak a gépen lévő Google Chrome. Edge nem (Zoltan). Mérés:
+    `docs/phase-0.md`.
+26. Node sidecar (SPEC 12.4): csomagolt Node bináris és mellé egy lecsupaszított
+    `node_modules`, az `onnxruntime-node` nélkül (153 MB a 365 helyett). Az egyfájlos
+    SEA nem járható (Zoltan: a javaslat szerint).
+27. A brand-frames `package-lock.json` commitolva, hogy két gépen ugyanazok az
+    alcsomagok fussanak (Zoltan). A brand-frames PR #1-ben.
+28. A 0. fázis tesztje alapból rövid: a videó első kb. 18 mp-e (a teljes negyede),
+    egész jelenetekkel, vágott hanggal. A teljes videó a `--full` kapcsolóval megy
+    (Zoltan: rövidebb render).

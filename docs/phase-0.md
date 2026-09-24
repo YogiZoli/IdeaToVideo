@@ -32,6 +32,25 @@ Node láncon egy szimulált tiszta gépen, a `scripts/phase0/e2e.mjs` szerint:
 A render ezen a gépen **kb. 3 perc videópercenként** (a RUNNING-COMMANDS.md 3,5-öt
 mond, a 9 perces videón mérve).
 
+### Gyors mód: a teszt alapja (DECISIONS 28)
+
+A teszt alapból csak a videó első kb. 18 mp-ét rendereli: egész jelenetek, a hang
+a vágásnál lekeverve, az avatarból a belelógó szakasz. Minden lépést ugyanúgy
+végigpróbál. Második tiszta futás, ezúttal a brand-frames PR-ágáról
+(`2dac5d1`, commitolt `package-lock.json`, tehát `npm ci`):
+
+| Lépés | Idő | Eredmény |
+|---|---|---|
+| clone, `npm ci`, Chrome letöltés | 58 + 26 + 30 mp | a lockfile a baseline gép verzióit hozta (`@puppeteer/browsers` 3.2.1), a lock nélküli telepítéshez képest 14 alcsomag eltér |
+| mondattábla | 0,1 mp | bájtra egyezik a jóváhagyottal |
+| gyors vágás | 0,4 mp | 4 jelenet, 17,88 mp |
+| lint, check | 5 + 24 mp | PASSED |
+| render | **58 mp** (a teljes 218 helyett) | 17,9 mp |
+| avatar composite | 9 mp | 17,9 mp |
+| összevetés a jóváhagyott C2C v2 renderrel | 1 mp | 44,9 dB átlag, 40,2 dB minimum: szemre azonos |
+
+A teljes tiszta futás így kb. 4 perc, ebből a render 1 perc.
+
 ## Mérés: melyik böngésző renderel (SPEC 12.3)
 
 Ugyanaz a C2C render négyféleképpen. A PSNR az első renderhez mérve: minél
@@ -58,10 +77,10 @@ Két tény a hyperframes forrásából:
   rendszer böngésző magától frissül, így egy későbbi Edge vagy Chrome frissítés
   elvileg eltörheti a rendert, a pinnelt verzió nem.
 
-**Javaslat (Zoltan dönt):** alapból a pinnelt headless shell, első indításkor
-letöltve (31 mp, 282 MB). Ha a letöltés nem sikerül (nincs net, tűzfal), a
-rendszer Edge vagy Chrome a tartalék, ezt az app kapcsolja be a
-`HYPERFRAMES_BROWSER_PATH` változóval. Ez **megfordítja a SPEC 8. pontjának
+**Döntés (Zoltan, DECISIONS 25):** a render Chrome. Alapból a pinnelt headless
+shell, első indításkor letöltve (31 mp, 282 MB). Ha a letöltés nem sikerül
+(nincs net, tűzfal), a gépen lévő Google Chrome a tartalék, ezt az app kapcsolja
+be a `HYPERFRAMES_BROWSER_PATH` változóval. Edge nem. Ez **megfordítja a SPEC 8. pontjának
 javaslatát** (ott a rendszer böngésző volt az első). Az ok: a mérés szerint a
 kettő egyformán jó, a döntő a stabilitás, és a pinnelt verzió nem változik
 alattunk. Macen ez nincs mérve, ott nincs mindig Chrome (a Safari nem jó), tehát
@@ -74,7 +93,7 @@ saját mappájából tölt be fájlokat (parancsmodulok, böngészőoldali szkri
 runtime), natív `.node` modult használ (sharp) és Worker szálat indít. Ezek
 lemezen kell legyenek, tehát a `node_modules` a SEA mellé is kellene.
 
-**Javaslat (Zoltan dönt):** csomagolt Node bináris (89 MB) és mellé egy
+**Döntés (Zoltan, DECISIONS 26):** csomagolt Node bináris (89 MB) és mellé egy
 lecsupaszított `node_modules`.
 
 - A `node_modules` 365 MB, ebből **208 MB az `onnxruntime-node`**, mind a hat
@@ -124,8 +143,10 @@ rögzítésének önellenőrzése), `libvpx-vp9` dekóder (avatar alfa), `libx26
 ```powershell
 cd C:/Users/gdp/projects/packaged-video-creator
 npm test
-node scripts/phase0/e2e.mjs --project C:/Users/gdp/HyperFrames/ai-video-workflow/c2c --work C:/Users/gdp/pvc-e2e --reference C:/Users/gdp/HyperFrames/ai-video-workflow/c2c/sentences.json --segments "avatar_open.webm=0:6,avatar_close.webm=62.8:71.3"
+node scripts/phase0/e2e.mjs --project C:/Users/gdp/HyperFrames/ai-video-workflow/c2c --work C:/Users/gdp/pvc-e2e-quick --reference C:/Users/gdp/HyperFrames/ai-video-workflow/c2c/sentences.json --segments "avatar_open.webm=0:6,avatar_close.webm=62.8:71.3"
 ```
 
-A második parancs kb. 8 perc. Egy meglévő telepítéssel, más böngészővel:
-`--reuse --tag edge --browser "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --compare C:/Users/gdp/pvc-e2e/out/video-shell.mp4`.
+A második parancs kb. 4 perc (gyors mód). A teljes videó: `--full` (kb. 8 perc).
+A brand-frames PR #1 merge-e előtt a lockfile-os változathoz: `--ref 2dac5d16fb7c94fe3a867afd9cb9f1c4038cdfd1`.
+A gépen lévő Chrome-mal egy meglévő telepítésen:
+`--reuse --tag chrome --browser "C:/Program Files/Google/Chrome/Application/chrome.exe"`.

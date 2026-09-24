@@ -125,3 +125,39 @@ export function findNativeAddons(dir) {
 }
 
 export const mb = (bytes) => Math.round(bytes / 1e6);
+
+// Quick mode: keep the first scenes of a scene list so the test video is about
+// `seconds` long. A scene's anchor is the first sentence of its data-sent
+// ("S2-S3" and "S20#1/3" both anchor on their first sentence). The cut goes on the
+// scene boundary closest to `seconds` (the earlier one on a tie), where the first
+// dropped scene would start, so no kept scene is shortened. A boundary inside a
+// split sentence ("S20#2/3") is never used. Returns { count, audioEnd }.
+export function quickCut(scenes, sentences, seconds) {
+  const idOf = (sent) => String(sent).split(/[-#]/)[0];
+  const startOf = (sent) => {
+    const s = sentences.find((x) => x.id === idOf(sent));
+    if (!s) throw new Error(`scene anchor ${sent}: sentence ${idOf(sent)} not in the table`);
+    return Number(s.start);
+  };
+  let best = { count: scenes.length, audioEnd: Math.max(...sentences.map((s) => Number(s.end))) };
+  for (let i = 1; i < scenes.length; i++) {
+    if (idOf(scenes[i].sent) === idOf(scenes[i - 1].sent)) continue;
+    const t = startOf(scenes[i].sent);
+    if (Math.abs(t - seconds) < Math.abs(best.audioEnd - seconds)) best = { count: i, audioEnd: t };
+  }
+  return best;
+}
+
+// Avatar segments ("file=start:end,...") that still fall inside a cut video,
+// with their end clamped to the cut.
+export function clipSegments(spec, audioEnd) {
+  const out = [];
+  for (const s of spec.split(",")) {
+    const [file, t] = s.split("=");
+    const [start, end] = t.split(":").map(Number);
+    if (start >= audioEnd) continue;
+    const e = end === undefined || Number.isNaN(end) ? audioEnd : Math.min(end, audioEnd);
+    out.push(`${file}=${start}:${e}`);
+  }
+  return out.join(",");
+}

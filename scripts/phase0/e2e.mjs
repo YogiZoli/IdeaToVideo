@@ -27,10 +27,14 @@
 //   --segments    "avatar_open.webm=0:6,avatar_close.webm=62.8:71.3" (relative to --project)
 //   --reference   sentences.json to compare the fresh sentence table with
 //   --reuse       keep an existing clone + node_modules in --work (render-only rerun)
-//   --browser     render with this Chrome/Edge instead of the downloaded headless shell
+//   --browser     render with this Chrome instead of the downloaded headless shell
 //   --tag         suffix for output names, so several renders sit side by side
 //   --quality     draft | standard | high (default standard)
 //   --compare     another render to measure this one against (PSNR)
+//   --seconds     quick mode length (default 18): keep the first whole scenes up to
+//                 about this long, cut the audio there, keep the avatar segments
+//                 that fall inside. About a quarter of the render time on C2C.
+//   --full        render the whole video instead of the quick cut
 //
 // Writes <work>/report-<tag>.json. Exit code 0 only if every step passed.
 
@@ -38,7 +42,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { cleanEnv, parseArgs, sttFromWords, diffSentences, dirSize, findNativeAddons, mb } from "./lib.mjs";
+import { cleanEnv, parseArgs, sttFromWords, diffSentences, dirSize, findNativeAddons, mb, quickCut, clipSegments } from "./lib.mjs";
 
 const a = parseArgs(process.argv.slice(2), {
   project: { type: "string" },
@@ -52,6 +56,8 @@ const a = parseArgs(process.argv.slice(2), {
   tag: { type: "string", default: "shell" },
   quality: { type: "string", default: "standard" },
   compare: { type: "string" },
+  seconds: { type: "string", default: "18" },
+  full: { type: "switch", default: false },
   ffmpeg: { type: "string" },
   ffprobe: { type: "string" },
 });
@@ -186,9 +192,31 @@ step("3 sentences", () => {
   return { ok: diffs.length === 0, sentences: fresh.length, referenceDiffs: diffs.slice(0, 20), error: diffs.length ? `${diffs.length} differences from reference` : undefined };
 });
 
+// quick cut --------------------------------------------------------------------
+// The full C2C render takes ~4 minutes; the first ~18 seconds exercise every
+// step (build, timing, check, render, avatar) in about a quarter of that.
+let audioEnd;
+if (!a.full) {
+  step("quick cut", () => {
+    const plan = JSON.parse(fs.readFileSync(path.join(proj, "scenes.json"), "utf8"));
+    const sentences = JSON.parse(fs.readFileSync(path.join(proj, "sentences.json"), "utf8"));
+    const cut = quickCut(plan.scenes, sentences, Number(a.seconds));
+    audioEnd = cut.audioEnd;
+    plan.scenes = plan.scenes.slice(0, cut.count);
+    fs.writeFileSync(path.join(proj, "scenes.json"), JSON.stringify(plan, null, 2));
+    if (plan.audio) {
+      // cut the audio where the first dropped scene would start, with a short fade
+      const dst = path.join(zg, path.basename(plan.audio));
+      const r = spawnSync(ffmpeg, ["-y", "-v", "error", "-i", path.join(project, plan.audio), "-t", String(audioEnd), "-af", `afade=t=out:st=${Math.max(0, audioEnd - 0.3)}:d=0.3`, dst], { encoding: "utf8" });
+      if (r.status !== 0) return { ok: false, error: "audio cut failed", tail: r.stderr };
+    }
+    return { scenes: cut.count, audioEnd };
+  });
+}
+
 // 5. build + timing --------------------------------------------------------------
 step("5 build-video", () => must(node(path.join(zg, "blocks", "build-video.mjs"), ["--scenes", path.join(proj, "scenes.json")], path.join(zg, "blocks")), "build-video.mjs"));
-step("5 stamp-timing", () => must(node(path.join(clone, "pipeline", "stamp-timing.mjs"), ["--html", path.join(zg, "index.html"), "--sentences", path.join(proj, "sentences.json")], clone), "stamp-timing.mjs"));
+step("5 stamp-timing", () => must(node(path.join(clone, "pipeline", "stamp-timing.mjs"), ["--html", path.join(zg, "index.html"), "--sentences", path.join(proj, "sentences.json"), ...(audioEnd ? ["--audioEnd", String(audioEnd)] : [])], clone), "stamp-timing.mjs"));
 
 // 6. lint + check ------------------------------------------------------------------
 step("6 image-audio-lint", () => {
@@ -219,9 +247,10 @@ step("8 render", () => {
 });
 
 // 9. avatar ----------------------------------------------------------------------------
-if (a.segments) {
+const segments = a.segments && (audioEnd ? clipSegments(a.segments, audioEnd) : a.segments);
+if (segments) {
   step("9 avatar-composite", () => {
-    const segs = a.segments.split(",").map((s) => {
+    const segs = segments.split(",").map((s) => {
       const [file, t] = s.split("=");
       return `${path.join(project, file)}=${t}`;
     });
@@ -243,7 +272,7 @@ if (a.segments) {
 // identical frames give inf, above ~40 dB the difference is not visible).
 if (a.compare) {
   step("compare", () => {
-    const r = spawnSync(ffmpeg, ["-hide_banner", "-nostats", "-i", video, "-i", a.compare, "-lavfi", "[0:v][1:v]psnr", "-f", "null", "-"], { encoding: "utf8", maxBuffer: 1 << 26 });
+    const r = spawnSync(ffmpeg, ["-hide_banner", "-nostats", "-i", video, "-t", String(report.steps.find((s) => s.name === "8 render")?.videoSeconds ?? 99999), "-i", a.compare, "-lavfi", "[0:v][1:v]psnr", "-f", "null", "-"], { encoding: "utf8", maxBuffer: 1 << 26 });
     const m = /PSNR y:\S+ u:\S+ v:\S+ average:(\S+) min:(\S+) max:(\S+)/.exec(r.stderr || "");
     if (!m) return { ok: false, error: "psnr failed" };
     return { against: a.compare, psnrAverage: m[1], psnrMin: m[2], psnrMax: m[3] };

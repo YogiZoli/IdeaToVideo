@@ -49,7 +49,7 @@ szolgáltatóhoz megy.
 | Asztali héj | Tauri 2 | kicsi bináris, Windows és Mac, beépített updater |
 | UI | TypeScript + Vite, keretrendszer nélkül vagy Svelte | kevés függőség, gyors build |
 | Rust core | Tauri commands, `keyring` crate | kulcstár, fájl, sidecar vezérlés |
-| Pipeline | Node 20+ sidecar (egyfájlos Node bináris, `node` + a szkriptek) | a brand-frames szkriptek már Node-ban vannak |
+| Pipeline | Node 20+ sidecar: csomagolt Node bináris + lecsupaszított `node_modules` (`onnxruntime-node` nélkül) + a szkriptek | a brand-frames szkriptek már Node-ban vannak; SEA nem járható (DECISIONS 26) |
 | Render | `hyperframes` npm csomag, pinnelt verzió (brand-frames `package.json`: ma `0.8.22`) | a kánon motorja |
 | Média | ffmpeg + ffprobe statikus build, sidecarként | avatar composite, regress, hang |
 | Adat | helyi JSON fájlok | nincs adatbázis, nincs szerver |
@@ -254,15 +254,21 @@ után a legutolsó nem `approved` kapunál folytat. Egy kapu újrafuttatása
 
 ## 8. Render és a headless Chrome
 
-A `hyperframes` headless Chrome-mal renderel. A csomagban két lehetőség:
+A `hyperframes` headless Chrome-mal renderel.
 
-1. **A gépen lévő Chrome vagy Edge használata** (Windowson az Edge mindig ott van,
-   Macen a Chrome gyakori). Kicsi telepítő.
-2. **Chromium letöltése első indításkor** a Puppeteer mechanizmusával, a
-   felhasználói adatmappába. Nagyobb, de mindig működik.
+**Döntés (2026-09-24, DECISIONS 25):** a render Chrome.
 
-Javaslat: először az 1., ha nincs találat, a 2. A 0. fázis végén dönteni kell,
-mérés alapján.
+1. **Alap:** a hyperframes által letöltött, rögzített verziójú chrome-headless-shell
+   (ma 152.0.7977.30), első indításkor, a felhasználói adatmappába (`hyperframes
+   browser ensure`, mérve 31 mp és 282 MB). Nem frissül magától, így egy
+   böngészőfrissítés nem töri el a rendert.
+2. **Tartalék:** a gépen lévő Google Chrome, ha a letöltés nem sikerül. Az app a
+   `HYPERFRAMES_BROWSER_PATH` változóval adja át, mert Windowson a hyperframes
+   magától nem találja meg.
+3. **Edge nem.** Mérve teljes értékű lenne, de Zoltan döntése szerint kimarad.
+
+Mérés (a letöltött shell, a rendszer Chrome és az Edge egyforma gyors és ugyanazt
+a képet adja): `docs/phase-0.md`.
 
 ## 9. Biztonság és adatvédelem
 
@@ -302,9 +308,10 @@ mérés alapján.
    a kulcsszó kézzel vagy a Brief Cardból jön.
 2. **Ingyenes TTS tartalék** az Edge TTS mellé (nem hivatalos API, bármikor
    változhat).
-3. **Headless Chrome:** rendszer böngésző vagy letöltött Chromium (8. pont).
-4. **Node sidecar formája:** egyfájlos Node bináris (SEA) vagy csomagolt Node +
-   `node_modules`. Mérés a 0. fázis végén.
+3. **Headless Chrome:** eldőlt (DECISIONS 25): letöltött, rögzített Chrome,
+   tartalék a rendszer Google Chrome, Edge nem. Lásd 8. pont.
+4. **Node sidecar formája:** eldőlt (DECISIONS 26): csomagolt Node +
+   lecsupaszított `node_modules`, SEA nem.
 5. **UI keretrendszer:** sima TypeScript vagy Svelte. Az 1. fázis elején dől el.
 6. **Zene:** honnan jön ingyenes, licenctiszta háttérzene (a kánon `AUDIO.md`
    receptje szerint).
