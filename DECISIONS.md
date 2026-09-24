@@ -48,7 +48,9 @@
     `docs/phase-0.md`.
 26. Node sidecar (SPEC 12.4): csomagolt Node bináris és mellé egy lecsupaszított
     `node_modules`, az `onnxruntime-node` nélkül (153 MB a 365 helyett). Az egyfájlos
-    SEA nem járható (Zoltan: a javaslat szerint).
+    SEA nem járható (Zoltan: a javaslat szerint). A user nem telepít Node-ot: az
+    app a saját, rögzített verziójú Node-ját hozza magával, és mindig azt használja,
+    akkor is, ha a gépen van másik Node.
 27. A brand-frames `package-lock.json` commitolva, hogy két gépen ugyanazok az
     alcsomagok fussanak (Zoltan). A brand-frames PR #1-ben.
 28. A 0. fázis tesztje alapból rövid: a videó első kb. 18 mp-e (a teljes negyede),
