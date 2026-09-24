@@ -1,0 +1,46 @@
+{
+  "$comment": "What the LLM must return at the script gate (gate 1). Rendered to script.md by gates/script.",
+  "type": "object",
+  "required": ["title", "open", "sections", "own"],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "open": {
+      "type": "object",
+      "required": ["problem", "promise"],
+      "additionalProperties": false,
+      "properties": {
+        "problem": { "type": "string", "minLength": 1 },
+        "promise": { "type": "string", "minLength": 1 },
+        "credibility": { "type": ["string", "null"] }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["name", "narration"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "narration": { "type": "string", "minLength": 1 },
+          "callout": { "type": ["string", "null"], "maxLength": 60 },
+          "highestValue": { "type": "boolean" }
+        }
+      }
+    },
+    "ownershipCta": { "type": ["string", "null"] },
+    "own": {
+      "type": "object",
+      "required": ["recap"],
+      "additionalProperties": false,
+      "properties": {
+        "recap": { "type": "string", "minLength": 1 },
+        "cta": { "type": ["string", "null"] },
+        "nextVideo": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

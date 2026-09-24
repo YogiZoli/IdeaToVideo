@@ -1,0 +1,75 @@
+{
+  "$comment": "config.json, SPEC 4.1. Non-secret settings only: API keys live in the OS keychain, never here.",
+  "type": "object",
+  "required": ["schema", "llm", "channel", "narrator"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": 1 },
+    "onboarded": { "type": "boolean" },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "language": { "enum": ["en"] } }
+    },
+    "llm": {
+      "type": "object",
+      "required": ["provider", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "enum": ["gemini", "openrouter", "claude", "openai", "deepseek", "grok"] },
+        "model": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preset": { "type": "string", "maxLength": 100 },
+        "logo": { "type": ["string", "null"], "maxLength": 1000 },
+        "overrides": { "type": "object", "additionalProperties": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" } }
+      }
+    },
+    "channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "audience": { "type": "string", "maxLength": 4000 },
+        "brandVoice": { "type": "string", "maxLength": 4000 },
+        "profile": { "type": "string", "maxLength": 4000 },
+        "youtubeUrl": { "type": ["string", "null"], "maxLength": 500 },
+        "landingUrl": { "type": ["string", "null"], "maxLength": 1000 },
+        "ctaText": { "type": ["string", "null"], "maxLength": 200 },
+        "contentLanguage": { "type": "string", "minLength": 2, "maxLength": 10 }
+      }
+    },
+    "narrator": {
+      "type": "object",
+      "required": ["provider"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "enum": ["edge-tts", "elevenlabs"] },
+        "voice": { "type": ["string", "null"], "maxLength": 200 }
+      }
+    },
+    "avatar": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "enabled": { "type": "boolean" } }
+    },
+    "research": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "vidiq": { "type": "boolean" } }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scriptTemplate": { "enum": ["ownership"] },
+        "autopilot": { "type": "boolean" },
+        "targetLengthMin": { "type": "number", "minimum": 1, "maximum": 30 }
+      }
+    },
+    "projectsDir": { "type": ["string", "null"], "maxLength": 1000 }
+  }
+}

@@ -1,0 +1,140 @@
+#!/usr/bin/env node
+// main.mjs: the Node sidecar's entry point. The Rust core runs
+//   node runner/main.mjs <command>
+// writes one JSON request to stdin, and reads JSON lines from stdout:
+//   {"event":"progress", ...}   zero or more
+//   {"event":"result","data":{...}}   or   {"event":"error","message":"..."}
+// The API key, when a command needs one, comes in the STUDIO_API_KEY env var,
+// set by the Rust core from the OS keychain. It is never echoed, logged or
+// written to a file.
+
+import fs from "node:fs";
+import path from "node:path";
+import { testKey, PROVIDERS } from "./providers/llm.mjs";
+import { testServiceKey } from "./providers/keys.mjs";
+import { validate, loadSchema } from "./schema/validate.mjs";
+import { createProject, loadProject, saveProject, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
+import { writeScript } from "./gates/script/index.mjs";
+
+const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
+const key = () => process.env.STUDIO_API_KEY || "";
+
+const commands = {
+  providers: async () => ({ providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, model: p.model })) }),
+
+  "validate-config": async ({ config }) => ({ errors: validate(config, loadSchema("config")) }),
+
+  "validate-brief": async ({ brief }) => ({ errors: validate(brief, loadSchema("brief-card")) }),
+
+  "test-llm": async ({ provider, model }) => testKey({ provider, model, apiKey: key() }),
+
+  "test-service": async ({ service }) => testServiceKey({ service, apiKey: key() }),
+
+  "create-project": async ({ projectsDir, title, language, brief, autopilot }) => {
+    const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot });
+    return { id, dir };
+  },
+
+  "list-projects": async ({ projectsDir }) => {
+    if (!projectsDir || !fs.existsSync(projectsDir)) return { projects: [] };
+    const projects = [];
+    for (const name of fs.readdirSync(projectsDir)) {
+      const dir = path.join(projectsDir, name);
+      try {
+        const p = loadProject(dir);
+        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates });
+      } catch {
+        // not a project folder, or a broken one: skip it
+      }
+    }
+    projects.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return { projects };
+  },
+
+  "load-project": async ({ projectDir }) => {
+    const project = loadProject(projectDir);
+    const md = path.join(projectDir, "script.md");
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null };
+  },
+
+  // Gate 1. Writes script.json + script.md and leaves the gate pending (or
+  // approved in autopilot).
+  "write-script": async ({ projectDir, llm, input = {}, channel = {} }) => {
+    let project = setGate(loadProject(projectDir), "script", { state: "running", mode: "recommended" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
+    try {
+      const res = await writeScript({
+        llm: { provider: llm.provider, model: llm.model, apiKey: key() },
+        input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language },
+        onProgress: (p) => emit({ event: "progress", ...p }),
+      });
+      writeJson(path.join(projectDir, "script.json"), res.script);
+      writeAtomic(path.join(projectDir, "script.md"), res.markdown);
+      project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
+      if (res.script.title && !project.title) project.title = res.script.title;
+      saveProject(projectDir, project);
+      appendLog(projectDir, `script: done, ${res.words} words`);
+      return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status };
+    } catch (e) {
+      const failed = setGate(loadProject(projectDir), "script", { state: "failed", error: String(e.message).slice(0, 2000) });
+      saveProject(projectDir, failed);
+      appendLog(projectDir, `script: failed, ${e.message}`);
+      throw e;
+    }
+  },
+
+  // Custom: the user edited the script by hand.
+  "save-script": async ({ projectDir, markdown }) => {
+    if (typeof markdown !== "string" || markdown.trim() === "") throw new Error("The script is empty.");
+    writeAtomic(path.join(projectDir, "script.md"), markdown.endsWith("\n") ? markdown : markdown + "\n");
+    const project = setGate(loadProject(projectDir), "script", { state: "pending", mode: "custom" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, "script: edited by hand");
+    return { gate: project.gates.script, status: project.status };
+  },
+
+  "approve-gate": async ({ projectDir, gate }) => {
+    const current = loadProject(projectDir);
+    const mode = current.gates[gate]?.mode;
+    const project = setGate(current, gate, { state: "approved", mode });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `${gate}: approved`);
+    return { gate: project.gates[gate], status: project.status };
+  },
+};
+
+async function readStdin() {
+  if (process.stdin.isTTY) return "";
+  const chunks = [];
+  for await (const c of process.stdin) chunks.push(c);
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+async function main() {
+  const name = process.argv[2];
+  const cmd = commands[name];
+  if (!cmd) {
+    emit({ event: "error", message: `Unknown command: ${name}. Known: ${Object.keys(commands).join(", ")}` });
+    return 2;
+  }
+  let req = {};
+  const raw = (await readStdin()).trim();
+  if (raw) {
+    try {
+      req = JSON.parse(raw);
+    } catch {
+      emit({ event: "error", message: "The request is not valid JSON." });
+      return 2;
+    }
+  }
+  try {
+    emit({ event: "result", data: await cmd(req) });
+    return 0;
+  } catch (e) {
+    emit({ event: "error", message: String(e.message) });
+    return 1;
+  }
+}
+
+process.exitCode = await main();
