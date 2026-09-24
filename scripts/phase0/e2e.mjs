@@ -48,7 +48,7 @@ const a = parseArgs(process.argv.slice(2), {
   project: { type: "string" },
   work: { type: "string", default: path.join(os.tmpdir(), "pvc-e2e") },
   repo: { type: "string", default: "https://github.com/YogiZoli/brand-frames.git" },
-  ref: { type: "string", default: "61b4143bc8af8e74f37a010614140a31b4c7f72a" },
+  ref: { type: "string", default: "db476c730373e33abff8e52900e67e44fe8b3dfb" },
   segments: { type: "string" },
   reference: { type: "string" },
   reuse: { type: "switch", default: false },
@@ -221,9 +221,9 @@ step("5 stamp-timing", () => must(node(path.join(clone, "pipeline", "stamp-timin
 // 6. lint + check ------------------------------------------------------------------
 step("6 image-audio-lint", () => {
   const r = node(path.join(clone, "pipeline", "image-audio-lint.mjs"), ["--html", path.join(zg, "index.html"), "--words", path.join(proj, "words.json")], clone);
-  // A filter, not a gate: never fails the run. It only knows <section class="clip">
-  // scenes, not the mounted block slots build-video.mjs writes, so on the live
-  // chain it checks nothing (inherited from image-audio-lint.ps1). Surface that.
+  // A filter, not a gate: never fails the run. Before brand-frames #2 it only
+  // knew <section class="clip"> scenes and checked nothing on the live chain;
+  // keep surfacing that in case an old --ref is tested.
   const noScenes = /No <section class="clip"> found/.test(r.tail);
   if (noScenes) console.log("       warning: image-audio-lint found no scenes (mounted slots not supported)");
   return { status: r.status, warning: noScenes ? "no scenes checked: mounted block slots not supported" : undefined, tail: r.tail };

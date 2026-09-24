@@ -56,3 +56,16 @@
 28. A 0. fázis tesztje alapból rövid: a videó első kb. 18 mp-e (a teljes negyede),
     egész jelenetekkel, vágott hanggal. A teljes videó a `--full` kapcsolóval megy
     (Zoltan: rövidebb render).
+29. Terjesztés: a nyilvános GitHub repóban csak a telepítő (Releases) és a README
+    van, a forráskód privát repóban marad (Zoltan). A 14. pontot pontosítja.
+30. ffmpeg: ugyanúgy, mint a Node. Az app hozza magával, rögzített verzióban, a user
+    semmit nem telepít. Kisebb build kell, ami csak a szükségeset tudja (x264, aac,
+    vp9 dekódolás, psnr szűrő). A pontos build, a méret és a GPL licenc az 1.
+    fázisban dől el, mérés alapján (Zoltan).
+31. A brand-frames PR #1 (Node dokumentáció, package-lock, avatar hang) és PR #2
+    (image-audio-lint a mountolt jelenetekre, a .ps1 párja törölve) a mainen
+    (`db476c7`). A teszt alapverziója ez.
+32. A pipeline csak Node, PowerShell tartalék nincs (Zoltan, a brand-frames
+    lint session-ben). A maradék portolt `.ps1` fájlok törlése külön brand-frames
+    feladat. Az app és a 0. fázis tesztje eddig is csak a `.mjs` szkripteket
+    használta, így ez nem érinti.

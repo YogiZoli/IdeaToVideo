@@ -110,12 +110,12 @@ rögzítésének önellenőrzése), `libvpx-vp9` dekóder (avatar alfa), `libx26
 
 ## Találatok
 
-1. **Az `image-audio-lint` az éles láncon nem ellenőriz semmit.** Csak a régi
-   `<section class="clip">` jeleneteket ismeri, a 08-31 óta használt mountolt
-   blokkokat (`data-composition-src`) nem. A PowerShell eredetiből öröklődött,
-   a port hűen átvette. Nem kapu, ezért eddig nem tűnt fel. Javítás: külön
-   feladat a brand-frames repóban (a szkriptnek a `compositions/` fájlokból kell
-   kiolvasnia a jelenetek szövegét).
+1. **Az `image-audio-lint` az éles láncon nem ellenőrzött semmit.** Javítva a
+   brand-frames PR #2-ben (`db476c7`): a mountolt jeleneteket is olvassa, a C2C-n
+   16 jelenetből 11-et jelez. Előtte csak a régi `<section class="clip">`
+   jeleneteket ismerte, a 08-31 óta használt mountolt blokkokat
+   (`data-composition-src`) nem. A PowerShell eredetiből öröklődött, a port hűen
+   átvette. Nem kapu, ezért nem tűnt fel.
 2. **A brand-frames nem commitolta a `package-lock.json`-t.** Egy friss telepítés
    más alcsomag-verziókat hozott, mint a baseline-t renderelő gép
    (`@puppeteer/browsers` 3.2.3 a 3.2.1 helyett, `devtools-protocol`, `hono`,
@@ -147,6 +147,7 @@ node scripts/phase0/e2e.mjs --project C:/Users/gdp/HyperFrames/ai-video-workflow
 ```
 
 A második parancs kb. 4 perc (gyors mód). A teljes videó: `--full` (kb. 8 perc).
-A brand-frames PR #1 merge-e előtt a lockfile-os változathoz: `--ref 2dac5d16fb7c94fe3a867afd9cb9f1c4038cdfd1`.
+Alapból a brand-frames `db476c7`-t (a két PR merge-e utáni main) klónozza, más
+verzióhoz: `--ref <commit>`.
 A gépen lévő Chrome-mal egy meglévő telepítésen:
 `--reuse --tag chrome --browser "C:/Program Files/Google/Chrome/Application/chrome.exe"`.
