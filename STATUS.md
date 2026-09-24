@@ -10,3 +10,5 @@ Következő lépés: Zoltan átnézi a PRD-t. Utána 0. fázis (PowerShell szkri
 
 Forrás: Drive `10_HyperFrames_Shippability_and_Documentation_Review`
 https://docs.google.com/document/d/1fOLZnrikPn-A_2tl2XNZPJnsdO9AOd1XpUY2u4VF4_4/edit
+
+Drive tükör: https://docs.google.com/document/d/19PougSc18s97PBKP6mr_CnQUnEulNgkfq1eckCPDqJI/edit
