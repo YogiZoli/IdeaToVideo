@@ -2,7 +2,7 @@
 
 Verzió: 0.1 vázlat, 2026-09-24
 Tulajdonos: Zoltan Gero
-Állapot: vázlat, jóváhagyásra vár
+Állapot: jóváhagyva (Zoltan, 2026-09-24)
 
 A termék neve, a cégforma és a domain még nincs eldöntve. A "Studio" csak
 munkanév. A "HyperFrames" a HeyGen neve, termékként nem használható.
