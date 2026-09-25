@@ -14,7 +14,9 @@ KEZDÉS (kötelező, minden session elején)
    PowerShell 5.1, soha nem &&).
 2. Repó: C:/Users/gdp/projects/packaged-video-creator
    (github.com/YogiZoli/packaged-video-creator, privát). git fetch, és nézd meg,
-   melyik branchen vagy, van-e nyitott PR (gh pr list).
+   melyik branchen vagy, milyen phase-* branch létezik (git branch -a), és van-e
+   nyitott PR (gh pr list). A folyamatban lévő fázis a legfrissebb phase-* branchen
+   él: ha van ilyen, válts rá, és a STATUS.md-t onnan olvasd, ne a mainről.
 3. Olvasd el a repó gyökeréből: STATUS.md, DECISIONS.md, PRD.md, SPEC.md, és az
    aktuális fázis tervét a docs/ mappában, ha a STATUS.md hivatkozik rá.
 4. Mondd vissza röviden: end goal, hol tartunk, melyik fázis és melyik lépés
