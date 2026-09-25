@@ -69,3 +69,21 @@
     lint session-ben). A maradék portolt `.ps1` fájlok törlése külön brand-frames
     feladat. Az app és a 0. fázis tesztje eddig is csak a `.mjs` szkripteket
     használta, így ez nem érinti.
+
+## 2026-09-25
+
+33. UI keretrendszer (SPEC 12.5): Svelte (SvelteKit SPA módban, Tauri alatt), Svelte 5
+    (Zoltan).
+34. Fejlesztői eszközök Zoltan gépén: Rust (rustup, stable MSVC) és Visual Studio
+    Build Tools 2026 a C++ munkacsomaggal, winget-tel (Zoltan jóváhagyta). A user
+    gépére ezek nem kellenek, csak a fordításhoz.
+35. A script-kapu promptja a yt-flywheel-team script-író skilljéből van levezetve
+    (OPEN, TEACH, OWN, stílusszabályok, egy Ownership CTA). A kulcsszavas komment-CTA
+    réteg a v1-ből kimarad, mert a user oldalán nincs mögötte automatizmus.
+    Harmadik fél módszer-nevei sehol nem szerepelhetnek, ezt teszt kényszeríti ki
+    (Zoltan).
+36. A brand-frames maradék portolt `.ps1` fájljai törölve (PR #4), az
+    `image-audio-lint` kötőjeles szavakat bont és a `.subcap`-ot nem ellenőrzi
+    (PR #3, Zoltan). Main: `3efb25f`.
+37. Új sessionök a `docs/SESSION-PROMPT.md` állandó promptjával indulnak; a fázisonkénti
+    modell és effort ugyanott.
