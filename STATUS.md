@@ -1,6 +1,6 @@
 # STATUS: Studio (munkanév)
 
-Frissítve: 2026-09-25
+Frissítve: 2026-09-29
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -10,7 +10,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**, main) · 1 Tauri váz, onboard
 
 **1. fázis, branch `phase-1`** (pusholva, még nincs PR). A terv és a lépések: `docs/phase-1-plan.md`.
 - Kész: a Node runner (`runner/`, 32 unit teszt zöld: `npm test`), és a Tauri 2 + SvelteKit váz (`app/`, még a sablon tartalma).
-- A gépen: Rust 1.98.1 (MSVC) telepítve, WebView2 megvan, Node 24.16.0 megvan. **A Visual Studio Build Tools 2026 C++ része félkész** (hiányzik az MSVC `link.exe` és a Windows SDK). Zoltan a Visual Studio Installerből pótolja: Modify, "Desktop development with C++". Enélkül a Rust mag nem fordul.
+- A gépen: Rust 1.98.1 (MSVC) telepítve, WebView2 megvan, Node 24.16.0 megvan. Visual Studio Community 2026 C++ munkacsomaggal telepítve és ellenőrizve (MSVC 14.51 link.exe, Windows SDK 10.0.26100 és 10.0.28000), 2026-09-29.
 
 A 0. fázis: `docs/phase-0.md`. A kilépő teszt (`scripts/phase0/e2e.mjs`) a brand-frames `db476c7`-re van állítva, és zöld.
 
@@ -18,8 +18,7 @@ brand-frames (kánon): main `3efb25f`, nyitott PR nincs. Ebben benne van: Node d
 
 ## Következő lépés
 
-1. Ellenőrizni, hogy megvan-e az MSVC `link.exe` és a Windows SDK (`docs/phase-1-plan.md`, 1. lépés). Ha nincs, Zoltannal pótolni.
-2. Utána a `docs/phase-1-plan.md` 2. lépésétől: Node sidecar letöltő, Rust mag, UI, tesztek, telepítő build, kézi elfogadás Zoltannal.
+1. A `docs/phase-1-plan.md` 2. lépésétől: Node sidecar letöltő, Rust mag, UI, tesztek, telepítő build, kézi elfogadás Zoltannal.
 
 ## Zoltan döntésére vár
 
