@@ -152,7 +152,7 @@ test("testKey sends a tiny request", async () => {
   const f = fakeFetch([answer("OK")]);
   const r = await testKey({ provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep });
   assert.equal(r.ok, true);
-  assert.equal(f.calls[0].body.max_tokens, 5);
+  assert.equal(f.calls[0].body.max_tokens, undefined);
 });
 
 test("extractJson, redact, friendlyError", () => {
@@ -245,6 +245,13 @@ test("suggestChannel: user text stays in DATA, answer is trimmed text", async ()
   const r = await suggestChannel({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, field: "audience", channel: {} });
   assert.equal(r.text, "Warm and direct.");
   assert.throws(() => buildSuggestMessages({ field: "password" }), /Unknown field/);
+});
+
+test("testKey passes on an empty answer (reasoning models), chat does not", async () => {
+  const f = fakeFetch([answer(""), answer("")]);
+  assert.equal((await testKey({ provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep })).ok, true);
+  assert.equal(f.calls[0].body.max_tokens, undefined);
+  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), /empty answer/);
 });
 
 // ---- projects --------------------------------------------------------------------

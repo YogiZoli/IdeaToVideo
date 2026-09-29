@@ -45,7 +45,7 @@ export function buildSuggestMessages({ field, channel = {}, topic }) {
 // llm = { provider, apiKey, model, fetchImpl?, sleep? }
 export async function suggestChannel({ llm, field, channel, topic }) {
   const messages = buildSuggestMessages({ field, channel, topic });
-  const answer = await chat({ ...llm, messages, json: true, maxTokens: 400, temperature: 0.5 });
+  const answer = await chat({ ...llm, messages, json: true, temperature: 0.5 });
   let text;
   try {
     text = extractJson(answer).text;

@@ -46,7 +46,7 @@ export function friendlyError(label, status, body) {
 
 // One chat completion. Retries 429 and 5xx (and network errors) with
 // exponential backoff, 3 attempts in total (SPEC 5). Returns the text content.
-export async function chat({ provider, apiKey, model, messages, json = false, maxTokens, temperature = 0.7, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 120000 }) {
+export async function chat({ provider, apiKey, model, messages, json = false, maxTokens, allowEmpty = false, temperature = 0.7, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 120000 }) {
   const p = PROVIDERS[provider];
   if (!p) throw new LlmError(`Unknown provider: ${provider}`);
   if (!apiKey) throw new LlmError(`No API key set for ${p.label}. Add it in Settings.`);
@@ -76,7 +76,7 @@ export async function chat({ provider, apiKey, model, messages, json = false, ma
     if (res.ok) {
       const data = await res.json();
       const text = data?.choices?.[0]?.message?.content;
-      if (typeof text !== "string" || text.trim() === "") throw new LlmError(`${p.label} returned an empty answer.`);
+      if (!allowEmpty && (typeof text !== "string" || text.trim() === "")) throw new LlmError(`${p.label} returned an empty answer.`);
       return text;
     }
     const text = redact(await res.text().catch(() => ""), apiKey);
@@ -90,7 +90,9 @@ export async function chat({ provider, apiKey, model, messages, json = false, ma
 
 // A tiny request that proves the key and the model work ("Test key").
 export async function testKey(opts) {
-  await chat({ ...opts, messages: [{ role: "user", content: "Reply with the single word OK." }], maxTokens: 5, temperature: 0 });
+  // No tight max_tokens: reasoning models (Gemini 3.x) spend a small budget on
+  // thinking and return empty content. A 200 already proves key and model.
+  await chat({ ...opts, messages: [{ role: "user", content: "Reply with the single word OK." }], allowEmpty: true, temperature: 0 });
   return { ok: true, message: `${PROVIDERS[opts.provider].label} key works.` };
 }
 
