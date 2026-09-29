@@ -1,0 +1,80 @@
+/* Neutral app chrome. The user's brand goes into the videos, not the app. */
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --fg: #1b1f24;
+  --muted: #5b6573;
+  --muted-bg: #eceff3;
+  --line: #dde1e7;
+  --accent: #2446c7;
+  --accent-bg: #e6ecfd;
+  --good: #1d7a45;
+  --good-bg: #e3f4ea;
+  --bad: #b3261e;
+  --bad-bg: #fbe9e7;
+  --warn: #7a5200;
+  --warn-bg: #fff4d6;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  font-family: system-ui, "Segoe UI", -apple-system, Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181c;
+    --panel: #1d2126;
+    --fg: #e8eaed;
+    --muted: #9aa3ae;
+    --muted-bg: #2a2f36;
+    --line: #313740;
+    --accent: #8fa8ff;
+    --accent-bg: #23305a;
+    --good: #6fd29a;
+    --good-bg: #1c3527;
+    --bad: #ff8a80;
+    --bad-bg: #3d1f1d;
+    --warn: #ffd27a;
+    --warn-bg: #3a3017;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+
+input, select, textarea, button {
+  font: inherit;
+  color: inherit;
+}
+
+input, select, textarea {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+textarea { resize: vertical; width: 100%; }
+input[type="checkbox"], input[type="radio"] { padding: 0; }
+
+button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.ghost { border-color: transparent; background: transparent; }
+button.link { border: none; background: none; color: var(--accent); padding: 0 4px; text-decoration: underline; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+}
