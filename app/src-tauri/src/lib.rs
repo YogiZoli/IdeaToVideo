@@ -20,16 +20,17 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
-    let script = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("No resource folder: {e}"))?
-        .join("runner")
-        .join("main.mjs");
+    let script = runner::plain_path(
+        app.path()
+            .resource_dir()
+            .map_err(|e| format!("No resource folder: {e}"))?
+            .join("runner")
+            .join("main.mjs"),
+    );
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));
     }
-    Ok(runner::Paths { node: runner::node_path()?, script })
+    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script })
 }
 
 fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String> {

@@ -67,15 +67,20 @@ pub fn check_paths(request: &Value, projects_root: &Path) -> Result<(), String> 
     Ok(())
 }
 
-// std::fs::canonicalize gives \\?\C:\... on Windows; strip it so paths compare
-// the same way the runner and the UI write them.
+// std::fs::canonicalize and Tauri's resource_dir give \\?\C:\... on Windows.
+// Node cannot start a script from such a path (EISDIR on lstat 'C:'), and the
+// runner and the UI write plain paths, so the prefix is stripped.
+pub fn plain_path(p: PathBuf) -> PathBuf {
+    let s = p.to_string_lossy();
+    match s.strip_prefix(r"\\?\") {
+        Some(rest) if !rest.starts_with("UNC\\") => PathBuf::from(rest),
+        _ => p,
+    }
+}
+
 fn dunce_canonical(p: &Path) -> Result<PathBuf, String> {
     let c = std::fs::canonicalize(p).map_err(|_| format!("Folder not found: {}", p.display()))?;
-    let s = c.to_string_lossy();
-    Ok(match s.strip_prefix(r"\\?\") {
-        Some(rest) if !rest.starts_with("UNC\\") => PathBuf::from(rest),
-        _ => c,
-    })
+    Ok(plain_path(c))
 }
 
 pub struct Paths {
@@ -222,6 +227,25 @@ mod tests {
         let sneaky = format!("{}{}..{}elsewhere", s(&root), std::path::MAIN_SEPARATOR, std::path::MAIN_SEPARATOR);
         assert!(check_paths(&json!({"projectDir": sneaky}), &root).is_err());
         std::fs::remove_dir_all(&base).unwrap();
+    }
+
+    #[test]
+    fn verbatim_prefix_is_stripped() {
+        let p = plain_path(PathBuf::from(r"\\?\C:\Program Files\Studio\runner\main.mjs"));
+        assert_eq!(p, PathBuf::from(r"C:\Program Files\Studio\runner\main.mjs"));
+        let unc = PathBuf::from(r"\\?\UNC\srv\share");
+        assert_eq!(plain_path(unc.clone()), unc);
+        assert_eq!(plain_path(PathBuf::from("/Applications/Studio.app")), PathBuf::from("/Applications/Studio.app"));
+    }
+
+    // The bug from the first manual test: a \\?\ script path must still start.
+    #[cfg(windows)]
+    #[test]
+    fn runner_starts_from_a_verbatim_path() {
+        let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
+        assert!(script.to_string_lossy().starts_with(r"\\?\"));
+        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script) };
+        assert!(run(&paths, "providers", &json!({}), None, &mut |_| {}).is_ok());
     }
 
     #[test]
