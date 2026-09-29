@@ -21,6 +21,20 @@ export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeo
     throw new Error(`Could not reach ${c.label}: ${redact(e.message, apiKey)}`);
   }
   if (res.ok) return { ok: true, message: `${c.label} key works.` };
-  if (res.status === 401 || res.status === 403) throw new Error(`${c.label} rejected the API key. Check it in Settings.`);
-  throw new Error(`${c.label} answered with HTTP ${res.status}. Try again later.`);
+  // The provider's reason (e.g. ElevenLabs "missing_permissions" on a scoped
+  // key) tells the user what to fix. Redacted and cut short, never the raw body.
+  const reason = redact(providerReason(await res.text().catch(() => "")), apiKey);
+  const why = reason ? ` (${reason})` : "";
+  if (res.status === 401 || res.status === 403) throw new Error(`${c.label} rejected the API key${why}. Check the key and its permissions.`);
+  throw new Error(`${c.label} answered with HTTP ${res.status}${why}. Try again later.`);
+}
+
+function providerReason(body) {
+  try {
+    const j = JSON.parse(body);
+    const d = j.detail ?? j.error ?? j;
+    return [d?.status, d?.code, d?.message].filter((x) => typeof x === "string" && x).join(": ").slice(0, 200);
+  } catch {
+    return "";
+  }
 }

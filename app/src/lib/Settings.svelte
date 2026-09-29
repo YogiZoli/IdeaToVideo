@@ -11,8 +11,9 @@
 
   let { app, saved }: { app: AppState; saved: (s: AppState) => void } = $props();
 
-  // a working copy: edits stay local until "Save settings"
-  let config = $state<Config>(untrack(() => structuredClone(app.config!)));
+  // a working copy: edits stay local until "Save settings". $state.snapshot,
+  // not structuredClone: a reactive proxy cannot be cloned (DataCloneError).
+  let config = $state<Config>(untrack(() => $state.snapshot(app.config!) as Config));
   let keys = $state(untrack(() => ({ ...app.keys })));
   let busy = $state(false);
   let message = $state("");
