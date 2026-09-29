@@ -61,7 +61,7 @@ Költség az induláskor: 0. Nincs domain, nincs Railway, nincs Supabase, nincs 
 ## 3. Repo szerkezet
 
 ```text
-packaged-video-creator/
+IdeaToVideo/
   PRD.md  SPEC.md  DECISIONS.md  STATUS.md
   app/                    Tauri projekt
     src/                  UI (TypeScript)
