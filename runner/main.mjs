@@ -15,6 +15,7 @@ import { testServiceKey } from "./providers/keys.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
 import { createProject, loadProject, saveProject, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
 import { writeScript } from "./gates/script/index.mjs";
+import { suggestChannel } from "./gates/channel/index.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -29,6 +30,10 @@ const commands = {
   "test-llm": async ({ provider, model }) => testKey({ provider, model, apiKey: key() }),
 
   "test-service": async ({ service }) => testServiceKey({ service, apiKey: key() }),
+
+  // Onboarding "Use recommended" for Audience and Brand Voice.
+  "suggest-channel": async ({ llm, field, channel, topic }) =>
+    suggestChannel({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, field, channel, topic }),
 
   "create-project": async ({ projectsDir, title, language, brief, autopilot }) => {
     const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot });
