@@ -54,7 +54,7 @@ test("config schema accepts the SPEC 4.1 example and rejects secrets", () => {
   const cfg = {
     schema: 1,
     ui: { language: "en" },
-    llm: { provider: "gemini", model: "gemini-2.5-flash" },
+    llm: { provider: "gemini", model: "gemini-3.8-flash" },
     brand: { preset: "blue-professional", logo: "brand/logo.png", overrides: { primary: "#1e2bfa" } },
     channel: { audience: "...", brandVoice: "...", profile: "...", youtubeUrl: null, landingUrl: null, contentLanguage: "en" },
     narrator: { provider: "edge-tts", voice: "en-US-AndrewNeural" },
@@ -93,7 +93,7 @@ test("chat sends one OpenAI-style request with the key only in the header", asyn
   assert.equal(f.calls.length, 1);
   assert.equal(f.calls[0].url, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
   assert.equal(f.calls[0].init.headers.authorization, `Bearer ${KEY}`);
-  assert.equal(f.calls[0].body.model, "gemini-2.5-flash");
+  assert.equal(f.calls[0].body.model, "gemini-3.8-flash");
   assert.deepEqual(f.calls[0].body.response_format, { type: "json_object" });
   assert.ok(!f.calls[0].init.body.includes(KEY));
 });

@@ -7,7 +7,7 @@ import type { Config } from "./api";
 export type Provider = { id: string; label: string; model: string; keyUrl: string; note?: string };
 
 export const LLM_PROVIDERS: Provider[] = [
-  { id: "gemini", label: "Gemini", model: "gemini-2.5-flash", keyUrl: "https://aistudio.google.com/apikey", note: "Free tier available. Recommended to start." },
+  { id: "gemini", label: "Gemini", model: "gemini-3.8-flash", keyUrl: "https://aistudio.google.com/apikey", note: "Free tier available. Recommended to start." },
   { id: "openrouter", label: "OpenRouter", model: "openrouter/auto", keyUrl: "https://openrouter.ai/keys", note: "One key, many models." },
   { id: "claude", label: "Claude", model: "claude-sonnet-5", keyUrl: "https://console.anthropic.com/settings/keys" },
   { id: "openai", label: "ChatGPT (OpenAI API)", model: "", keyUrl: "https://platform.openai.com/api-keys", note: "Type the model name you want to use." },
@@ -45,7 +45,7 @@ export function defaultConfig(): Config {
     schema: 1,
     onboarded: false,
     ui: { language: "en" },
-    llm: { provider: "gemini", model: "gemini-2.5-flash" },
+    llm: { provider: "gemini", model: "gemini-3.8-flash" },
     brand: { preset: DEFAULT_PRESET, logo: null },
     channel: { audience: "", brandVoice: "", profile: "", youtubeUrl: null, landingUrl: null, ctaText: null, contentLanguage: "en" },
     narrator: { provider: "edge-tts", voice: defaultVoice("en") },

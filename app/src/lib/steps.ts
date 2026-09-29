@@ -31,7 +31,7 @@ export function skipStep(id: StepId, c: Config): Config {
   const ch = { ...c.channel };
   switch (id) {
     case "ai":
-      return { ...c, llm: { provider: "gemini", model: "gemini-2.5-flash" } };
+      return { ...c, llm: { provider: "gemini", model: "gemini-3.8-flash" } };
     case "brand":
       return { ...c, brand: { preset: DEFAULT_PRESET, logo: null } };
     case "audience":
