@@ -40,7 +40,7 @@ export function friendlyError(label, status, body) {
   if (status === 429) return `${label} quota ran out or the rate limit was hit. Wait a little, or switch provider in Settings.`;
   if (status === 404) return `${label} does not know this model. Check the model name in Settings.`;
   if (status === 400) return `${label} refused the request: ${String(body).slice(0, 300)}`;
-  if (status >= 500) return `${label} is having problems right now (HTTP ${status}). Try again later.`;
+  if (status >= 500) return `${label} is overloaded or having problems right now (HTTP ${status}). Try again in a few minutes, or pick another model in Settings.`;
   return `${label} answered with HTTP ${status}.`;
 }
 

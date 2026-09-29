@@ -34,8 +34,9 @@
   const script = $derived(data?.project.gates.script);
   const dirty = $derived(data?.scriptMarkdown != null && draft !== data.scriptMarkdown);
 
+  // Does not clear `error`: a failed write-script reloads the project, and the
+  // message must stay on screen.
   async function load() {
-    error = "";
     try {
       data = await runner<Loaded>("load-project", { projectDir: dir });
       draft = data.scriptMarkdown ?? "";
@@ -153,7 +154,11 @@
       </div>
 
       {#if busy && step}<p class="hint">{step} This usually takes under a minute.</p>{/if}
-      {#if error}<p class="bad">{error}</p>{/if}
+      {#if error}
+        <p class="bad">{error}</p>
+      {:else if script?.state === "failed" && script.error}
+        <p class="bad">Last attempt failed: {script.error}</p>
+      {/if}
       {#if notice && !error}<p class="good">{notice}</p>{/if}
 
       {#if data.scriptMarkdown !== null || script?.state === "failed"}
