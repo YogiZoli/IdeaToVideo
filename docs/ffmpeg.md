@@ -51,4 +51,5 @@ build, a méret várhatóan hasonló nagyságrend.
 3. A csomagba: `licenses/ffmpeg/` a GPL szöveggel, a verzióval és a forrás
    linkjével. Az About képernyőn egy sor: "Includes FFmpeg (GPL), built by BtbN".
 
-Döntés: Zoltan.
+Döntés (Zoltan, 2026-09-30, DECISIONS 43): a kész BtbN GPL shared build
+végleg, saját minimális build nem lesz. A bekötés a 2. fázisban.

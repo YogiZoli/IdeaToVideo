@@ -5,6 +5,8 @@ config és kulcstár, LLM integráció.
 
 Branch: `phase-1`. A fázis végén PR a main felé, utána Zoltan jóváhagyása.
 
+**Állapot 2026-09-30: kész.** A részletek: `STATUS.md`, DECISIONS 38-47.
+
 ## Kész (2026-09-24)
 
 - `runner/` (Node sidecar, függőség nélkül), 32 unit teszt zöld (`npm test`):

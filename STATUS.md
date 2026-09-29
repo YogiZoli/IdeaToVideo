@@ -1,28 +1,40 @@
-# STATUS: Studio (munkanév)
+# STATUS: IdeaToVideo
 
-Frissítve: 2026-09-29
+Frissítve: 2026-09-30
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
-Fázisok (PRD 13): 0 pipeline Node-ra (**kész**, main) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**folyamatban**) · 2 teljes 5 kapus menet a UI-ban · 3 pilot · 4 kiadás.
+Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes 5 kapus menet a UI-ban · 3 pilot · 4 kiadás.
 
 ## Hol tartunk
 
-**1. fázis, branch `phase-1`** (pusholva, még nincs PR). A terv és a lépések: `docs/phase-1-plan.md`.
-- Kész: a Node runner (`runner/`, 32 unit teszt zöld: `npm test`), és a Tauri 2 + SvelteKit váz (`app/`, még a sablon tartalma).
-- A gépen: Rust 1.98.1 (MSVC) telepítve, WebView2 megvan, Node 24.16.0 megvan. Visual Studio Community 2026 C++ munkacsomaggal telepítve és ellenőrizve (MSVC 14.51 link.exe, Windows SDK 10.0.26100 és 10.0.28000), 2026-09-29.
+**Az 1. fázis kész**, a kimenete megvan: telepíthető app, ami scriptet ír. Zoltan a
+saját gépén telepítette, végigment az onboardingon a saját Gemini kulcsával, és
+írt és jóváhagyott egy scriptet (2026-09-30).
 
-A 0. fázis: `docs/phase-0.md`. A kilépő teszt (`scripts/phase0/e2e.mjs`) a brand-frames `db476c7`-re van állítva, és zöld.
+- `runner/`: Node sidecar, 38 teszt (`npm test`), új: `suggest-channel`.
+- `app/src-tauri/`: Rust mag (config, OS kulcstár, sidecar, CSP, átköltöztetés a
+  Studio névről), 15 teszt (`cargo test`).
+- `app/src/`: Svelte 5 UI, onboarding 12 lépés, Settings, Projects, 1. kapu,
+  `ITV-...` hibakódok. Kinézet: design-system "Shine" tokenek build közben.
+- `scripts/fetch-sidecars.mjs`: Node 24.16.0, rögzített SHA256.
+- CI: `.github/workflows/build.yml`, Windows + macOS, csak PR-re és kézzel.
+- Mérések: `docs/ffmpeg.md` (döntés: DECISIONS 43), vidIQ (DECISIONS 42).
+- Telepítő: `IdeaToVideo_0.1.0_x64-setup.exe` (25 MB, aláíratlan).
 
-brand-frames (kánon): main `3efb25f`, nyitott PR nincs. Ebben benne van: Node dokumentáció, `package-lock.json`, avatar hang javítás, `image-audio-lint` a mountolt jelenetekre, a kötőjeles szavak és a `.subcap` kizárás, és az összes portolt `.ps1` törölve (csak Node).
+A kézi tesztben talált hibák mind javítva: runner útvonal (`\\?\`), modellnév,
+Settings megnyitás, üres kulcsteszt, eltűnő hibaüzenet.
 
 ## Következő lépés
 
-1. A `docs/phase-1-plan.md` 2. lépésétől: Node sidecar letöltő, Rust mag, UI, tesztek, telepítő build, kézi elfogadás Zoltannal.
+1. A PR #2 merge-e zöld CI után (Zoltan jóváhagyta).
+2. 2. fázis terve (`docs/phase-2-plan.md`): hang (edge TTS, ElevenLabs hanglista
+   meghallgatással), jelenet-tábla, build, kontakt lap, render (ffmpeg és a
+   hyperframes bekötése), HeyGen avatar lista, presetek, Autopilot.
 
 ## Zoltan döntésére vár
 
-Semmi. A nyitott technikai kérdések (ffmpeg build, vidIQ API) az 1. fázis mérései között vannak, javaslattal jönnek.
+Semmi.
 
 ## Hogyan indul egy új session
 

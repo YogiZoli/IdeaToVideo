@@ -87,3 +87,44 @@
     (PR #3, Zoltan). Main: `3efb25f`.
 37. Új sessionök a `docs/SESSION-PROMPT.md` állandó promptjával indulnak; a fázisonkénti
     modell és effort ugyanott.
+
+## 2026-09-30
+
+38. A termék neve **IdeaToVideo** (a "Studio" munkanév helyett). Azonosító
+    `app.ideatovideo.desktop`, kulcstár `ideatovideo.<szolgáltató>`, projektmappa
+    `IdeaToVideo Projects`. Elnevezésben nincs magyar szó és ékezet. A régi
+    Studio tesztadatokat (kulcsok, beállítások, logó, projektek) az app első
+    indításkor átköltözteti (Zoltan).
+39. Az app felülete a design-system kánon ("Shine", a vidrev.app nyelve) szerint
+    néz ki. A `tokens.css` build közben kerül a csomagba, a kész app a repótól
+    független. Zoltan neve és logója nem kerül bele, az appnak saját neve és
+    logója van. A 18. pontot pontosítja: a videók brandje továbbra is a useré
+    vagy HyperFrames preset (Zoltan).
+40. Az ikon Zoltan saját IdeaToVideo logója, Shine színekkel. Forrás:
+    `app/src-tauri/icons/source/`, a méreteket a `tauri icon` gyártja.
+41. A Gemini alapmodell `gemini-3.5-flash`. A `gemini-2.5-flash` új Google
+    projektnek már nem érhető el (404), a `gemini-3.8-flash` ingyenes kerete a
+    kézi teszt alatt túlterhelt volt (503). A kulcsteszt nem korlátozza a válasz
+    hosszát, mert a gondolkodó modellek ilyenkor üres választ adnak.
+42. vidIQ (SPEC 12.1): nincs REST API, de van MCP szerver
+    (`https://mcp.vidiq.com/mcp`) user által generált Bearer kulccsal.
+    Hivatalosan Max csomag, a bevezető időszakban minden csomagban megy. A v1-ben
+    opcionális, a runner a 2. fázisban hívja. Ha nincs hozzáférés, a kulcsszó
+    kézzel vagy a Brief Cardból jön (Zoltan: Pro csomag, Max nem kell).
+43. ffmpeg (a 30. pontot pontosítja): a kész BtbN GPL "shared" build, rögzített
+    kiadással és SHA256-tal, mint a Node. Saját minimális build nem lesz. Plusz
+    kb. 58 MB a telepítőben. A csomagban licencfájl, az About oldalon egy sor.
+    A user semmit nem telepít, az app mindig a sajátját használja. Mérés:
+    `docs/ffmpeg.md` (Zoltan).
+44. A Remotion továbbra is kimarad (a 10. pont megerősítve, Zoltan).
+45. CI (`.github/workflows/build.yml`): Windows és macOS, csak PR-re és kézi
+    indításra, a csak dokumentációt érintő változásokra nem fut. A privát
+    design-system repót egy csak olvasható, csak arra a repóra szóló token éri
+    el (`DESIGN_SYSTEM_TOKEN`, lejár 2027-09-01). Pénzbe nem kerül, az ingyenes
+    perckeretből fogy (Zoltan).
+46. Eltávolítás: a "Delete the application data" pipával a kulcsok is törlődnek
+    a kulcstárból, a Dokumentumokban lévő projektek szándékosan maradnak.
+    Settingsben "Remove all keys". Minden hiba mellett `ITV-...` kód és
+    "Copy details", hogy egy tesztelő képernyőképéből látszódjon az ok.
+47. ElevenLabs hang és HeyGen avatar választás listából, meghallgatással és
+    előnézettel: 2. fázis (Zoltan: nem kell előrehozni).
