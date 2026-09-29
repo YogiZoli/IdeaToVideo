@@ -42,6 +42,7 @@ export const saveConfig = (config: Config) => invoke<AppState>("save_config", { 
 export const setKey = (name: string, value: string) => invoke<void>("set_key", { name, value });
 export const deleteKey = (name: string) => invoke<void>("delete_key", { name });
 export const keyStatus = () => invoke<Record<string, boolean>>("key_status");
+export const deleteAllKeys = () => invoke<void>("delete_all_keys");
 export const importLogo = (path: string) => invoke<string>("import_logo", { path });
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {

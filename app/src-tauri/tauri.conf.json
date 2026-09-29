@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Studio",
+  "productName": "IdeaToVideo",
   "version": "0.1.0",
-  "identifier": "com.zoltangero.studio",
+  "identifier": "app.ideatovideo.desktop",
   "build": {
     "beforeDevCommand": "node ../scripts/fetch-sidecars.mjs && npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Studio",
+        "title": "IdeaToVideo",
         "width": 1100,
         "height": 760,
         "minWidth": 900,
@@ -43,6 +43,11 @@
     "resources": {
       "../../runner/": "runner/"
     },
-    "shortDescription": "One YouTube video from idea to MP4"
+    "shortDescription": "From idea to video, on your own machine",
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/hooks.nsh"
+      }
+    }
   }
 }

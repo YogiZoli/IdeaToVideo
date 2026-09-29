@@ -5,6 +5,8 @@
   import type { AppState, ProjectSummary } from "./api";
   import { runner, errorText } from "./api";
   import { LANGUAGES } from "./catalog";
+  import ErrorBox from "./ErrorBox.svelte";
+
 
   let { app, openProject }: { app: AppState; openProject: (dir: string) => void } = $props();
 
@@ -113,7 +115,7 @@
     </section>
   {/if}
 
-  {#if error}<p class="bad">{error}</p>{/if}
+  {#if error}<ErrorBox message={error} context={{ step: "projects" }} />{/if}
 
   {#if loading}
     <p class="hint">Loading...</p>
@@ -150,9 +152,9 @@
   .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .item { width: 100%; display: grid; grid-template-columns: 1fr 120px 110px; gap: 12px; text-align: left; padding: 14px 16px; }
   .title { font-weight: 600; }
-  .status, .date { color: var(--muted); font-size: 14px; }
-  .hint { color: var(--muted); font-size: 13px; word-break: break-all; }
-  .good { color: var(--good); margin: 0; font-size: 13px; }
-  .bad { color: var(--bad); margin: 0; font-size: 13px; }
+  .status, .date { color: var(--muted-foreground); font-size: 14px; }
+  .hint { color: var(--muted-foreground); font-size: 13px; word-break: break-all; }
+  .good { color: var(--success); margin: 0; font-size: 13px; }
+  .bad { color: var(--danger-text); margin: 0; font-size: 13px; }
   .empty p { margin: 4px 0; }
 </style>

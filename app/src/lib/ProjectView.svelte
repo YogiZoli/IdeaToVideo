@@ -4,6 +4,7 @@
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import { ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
+  import ErrorBox from "./ErrorBox.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
@@ -32,6 +33,7 @@
   let notice = $state("");
 
   const script = $derived(data?.project.gates.script);
+  const llmContext = $derived({ step: "script", provider: app.config?.llm.provider, model: app.config?.llm.model });
   const dirty = $derived(data?.scriptMarkdown != null && draft !== data.scriptMarkdown);
 
   // Does not clear `error`: a failed write-script reloads the project, and the
@@ -123,7 +125,7 @@
   </header>
 
   {#if !data}
-    {#if error}<p class="bad">{error}</p>{:else}<p class="hint">Loading...</p>{/if}
+    {#if error}<ErrorBox message={error} context={{ step: "load-project" }} />{:else}<p class="hint">Loading...</p>{/if}
   {:else}
     <h1>{data.project.title}</h1>
     <p class="hint">Status: <strong>{data.project.status}</strong>. Language: {data.project.language}.{data.project.autopilot ? " Autopilot on." : ""}</p>
@@ -155,9 +157,9 @@
 
       {#if busy && step}<p class="hint">{step} This usually takes under a minute.</p>{/if}
       {#if error}
-        <p class="bad">{error}</p>
+        <ErrorBox message={error} context={llmContext} />
       {:else if script?.state === "failed" && script.error}
-        <p class="bad">Last attempt failed: {script.error}</p>
+        <ErrorBox message={`Last attempt failed: ${script.error}`} context={llmContext} />
       {/if}
       {#if notice && !error}<p class="good">{notice}</p>{/if}
 
@@ -185,21 +187,21 @@
   h2 { margin: 0; font-size: 17px; }
   .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .gates { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .gates li { background: var(--muted-bg); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; font-size: 13px; font-weight: 600; }
-  .gates .state { font-weight: 400; color: var(--muted); }
-  .gates li.approved { background: var(--good-bg); }
-  .gates li.pending { background: var(--accent-bg); }
-  .gates li.failed { background: var(--bad-bg); }
-  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--muted-bg); color: var(--muted); }
-  .pill.approved { background: var(--good-bg); color: var(--good); }
-  .pill.pending { background: var(--accent-bg); color: var(--accent); }
-  .pill.failed { background: var(--bad-bg); color: var(--bad); }
+  .gates li { background: var(--muted); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; font-size: 13px; font-weight: 600; }
+  .gates .state { font-weight: 400; color: var(--muted-foreground); }
+  .gates li.approved { background: var(--success-surface); }
+  .gates li.pending { background: var(--primary-surface); }
+  .gates li.failed { background: var(--danger-surface); }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
+  .pill.approved { background: var(--success-surface); color: var(--success); }
+  .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
+  .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
   .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .controls input { width: 70px; }
   .label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
-  textarea { width: 100%; font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+  textarea { width: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
   .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-  .hint { color: var(--muted); font-size: 13px; }
-  .good { color: var(--good); }
-  .bad { color: var(--bad); white-space: pre-wrap; }
+  .hint { color: var(--muted-foreground); font-size: 13px; }
+  .good { color: var(--success); }
+  .bad { color: var(--danger-text); white-space: pre-wrap; }
 </style>

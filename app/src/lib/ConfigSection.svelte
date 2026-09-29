@@ -152,7 +152,7 @@
   .label, label { font-weight: 600; font-size: 14px; }
   .radio { font-weight: 400; display: flex; gap: 6px; align-items: center; }
   .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  .hint { margin: 0; font-size: 13px; color: var(--muted); }
-  .warn { font-size: 13px; background: var(--warn-bg); color: var(--warn); padding: 8px 10px; border-radius: 6px; }
-  .bad { color: var(--bad); font-size: 13px; margin: 0; }
+  .hint { margin: 0; font-size: 13px; color: var(--muted-foreground); }
+  .warn { font-size: 13px; background: var(--warning-surface); color: var(--warning-text); padding: 8px 10px; border-radius: 6px; }
+  .bad { color: var(--danger-text); font-size: 13px; margin: 0; }
 </style>

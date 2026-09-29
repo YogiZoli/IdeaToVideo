@@ -90,6 +90,11 @@ fn delete_key(name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn delete_all_keys() -> Result<(), String> {
+    keys::delete_all()
+}
+
+#[tauri::command]
 fn key_status() -> std::collections::BTreeMap<String, bool> {
     keys::status()
 }
@@ -132,17 +137,34 @@ fn import_logo(app: AppHandle, path: String) -> Result<String, String> {
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// The app was called Studio during the first tests. Move its keys and
+/// settings over once, silently; a failure only means starting fresh.
+fn migrate_from_studio(app: &AppHandle) {
+    keys::migrate_legacy();
+    if let Ok(new_dir) = app.path().app_config_dir() {
+        if let Some(old_dir) = new_dir.parent().map(|p| p.join(config::LEGACY_IDENTIFIER)) {
+            let docs = app.path().document_dir().ok();
+            let _ = config::migrate_legacy(&new_dir, &old_dir, docs.as_deref());
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            migrate_from_studio(app.handle());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             app_state,
             save_config,
             set_key,
             delete_key,
             key_status,
+            delete_all_keys,
             run_runner,
             import_logo
         ])

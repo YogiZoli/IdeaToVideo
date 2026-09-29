@@ -1,80 +1,93 @@
-/* Neutral app chrome. The user's brand goes into the videos, not the app. */
-:root {
-  --bg: #f6f7f9;
-  --panel: #ffffff;
-  --fg: #1b1f24;
-  --muted: #5b6573;
-  --muted-bg: #eceff3;
-  --line: #dde1e7;
-  --accent: #2446c7;
-  --accent-bg: #e6ecfd;
-  --good: #1d7a45;
-  --good-bg: #e3f4ea;
-  --bad: #b3261e;
-  --bad-bg: #fbe9e7;
-  --warn: #7a5200;
-  --warn-bg: #fff4d6;
-  --mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
-  font-family: system-ui, "Segoe UI", -apple-system, Roboto, sans-serif;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--fg);
-  background: var(--bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15181c;
-    --panel: #1d2126;
-    --fg: #e8eaed;
-    --muted: #9aa3ae;
-    --muted-bg: #2a2f36;
-    --line: #313740;
-    --accent: #8fa8ff;
-    --accent-bg: #23305a;
-    --good: #6fd29a;
-    --good-bg: #1c3527;
-    --bad: #ff8a80;
-    --bad-bg: #3d1f1d;
-    --warn: #ffd27a;
-    --warn-bg: #3a3017;
-  }
-}
+/* App chrome in the design canon's language (tokens from the design-system
+   repo, baked in at build time). No owner name or logo: the user's brand goes
+   into the videos, not the app. Fonts are self-hosted (no external calls, CSP). */
+@import "$design/tokens.css";
+@import "@fontsource/open-sans/latin-400.css";
+@import "@fontsource/open-sans/latin-ext-400.css";
+@import "@fontsource/open-sans/latin-600.css";
+@import "@fontsource/open-sans/latin-ext-600.css";
+@import "@fontsource/open-sans/latin-700.css";
+@import "@fontsource/open-sans/latin-ext-700.css";
+@import "@fontsource/geist-mono/latin-400.css";
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); }
 
-input, select, textarea, button {
-  font: inherit;
-  color: inherit;
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
 }
+body {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--lh-base);
+  background: var(--background);
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: var(--weight-bold); text-wrap: balance; color: var(--foreground); }
+h1 { font-size: var(--text-3xl); line-height: var(--lh-3xl); letter-spacing: var(--ls-3xl); }
+h2 { font-size: var(--text-xl); line-height: var(--lh-xl); letter-spacing: var(--ls-xl); }
 
-input, select, textarea {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 7px 10px;
+input, select, textarea, button { font: inherit; color: inherit; }
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea {
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--input);
+  background: var(--surface);
+  color: var(--foreground);
+  transition: border-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input::placeholder, textarea::placeholder { color: var(--neutral-400); }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
 textarea { resize: vertical; width: 100%; }
-input[type="checkbox"], input[type="radio"] { padding: 0; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; }
 
+/* Buttons: every filled button is a solid fill with white text (readability rule). */
 button {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 7px 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--border-strong);
+  background: var(--surface);
+  color: var(--foreground);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
   cursor: pointer;
+  transition: background-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
 }
-button:hover:not(:disabled) { border-color: var(--accent); }
-button:disabled { opacity: 0.5; cursor: default; }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button:hover:not(:disabled) { background: var(--surface-alt); border-color: var(--neutral-400); }
+button:active:not(:disabled) { transform: scale(0.98); }
+button:focus-visible { outline: 2px solid var(--ring-solid); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: default; }
+
+/* The one main action on a screen: fuchsia, pulsing halo. */
+button.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); box-shadow: var(--shadow-sm); }
+button.primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); box-shadow: var(--shadow-md); }
+button.primary:not(:disabled) { animation: cta-halo 2.4s var(--ease-out) infinite; }
+/* The other filled action: ink. */
+button.secondary { background: var(--secondary); border-color: var(--secondary); color: var(--secondary-foreground); }
+button.secondary:hover:not(:disabled) { background: var(--secondary-hover); border-color: var(--secondary-hover); }
 button.ghost { border-color: transparent; background: transparent; }
-button.link { border: none; background: none; color: var(--accent); padding: 0 4px; text-decoration: underline; }
+button.ghost:hover:not(:disabled) { background: var(--surface-alt); border-color: transparent; }
+button.link {
+  min-height: 0; padding: 0 var(--space-2); border: none; background: none;
+  color: var(--link); font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-normal);
+}
+button.link:hover:not(:disabled) { background: none; color: var(--link-hover); text-decoration: underline; text-underline-offset: 2px; }
 
 .card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 20px;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-7);
+  box-shadow: var(--shadow-xs);
 }

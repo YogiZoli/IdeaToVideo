@@ -35,18 +35,18 @@
 </script>
 
 {#if fatal}
-  <main class="center"><p class="bad">Studio could not start: {fatal}</p></main>
+  <main class="center"><p class="bad">IdeaToVideo could not start: {fatal}</p></main>
 {:else if !app}
   <main class="center"><p class="muted">Starting...</p></main>
 {:else if !app.config?.onboarded}
   <main>
-    <div class="brandbar"><strong>Studio</strong><span class="muted">Setup</span></div>
+    <div class="brandbar"><span class="name"><img src="/icon.png" alt="" />IdeaToVideo</span><span class="muted">Setup</span></div>
     <Onboarding bind:config={draft} bind:keys done={updated} />
   </main>
 {:else}
   <main>
     <nav class="brandbar">
-      <strong>Studio</strong>
+      <span class="name"><img src="/icon.png" alt="" />IdeaToVideo</span>
       <button type="button" class:active={view === "projects"} onclick={() => { view = "projects"; projectDir = null; }}>Projects</button>
       <button type="button" class:active={view === "settings"} onclick={() => { view = "settings"; projectDir = null; }}>Settings</button>
     </nav>
@@ -64,10 +64,13 @@
 
 <style>
   .center { display: grid; place-items: center; min-height: 100vh; }
-  .brandbar { display: flex; gap: 6px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
-  .brandbar strong { margin-right: 18px; font-size: 16px; }
+  .brandbar { display: flex; gap: 6px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .brandbar { position: relative; }
+  .brandbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--hairline); }
+  .name { display: inline-flex; align-items: center; gap: 10px; margin-right: 22px; font-weight: 700; font-size: var(--text-lg); }
+  .name img { width: 26px; height: 26px; }
   .brandbar button { border: none; background: none; padding: 6px 12px; }
-  .brandbar button.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
-  .muted { color: var(--muted); }
-  .bad { color: var(--bad); }
+  .brandbar button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
+  .muted { color: var(--muted-foreground); }
+  .bad { color: var(--danger-text); }
 </style>

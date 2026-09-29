@@ -4,10 +4,13 @@
   import { untrack } from "svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import type { Config, AppState } from "./api";
-  import { saveConfig, errorText } from "./api";
+  import { saveConfig, errorText, deleteAllKeys, keyStatus } from "./api";
+  import { ask } from "@tauri-apps/plugin-dialog";
   import { cleanConfig } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
   import ConfigSection from "./ConfigSection.svelte";
+  import ErrorBox from "./ErrorBox.svelte";
+
 
   let { app, saved }: { app: AppState; saved: (s: AppState) => void } = $props();
 
@@ -46,6 +49,21 @@
     }
   }
 
+  async function removeAllKeys() {
+    if (!(await ask("Remove every API key this app saved in the system keychain? You can add them again any time.", { title: "Remove all keys", kind: "warning" }))) return;
+    busy = true;
+    error = "";
+    try {
+      await deleteAllKeys();
+      keys = await keyStatus();
+      message = "All keys removed from the system keychain.";
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      busy = false;
+    }
+  }
+
   async function chooseFolder() {
     const dir = await open({ directory: true, multiple: false });
     if (typeof dir === "string") config.projectsDir = dir;
@@ -58,7 +76,7 @@
     <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
   </header>
   {#if message}<p class="good">{message}</p>{/if}
-  {#if error}<p class="bad">{error}</p>{/if}
+  {#if error}<ErrorBox message={error} context={{ step: "settings", provider: config.llm.provider, model: config.llm.model }} />{/if}
 
   {#each STEPS.filter((s) => s.id !== "import") as s}
     <section class="card">
@@ -83,9 +101,15 @@
     </div>
   </section>
 
+  <section class="card">
+    <h2>Keys</h2>
+    <p class="hint">Keys are stored only in your system keychain. Remove them all here, for example before you uninstall.</p>
+    <div class="row"><button type="button" disabled={busy} onclick={removeAllKeys}>Remove all keys</button></div>
+  </section>
+
   <section class="card about">
     <h2>About</h2>
-    <p>Studio {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
+    <p>IdeaToVideo {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
     <p>No support, no installation help.</p>
   </section>
 </div>
@@ -97,8 +121,7 @@
   h2 { margin: 0 0 12px; font-size: 17px; }
   .head { display: flex; justify-content: space-between; align-items: center; }
   .row { display: flex; gap: 8px; }
-  .hint { font-size: 13px; color: var(--muted); word-break: break-all; }
-  .good { color: var(--good); margin: 0; }
-  .bad { color: var(--bad); margin: 0; }
-  .about p { margin: 4px 0; color: var(--muted); }
+  .hint { font-size: 13px; color: var(--muted-foreground); word-break: break-all; }
+  .good { color: var(--success); margin: 0; }
+  .about p { margin: 4px 0; color: var(--muted-foreground); }
 </style>

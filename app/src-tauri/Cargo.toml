@@ -1,7 +1,7 @@
 [package]
-name = "studio"
+name = "ideatovideo"
 version = "0.1.0"
-description = "Studio: one YouTube video from idea to MP4, on your own machine"
+description = "IdeaToVideo: one YouTube video from idea to MP4, on your own machine"
 authors = ["Zoltan Gero"]
 edition = "2021"
 

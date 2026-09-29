@@ -1,5 +1,6 @@
 // keys.rs: API keys live only in the OS keychain (SPEC 4.2): Windows Credential
-// Manager, macOS Keychain. Service name `studio.<provider>`. The UI can set,
+// Manager, macOS Keychain. Service name `ideatovideo.<provider>` (the app was
+// called Studio before; `migrate_legacy` moves `studio.<provider>` entries). The UI can set,
 // delete and ask "is it set?", it never gets a key back. The only reader is
 // runner.rs, which hands the key to the sidecar in an env var.
 
@@ -19,6 +20,8 @@ pub const ALLOWED: &[&str] = &[
 ];
 
 const ACCOUNT: &str = "default";
+pub const PREFIX: &str = "ideatovideo";
+const LEGACY_PREFIX: &str = "studio";
 
 pub fn check_name(name: &str) -> Result<(), String> {
     if ALLOWED.contains(&name) {
@@ -29,7 +32,7 @@ pub fn check_name(name: &str) -> Result<(), String> {
 }
 
 pub fn service_name(name: &str) -> String {
-    format!("studio.{name}")
+    format!("{PREFIX}.{name}")
 }
 
 /// A pasted key: trimmed, no inner whitespace or control characters, sane length.
@@ -76,6 +79,29 @@ pub fn delete(name: &str) -> Result<(), String> {
     }
 }
 
+/// Moves keys saved under the old app name to the new one, then removes the old
+/// entry. A key already saved under the new name wins. Returns how many moved.
+pub fn migrate_legacy() -> usize {
+    let mut moved = 0;
+    for n in ALLOWED {
+        let Ok(old) = keyring::Entry::new(&format!("{LEGACY_PREFIX}.{n}"), ACCOUNT) else { continue };
+        let Ok(value) = old.get_password() else { continue };
+        if !matches!(get(n), Ok(Some(_))) && set(n, &value).is_ok() {
+            moved += 1;
+        }
+        let _ = old.delete_credential();
+    }
+    moved
+}
+
+/// Settings "Remove all keys": deletes every key this app can store.
+pub fn delete_all() -> Result<(), String> {
+    for n in ALLOWED {
+        delete(n)?;
+    }
+    Ok(())
+}
+
 /// name -> is a key stored. Only booleans leave this module.
 pub fn status() -> BTreeMap<String, bool> {
     ALLOWED
@@ -101,7 +127,7 @@ mod tests {
 
     #[test]
     fn service_names() {
-        assert_eq!(service_name("gemini"), "studio.gemini");
+        assert_eq!(service_name("gemini"), "ideatovideo.gemini");
     }
 
     #[test]

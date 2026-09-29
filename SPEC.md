@@ -90,7 +90,7 @@ Windowson `%APPDATA%`, Macen `~/Library/Application Support`.
 {
   "schema": 1,
   "ui": { "language": "en" },
-  "llm": { "provider": "gemini", "model": "gemini-3.8-flash" },
+  "llm": { "provider": "gemini", "model": "gemini-3.5-flash" },
   "brand": {
     "preset": "blue-professional",
     "logo": "brand/logo.png",
@@ -196,7 +196,7 @@ A szolgáltató csak `baseUrl` + kulcs + modellnév.
 
 | Sorrend | Szolgáltató | baseUrl | Alapmodell (javaslat) |
 |---|---|---|---|
-| 1 | Gemini (default, ingyenes tier) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.8-flash` |
+| 1 | Gemini (default, ingyenes tier) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.5-flash` |
 | 2 | OpenRouter | `https://openrouter.ai/api/v1` | user választ |
 | 3 | Claude | `https://api.anthropic.com/v1/` | `claude-sonnet-5` |
 | 4 | ChatGPT (OpenAI API) | `https://api.openai.com/v1` | user választ |

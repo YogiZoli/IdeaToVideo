@@ -3,6 +3,8 @@
   // cleared from the input as soon as it is saved; the UI never reads it back.
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { setKey, deleteKey, runner, errorText } from "./api";
+  import ErrorBox from "./ErrorBox.svelte";
+
 
   let {
     name,
@@ -104,7 +106,11 @@
     {/if}
   </div>
   {#if message}
-    <p class="msg" class:good={ok === true} class:bad={ok === false}>{message}</p>
+    {#if ok === false}
+      <ErrorBox {message} context={{ step: `key:${name}` }} />
+    {:else}
+      <p class="msg" class:good={ok === true}>{message}</p>
+    {/if}
   {/if}
 </div>
 
@@ -112,9 +118,8 @@
   .keyfield { display: grid; gap: 6px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row input { flex: 1; }
-  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--muted-bg); color: var(--muted); }
-  .badge.on { background: var(--good-bg); color: var(--good); }
-  .msg { margin: 0; font-size: 13px; color: var(--muted); }
-  .msg.good { color: var(--good); }
-  .msg.bad { color: var(--bad); }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
+  .badge.on { background: var(--success-surface); color: var(--success); }
+  .msg { margin: 0; font-size: 13px; color: var(--muted-foreground); }
+  .msg.good { color: var(--success); }
 </style>

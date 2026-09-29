@@ -6,6 +6,8 @@
   import { cleanConfig } from "./catalog";
   import { STEPS, skipStep, recommendStep, stepReady } from "./steps";
   import ConfigSection from "./ConfigSection.svelte";
+  import ErrorBox from "./ErrorBox.svelte";
+
 
   let { config = $bindable(), keys = $bindable(), done }: { config: Config; keys: Record<string, boolean>; done: (s: AppState) => void } = $props();
 
@@ -65,7 +67,7 @@
 
     <ConfigSection id={step.id} bind:config bind:keys />
 
-    {#if error}<p class="bad">{error}</p>{/if}
+    {#if error}<ErrorBox message={error} context={{ step: `onboarding:${step.id}`, provider: config.llm.provider, model: config.llm.model }} />{/if}
     {#if blocker}<p class="hint">{blocker}</p>{/if}
 
     <div class="actions">
@@ -87,14 +89,13 @@
 <style>
   .wizard { display: grid; grid-template-columns: 220px 1fr; gap: 24px; padding: 24px; max-width: 1040px; margin: 0 auto; }
   .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; align-content: start; }
-  .steps button { width: 100%; text-align: left; border: none; background: none; padding: 6px 10px; border-radius: 6px; color: var(--muted); }
-  .steps .past button { color: var(--fg); }
-  .steps .current button { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
-  .count { margin: 0; font-size: 13px; color: var(--muted); }
+  .steps button { width: 100%; text-align: left; border: none; background: none; padding: 6px 10px; border-radius: 6px; color: var(--muted-foreground); }
+  .steps .past button { color: var(--foreground); }
+  .steps .current button { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
+  .count { margin: 0; font-size: 13px; color: var(--muted-foreground); }
   h1 { margin: 4px 0 6px; font-size: 24px; }
-  .intro { margin: 0 0 18px; color: var(--muted); }
+  .intro { margin: 0 0 18px; color: var(--muted-foreground); }
   .actions { display: flex; gap: 8px; margin-top: 20px; align-items: center; }
   .spacer { flex: 1; }
-  .hint { font-size: 13px; color: var(--muted); }
-  .bad { color: var(--bad); }
+  .hint { font-size: 13px; color: var(--muted-foreground); }
 </style>
