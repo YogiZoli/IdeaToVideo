@@ -1,0 +1,35 @@
+{
+  "$comment": "Video Brief Card, SPEC 4.5, schema video-brief-card/1. Only schema and title are required; the Studio fills the rest in Recommended mode.",
+  "type": "object",
+  "required": ["schema", "title"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "video-brief-card/1" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "promise": { "type": "string", "maxLength": 1000 },
+    "audience": { "type": "string", "maxLength": 2000 },
+    "searchIntent": { "type": "string", "maxLength": 300 },
+    "keyword": { "type": "string", "maxLength": 200 },
+    "playlist": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "maxLength": 300 },
+        "position": { "type": "integer", "minimum": 1 },
+        "of": { "type": "integer", "minimum": 1 },
+        "nextTitle": { "type": "string", "maxLength": 300 }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "maxLength": 200 },
+        "landingUrl": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "scriptTemplate": { "enum": ["ownership"] },
+    "language": { "type": "string", "minLength": 2, "maxLength": 10 },
+    "targetLengthMin": { "type": "number", "minimum": 1, "maximum": 30 }
+  }
+}

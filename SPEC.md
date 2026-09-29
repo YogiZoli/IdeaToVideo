@@ -61,7 +61,7 @@ Költség az induláskor: 0. Nincs domain, nincs Railway, nincs Supabase, nincs 
 ## 3. Repo szerkezet
 
 ```text
-packaged-video-creator/
+IdeaToVideo/
   PRD.md  SPEC.md  DECISIONS.md  STATUS.md
   app/                    Tauri projekt
     src/                  UI (TypeScript)
@@ -90,7 +90,7 @@ Windowson `%APPDATA%`, Macen `~/Library/Application Support`.
 {
   "schema": 1,
   "ui": { "language": "en" },
-  "llm": { "provider": "gemini", "model": "gemini-2.5-flash" },
+  "llm": { "provider": "gemini", "model": "gemini-3.5-flash" },
   "brand": {
     "preset": "blue-professional",
     "logo": "brand/logo.png",
@@ -196,7 +196,7 @@ A szolgáltató csak `baseUrl` + kulcs + modellnév.
 
 | Sorrend | Szolgáltató | baseUrl | Alapmodell (javaslat) |
 |---|---|---|---|
-| 1 | Gemini (default, ingyenes tier) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-2.5-flash` |
+| 1 | Gemini (default, ingyenes tier) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.5-flash` |
 | 2 | OpenRouter | `https://openrouter.ai/api/v1` | user választ |
 | 3 | Claude | `https://api.anthropic.com/v1/` | `claude-sonnet-5` |
 | 4 | ChatGPT (OpenAI API) | `https://api.openai.com/v1` | user választ |
@@ -304,7 +304,8 @@ a képet adja): `docs/phase-0.md`.
 
 ## 12. Nyitott technikai kérdések
 
-1. **vidIQ:** van-e user-kulcsos, nyilvános API? Ha nincs, a v1-ben kimarad, és
+1. **vidIQ:** eldőlt (DECISIONS 42): MCP szerver user kulccsal, opcionális.
+   Eredeti kérdés: van-e user-kulcsos, nyilvános API? Ha nincs, a v1-ben kimarad, és
    a kulcsszó kézzel vagy a Brief Cardból jön.
 2. **Ingyenes TTS tartalék** az Edge TTS mellé (nem hivatalos API, bármikor
    változhat).
@@ -312,7 +313,7 @@ a képet adja): `docs/phase-0.md`.
    tartalék a rendszer Google Chrome, Edge nem. Lásd 8. pont.
 4. **Node sidecar formája:** eldőlt (DECISIONS 26): csomagolt Node +
    lecsupaszított `node_modules`, SEA nem.
-5. **UI keretrendszer:** sima TypeScript vagy Svelte. Az 1. fázis elején dől el.
+5. **UI keretrendszer:** eldőlt (DECISIONS 33): Svelte 5, SvelteKit SPA.
 6. **Zene:** honnan jön ingyenes, licenctiszta háttérzene (a kánon `AUDIO.md`
    receptje szerint).
 

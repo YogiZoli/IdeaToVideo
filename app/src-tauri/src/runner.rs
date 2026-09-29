@@ -1,0 +1,272 @@
+// runner.rs: starts the Node sidecar (runner/main.mjs, see its header for the
+// protocol) with the app's own pinned Node (DECISIONS 26). Only whitelisted
+// commands run. When a command needs an API key, the key name comes from the
+// request (e.g. llm.provider), is checked against the key whitelist, read from
+// the keychain here and passed in STUDIO_API_KEY. It never goes to the UI.
+// `progress` lines are forwarded to the UI as the `runner-progress` event.
+
+use std::io::{BufRead, BufReader, Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+
+use serde_json::{json, Value};
+
+/// command -> where in the request the key name sits (None: no key needed).
+const COMMANDS: &[(&str, Option<&[&str]>)] = &[
+    ("providers", None),
+    ("validate-config", None),
+    ("validate-brief", None),
+    ("test-llm", Some(&["provider"])),
+    ("test-service", Some(&["service"])),
+    ("suggest-channel", Some(&["llm", "provider"])),
+    ("create-project", None),
+    ("list-projects", None),
+    ("load-project", None),
+    ("write-script", Some(&["llm", "provider"])),
+    ("save-script", None),
+    ("approve-gate", None),
+];
+
+pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {
+    COMMANDS
+        .iter()
+        .find(|(c, _)| *c == command)
+        .map(|(_, k)| *k)
+        .ok_or_else(|| format!("Unknown runner command: {command}"))
+}
+
+/// The keychain entry this request needs, if any. Refuses unknown key names.
+pub fn key_name_for(command: &str, request: &Value) -> Result<Option<String>, String> {
+    let Some(path) = check_command(command)? else { return Ok(None) };
+    let mut v = request;
+    for p in path {
+        v = v.get(*p).ok_or_else(|| format!("{command}: missing {}", path.join(".")))?;
+    }
+    let name = v.as_str().ok_or_else(|| format!("{command}: {} must be a string", path.join(".")))?;
+    crate::keys::check_name(name)?;
+    Ok(Some(name.to_string()))
+}
+
+/// Every path the UI sends must stay inside the projects folder (SPEC 9: file
+/// access only to the Projects and the app folders). `projectsDir` must be the
+/// folder itself, `projectDir` a folder directly or deeper inside it.
+pub fn check_paths(request: &Value, projects_root: &Path) -> Result<(), String> {
+    let root = dunce_canonical(projects_root)?;
+    if let Some(p) = request.get("projectsDir") {
+        let p = PathBuf::from(p.as_str().ok_or("projectsDir must be a string")?);
+        if dunce_canonical(&p)? != root {
+            return Err("That folder is not the projects folder set in Settings.".into());
+        }
+    }
+    if let Some(p) = request.get("projectDir") {
+        let p = dunce_canonical(&PathBuf::from(p.as_str().ok_or("projectDir must be a string")?))?;
+        if p == root || !p.starts_with(&root) {
+            return Err("That project is not inside the projects folder set in Settings.".into());
+        }
+    }
+    Ok(())
+}
+
+// std::fs::canonicalize and Tauri's resource_dir give \\?\C:\... on Windows.
+// Node cannot start a script from such a path (EISDIR on lstat 'C:'), and the
+// runner and the UI write plain paths, so the prefix is stripped.
+pub fn plain_path(p: PathBuf) -> PathBuf {
+    let s = p.to_string_lossy();
+    match s.strip_prefix(r"\\?\") {
+        Some(rest) if !rest.starts_with("UNC\\") => PathBuf::from(rest),
+        _ => p,
+    }
+}
+
+fn dunce_canonical(p: &Path) -> Result<PathBuf, String> {
+    let c = std::fs::canonicalize(p).map_err(|_| format!("Folder not found: {}", p.display()))?;
+    Ok(plain_path(c))
+}
+
+pub struct Paths {
+    pub node: PathBuf,
+    pub script: PathBuf,
+}
+
+/// Node sits next to the app executable (Tauri externalBin drops the target
+/// triple from the name when it bundles or copies it for `tauri dev`).
+pub fn node_path() -> Result<PathBuf, String> {
+    let exe = std::env::current_exe().map_err(|e| format!("Could not find the app folder: {e}"))?;
+    let dir = exe.parent().ok_or("Could not find the app folder")?;
+    let name = if cfg!(windows) { "node.exe" } else { "node" };
+    let p = dir.join(name);
+    if p.exists() {
+        Ok(p)
+    } else {
+        Err(format!("The bundled Node is missing ({}). Reinstall the app.", p.display()))
+    }
+}
+
+/// Emits one parsed stdout line. Returns Some(final outcome) for result/error.
+fn handle_line(line: &str, on_progress: &mut dyn FnMut(Value)) -> Option<Result<Value, String>> {
+    let v: Value = serde_json::from_str(line).ok()?;
+    match v.get("event").and_then(Value::as_str) {
+        Some("progress") => {
+            on_progress(v);
+            None
+        }
+        Some("result") => Some(Ok(v.get("data").cloned().unwrap_or(Value::Null))),
+        Some("error") => Some(Err(v
+            .get("message")
+            .and_then(Value::as_str)
+            .unwrap_or("The runner failed.")
+            .to_string())),
+        _ => None,
+    }
+}
+
+/// Runs one command to the end. Blocking: call it from a blocking task.
+pub fn run(
+    paths: &Paths,
+    command: &str,
+    request: &Value,
+    api_key: Option<String>,
+    on_progress: &mut dyn FnMut(Value),
+) -> Result<Value, String> {
+    check_command(command)?;
+    let mut cmd = Command::new(&paths.node);
+    cmd.arg(&paths.script)
+        .arg(command)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        // nothing from the user's shell may change how our Node behaves
+        .env_remove("NODE_OPTIONS")
+        .env_remove("NODE_PATH")
+        .env_remove("STUDIO_API_KEY")
+        .env("HYPERFRAMES_NO_TELEMETRY", "1")
+        .env("HYPERFRAMES_NO_UPDATE_CHECK", "1");
+    if let Some(k) = api_key {
+        cmd.env("STUDIO_API_KEY", k);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    let mut child = cmd.spawn().map_err(|e| format!("Could not start the runner: {e}"))?;
+
+    let body = serde_json::to_vec(request).map_err(|e| e.to_string())?;
+    {
+        let mut stdin = child.stdin.take().ok_or("runner stdin")?;
+        stdin.write_all(&body).map_err(|e| format!("Could not talk to the runner: {e}"))?;
+    } // dropped: stdin closed, the runner starts
+
+    let mut stderr = child.stderr.take().ok_or("runner stderr")?;
+    let err_reader = std::thread::spawn(move || {
+        let mut s = String::new();
+        let _ = stderr.read_to_string(&mut s);
+        s
+    });
+
+    let mut outcome = None;
+    let stdout = child.stdout.take().ok_or("runner stdout")?;
+    for line in BufReader::new(stdout).lines() {
+        let Ok(line) = line else { break };
+        if let Some(o) = handle_line(&line, on_progress) {
+            outcome = Some(o);
+        }
+    }
+    let status = child.wait().map_err(|e| e.to_string())?;
+    let err_text = err_reader.join().unwrap_or_default();
+    outcome.unwrap_or_else(|| {
+        let tail: String = err_text.chars().rev().take(800).collect::<Vec<_>>().into_iter().rev().collect();
+        Err(format!("The runner stopped without an answer ({status}). {}", tail.trim()))
+    })
+}
+
+pub fn progress_payload(command: &str, v: Value) -> Value {
+    json!({ "command": command, "progress": v })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn command_whitelist() {
+        assert!(check_command("write-script").is_ok());
+        assert!(check_command("rm").is_err());
+        assert!(check_command("").is_err());
+    }
+
+    #[test]
+    fn key_names_come_from_the_request_and_are_checked() {
+        assert_eq!(key_name_for("providers", &json!({})).unwrap(), None);
+        assert_eq!(key_name_for("test-llm", &json!({"provider": "gemini"})).unwrap().as_deref(), Some("gemini"));
+        assert_eq!(key_name_for("write-script", &json!({"llm": {"provider": "claude"}})).unwrap().as_deref(), Some("claude"));
+        assert_eq!(key_name_for("test-service", &json!({"service": "heygen"})).unwrap().as_deref(), Some("heygen"));
+        assert!(key_name_for("test-llm", &json!({"provider": "github"})).is_err());
+        assert!(key_name_for("write-script", &json!({})).is_err());
+        assert!(key_name_for("test-llm", &json!({"provider": 5})).is_err());
+    }
+
+    #[test]
+    fn paths_stay_inside_the_projects_folder() {
+        let base = std::env::temp_dir().join(format!("studio-paths-{}", std::process::id()));
+        let root = base.join("Projects");
+        let proj = root.join("2026-09-29_x");
+        let outside = base.join("elsewhere");
+        std::fs::create_dir_all(&proj).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+        let s = |p: &Path| p.to_string_lossy().to_string();
+
+        assert!(check_paths(&json!({}), &root).is_ok());
+        assert!(check_paths(&json!({"projectsDir": s(&root)}), &root).is_ok());
+        assert!(check_paths(&json!({"projectDir": s(&proj)}), &root).is_ok());
+        assert!(check_paths(&json!({"projectsDir": s(&outside)}), &root).is_err());
+        assert!(check_paths(&json!({"projectDir": s(&outside)}), &root).is_err());
+        assert!(check_paths(&json!({"projectDir": s(&root)}), &root).is_err());
+        let sneaky = format!("{}{}..{}elsewhere", s(&root), std::path::MAIN_SEPARATOR, std::path::MAIN_SEPARATOR);
+        assert!(check_paths(&json!({"projectDir": sneaky}), &root).is_err());
+        std::fs::remove_dir_all(&base).unwrap();
+    }
+
+    #[test]
+    fn verbatim_prefix_is_stripped() {
+        let p = plain_path(PathBuf::from(r"\\?\C:\Program Files\Studio\runner\main.mjs"));
+        assert_eq!(p, PathBuf::from(r"C:\Program Files\Studio\runner\main.mjs"));
+        let unc = PathBuf::from(r"\\?\UNC\srv\share");
+        assert_eq!(plain_path(unc.clone()), unc);
+        assert_eq!(plain_path(PathBuf::from("/Applications/Studio.app")), PathBuf::from("/Applications/Studio.app"));
+    }
+
+    // The bug from the first manual test: a \\?\ script path must still start.
+    #[cfg(windows)]
+    #[test]
+    fn runner_starts_from_a_verbatim_path() {
+        let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
+        assert!(script.to_string_lossy().starts_with(r"\\?\"));
+        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script) };
+        assert!(run(&paths, "providers", &json!({}), None, &mut |_| {}).is_ok());
+    }
+
+    #[test]
+    fn lines_are_parsed() {
+        let mut seen = vec![];
+        let mut on = |v: Value| seen.push(v);
+        assert!(handle_line(r#"{"event":"progress","step":"writing"}"#, &mut on).is_none());
+        assert!(handle_line("not json", &mut on).is_none());
+        assert_eq!(handle_line(r#"{"event":"result","data":{"a":1}}"#, &mut on).unwrap().unwrap(), json!({"a": 1}));
+        assert_eq!(handle_line(r#"{"event":"error","message":"no"}"#, &mut on).unwrap().unwrap_err(), "no");
+        assert_eq!(seen.len(), 1);
+    }
+
+    // Runs the real runner with the Node on PATH (dev machine and CI).
+    #[test]
+    fn real_runner_roundtrip() {
+        let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs");
+        let paths = Paths { node: PathBuf::from("node"), script };
+        let r = run(&paths, "providers", &json!({}), None, &mut |_| {}).unwrap();
+        assert_eq!(r["providers"][0]["id"], "gemini");
+        let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &mut |_| {}).unwrap_err();
+        assert!(e.contains("No API key"), "{e}");
+    }
+}

@@ -141,7 +141,7 @@ rögzítésének önellenőrzése), `libvpx-vp9` dekóder (avatar alfa), `libx26
 ## Újrafuttatás
 
 ```powershell
-cd C:/Users/gdp/projects/packaged-video-creator
+cd C:/Users/gdp/projects/IdeaToVideo
 npm test
 node scripts/phase0/e2e.mjs --project C:/Users/gdp/HyperFrames/ai-video-workflow/c2c --work C:/Users/gdp/pvc-e2e-quick --reference C:/Users/gdp/HyperFrames/ai-video-workflow/c2c/sentences.json --segments "avatar_open.webm=0:6,avatar_close.webm=62.8:71.3"
 ```
