@@ -83,6 +83,15 @@ export async function joinBlocks(files, out, { env = process.env, pause = PAUSE_
   return { offsets, seconds: Math.round(t * 1000) / 1000 };
 }
 
+const TRUE_PEAK_LINEAR = 0.841; // -1.5 dBTP
+
+// How far to lift (or lower) a finished mix to reach TARGET_LUFS; 0 when it is
+// within half a LU already.
+export function correctionDb(measured) {
+  const d = Math.round((TARGET_LUFS - measured) * 10) / 10;
+  return Math.abs(d) < 0.5 ? 0 : d;
+}
+
 // Music gain from two measurements: music ends up
 // MUSIC_UNDER_LU below the narration, whatever the source levels are.
 export const musicGainDb = (voLufs, bgmLufs) => Math.round((voLufs - MUSIC_UNDER_LU - bgmLufs) * 10) / 10;
@@ -113,6 +122,17 @@ export async function mix({ vo, bgm, out, env = process.env }) {
   }
   const inputs = ["-i", vo, ...(bgm ? ["-stream_loop", "-1", "-i", bgm] : [])];
   await run(ffmpeg, ["-y", "-hide_banner", "-v", "error", ...inputs, "-filter_complex", mixFilter({ seconds, gainDb }), "-map", "[out]", "-c:a", "libmp3lame", "-b:a", "192k", "-ar", "44100", out]);
-  const finalLufs = await loudness(out, { env });
+  let finalLufs = await loudness(out, { env });
+  // One-pass loudnorm undershoots on speech with pauses (-15.8 instead of -14
+  // in the first real video). A second, linear step closes the gap: a gain,
+  // then a limiter at -1.5 dBTP, so nothing clips.
+  const delta = correctionDb(finalLufs);
+  if (delta !== 0) {
+    const tmp = out.replace(/\.mp3$/i, ".pre.mp3");
+    fs.renameSync(out, tmp);
+    await run(ffmpeg, ["-y", "-hide_banner", "-v", "error", "-i", tmp, "-af", `volume=${delta}dB,alimiter=limit=${TRUE_PEAK_LINEAR}:level=disabled`, "-c:a", "libmp3lame", "-b:a", "192k", "-ar", "44100", out]);
+    fs.rmSync(tmp, { force: true });
+    finalLufs = await loudness(out, { env });
+  }
   return { seconds: Math.round(seconds * 100) / 100, voLufs, bgmLufs: bgmLufs ?? null, musicGainDb: gainDb ?? null, finalLufs };
 }

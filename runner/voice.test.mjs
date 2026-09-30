@@ -131,7 +131,7 @@ test("join and mix with the real ffmpeg: offsets, length, -14 LUFS", { skip: !ha
   assert.ok(Math.abs((await duration(vo, env)) - (5 + PAUSE_SECONDS)) < 0.15);
   const out = path.join(dir, "vo_bgm.mp3");
   const m = await mix({ vo, bgm: music, out, env });
-  assert.ok(Math.abs(m.finalLufs - -14) < 1.5, `final ${m.finalLufs} LUFS`);
+  assert.ok(Math.abs(m.finalLufs - -14) < 0.6, `final ${m.finalLufs} LUFS`);
   assert.ok(m.musicGainDb < 0);
   assert.ok(Math.abs((await duration(out, env)) - (5 + PAUSE_SECONDS)) < 0.15);
   const solo = path.join(dir, "solo.mp3");
