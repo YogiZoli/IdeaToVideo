@@ -31,16 +31,25 @@ Settings megnyitás, üres kulcsteszt, eltűnő hibaüzenet.
 2026-09-30). A PR #2 merge-ölve (main `b7f2289`).
 
 Kész a 2. fázisból (2026-09-30):
-- 1. lépés: SPEC, PRD, `package.json` névigazítás; a CI PR-en csak Windowst
-  épít, a macOS build kézi (`gh workflow run build -f platforms=both`).
-- 4. lépés: ffmpeg sidecar (`scripts/fetch-ffmpeg.mjs`): Windows BtbN
-  n8.1.2 GPL shared, macOS ffmpeg-static 6.1.1, SHA256-tal; `check-ffmpeg.mjs`
-  ellenőrzi a képességeket (Windowson mind megvan), a CI is futtatja; a runner
-  a csomagolt ffmpeg-et kapja (`HYPERFRAMES_FFMPEG_PATH`). 43 Node és 16 Rust
-  teszt zöld.
+- 1. lépés: névigazítás; CI PR-en csak Windows, a macOS build kézi (Claude indítja).
+- 2. lépés: `vendor/brand-frames` submodule (`3efb25f`), `scripts/fetch-canon.mjs`
+  (188 MB, 39 blokk, hyperframes 0.8.22, onnxruntime nélkül, Zoltan brand-mappái
+  nélkül). CI: a kánon a `BRAND_FRAMES_TOKEN` vagy a design-system token
+  kiterjesztésével érhető el.
+- 4. lépés: ffmpeg sidecar, képesség-ellenőrzéssel.
+- 5. lépés: Chrome az app helyi adatmappájába (`runner/tools.mjs`), sáv a
+  Projects oldalon ("Download now").
+- 6. lépés (részben): hang kapu ElevenLabs-szel és Gemini TTS-sel, hangminták,
+  "Use my own file" zene, keverés az AUDIO.md szerint (-14 LUFS), UI lejátszókkal.
+- 7. lépés: mondattábla a hang után automatikusan.
+- 9. lépés runner oldala (`runner/gates/build`), a brand-frames PR után köthető be.
+- Telepítő: 99 MB. Tesztek: 68 Node, 17 Rust, zöld.
+- brand-frames `app-integration` branch (worktree `C:/Users/gdp/HyperFrames/_frames-wt-app`):
+  `--outdir`, `--gsap` (npm `gsap` 3.14.2), semleges alapértékek. Alapból bájtra
+  azonos kimenet. Regress teszt fut.
 
-Következik: 5. lépés (Chrome első indításkor), 2. lépés (a kánon bekötése),
-3. lépés (brand-frames PR), 6. lépés (hang).
+Következik: brand-frames PR merge és submodule léptetés, 3. kapu (jelenet-tábla),
+4. kapu, render, zene szolgáltatók, a Gemini TTS mérése Zoltan kulcsával.
 
 ## Zoltan döntésére vár
 

@@ -73,6 +73,34 @@ HeyGen kulcsával, ha a kreditje engedi.
     `package.json` neve `packaged-video-creator`. A STATUS "Következő lépés 1."
     (PR #2 merge) már megtörtént.
 
+## Mérések és találatok menet közben (2026-09-30)
+
+- **Telepítő:** 99 MB (az 1. fázisban 25 MB), benne az ffmpeg (Windows, 170 MB
+  kicsomagolva) és a kánon a hyperframes lánccal (188 MB, 5736 fájl). A tiszta
+  release build 17 perc: 10 perc fordítás, 7 perc NSIS tömörítés.
+- **Chrome:** a runner a hyperframes gyerekfolyamatainak saját otthont ad az app
+  helyi adatmappájában, így a letöltött böngésző (42 mp, 282 MB) és minden
+  hyperframes gyorsítótár ott van, nem a user `~/.cache` mappájában. Windows
+  ARM-on nincs rögzített shell, ott a Google Chrome a tartalék.
+- **Gemini TTS:** `gemini-3.8-flash-tts`, van magyar, 30 kész hang, a tempó
+  szövegesen állítható. Szó-időbélyeget nem ad, és a `hyperframes transcribe`
+  whisper.cpp-t kér (Homebrew vagy git+cmake fordítás), ami a user gépén nem
+  járható. Megoldás: mondatonként egy felolvasás, a mondatok ideje így pontos,
+  a szavak a betűk aránya szerint (mint a kánon `sentences.mjs`-e SRT-nél).
+  Mérendő Zoltan kulcsával az appban: magyar minőség, ingyenes keret, sebesség.
+- **GSAP licenc:** ingyenes, kereskedelmi használatra is. Egy kitétel: nem
+  használható a Webflow vizuális animációszerkesztőjével versenyző eszközben. A
+  4. fázis (nyilvános kiadás) előtt rákérdezni a GSAP-nál. A HyperFrames maga is
+  GSAP-ra épül, tehát ez helyi fájllal és CDN-ről ugyanaz.
+- **Téma-leltár** (a `zg.css` tokenjei, amiket a blokkok használnak): kiemelő
+  (`--blue` család), pozitív és CTA (`--green`), szöveg (`--navy`), halvány
+  szövegek (`--muted`, `--sub`, `--label`), kártya és háttér (`--card`, `--bg`,
+  `--line`), negatív (`--red`), figyelmeztető (`--amber`), árnyékok (`--e-1..3`,
+  `--sh-*`), sarkok (`--r-chip`, `--r-btn`, `--r-card`, `--r-panel`), egyetlen
+  betű (Open Sans). Ez egy az egyben ráhúzható egy `FRAME.md` színeire (primary,
+  text, text-muted, bg, card-bg, border, positive, negative), a skálák (50-900)
+  a fő színből számolva.
+
 ## Lépések, ebben a sorrendben
 
 Minden lépés a `phase-2` branchen, külön committal. A brand-frames változásai a
