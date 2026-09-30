@@ -20,6 +20,7 @@ export const DEFAULTS = {
   build: { perUnit: 3.3, min: 20 }, // per scene (11 scenes: 36 s)
   music: { perUnit: 0.5, min: 20 }, // per second of music
   remix: { perUnit: 8, min: 6 }, // per music change (download on first use, mix)
+  avatar: { perUnit: 15, min: 90 }, // per second of avatar clips (HeyGen renders)
   render: { perUnit: 1.5, min: 20 }, // per second of video (71 s: 102 s)
 };
 const KEEP = 5;

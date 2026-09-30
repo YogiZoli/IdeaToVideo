@@ -231,3 +231,13 @@
     dokumentáció és a feltételek erről hallgatnak). Zene csere a kész hang alatt
     újrakeverés, a hangot nem olvassa fel újra. Az Autopilot ugyanezt a
     sorrendet követi.
+61. **Avatar (5. kapu, opcionális):** a HeyGen v3 API-val, a user kulcsával. Az
+    avatar a videó saját narrációját mondja, szájszinkronnal (Audio to Video:
+    a jelenet idejére kivágott narráció feltöltve, `POST /v3/videos`
+    `audio_asset_id`-vel). Nyitás és/vagy zárás, teljes képen, a téma
+    háttérszínén, így átlátszó videó nem kell (saját videóból betanított
+    avatarral is megy). Előtte becslés (másodperc alapján) és a valódi egyenleg
+    (`GET /v3/users/me`), jóváhagyó kérdés. Az Autopilot soha nem csinálja,
+    mert pénzbe kerül. A klipek a kompozícióban `<video>` elemek a jelenetek
+    fölött; ha a hang később megváltozik, a build nem használja őket csendben,
+    hanem szól. Élesben Zoltan kulcsával kell kipróbálni.

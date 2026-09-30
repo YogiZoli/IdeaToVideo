@@ -23,6 +23,8 @@ import { lintAndCheck } from "./gates/build/index.mjs";
 import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, setMusic, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { freeLibrary, ensureFreeTrack } from "./providers/music/free.mjs";
+import * as heygen from "./providers/avatar/heygen.mjs";
+import { avatarPlan, makeAvatar, removeAvatar } from "./gates/avatar/index.mjs";
 import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
@@ -291,6 +293,68 @@ const commands = {
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
     return { ...(await sceneRows(projectDir)), gate: next.gates.scenes, status: next.status };
+  },
+
+  // Gate 5, optional: an avatar says the opening and the closing (DECISIONS
+  // 61). The HeyGen key comes by "service". Previews are cached locally.
+  "avatar-looks": async () => {
+    const looks = await heygen.listLooks({ apiKey: key() });
+    const dir = path.join(dataDir(), "avatar-previews");
+    const out = [];
+    for (const l of looks) {
+      let image = null;
+      try {
+        if (l.image) image = await heygen.cachePreview({ url: l.image, dir });
+      } catch {
+        image = null; // a missing preview never hides the avatar
+      }
+      out.push({ ...l, image });
+    }
+    return { looks: out };
+  },
+
+  "avatar-preview": async ({ url }) => ({ file: await heygen.cachePreview({ url, dir: path.join(dataDir(), "avatar-previews") }) }),
+
+  "avatar-plan": async ({ projectDir }) => {
+    const plan = await avatarPlan(projectDir);
+    let account = null;
+    try {
+      account = await heygen.balance({ apiKey: key() });
+    } catch (e) {
+      account = { error: String(e.message) };
+    }
+    const seconds = plan.segments.reduce((n, s) => n + s.duration, 0);
+    return { ...plan, estimate: heygen.estimateUsd(seconds), account };
+  },
+
+  "make-avatar": async ({ projectDir, lookId, which, look }) => {
+    let project = setGate(loadProject(projectDir), "avatar", { state: "running", mode: "custom" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}`);
+    try {
+      const plan = await avatarPlan(projectDir);
+      const seconds = plan.segments.filter((s) => (which ?? []).includes(s.name)).reduce((n, s) => n + s.duration, 0);
+      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
+      project = loadProject(projectDir);
+      if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
+      project = setGate(project, "avatar", { state: "pending", mode: "custom" });
+      saveProject(projectDir, project);
+      appendLog(projectDir, `avatar: done, ${r.segments.map((s) => `${s.name} ${s.duration}s`).join(", ")}`);
+      return { avatar: r, gate: project.gates.avatar, status: project.status };
+    } catch (e) {
+      saveProject(projectDir, setGate(loadProject(projectDir), "avatar", { state: "failed", error: String(e.message).slice(0, 2000) }));
+      appendLog(projectDir, `avatar: failed, ${e.message}`);
+      throw e;
+    }
+  },
+
+  "remove-avatar": async ({ projectDir }) => {
+    removeAvatar(projectDir);
+    let project = setGate(loadProject(projectDir), "avatar", { state: "skipped" });
+    if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, "avatar: removed");
+    return { gate: project.gates.avatar, status: project.status };
   },
 
   // Lint and check the project's build/ (0 errors is the condition). The

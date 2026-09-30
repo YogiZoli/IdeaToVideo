@@ -9,6 +9,7 @@
   import VoiceGate from "./VoiceGate.svelte";
   import SceneGate from "./SceneGate.svelte";
   import ReviewGate from "./ReviewGate.svelte";
+  import AvatarGate from "./AvatarGate.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { narratorProvider } from "./catalog";
@@ -228,7 +229,7 @@
       {#each GATE_LABELS as [id, label]}
         <li class={data.project.gates[id]?.state ?? "todo"}>
           <span>{label}</span>
-          <span class="state">{id !== "avatar" ? stateLabel(data.project.gates[id]) : "Next version"}</span>
+          <span class="state">{id === "avatar" && (data.project.gates[id]?.state ?? "todo") === "todo" ? "Optional" : stateLabel(data.project.gates[id])}</span>
         </li>
       {/each}
     </ol>
@@ -273,6 +274,7 @@
 
     <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
     <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
+    <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
     <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} stills={data.stills} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
   {/if}
 </div>

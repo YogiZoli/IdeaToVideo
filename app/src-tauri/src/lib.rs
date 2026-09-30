@@ -62,14 +62,16 @@ async fn run_command(app: AppHandle, command: String, request: Value, api_key: O
 }
 
 /// The UI plays the project's audio and shows its images through the asset
-/// protocol. Its scope starts empty (tauri.conf.json) and gets exactly three
-/// folders: the projects folder, the cached voice samples and the free music.
+/// protocol. Its scope starts empty (tauri.conf.json) and gets exactly four
+/// folders: the projects folder, the cached voice samples, the free music and
+/// the cached avatar previews.
 fn allow_media(app: &AppHandle, projects: &std::path::Path) {
     let scope = app.asset_protocol_scope();
     let _ = scope.allow_directory(projects, true);
     if let Ok(d) = app.path().app_local_data_dir() {
         let _ = scope.allow_directory(d.join("voice-previews"), true);
         let _ = scope.allow_directory(d.join("music-free"), true);
+        let _ = scope.allow_directory(d.join("avatar-previews"), true);
     }
 }
 

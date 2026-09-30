@@ -5,7 +5,7 @@ import { redact } from "./llm.mjs";
 
 const CHECKS = {
   elevenlabs: { label: "ElevenLabs", url: "https://api.elevenlabs.io/v1/user", header: "xi-api-key" },
-  heygen: { label: "HeyGen", url: "https://api.heygen.com/v2/user/remaining_quota", header: "x-api-key" },
+  heygen: { label: "HeyGen", url: "https://api.heygen.com/v3/users/me", header: "x-api-key" },
 };
 
 export const KEY_SERVICES = Object.keys(CHECKS);

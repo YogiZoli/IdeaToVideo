@@ -36,6 +36,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { prepareBuild, buildDir } from "./index.mjs";
 import { duration } from "../../audio.mjs";
+import { avatarClips } from "../avatar/index.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -255,7 +256,12 @@ export function themeCss(theme = {}, base = DEFAULT_THEME) {
 const attr = (s) => String(s).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/</g, "&lt;");
 const text = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
-export function indexHtml({ width, height, total, theme, look, mounts, language = "en", title = "Video" }) {
+// An avatar clip (gate 5) over its scene: full frame, muted (the narration
+// already plays from vo_bgm.mp3), above the scenes.
+export const avatarVideo = (a) =>
+  `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:5"></video>`;
+
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video" }) {
   const hosts = mounts
     .map(
       (m) =>
@@ -298,6 +304,7 @@ ${themeCss(theme, baseTheme(look))
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
     <div id="main-bg" class="clip" data-start="0" data-duration="${total}" data-track-index="0"></div>
 ${hosts}
+${avatars.map(avatarVideo).join("\n")}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
     </div>
     <script>
@@ -346,6 +353,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const times = sceneTimes(scenes, sentences, total);
 
   const fitted = scenes.map((sc, n) => fitDuration(components.get(sc.component).html, sc.component, times[n].duration));
+  const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
 
   const { out } = prepareBuild(projectDir, { env });
   fs.mkdirSync(path.join(out, "compositions", "components"), { recursive: true });
@@ -360,7 +368,11 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.writeFileSync(path.join(out, src), fitted[n]);
     return { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
   });
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, language, title }));
+  for (const a of avatars) {
+    fs.mkdirSync(path.join(out, "avatar"), { recursive: true });
+    fs.copyFileSync(path.join(projectDir, a.file), path.join(out, a.file));
+  }
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, language, title }));
   return { out, scenes: mounts.length, seconds: total };
 }
 
