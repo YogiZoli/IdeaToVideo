@@ -296,8 +296,9 @@ const commands = {
 
   // Gate 5, optional: an avatar says the opening and the closing (DECISIONS
   // 61). The HeyGen key comes by "service". Previews are cached locally.
-  "avatar-looks": async () => {
+  "avatar-looks": async ({ previews = true } = {}) => {
     const { own, stock } = await heygen.listAvatars({ apiKey: key() });
+    if (!previews) return { own, stock }; // Settings: names only, fast
     const dir = path.join(dataDir(), "avatar-previews");
     // previews cached locally; a missing one never hides the avatar
     const local = async (url) => {

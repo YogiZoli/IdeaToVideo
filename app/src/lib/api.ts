@@ -20,7 +20,7 @@ export type Config = {
     contentLanguage?: string;
   };
   narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
-  avatar?: { enabled: boolean };
+  avatar?: { enabled: boolean; lookId?: string | null };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
   projectsDir?: string | null;

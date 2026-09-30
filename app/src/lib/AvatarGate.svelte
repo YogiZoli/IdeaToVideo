@@ -45,7 +45,7 @@
     try {
       ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen" }));
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
-      lookId = plan.current?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
+      lookId = plan.current?.lookId ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
     } catch (e) {
       error = errorText(e);
     } finally {

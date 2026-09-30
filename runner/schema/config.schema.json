@@ -54,7 +54,7 @@
     "avatar": {
       "type": "object",
       "additionalProperties": false,
-      "properties": { "enabled": { "type": "boolean" } }
+      "properties": { "enabled": { "type": "boolean" }, "lookId": { "type": ["string", "null"], "maxLength": 200 } }
     },
     "research": {
       "type": "object",

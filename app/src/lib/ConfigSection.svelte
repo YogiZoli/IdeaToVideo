@@ -6,6 +6,8 @@
   import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider } from "./catalog";
   import type { StepId } from "./steps";
   import KeyField from "./KeyField.svelte";
+  import VoicePicker from "./VoicePicker.svelte";
+  import AvatarPicker from "./AvatarPicker.svelte";
 
   let {
     id,
@@ -139,16 +141,13 @@
     </div>
   {:else}
     <KeyField name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
-    <div class="field">
-      <label for="evoice">ElevenLabs voice (name or ID)</label>
-      <input id="evoice" bind:value={config.narrator.voice} spellcheck="false" placeholder="for example the name of your own voice clone" />
-      <p class="hint">Optional. You can also pick the voice from a list, with samples, at 2. Voice and music in every project.</p>
-      <p class="hint">You pay ElevenLabs directly. The free ElevenLabs plan does not allow commercial use.</p>
-    </div>
+    <VoicePicker bind:voice={config.narrator.voice} keySet={!!keys.elevenlabs} language={config.channel.contentLanguage ?? "en"} />
+    <p class="hint">You pay ElevenLabs directly. The free ElevenLabs plan does not allow commercial use.</p>
   {/if}
 {:else if id === "heygen"}
   <KeyField name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
   <label class="radio"><input type="checkbox" bind:checked={config.avatar!.enabled} disabled={!keys.heygen} /> Add an avatar to my videos</label>
+  {#if config.avatar?.enabled}<AvatarPicker bind:lookId={config.avatar!.lookId} keySet={!!keys.heygen} />{/if}
 {:else if id === "vidiq"}
   <KeyField name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
   <label class="radio"><input type="checkbox" bind:checked={config.research!.vidiq} disabled={!keys.vidiq} /> Use vidIQ keyword data when available</label>
