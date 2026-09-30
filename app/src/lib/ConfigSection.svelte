@@ -3,7 +3,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import type { Config } from "./api";
   import { importLogo, errorText } from "./api";
-  import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, defaultVoice } from "./catalog";
+  import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider } from "./catalog";
   import type { StepId } from "./steps";
   import KeyField from "./KeyField.svelte";
 
@@ -23,7 +23,6 @@
 
   function pickLanguage(code: string) {
     config.channel.contentLanguage = code;
-    if (config.narrator.provider === "edge-tts") config.narrator.voice = defaultVoice(code);
   }
 
   async function chooseLogo() {
@@ -120,21 +119,27 @@
   <div class="field">
     <span class="label">Narrator Voice</span>
     <div class="row">
-      <label class="radio"><input type="radio" name="narr" checked={config.narrator.provider === "edge-tts"} onchange={() => (config.narrator = { provider: "edge-tts", voice: defaultVoice(config.channel.contentLanguage) })} /> Free voice (Microsoft Edge)</label>
+      <label class="radio"><input type="radio" name="narr" checked={narratorProvider(config.narrator.provider) === "gemini"} onchange={() => (config.narrator = { provider: "gemini", voice: GEMINI_DEFAULT_VOICE })} /> Free voice (Gemini)</label>
       <label class="radio"><input type="radio" name="narr" checked={config.narrator.provider === "elevenlabs"} onchange={() => (config.narrator = { provider: "elevenlabs", voice: "" })} /> ElevenLabs</label>
     </div>
   </div>
-  {#if config.narrator.provider === "edge-tts"}
+  {#if narratorProvider(config.narrator.provider) === "gemini"}
+    {#if config.llm.provider !== "gemini"}
+      <KeyField name="gemini" label="Gemini" keyUrl={LLM_PROVIDERS.find((p) => p.id === "gemini")?.keyUrl ?? ""} bind:isSet={keys.gemini} test={() => ({ command: "test-llm", provider: "gemini", model: "gemini-3.5-flash" })} />
+    {/if}
     <div class="field">
-      <label for="voice">Voice</label>
-      <input id="voice" bind:value={config.narrator.voice} spellcheck="false" />
-      <p class="hint">Matched to your content language.</p>
+      <label for="gvoice">Voice</label>
+      <select id="gvoice" bind:value={config.narrator.voice}>
+        {#each GEMINI_VOICES as v}<option value={v}>{v}</option>{/each}
+      </select>
+      <p class="hint">Uses your Gemini key, free within Google's limits. Speaks your content language, Hungarian too. You can listen to samples at the voice step of a video.</p>
     </div>
   {:else}
     <KeyField name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
     <div class="field">
       <label for="evoice">ElevenLabs voice ID</label>
       <input id="evoice" bind:value={config.narrator.voice} spellcheck="false" placeholder="from your ElevenLabs voice library" />
+      <p class="hint">You pay ElevenLabs directly. The free ElevenLabs plan does not allow commercial use.</p>
     </div>
   {/if}
 {:else if id === "heygen"}

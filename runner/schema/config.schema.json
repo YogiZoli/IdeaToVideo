@@ -47,7 +47,7 @@
       "required": ["provider"],
       "additionalProperties": false,
       "properties": {
-        "provider": { "enum": ["edge-tts", "elevenlabs"] },
+        "provider": { "enum": ["gemini", "elevenlabs", "edge-tts"] },
         "voice": { "type": ["string", "null"], "maxLength": 200 }
       }
     },

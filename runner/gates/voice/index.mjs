@@ -15,9 +15,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { narrationFromMarkdown, wordCount } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
+import * as gemini from "../../providers/tts/gemini.mjs";
 import { joinBlocks, mix } from "../../audio.mjs";
 
-export const VOICE_PROVIDERS = { elevenlabs };
+export const VOICE_PROVIDERS = { elevenlabs, gemini };
 
 // The music file sits in the project (the Rust core's import_music copies it
 // to audio/music.<ext>). Only that relative name comes in, never a free path.
@@ -54,8 +55,9 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
       previousText: blocks[i - 1]?.text,
       nextText: blocks[i + 1]?.text,
       languageCode: language,
+      onSentence: (n, of) => onProgress({ step: "voice", block: i + 1, of: blocks.length, sentence: n, sentences: of }),
     });
-    const f = path.join(blockDir, `${String(i + 1).padStart(2, "0")}.mp3`);
+    const f = path.join(blockDir, `${String(i + 1).padStart(2, "0")}.${r.ext ?? "mp3"}`);
     fs.writeFileSync(f, r.audio);
     files.push(f);
     blockWords.push(r.words);
@@ -76,3 +78,24 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
 }
 
 const round3 = (x) => Math.round(x * 1000) / 1000;
+
+// A short sample in the content language, for voices without a ready-made
+// preview (Gemini). Cached by voice and language.
+const SAMPLE_TEXT = {
+  en: "Hi! This is how I sound when I read your video.",
+  hu: "Szia! Így szólok, amikor felolvasom a videód szövegét.",
+  de: "Hallo! So klinge ich, wenn ich dein Video vorlese.",
+};
+
+export async function voiceSample({ narrator, apiKey, language = "en", dir, fetchImpl }) {
+  const provider = VOICE_PROVIDERS[narrator?.provider];
+  if (!provider) throw new Error(`No voice samples for ${narrator?.provider}.`);
+  const lang = SAMPLE_TEXT[language] ? language : "en";
+  const file = path.join(dir, `${narrator.provider}-${String(narrator.voice).replace(/[^A-Za-z0-9_-]/g, "")}-${lang}.wav`);
+  if (fs.existsSync(file)) return file;
+  const r = await provider.speak({ apiKey, fetchImpl, voiceId: narrator.voice, text: SAMPLE_TEXT[lang] });
+  fs.mkdirSync(dir, { recursive: true });
+  const out = r.ext === "wav" ? file : file.replace(/\.wav$/, ".mp3");
+  fs.writeFileSync(out, r.audio);
+  return out;
+}

@@ -8,13 +8,14 @@
   import ErrorBox from "./ErrorBox.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText, importMusic } from "./api";
+  import { narratorProvider } from "./catalog";
 
   let { app, dir, gate, scriptApproved, changed }: { app: AppState; dir: string; gate?: Gate; scriptApproved: boolean; changed: () => Promise<void> } = $props();
 
   type Voice = { id: string; name: string; gender: string | null; accent: string | null; description: string | null; previewUrl: string | null; languages: string[] };
   type Info = { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; words: number };
 
-  const provider = $derived(app.config?.narrator.provider ?? "elevenlabs");
+  const provider = $derived(narratorProvider(app.config?.narrator.provider));
   const hasKey = $derived(!!app.keys[provider]);
 
   let voices = $state<Voice[]>([]);
@@ -32,7 +33,7 @@
   const made = $derived(gate?.state === "pending" || gate?.state === "approved");
 
   async function loadVoices() {
-    if (provider !== "elevenlabs" || !hasKey) return;
+    if (!hasKey) return;
     try {
       const r = await runner<{ voices: Voice[] }>("list-voices", { narrator: { provider } });
       voices = r.voices;
@@ -43,14 +44,22 @@
   }
   loadVoices();
 
+  let sampling = $state(false);
   async function playSample() {
     const v = voices.find((x) => x.id === voiceId);
-    if (!v?.previewUrl) return;
+    if (!v) return;
+    sampling = true;
+    error = "";
     try {
-      const r = await runner<{ file: string }>("voice-preview", { url: v.previewUrl });
+      // ElevenLabs has ready-made previews; Gemini reads one short sentence
+      const r = v.previewUrl
+        ? await runner<{ file: string }>("voice-preview", { url: v.previewUrl })
+        : await runner<{ file: string }>("voice-sample", { narrator: { provider, voice: voiceId }, language: app.config?.channel.contentLanguage ?? "en" });
       sample = convertFileSrc(r.file);
     } catch (e) {
       error = errorText(e);
+    } finally {
+      sampling = false;
     }
   }
 
@@ -67,7 +76,7 @@
   const unlisten = onProgress((p) => {
     if (p.command !== "make-voice") return;
     const s = p.progress;
-    step = s.step === "voice" ? `Reading part ${s.block} of ${s.of}...` : s.step === "joining" ? "Joining the parts..." : s.step === "mixing" ? "Mixing with the music, -14 LUFS..." : step;
+    step = s.step === "voice" ? `Reading part ${s.block} of ${s.of}${s.sentence ? `, sentence ${s.sentence} of ${s.sentences}` : ""}...` : s.step === "sentences" ? "Timing the sentences..." : s.step === "joining" ? "Joining the parts..." : s.step === "mixing" ? "Mixing with the music, -14 LUFS..." : step;
   });
   onDestroy(() => unlisten.then((f) => f()));
 
@@ -110,10 +119,10 @@
 
   {#if !scriptApproved}
     <p class="hint">Approve the script first.</p>
-  {:else if provider !== "elevenlabs"}
-    <p class="hint">The free voice (Gemini) comes in the next test build. For now choose ElevenLabs as Narrator Voice in Settings.</p>
   {:else if !hasKey}
-    <p class="hint">Add your ElevenLabs key in Settings. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use.</p>
+    <p class="hint">
+      {provider === "gemini" ? "The free voice uses a Gemini key. Add it in Settings, at Narrator Voice." : "Add your ElevenLabs key in Settings. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use."}
+    </p>
   {:else}
     <div class="row">
       <label for="voice">Narrator Voice</label>
@@ -122,7 +131,7 @@
           <option value={v.id}>{v.name}{v.accent ? `, ${v.accent}` : ""}{v.gender ? `, ${v.gender}` : ""}</option>
         {/each}
       </select>
-      <button type="button" onclick={playSample} disabled={!voiceId}>Play sample</button>
+      <button type="button" onclick={playSample} disabled={!voiceId || sampling}>{sampling ? "Loading..." : "Play sample"}</button>
     </div>
     {#if sample}<audio controls autoplay src={sample}></audio>{/if}
 

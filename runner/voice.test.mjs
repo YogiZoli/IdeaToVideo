@@ -149,3 +149,69 @@ test("voice samples only from ElevenLabs' own addresses", () => {
   assert.ok(!previewAllowed("https://elevenlabs.io.evil.com/x.mp3"));
   assert.ok(!previewAllowed("file:///C:/Windows/win.ini"));
 });
+
+test("step 3 runs the canon's sentences.mjs on the voice timings", { skip: !fs.existsSync(path.join(here, "..", "app", "src-tauri", "canon", "pipeline", "sentences.mjs")) && "canon bundle not built" }, async () => {
+  const { sentenceTable } = await import("./pipeline.mjs");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-sent-"));
+  fs.mkdirSync(path.join(dir, "audio"));
+  const words = ["Pick", "one", "viewer.", "Record", "today.", "Done!"].map((text, i) => ({ text, start: i * 0.5, end: i * 0.5 + 0.4, type: "word" }));
+  fs.writeFileSync(path.join(dir, "audio", "stt.json"), JSON.stringify({ words }));
+  const r = await sentenceTable(dir, { env: { ...process.env, ITV_DATA_DIR: dir } });
+  assert.equal(r.sentences, 3);
+  const s = JSON.parse(fs.readFileSync(path.join(dir, "sentences.json"), "utf8"));
+  assert.deepEqual(s.map((x) => x.id), ["S1", "S2", "S3"]);
+  assert.equal(s[1].text, "Record today.");
+  assert.ok(fs.existsSync(path.join(dir, "words.json")));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ---- Gemini TTS ----------------------------------------------------------------------
+
+import { splitSentences, parseWav, writeWav, wordsByCharacters, speak as geminiSpeak, listVoices as geminiVoices } from "./providers/tts/gemini.mjs";
+
+test("gemini: sentences split like the canon's sentences.mjs", () => {
+  assert.deepEqual(splitSentences("One idea. Two ideas? Wait... not yet! \"Quoted.\" Tail"), ["One idea.", "Two ideas?", "Wait... not yet!", "\"Quoted.\"", "Tail"]);
+});
+
+test("gemini: WAV round trip keeps format and samples", () => {
+  const pcm = Buffer.alloc(24000 * 2); // 1 s of silence, 24 kHz mono 16-bit
+  const w = parseWav(writeWav({ channels: 1, rate: 24000, bits: 16, pcm }));
+  assert.deepEqual([w.channels, w.rate, w.bits, w.pcm.length], [1, 24000, 16, 48000]);
+  assert.throws(() => parseWav(Buffer.from("not a wav file at all, nope")), /not WAV/);
+});
+
+test("gemini: words spread over the sentence by characters", () => {
+  const w = wordsByCharacters("ab cd", 1, 2);
+  assert.deepEqual(w, [{ text: "ab", start: 1, end: 1.5, type: "word" }, { text: "cd", start: 1.5, end: 2, type: "word" }]);
+});
+
+test("gemini: one call per sentence, exact sentence times, key only in the header", async () => {
+  const oneSec = writeWav({ channels: 1, rate: 24000, bits: 16, pcm: Buffer.alloc(48000) }).toString("base64");
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init, body: JSON.parse(init.body) });
+    return { ok: true, status: 200, json: async () => ({ steps: [{ type: "model_output", content: [{ type: "audio", data: oneSec }] }] }) };
+  };
+  const r = await geminiSpeak({ apiKey: KEY, fetchImpl, voiceId: "Kore", text: "First one. Second one." });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].init.headers["x-goog-api-key"], KEY);
+  assert.ok(!calls[0].url.includes(KEY));
+  assert.equal(calls[0].body.model, "gemini-3.8-flash-tts");
+  assert.deepEqual(calls[0].body.generation_config.speech_config, [{ voice: "Kore" }]);
+  assert.equal(calls[1].body.input[0].content[0].text, "Second one.");
+  assert.equal(r.ext, "wav");
+  const w = parseWav(r.audio);
+  assert.equal(w.pcm.length, 48000 * 2 + Math.round(0.25 * 24000) * 2); // two sentences + one gap
+  assert.equal(r.words[0].start, 0);
+  assert.equal(r.words[1].end, 1);
+  assert.equal(r.words[2].start, 1.25); // second sentence after the gap
+  assert.equal(r.words[3].end, 2.25);
+});
+
+test("gemini: quota and key errors are plain and never show the key", async () => {
+  const mk = (status) => async () => ({ ok: false, status, text: async () => JSON.stringify({ error: { message: `bad ${KEY}` } }) });
+  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: mk(429), text: "x." }), (e) => /free quota/.test(e.message) && !e.message.includes(KEY));
+  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: mk(403), text: "x." }), /rejected the API key/);
+  await assert.rejects(geminiSpeak({ apiKey: "", text: "x." }), /No API key set for Gemini/);
+  assert.equal((await geminiVoices()).length, 30);
+});

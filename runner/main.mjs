@@ -18,7 +18,8 @@ import { writeScript } from "./gates/script/index.mjs";
 import { suggestChannel } from "./gates/channel/index.mjs";
 import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
 import { downloadPreview } from "./providers/tts/elevenlabs.mjs";
-import { makeVoice, musicPath, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
+import { sentenceTable } from "./pipeline.mjs";
+import { makeVoice, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -118,6 +119,9 @@ const commands = {
   // A voice sample, cached in the app's folder so the UI can play it.
   "voice-preview": async ({ url }) => ({ file: await downloadPreview({ url, dir: path.join(dataDir(), "voice-previews") }) }),
 
+  // A voice without a ready-made preview (Gemini): one short sentence, cached.
+  "voice-sample": async ({ narrator, language }) => ({ file: await voiceSample({ narrator, apiKey: key(), language, dir: path.join(dataDir(), "voice-previews") }) }),
+
   // Gate 2: narration + music, one artifact (AUDIO.md).
   "make-voice": async ({ projectDir, narrator, music }) => {
     let project = setGate(loadProject(projectDir), "voice", { state: "running", mode: "recommended" });
@@ -132,9 +136,13 @@ const commands = {
         language: project.language,
         onProgress: (p) => emit({ event: "progress", ...p }),
       });
+      // step 3, the sentence table: a measurement of this audio, no gate
+      emit({ event: "progress", step: "sentences" });
+      const table = await sentenceTable(projectDir);
+      info.sentences = table.sentences;
       project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
-      appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS`);
+      appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS, ${table.sentences} sentences`);
       return { info, gate: project.gates.voice, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "voice", { state: "failed", error: String(e.message).slice(0, 2000) }));

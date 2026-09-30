@@ -36,6 +36,12 @@ export const LANGUAGES: { code: string; label: string; voice: string }[] = [
 
 export const DEFAULT_PRESET = "blue-professional";
 
+// The free Narrator Voice: Gemini TTS with the user's Gemini key (phase 2).
+// "edge-tts" (phase 1 test configs) is treated as Gemini.
+export const GEMINI_DEFAULT_VOICE = "Kore";
+export const GEMINI_VOICES = ["Kore", "Charon", "Puck", "Zephyr", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar", "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"];
+export const narratorProvider = (p: string | undefined) => (p === "edge-tts" || !p ? "gemini" : p);
+
 export function defaultVoice(lang: string | undefined): string {
   return LANGUAGES.find((l) => l.code === lang)?.voice ?? LANGUAGES[0].voice;
 }
@@ -48,7 +54,7 @@ export function defaultConfig(): Config {
     llm: { provider: "gemini", model: "gemini-3.5-flash" },
     brand: { preset: DEFAULT_PRESET, logo: null },
     channel: { audience: "", brandVoice: "", profile: "", youtubeUrl: null, landingUrl: null, ctaText: null, contentLanguage: "en" },
-    narrator: { provider: "edge-tts", voice: defaultVoice("en") },
+    narrator: { provider: "gemini", voice: GEMINI_DEFAULT_VOICE },
     avatar: { enabled: false },
     research: { vidiq: false },
     defaults: { scriptTemplate: "ownership", autopilot: false, targetLengthMin: 8 },

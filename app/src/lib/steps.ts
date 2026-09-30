@@ -3,7 +3,7 @@
 
 import type { Config } from "./api";
 import { runner } from "./api";
-import { DEFAULT_PRESET, LLM_PROVIDERS, defaultVoice } from "./catalog";
+import { DEFAULT_PRESET, LLM_PROVIDERS, GEMINI_DEFAULT_VOICE } from "./catalog";
 
 export type StepId =
   | "ai" | "brand" | "audience" | "brandVoice" | "profile" | "youtube"
@@ -45,9 +45,9 @@ export function skipStep(id: StepId, c: Config): Config {
     case "landing":
       return { ...c, channel: { ...ch, landingUrl: null, ctaText: null } };
     case "language":
-      return { ...c, channel: { ...ch, contentLanguage: "en" }, narrator: { ...c.narrator, voice: c.narrator.provider === "edge-tts" ? defaultVoice("en") : c.narrator.voice } };
+      return { ...c, channel: { ...ch, contentLanguage: "en" } };
     case "narrator":
-      return { ...c, narrator: { provider: "edge-tts", voice: defaultVoice(ch.contentLanguage) } };
+      return { ...c, narrator: { provider: "gemini", voice: GEMINI_DEFAULT_VOICE } };
     case "heygen":
       return { ...c, avatar: { enabled: false } };
     case "vidiq":
@@ -67,7 +67,7 @@ export async function recommendStep(id: StepId, c: Config): Promise<Config> {
     const p = LLM_PROVIDERS.find((x) => x.id === c.llm.provider) ?? LLM_PROVIDERS[0];
     return { ...c, llm: { provider: p.id, model: p.model || c.llm.model } };
   }
-  if (id === "narrator") return { ...c, narrator: { provider: "edge-tts", voice: defaultVoice(c.channel.contentLanguage) } };
+  if (id === "narrator") return { ...c, narrator: { provider: "gemini", voice: GEMINI_DEFAULT_VOICE } };
   return skipStep(id, c);
 }
 
@@ -79,7 +79,7 @@ export function stepReady(id: StepId, c: Config, keys: Record<string, boolean>):
   }
   if (id === "narrator" && c.narrator.provider === "elevenlabs") {
     if (!keys.elevenlabs) return "Save your ElevenLabs key, or skip to use the free voice.";
-    if (!c.narrator.voice?.trim()) return "Type an ElevenLabs voice ID, or skip to use the free voice.";
+    if (!c.narrator.voice?.trim()) return "Type an ElevenLabs voice ID, or skip to use the free voice. You can also pick one later, with samples, at the voice step of a video.";
   }
   return null;
 }
