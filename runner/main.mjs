@@ -19,6 +19,8 @@ import { suggestChannel } from "./gates/channel/index.mjs";
 import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
 import { downloadPreview } from "./providers/tts/elevenlabs.mjs";
 import { sentenceTable } from "./pipeline.mjs";
+import { buildAndCheck } from "./gates/build/index.mjs";
+import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
 
@@ -162,6 +164,27 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
     return { info, gate: project.gates.voice, status: project.status };
+  },
+
+  // Steps 5 and 6: build, timing, lint, check. No gate: 0 errors is the condition.
+  "build-video": async ({ projectDir }) => {
+    appendLog(projectDir, "build: start");
+    try {
+      const r = await buildAndCheck(projectDir, { onProgress: (p) => emit({ event: "progress", ...p }) });
+      appendLog(projectDir, "build: lint and check passed");
+      return r;
+    } catch (e) {
+      appendLog(projectDir, `build: failed, ${e.message}`);
+      throw e;
+    }
+  },
+
+  // Step 8: the render, once, locally.
+  "render-video": async ({ projectDir, quality }) => {
+    appendLog(projectDir, "render: start");
+    const r = await renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) });
+    appendLog(projectDir, `render: done, ${r.file}, ${r.seconds}s video in ${r.renderSeconds}s`);
+    return r;
   },
 
   "approve-gate": async ({ projectDir, gate }) => {

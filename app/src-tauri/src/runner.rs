@@ -33,6 +33,8 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("voice-sample", Some(&["narrator", "provider"])),
     ("music-estimate", None),
     ("make-music", Some(&["music", "provider"])),
+    ("build-video", None),
+    ("render-video", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {
