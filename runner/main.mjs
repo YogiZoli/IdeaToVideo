@@ -23,6 +23,7 @@ import { lintAndCheck } from "./gates/build/index.mjs";
 import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
+import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -164,6 +165,49 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
     return { info, gate: project.gates.voice, status: project.status };
+  },
+
+  // Gate 3: the scene table. The AI plans it from the sentence table and the
+  // library; the user swaps rows (refill-scene) or edits text (save-scenes).
+  "make-scenes": async ({ projectDir, llm }) => {
+    let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "recommended" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `scenes: planning with ${llm.provider}/${llm.model || "default model"}`);
+    try {
+      const r = await makeScenes({
+        llm: { provider: llm.provider, model: llm.model, apiKey: key() },
+        projectDir,
+        language: project.language,
+        onProgress: (p) => emit({ event: "progress", ...p }),
+      });
+      project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
+      saveProject(projectDir, project);
+      appendLog(projectDir, `scenes: done, ${r.scenes} scenes${r.gaps.length ? `, gaps: ${r.gaps.map((g) => `${g.at} ${g.need}`).join("; ")}` : ""}`);
+      return { ...r, ...(await sceneRows(projectDir)), gate: project.gates.scenes, status: project.status };
+    } catch (e) {
+      saveProject(projectDir, setGate(loadProject(projectDir), "scenes", { state: "failed", error: String(e.message).slice(0, 2000) }));
+      appendLog(projectDir, `scenes: failed, ${e.message}`);
+      throw e;
+    }
+  },
+
+  "scene-table": async ({ projectDir }) => sceneRows(projectDir),
+
+  "save-scenes": async ({ projectDir, scenes }) => {
+    const r = await saveScenes({ projectDir, scenes });
+    const project = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "custom" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, "scenes: edited by hand");
+    return { ...r, ...(await sceneRows(projectDir)), gate: project.gates.scenes, status: project.status };
+  },
+
+  "refill-scene": async ({ projectDir, llm, index, component }) => {
+    const project = loadProject(projectDir);
+    await refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language });
+    const next = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "custom" });
+    saveProject(projectDir, next);
+    appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
+    return { ...(await sceneRows(projectDir)), gate: next.gates.scenes, status: next.status };
   },
 
   // Lint and check the project's build/ (0 errors is the condition). The

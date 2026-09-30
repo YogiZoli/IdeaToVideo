@@ -1,11 +1,12 @@
 <script lang="ts">
-  // One project. Phase 1 has gate 1 (script): Recommended (the AI writes it),
-  // Custom (edit by hand, save-script), Approve. Later gates show their state.
+  // One project. Gate 1 (script): Recommended (the AI writes it), Custom (edit
+  // by hand, save-script), Approve. Gates 2 and 3 have their own components.
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import { ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import VoiceGate from "./VoiceGate.svelte";
+  import SceneGate from "./SceneGate.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
@@ -135,7 +136,7 @@
       {#each GATE_LABELS as [id, label]}
         <li class={data.project.gates[id]?.state ?? "todo"}>
           <span>{label}</span>
-          <span class="state">{id === "script" || id === "voice" ? stateLabel(data.project.gates[id]) : "Next version"}</span>
+          <span class="state">{id === "script" || id === "voice" || id === "scenes" ? stateLabel(data.project.gates[id]) : "Next version"}</span>
         </li>
       {/each}
     </ol>
@@ -179,6 +180,7 @@
     </section>
 
     <VoiceGate {app} {dir} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
+    <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
   {/if}
 </div>
 
