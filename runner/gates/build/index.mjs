@@ -1,8 +1,7 @@
 // gates/build: build/ is the project's HyperFrames project (index.html,
-// compositions, audio, gsap.min.js). The app's own assembler writes it from the
-// scene table (next step, after the registry pilot); here are the parts that do
-// not depend on it: preparing the folder, and lint + check (0 errors is the
-// condition, no gate).
+// compositions, audio, gsap.min.js). assemble.mjs writes it from the scene
+// table; here are the parts around it: preparing the folder, and lint + check
+// (0 errors is the condition, no gate).
 
 import fs from "node:fs";
 import path from "node:path";
