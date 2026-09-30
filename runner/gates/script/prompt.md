@@ -39,6 +39,14 @@ OWN (30 to 45 seconds)
 - nextVideo: when the data names the next video, one sentence pointing to it,
   otherwise null.
 
+## Search keyword
+
+When the data has a keyword, it is what viewers type into YouTube search, so
+the video must match it: use it in the title as written (it may be extended,
+never changed), and say it naturally once in the OPEN and at most once or twice
+more where it fits. Never stuff it and never bend a sentence around it. When
+the data has no keyword, ignore this.
+
 ## Spoken text rules (every narration field)
 
 - Only commas and periods. No colons, semicolons, dashes, brackets, quotation

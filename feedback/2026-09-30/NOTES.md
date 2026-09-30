@@ -16,3 +16,11 @@ Projekt: `2026-09-30_from-idea-to-video`, telepítő 20:17. Képek: 1-10.png.
 | + | A hang -15,8 LUFS lett a -14 helyett | az egylépéses loudnorm alul lő beszédnél | kész, `7fefbed` (-14,7) |
 | + | ElevenLabs listában csak a premade hangok, a saját klón nem | a régi /v1/voices végpont | kész: /v2/voices, a saját hangok elöl, mintahallgatással |
 | + | A saját HeyGen avatar és lookjai listából | | kész: saját karakterek a lookjaikkal, "Open HeyGen"; élesben ellenőrizendő (DECISIONS 63) |
+
+## Második kör, telepítő 22:05 (képek: 11-13.png)
+
+| # | Mit láttunk | Ok | Állapot |
+|---|---|---|---|
+| 10 | A Settingsben elmentett ElevenLabs kulcsot a projekt "nem látja", a 2. kapu nem enged tovább | a projekt nézet az induláskori kulcsállapotot használta | kész: a kulcsállapot frissül a Projects oldalra lépéskor és projekt megnyitásakor. Addig: az app újraindítása segít |
+| 11 | A Test gomb csak mentés után működik, akkor meg minek | a Save már magától tesztelt, ez nem látszott | kész: "Save and test", a mentett kulcsnál "Test again" (ingyenes, megnézi, él-e még a kulcs és megvannak-e a jogai) |
+| 12 | A vidIQ csinál-e valamit a script írásakor | a kulcsszó bekerült a script adataiba, de a prompt nem mondta meg, mit kezdjen vele | kész: a kulcsszó a címbe kerül, és természetesen elhangzik a nyitásban, legfeljebb még 1-2-szer |

@@ -97,9 +97,9 @@
       placeholder={isSet ? "Paste a new key to replace the saved one" : "Paste your key"}
       bind:value
     />
-    <button type="button" class="primary" disabled={busy || !value.trim()} onclick={save}>Save</button>
-    {#if test}
-      <button type="button" disabled={busy || !isSet} onclick={runTest}>Test key</button>
+    <button type="button" class="primary" disabled={busy || !value.trim()} onclick={save}>{test ? "Save and test" : "Save"}</button>
+    {#if test && isSet}
+      <button type="button" disabled={busy} onclick={runTest} title="Checks that the saved key still works and has the permissions the app needs. Costs nothing.">Test again</button>
     {/if}
     {#if isSet}
       <button type="button" class="ghost" disabled={busy} onclick={remove}>Remove</button>

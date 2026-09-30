@@ -1,6 +1,6 @@
 <script lang="ts">
   // App shell: first run shows onboarding, afterwards Projects / Settings.
-  import { appState, errorText, type AppState, type Config } from "$lib/api";
+  import { appState, keyStatus, errorText, type AppState, type Config } from "$lib/api";
   import { defaultConfig } from "$lib/catalog";
   import Onboarding from "$lib/Onboarding.svelte";
   import Projects from "$lib/Projects.svelte";
@@ -32,6 +32,26 @@
     app = s;
     keys = { ...s.keys };
   }
+
+  // Keys saved or removed in Settings count at once everywhere else (they
+  // live in the system keychain, not in the settings file).
+  async function refreshKeys() {
+    if (!app) return;
+    try {
+      app = { ...app, keys: await keyStatus() };
+    } catch {
+      // keep the last known state
+    }
+  }
+  async function show(v: "projects" | "settings") {
+    view = v;
+    projectDir = null;
+    await refreshKeys();
+  }
+  async function openProject(d: string) {
+    await refreshKeys();
+    projectDir = d;
+  }
 </script>
 
 {#if fatal}
@@ -47,8 +67,8 @@
   <main>
     <nav class="brandbar">
       <span class="name"><img src="/icon.png" alt="" />IdeaToVideo</span>
-      <button type="button" class:active={view === "projects"} onclick={() => { view = "projects"; projectDir = null; }}>Projects</button>
-      <button type="button" class:active={view === "settings"} onclick={() => { view = "settings"; projectDir = null; }}>Settings</button>
+      <button type="button" class:active={view === "projects"} onclick={() => show("projects")}>Projects</button>
+      <button type="button" class:active={view === "settings"} onclick={() => show("settings")}>Settings</button>
     </nav>
     {#if view === "settings"}
       <Settings {app} saved={updated} />
@@ -57,7 +77,7 @@
         <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} />
       {/key}
     {:else}
-      <Projects {app} openProject={(d) => (projectDir = d)} />
+      <Projects {app} {openProject} />
     {/if}
   </main>
 {/if}
