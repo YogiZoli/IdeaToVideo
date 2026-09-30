@@ -44,6 +44,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("avatar-plan", Some(&["service"])),
     ("make-avatar", Some(&["service"])),
     ("remove-avatar", None),
+    ("avatar-layout", None),
     ("build-video", None),
     ("check-video", None),
     ("render-video", None),

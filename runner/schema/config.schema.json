@@ -54,7 +54,13 @@
     "avatar": {
       "type": "object",
       "additionalProperties": false,
-      "properties": { "enabled": { "type": "boolean" }, "lookId": { "type": ["string", "null"], "maxLength": 200 } }
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "lookId": { "type": ["string", "null"], "maxLength": 200 },
+        "style": { "enum": ["cutout", "circle", "card", "full"] },
+        "position": { "enum": ["bottom-right", "bottom-left", "top-right", "top-left"] },
+        "size": { "enum": ["small", "medium", "large"] }
+      }
     },
     "research": {
       "type": "object",

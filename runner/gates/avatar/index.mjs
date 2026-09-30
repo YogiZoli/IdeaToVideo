@@ -16,6 +16,23 @@ import * as heygen from "../../providers/avatar/heygen.mjs";
 
 export const SEGMENTS = { open: { label: "Opening", scene: "first" }, close: { label: "Closing", scene: "last" } };
 
+// Where and how the avatar sits (Zoltan, 2026-10-01): a default in Settings,
+// changeable per video. cutout = transparent background (HeyGen WebM), the
+// person only; circle and card crop the face out of a normal clip, so they
+// need no background removal and nothing is stretched; full = the whole frame.
+export const STYLES = ["cutout", "circle", "card", "full"];
+export const POSITIONS = ["bottom-right", "bottom-left", "top-right", "top-left"];
+export const SIZES = ["small", "medium", "large"];
+export const DEFAULT_LAYOUT = { style: "cutout", position: "bottom-right", size: "medium" };
+
+export function normalizeLayout(l = {}) {
+  return {
+    style: STYLES.includes(l?.style) ? l.style : DEFAULT_LAYOUT.style,
+    position: POSITIONS.includes(l?.position) ? l.position : DEFAULT_LAYOUT.position,
+    size: SIZES.includes(l?.size) ? l.size : DEFAULT_LAYOUT.size,
+  };
+}
+
 const r3 = (x) => Math.round(x * 1000) / 1000;
 const read = (projectDir, f) => JSON.parse(fs.readFileSync(path.join(projectDir, f), "utf8"));
 export const avatarDir = (projectDir) => path.join(projectDir, "avatar");
@@ -63,7 +80,10 @@ export async function cutNarration(projectDir, { start, duration: seconds }, out
 const voBytes = (projectDir) => fs.statSync(path.join(projectDir, "audio", "vo.mp3")).size;
 
 // Gate 5: make the clips. `which` = ["open", "close"] or one of them.
-export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", "close"], look, env = process.env, fetchImpl = fetch, sleep, onProgress = () => {} }) {
+export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", "close"], look, layout: wanted, env = process.env, fetchImpl = fetch, sleep, onProgress = () => {} }) {
+  const layout = normalizeLayout(wanted);
+  let format = layout.style === "cutout" ? "webm" : "mp4";
+  let note = null;
   if (!lookId) throw new Error("Choose an avatar first.");
   const plan = await avatarPlan(projectDir, { env });
   const chosen = plan.segments.filter((s) => which.includes(s.name));
@@ -75,16 +95,40 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
     onProgress({ step: "upload", segment: seg.label, n: i + 1, of: chosen.length });
     const audio = await cutNarration(projectDir, seg, path.join(dir, `${seg.name}.mp3`), { env });
     const assetId = await heygen.uploadAudio({ apiKey, file: audio, fetchImpl });
-    const id = await heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title: `IdeaToVideo ${path.basename(projectDir)} ${seg.name}`, fetchImpl });
-    jobs.push({ seg, id });
+    const title = `IdeaToVideo ${path.basename(projectDir)} ${seg.name}`;
+    let id;
+    try {
+      id = await heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", fetchImpl });
+    } catch (e) {
+      // an older look without background removal: a card instead, said plainly
+      if (format !== "webm" || !heygen.noMatting(e)) throw e;
+      format = "mp4";
+      layout.style = "card";
+      note = "This look has no background removal at HeyGen, so it is shown as a card instead of a cut-out.";
+      id = await heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, fetchImpl });
+    }
+    jobs.push({ seg, id, format });
   }
   const done = [];
-  for (const [i, { seg, id }] of jobs.entries()) {
-    const out = path.join(dir, `${seg.name}.mp4`);
+  for (const f of fs.readdirSync(dir)) if (/^(open|close)\.(mp4|webm)$/.test(f)) fs.rmSync(path.join(dir, f), { force: true });
+  for (const [i, { seg, id, format: fmt }] of jobs.entries()) {
+    const out = path.join(dir, `${seg.name}.${fmt}`);
     await heygen.waitAndDownload({ apiKey, id, out, fetchImpl, ...(sleep ? { sleep } : {}), onStatus: (status) => onProgress({ step: "heygen", segment: seg.label, status, n: i + 1, of: jobs.length }) });
-    done.push({ name: seg.name, label: seg.label, start: seg.start, duration: seg.duration, file: `avatar/${seg.name}.mp4`, videoId: id });
+    done.push({ name: seg.name, label: seg.label, start: seg.start, duration: seg.duration, file: `avatar/${seg.name}.${fmt}`, videoId: id });
   }
-  const record = { lookId, background, voBytes: voBytes(projectDir), segments: done, at: new Date().toISOString() };
+  const record = { lookId, background, format, layout, note, voBytes: voBytes(projectDir), segments: done, at: new Date().toISOString() };
+  fs.writeFileSync(avatarJson(projectDir), JSON.stringify(record, null, 2) + "\n");
+  return record;
+}
+
+// A new place or size, or another style, for the clips already made: no new
+// HeyGen video, no cost. Only a cut-out needs clips with transparency.
+export function setLayout(projectDir, wanted) {
+  const a = currentAvatar(projectDir);
+  if (!a) throw new Error("There are no avatar clips yet.");
+  const layout = normalizeLayout(wanted);
+  if (layout.style === "cutout" && a.format !== "webm") throw new Error("A cut-out needs clips with a transparent background. Make the clips again with Cut-out chosen.");
+  const record = { ...a, layout };
   fs.writeFileSync(avatarJson(projectDir), JSON.stringify(record, null, 2) + "\n");
   return record;
 }
@@ -99,5 +143,5 @@ export function avatarClips(projectDir) {
   if (!a?.segments?.length) return [];
   if (a.voBytes !== voBytes(projectDir)) throw new Error("The avatar clips were made for an earlier voice. Make them again at 5. Avatar, or remove them there.");
   for (const s of a.segments) if (!fs.existsSync(path.join(projectDir, s.file))) throw new Error(`The avatar clip ${s.file} is missing. Make it again at 5. Avatar.`);
-  return a.segments;
+  return a.segments.map((s) => ({ ...s, layout: normalizeLayout(a.layout ?? { style: "full" }) }));
 }

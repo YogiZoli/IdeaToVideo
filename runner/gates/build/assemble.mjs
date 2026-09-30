@@ -256,10 +256,42 @@ export function themeCss(theme = {}, base = DEFAULT_THEME) {
 const attr = (s) => String(s).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/</g, "&lt;");
 const text = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
-// An avatar clip (gate 5) over its scene: full frame, muted (the narration
-// already plays from vo_bgm.mp3), above the scenes.
-export const avatarVideo = (a) =>
-  `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:5"></video>`;
+// An avatar clip (gate 5) over its scene, muted (the narration already plays
+// from vo_bgm.mp3), above the scenes, placed by its layout (avatar/index.mjs):
+//   full     the whole frame
+//   cutout   the person on a transparent background (WebM alpha), standing on
+//            the bottom edge (or hanging from the top), a 3:4 box
+//   circle   the face in a circle, a thin theme-color ring
+//   card     a 4:5 card with rounded corners and a soft shadow
+// Boxes are sized from the frame height; the clip always keeps its own
+// proportions (object-fit: cover crops, it never stretches).
+const AVATAR_BOX = {
+  cutout: { ratio: 3 / 4, h: { small: 0.42, medium: 0.56, large: 0.7 }, edge: 0 },
+  circle: { ratio: 1, h: { small: 0.24, medium: 0.32, large: 0.42 }, edge: 0.04 },
+  card: { ratio: 4 / 5, h: { small: 0.34, medium: 0.44, large: 0.56 }, edge: 0.04 },
+};
+
+export function avatarStyle(layout = {}, width = 1920, height = 1080) {
+  const style = layout.style ?? "full";
+  if (style === "full" || !AVATAR_BOX[style]) return "position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:5";
+  const box = AVATAR_BOX[style];
+  const h = Math.round(height * (box.h[layout.size] ?? box.h.medium));
+  const w = Math.round(h * box.ratio);
+  const side = Math.round(width * 0.03);
+  const edge = Math.round(height * box.edge);
+  const [v, hz] = String(layout.position ?? "bottom-right").split("-");
+  const place = `${v === "top" ? "top" : "bottom"}:${edge}px;${hz === "left" ? "left" : "right"}:${side}px`;
+  const shape =
+    style === "circle"
+      ? "border-radius:50%;object-position:50% 30%;box-shadow:0 0 0 6px var(--itv-brand),0 12px 40px rgba(0,0,0,0.25)"
+      : style === "card"
+        ? "border-radius:24px;object-position:50% 25%;box-shadow:0 16px 48px rgba(0,0,0,0.28)"
+        : "object-position:50% 100%";
+  return `position:absolute;${place};width:${w}px;height:${h}px;object-fit:cover;${shape};z-index:5`;
+}
+
+export const avatarVideo = (a, width = 1920, height = 1080) =>
+  `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="${avatarStyle(a.layout, width, height)}"></video>`;
 
 export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video" }) {
   const hosts = mounts
@@ -304,7 +336,7 @@ ${themeCss(theme, baseTheme(look))
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
     <div id="main-bg" class="clip" data-start="0" data-duration="${total}" data-track-index="0"></div>
 ${hosts}
-${avatars.map(avatarVideo).join("\n")}
+${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
     </div>
     <script>

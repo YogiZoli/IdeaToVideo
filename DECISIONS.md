@@ -260,3 +260,13 @@
     `vidiq_keyword_research` "research" módban a projekt címére; a kiválasztott
     kulcsszó a script adataiba kerül. Élesben Zoltan kulcsával kell kipróbálni
     (a Claude-munkamenetben a vidIQ OAuth-tal működött, 4100 kredittel).
+65. **Avatar elhelyezése** (Zoltan, 2026-10-01). Forma: kivágott (átlátszó háttér,
+    HeyGen `output_format: "webm"`, a HeyGen saját maszkolásával, nem
+    színkulccsal), kör, kártya vagy teljes kép; hely: a négy sarok; méret:
+    kicsi, közepes, nagy. Alap: kivágott, jobb lent, közepes. A Settingsben az
+    alap, az 5. kapuban videónként felülírható, kis előnézettel. A HeyGen
+    `aspect_ratio: "auto"`-val kapja a klipet, az app csak méretez és vág, soha
+    nem nyújt. Háttér-leválasztás nélküli régi looknál az app magától kártyára
+    vált, és kiírja. Hely, méret és forma HeyGen-költség nélkül váltható, csak
+    a kivágotthoz kell átlátszó klip. Mért: a render megtartja a WebM alfa
+    csatornáját (próba 2026-10-01).

@@ -129,24 +129,27 @@ export async function uploadAudio({ apiKey, file, fetchImpl }) {
   return d.asset_id;
 }
 
-export async function createVideo({ apiKey, avatarId, audioAssetId, background, title, fetchImpl }) {
-  const d = await call(apiKey, "/v3/videos", {
-    method: "POST",
-    fetchImpl,
-    body: {
-      type: "avatar",
-      avatar_id: avatarId,
-      audio_asset_id: audioAssetId,
-      background: { type: "color", value: background },
-      aspect_ratio: "16:9",
-      resolution: "1080p",
-      fit: "cover",
-      title,
-    },
-  });
+// format "webm": HeyGen removes the background itself (its own matting, not a
+// color key, so no dirty edges) and returns real alpha; it then refuses any
+// background value. aspect_ratio "auto" keeps the look's own proportions, so
+// nothing is ever stretched; the app only scales and crops. Full screen keeps
+// a 16:9 frame filled on the theme color.
+export async function createVideo({ apiKey, avatarId, audioAssetId, background, title, format = "mp4", full = false, fetchImpl }) {
+  const body = {
+    type: "avatar",
+    avatar_id: avatarId,
+    audio_asset_id: audioAssetId,
+    resolution: "1080p",
+    title,
+    ...(format === "webm" ? { output_format: "webm", aspect_ratio: "auto" } : full ? { background: { type: "color", value: background }, aspect_ratio: "16:9", fit: "cover" } : { aspect_ratio: "auto" }),
+  };
+  const d = await call(apiKey, "/v3/videos", { method: "POST", fetchImpl, body });
   if (!d?.video_id) throw new Error("HeyGen did not return a video id.");
   return d.video_id;
 }
+
+// The refusal HeyGen gives for a look trained without matting.
+export const noMatting = (e) => /webm|matting/i.test(String(e?.message ?? e));
 
 export async function getVideo({ apiKey, id, fetchImpl }) {
   return call(apiKey, `/v3/videos/${encodeURIComponent(id)}`, { fetchImpl });

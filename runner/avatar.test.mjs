@@ -47,11 +47,26 @@ test("errors are plain words, and the key never shows", async () => {
   assert.match(heygen.friendly(429, JSON.stringify({ error: { code: "quota_exceeded", message: "phone verification needed" } })), /phone verification needed \(quota_exceeded\)/);
 });
 
-test("the video request: our own audio, the theme's color, 16:9 1080p", async () => {
+test("the video request per style: full on the theme color, cut-out as WebM, never stretched", async () => {
   const f = fakeFetch([["/v3/videos", json(200, { data: { video_id: "v1", status: "waiting" } })]]);
-  assert.equal(await heygen.createVideo({ apiKey: KEY, avatarId: "look1", audioAssetId: "ast1", background: "#fdfae7", title: "t", fetchImpl: f }), "v1");
-  const body = JSON.parse(f.calls[0].body);
-  assert.deepEqual(body, { type: "avatar", avatar_id: "look1", audio_asset_id: "ast1", background: { type: "color", value: "#fdfae7" }, aspect_ratio: "16:9", resolution: "1080p", fit: "cover", title: "t" });
+  await heygen.createVideo({ apiKey: KEY, avatarId: "look1", audioAssetId: "ast1", background: "#fdfae7", title: "t", full: true, fetchImpl: f });
+  await heygen.createVideo({ apiKey: KEY, avatarId: "look1", audioAssetId: "ast1", background: "#fdfae7", title: "t", format: "webm", fetchImpl: f });
+  await heygen.createVideo({ apiKey: KEY, avatarId: "look1", audioAssetId: "ast1", background: "#fdfae7", title: "t", fetchImpl: f });
+  const [full, cutout, card] = f.calls.map((c) => JSON.parse(c.body));
+  assert.deepEqual(full, { type: "avatar", avatar_id: "look1", audio_asset_id: "ast1", resolution: "1080p", title: "t", background: { type: "color", value: "#fdfae7" }, aspect_ratio: "16:9", fit: "cover" });
+  assert.deepEqual(cutout, { type: "avatar", avatar_id: "look1", audio_asset_id: "ast1", resolution: "1080p", title: "t", output_format: "webm", aspect_ratio: "auto" });
+  assert.equal(cutout.background, undefined, "WebM refuses a background");
+  assert.deepEqual(card, { type: "avatar", avatar_id: "look1", audio_asset_id: "ast1", resolution: "1080p", title: "t", aspect_ratio: "auto" });
+  assert.equal(heygen.noMatting(new Error("This video avatar does not support webm output. The avatar must be trained with matting enabled.")), true);
+});
+
+test("placement: boxes from the frame height, in the chosen corner, never stretched", async () => {
+  const { avatarStyle } = await import("./gates/build/assemble.mjs");
+  assert.match(avatarStyle({ style: "full" }), /width:100%;height:100%;object-fit:cover/);
+  const cut = avatarStyle({ style: "cutout", position: "bottom-right", size: "medium" }, 1920, 1080);
+  assert.match(cut, /bottom:0px;right:58px;width:454px;height:605px;object-fit:cover/);
+  assert.match(avatarStyle({ style: "circle", position: "top-left", size: "small" }, 1920, 1080), /top:43px;left:58px;width:259px;height:259px;.*border-radius:50%/);
+  assert.match(avatarStyle({ style: "card", position: "bottom-left", size: "large" }, 1920, 1080), /bottom:43px;left:58px;width:484px;height:605px;.*border-radius:24px/);
 });
 
 test("wait: polls until completed, then downloads; a failure says why", async () => {
@@ -77,6 +92,17 @@ test("previews only from HeyGen's own hosts", () => {
   assert.equal(heygen.isHeygenUrl("http://files.heygen.ai/a.jpg"), false);
 });
 
+test("layout: a new place or size for the clips already made; a cut-out only from transparent clips", async () => {
+  const { setLayout, normalizeLayout, DEFAULT_LAYOUT } = await import("./gates/avatar/index.mjs");
+  assert.deepEqual(normalizeLayout({ style: "nope", size: "large" }), { ...DEFAULT_LAYOUT, size: "large" });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-lay-"));
+  fs.mkdirSync(path.join(dir, "avatar"));
+  fs.writeFileSync(path.join(dir, "avatar", "avatar.json"), JSON.stringify({ format: "mp4", layout: { style: "card" }, segments: [] }));
+  assert.equal(setLayout(dir, { style: "circle", position: "top-left", size: "small" }).layout.position, "top-left");
+  assert.throws(() => setLayout(dir, { style: "cutout" }), /transparent background/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test("clips made for an earlier voice are refused, not silently misplaced", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-av-"));
   fs.mkdirSync(path.join(dir, "audio"));
@@ -86,6 +112,7 @@ test("clips made for an earlier voice are refused, not silently misplaced", () =
   fs.writeFileSync(path.join(dir, "avatar", "open.mp4"), "clip");
   fs.writeFileSync(path.join(dir, "avatar", "avatar.json"), JSON.stringify({ lookId: "x", voBytes: 9, segments: [{ name: "open", start: 0, duration: 3, file: "avatar/open.mp4" }] }));
   assert.equal(avatarClips(dir).length, 1);
+  assert.equal(avatarClips(dir)[0].layout.style, "full", "clips made before layouts existed stay full screen");
   fs.writeFileSync(path.join(dir, "audio", "vo.mp3"), "a longer voice two");
   assert.throws(() => avatarClips(dir), /earlier voice/);
   removeAvatar(dir);

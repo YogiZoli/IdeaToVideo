@@ -8,6 +8,7 @@
   import KeyField from "./KeyField.svelte";
   import VoicePicker from "./VoicePicker.svelte";
   import AvatarPicker from "./AvatarPicker.svelte";
+  import LayoutPicker from "./LayoutPicker.svelte";
 
   let {
     id,
@@ -147,7 +148,11 @@
 {:else if id === "heygen"}
   <KeyField name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
   <label class="radio"><input type="checkbox" bind:checked={config.avatar!.enabled} disabled={!keys.heygen} /> Add an avatar to my videos</label>
-  {#if config.avatar?.enabled}<AvatarPicker bind:lookId={config.avatar!.lookId} keySet={!!keys.heygen} />{/if}
+  {#if config.avatar?.enabled}
+    <AvatarPicker bind:lookId={config.avatar!.lookId} keySet={!!keys.heygen} />
+    <LayoutPicker bind:style={config.avatar!.style} bind:position={config.avatar!.position} bind:size={config.avatar!.size} />
+    <p class="hint">The default for new videos. You can change it for each video at 5. Avatar.</p>
+  {/if}
 {:else if id === "vidiq"}
   <KeyField name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
   <label class="radio"><input type="checkbox" bind:checked={config.research!.vidiq} disabled={!keys.vidiq} /> Use vidIQ keyword data when available</label>

@@ -24,7 +24,7 @@ import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, setMusic, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import * as heygen from "./providers/avatar/heygen.mjs";
 import { keywordIdeas } from "./providers/research/vidiq.mjs";
-import { avatarPlan, makeAvatar, removeAvatar } from "./gates/avatar/index.mjs";
+import { avatarPlan, makeAvatar, removeAvatar, setLayout } from "./gates/avatar/index.mjs";
 import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
@@ -343,14 +343,14 @@ const commands = {
     return { ...plan, estimate: heygen.estimateUsd(seconds), account };
   },
 
-  "make-avatar": async ({ projectDir, lookId, which, look }) => {
+  "make-avatar": async ({ projectDir, lookId, which, look, layout }) => {
     let project = setGate(loadProject(projectDir), "avatar", { state: "running", mode: "custom" });
     saveProject(projectDir, project);
     appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}`);
     try {
       const plan = await avatarPlan(projectDir);
       const seconds = plan.segments.filter((s) => (which ?? []).includes(s.name)).reduce((n, s) => n + s.duration, 0);
-      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
+      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, layout, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = loadProject(projectDir);
       if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
       project = setGate(project, "avatar", { state: "pending", mode: "custom" });
@@ -362,6 +362,16 @@ const commands = {
       appendLog(projectDir, `avatar: failed, ${e.message}`);
       throw e;
     }
+  },
+
+  // A new place, size or style for the clips already made (no HeyGen cost).
+  "avatar-layout": async ({ projectDir, layout }) => {
+    const avatar = setLayout(projectDir, layout);
+    let project = loadProject(projectDir);
+    if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `avatar: layout ${avatar.layout.style}, ${avatar.layout.position}, ${avatar.layout.size}`);
+    return { avatar };
   },
 
   "remove-avatar": async ({ projectDir }) => {

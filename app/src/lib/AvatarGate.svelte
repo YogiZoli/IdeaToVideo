@@ -9,6 +9,8 @@
   import { openUrl } from "@tauri-apps/plugin-opener";
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
+  import LayoutPicker from "./LayoutPicker.svelte";
+  import type { AvatarLayout } from "./api";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { onDestroy } from "svelte";
@@ -16,7 +18,7 @@
   type Look = { id: string; name: string; type: string; gender: string | null; image: string | null; video: string | null };
   type Group = { id: string; name: string; image: string | null; status: string; note: string | null; looks: Look[] };
   type Segment = { name: string; label: string; start: number; duration: number; file?: string };
-  type Plan = { segments: Segment[]; current: { lookId: string; segments: Segment[] } | null; estimate: { low: number; high: number }; account: { kind?: string; remaining?: number | null; currency?: string | null; error?: string } | null };
+  type Plan = { segments: Segment[]; current: { lookId: string; format?: string; layout?: AvatarLayout; note?: string | null; segments: Segment[] } | null; estimate: { low: number; high: number }; account: { kind?: string; remaining?: number | null; currency?: string | null; error?: string } | null };
 
   let { app, dir, gate, scenesApproved, look = "blue-professional", changed }: { app: AppState; dir: string; gate?: Gate; scenesApproved: boolean; look?: string; changed: () => Promise<void> } = $props();
 
@@ -31,9 +33,12 @@
   let step = $state("");
   let error = $state("");
   let preview = $state<string | null>(null);
+  // per video; starts from the clips already made, else the Settings default
+  let layout = $state<Partial<AvatarLayout>>({});
   let stamp = $state(Date.now());
 
   const current = $derived(plan?.current ?? null);
+  const layoutChanged = $derived(!!current?.layout && (layout.style !== current.layout.style || layout.position !== current.layout.position || layout.size !== current.layout.size));
   const seconds = $derived((plan?.segments ?? []).filter((s) => which.includes(s.name)).reduce((n, s) => n + s.duration, 0));
   const scale = $derived(plan && plan.segments.length ? seconds / plan.segments.reduce((n, s) => n + s.duration, 0) : 1);
 
@@ -49,6 +54,8 @@
       ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen" }));
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
       lookId = plan.current?.lookId ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
+      const a = app.config?.avatar;
+      layout = { ...(plan.current?.layout ?? { style: a?.style ?? "cutout", position: a?.position ?? "bottom-right", size: a?.size ?? "medium" }) };
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -82,7 +89,7 @@
     error = "";
     step = "Starting...";
     try {
-      await runner("make-avatar", { projectDir: dir, service: "heygen", lookId, which, look });
+      await runner("make-avatar", { projectDir: dir, service: "heygen", lookId, which, look, layout: { ...layout } });
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
       stamp = Date.now();
       await changed();
@@ -92,6 +99,21 @@
     } finally {
       busy = false;
       step = "";
+    }
+  }
+
+  // a new place, size or style for the clips already made: no HeyGen cost
+  async function applyLayout() {
+    busy = true;
+    error = "";
+    try {
+      await runner("avatar-layout", { projectDir: dir, layout: { ...layout } });
+      plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
+      await changed();
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      busy = false;
     }
   }
 
@@ -184,6 +206,8 @@
     {/if}
 
     {#if plan}
+      <LayoutPicker bind:style={layout.style} bind:position={layout.position} bind:size={layout.size} disabled={busy} cutoutNote={current && current.format !== "webm" ? "The clips you have now are not transparent: a cut-out needs new clips." : ""} />
+      {#if current?.note}<p class="hint">{current.note}</p>{/if}
       <div class="row">
         {#each plan.segments as s}
           <label class="choice"><input type="checkbox" bind:group={which} value={s.name} disabled={busy} /> {s.label}: {s.duration.toFixed(1)} s</label>
@@ -192,6 +216,7 @@
       <p class="hint">Estimate for {Math.round(seconds)} s: about ${(plan.estimate.low * scale).toFixed(2)} to ${(plan.estimate.high * scale).toFixed(2)}, depending on the avatar. {money(plan.account)}</p>
       <div class="actions">
         {#if current}<button type="button" class="ghost" disabled={busy} onclick={remove}>Remove the avatar</button>{/if}
+        {#if layoutChanged}<button type="button" disabled={busy} onclick={applyLayout}>Use this place and size (no new clips)</button>{/if}
         <button type="button" class="primary" disabled={busy || !lookId || !which.length} onclick={make}>{current ? "Make the clips again" : "Make the avatar clips"}</button>
       </div>
     {/if}

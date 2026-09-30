@@ -20,11 +20,16 @@ export type Config = {
     contentLanguage?: string;
   };
   narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
-  avatar?: { enabled: boolean; lookId?: string | null };
+  avatar?: { enabled: boolean; lookId?: string | null; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
   projectsDir?: string | null;
 };
+
+export type AvatarStyle = "cutout" | "circle" | "card" | "full";
+export type AvatarPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+export type AvatarSize = "small" | "medium" | "large";
+export type AvatarLayout = { style: AvatarStyle; position: AvatarPosition; size: AvatarSize };
 
 export type AppState = {
   config: Config | null;
