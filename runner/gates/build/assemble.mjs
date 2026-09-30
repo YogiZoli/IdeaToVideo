@@ -2,7 +2,8 @@
 // the project's build/ from the approved scene table and the sentence table:
 //
 //   build/index.html                              the root composition
-//   build/compositions/scenes/scene-<n>.html      each scene's component, fitted
+//   build/compositions/components/scene-<n>-<name>.html   each scene's component, fitted
+//     (lint treats compositions/components/ as mounted components: no own size)
 //   build/vo_bgm.mp3, build/gsap.min.js           from prepareBuild
 //
 // In: scenes.json
@@ -283,9 +284,9 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const fitted = scenes.map((sc, n) => fitDuration(components.get(sc.component).html, sc.component, times[n].duration));
 
   const { out } = prepareBuild(projectDir, { env });
-  fs.mkdirSync(path.join(out, "compositions", "scenes"), { recursive: true });
+  fs.mkdirSync(path.join(out, "compositions", "components"), { recursive: true });
   const mounts = scenes.map((sc, n) => {
-    const src = `compositions/scenes/scene-${n + 1}.html`;
+    const src = `compositions/components/scene-${n + 1}-${sc.component}.html`;
     fs.writeFileSync(path.join(out, src), fitted[n]);
     return { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
   });

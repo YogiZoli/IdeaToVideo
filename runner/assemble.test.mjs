@@ -104,13 +104,13 @@ test("assemble writes the root composition and the components it uses", async ()
   assert.deepEqual({ scenes: r.scenes, seconds: r.seconds }, { scenes: 2, seconds: 7 });
   const html = fs.readFileSync(path.join(r.out, "index.html"), "utf8");
   assert.match(html, /data-composition-id="main" data-start="0" data-duration="7"/);
-  assert.match(html, /id="scene-1" class="clip" data-composition-id="count-up" data-composition-src="compositions\/scenes\/scene-1.html" data-start="0" data-duration="4.3"/);
+  assert.match(html, /id="scene-1" class="clip" data-composition-id="count-up" data-composition-src="compositions\/components\/scene-1-count-up.html" data-start="0" data-duration="4.3"/);
   assert.match(html, /id="scene-2"[^>]*data-start="4.3" data-duration="2.7"[^>]*data-variable-values='\{"end":3\}'/);
   assert.match(html, /--itv-bg: #101010;/);
   assert.match(html, /<title>A &lt;b> test<\/title>/);
   assert.match(html, /<audio id="main-audio" src="vo_bgm.mp3"/);
-  assert.match(fs.readFileSync(path.join(r.out, "compositions", "scenes", "scene-1.html"), "utf8"), /id="root" data-duration="4.3"/);
-  assert.match(fs.readFileSync(path.join(r.out, "compositions", "scenes", "scene-2.html"), "utf8"), /id="root" data-duration="2.7"/);
+  assert.match(fs.readFileSync(path.join(r.out, "compositions", "components", "scene-1-count-up.html"), "utf8"), /id="root" data-duration="4.3"/);
+  assert.match(fs.readFileSync(path.join(r.out, "compositions", "components", "scene-2-count-up.html"), "utf8"), /id="root" data-duration="2.7"/);
   assert.equal(fs.readFileSync(path.join(r.out, "gsap.min.js"), "utf8"), "gsap");
   fs.rmSync(dir, { recursive: true, force: true });
 });
