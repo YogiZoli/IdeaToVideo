@@ -34,6 +34,11 @@ HeyGen kulcsával, ha a kreditje engedi.
 8. ffmpeg Macen (Claude döntése, Zoltan kérésére): `eugeneware/ffmpeg-static`
    rögzített GitHub kiadás, SHA256-tal. A CI Mac futása ellenőrzi a szükséges
    kódolókat és szűrőket.
+10. A videó kinézete: **C** (Zoltan, 2026-09-30). A 39 archetípus marad, a preset
+    minden atomját viseli (színek, betűk, sarkok, kártya, árnyék, keret, címke,
+    kiemelő vonal, haladásjelző, háttér). A mozgás a kánon MOTION szabályai
+    szerint. Javaslat alatt: opcionális Mozgás varázsló (lásd "Zoltan döntésére
+    vár").
 9. A Brand varázsló külön az onboardingtól: az onboarding után az app
    használható, a varázsló opcionális ("Set your own design"). Kevés, összevont
    képernyő, mindegyiken kiírva, hogy Skip vagy Default is jó, és később

@@ -19,7 +19,8 @@ import { suggestChannel } from "./gates/channel/index.mjs";
 import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
 import { downloadPreview } from "./providers/tts/elevenlabs.mjs";
 import { sentenceTable } from "./pipeline.mjs";
-import { makeVoice, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
+import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
+import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -149,6 +150,18 @@ const commands = {
       appendLog(projectDir, `voice: failed, ${e.message}`);
       throw e;
     }
+  },
+
+  // Gate 2, music made for this video. The key is the ElevenLabs one.
+  "music-estimate": async ({ seconds }) => ({ usd: costEstimateUsd(Number(seconds) || 0) }),
+
+  "make-music": async ({ projectDir, music }) => {
+    appendLog(projectDir, "music: ElevenLabs Music");
+    const info = await makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) });
+    const project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "recommended" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
+    return { info, gate: project.gates.voice, status: project.status };
   },
 
   "approve-gate": async ({ projectDir, gate }) => {

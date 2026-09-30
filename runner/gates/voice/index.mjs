@@ -16,7 +16,8 @@ import path from "node:path";
 import { narrationFromMarkdown, wordCount } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
-import { joinBlocks, mix } from "../../audio.mjs";
+import { joinBlocks, mix, duration } from "../../audio.mjs";
+import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
 
 export const VOICE_PROVIDERS = { elevenlabs, gemini };
 
@@ -98,4 +99,25 @@ export async function voiceSample({ narrator, apiKey, language = "en", dir, fetc
   const out = r.ext === "wav" ? file : file.replace(/\.wav$/, ".mp3");
   fs.writeFileSync(out, r.audio);
   return out;
+}
+
+// Music made for this video (ElevenLabs Music), after the narration exists, so
+// it fits the length. Writes audio/music.mp3 and mixes again. Needs the
+// ElevenLabs key, which is why it is its own runner command.
+export async function makeMusic({ projectDir, apiKey, prompt, env = process.env, fetchImpl, onProgress = () => {} }) {
+  const vo = path.join(projectDir, "audio", "vo.mp3");
+  if (!fs.existsSync(vo)) throw new Error("Make the voice first; the music is made to its length.");
+  const seconds = await duration(vo, env);
+  onProgress({ step: "music", seconds: elevenlabsMusic.musicSeconds(seconds) });
+  const buf = await elevenlabsMusic.compose({ apiKey, fetchImpl, prompt: prompt || undefined, seconds });
+  const audioDir = path.join(projectDir, "audio");
+  for (const f of fs.readdirSync(audioDir)) if (f.startsWith("music.")) fs.rmSync(path.join(audioDir, f), { force: true });
+  const music = path.join(audioDir, "music.mp3");
+  fs.writeFileSync(music, buf);
+  onProgress({ step: "mixing" });
+  const m = await mix({ vo, bgm: music, out: path.join(audioDir, "vo_bgm.mp3"), env });
+  const infoFile = path.join(audioDir, "voice.json");
+  const info = { ...(fs.existsSync(infoFile) ? JSON.parse(fs.readFileSync(infoFile, "utf8")) : {}), ...m, music: "music.mp3", musicSource: "elevenlabs-music", musicPrompt: prompt || elevenlabsMusic.DEFAULT_PROMPT };
+  fs.writeFileSync(infoFile, JSON.stringify(info, null, 2) + "\n");
+  return info;
 }
