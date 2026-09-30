@@ -163,16 +163,11 @@
         if (!voice) voice = (await runner<{ voices: { id: string }[] }>("list-voices", { narrator: { provider } })).voices[0]?.id ?? null;
         if (!voice) throw new Error("No narrator voice is available. Pick one at 2. Voice and music.");
         await runner("make-voice", { projectDir: dir, narrator: { provider, voice }, music: null });
-        // music in the decided order (DECISIONS 60): ElevenLabs Music with a
-        // key, else the first free piano piece
-        pilot = "Adding the background music";
+        // music (DECISIONS 62): ElevenLabs Music with a key, else none
         if (app.keys["elevenlabs"]) {
+          pilot = "Adding the background music";
           pilotCommand = "make-music";
           await runner("make-music", { projectDir: dir, music: { provider: "elevenlabs" } });
-        } else {
-          pilotCommand = "set-music";
-          const { tracks } = await runner<{ tracks: { id: string }[] }>("free-music");
-          await runner("set-music", { projectDir: dir, music: { kind: "free", id: tracks[0].id } });
         }
         await approveGate("voice");
       }

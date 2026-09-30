@@ -6,6 +6,7 @@
   // Autopilot never does this: it costs HeyGen credits.
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { ask } from "@tauri-apps/plugin-dialog";
+  import { openUrl } from "@tauri-apps/plugin-opener";
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
   import type { AppState, Gate } from "./api";
@@ -136,8 +137,12 @@
     {#if error}<ErrorBox message={error} context={{ step: "avatar", provider: "heygen" }} />{/if}
 
     {#if own.length || stock.length}
-      <p class="label">Your avatars</p>
-      {#if !own.length}<p class="hint">No avatar of your own in this HeyGen account yet. You can pick a HeyGen stock avatar below.</p>{/if}
+      <div class="actions">
+        <span class="label grow">Your avatars</span>
+        <button type="button" class="ghost" onclick={() => openUrl("https://app.heygen.com/avatars")}>Open HeyGen</button>
+      </div>
+      <p class="hint">These come straight from your HeyGen account. Make or change avatars in HeyGen; they show up here.</p>
+      {#if !own.length}<p class="hint">This API key sees no avatar of your own. If you have avatars in the HeyGen app, the key probably belongs to another HeyGen workspace: make the API key in the workspace where your avatars are. Meanwhile you can pick a HeyGen stock avatar below.</p>{/if}
       {#each own as g (g.id)}
         <div class="group">
           <div class="ghead">

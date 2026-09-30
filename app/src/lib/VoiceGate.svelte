@@ -1,11 +1,11 @@
 <script lang="ts">
   // Gate 2: Narrator Voice and music, approved as one artifact. Pick a voice
   // (with a sample) and a music source, make the voice, listen to the mix and
-  // to the narration alone, approve. Music (DECISIONS 60), in this order:
-  // ElevenLabs Music when the user has an ElevenLabs key (same service as the
-  // voice, made to the video's length), else a free public domain piano piece,
-  // or the user's own file, or none. Changing the music later mixes the same
-  // narration again; nothing is read twice.
+  // to the narration alone, approve. Music (DECISIONS 62): ElevenLabs Music
+  // when the user has an ElevenLabs key (same service as the voice, made to
+  // the video's length); without a key no music, or the user's own file.
+  // Changing the music later mixes the same narration again; nothing is read
+  // twice.
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
@@ -17,7 +17,6 @@
 
   type Info = { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number };
   type Voice = { id: string; name: string; own?: boolean; gender: string | null; accent: string | null; description: string | null; previewUrl: string | null; languages: string[] };
-  type Track = { id: string; title: string; composer: string; license: string; mood: string; seconds: number; file: string | null };
 
   let { app, dir, gate, scriptApproved, voiceInfo = null, changed }: { app: AppState; dir: string; gate?: Gate; scriptApproved: boolean; voiceInfo?: Info | null; changed: () => Promise<void> } = $props();
 
@@ -35,13 +34,10 @@
   let stamp = $state(Date.now()); // reloads the players after a new mix
   let sample = $state<string | null>(null);
 
-  let kind = $state<"elevenlabs" | "free" | "file" | "none">(untrack(() => (app.keys["elevenlabs"] ? "elevenlabs" : "free")));
-  let tracks = $state<Track[]>([]);
-  let trackId = $state("");
+  let kind = $state<"elevenlabs" | "file" | "none">(untrack(() => (app.keys["elevenlabs"] ? "elevenlabs" : "none")));
   let ownFile = $state<string | null>(null);
   let prompt = $state("");
   let usd = $state<number | null>(null);
-  let listen = $state<string | null>(null);
   let musicCommand = $state("");
 
   const mixSrc = $derived(convertFileSrc(`${dir}/audio/vo_bgm.mp3`) + `?t=${stamp}`);
@@ -62,8 +58,6 @@
 
   async function loadMusic() {
     try {
-      tracks = (await runner<{ tracks: Track[] }>("free-music")).tracks;
-      if (!trackId && tracks.length) trackId = tracks[0].id;
       const est = await runner<{ usd: number; prompt: string }>("music-estimate", { seconds: voiceInfo?.seconds ?? 480 });
       if (!prompt) prompt = est.prompt;
       usd = voiceInfo?.seconds ? est.usd : null;
@@ -92,15 +86,6 @@
     }
   }
 
-  async function listenTrack() {
-    error = "";
-    try {
-      listen = convertFileSrc((await runner<{ file: string }>("free-music-preview", { id: trackId })).file);
-    } catch (e) {
-      error = errorText(e);
-    }
-  }
-
   async function chooseMusic() {
     const file = await open({ multiple: false, filters: [{ name: "Music", extensions: ["mp3", "wav", "m4a", "aac", "ogg", "flac"] }] });
     if (typeof file !== "string") return;
@@ -115,7 +100,7 @@
   const unlisten = onProgress((p) => {
     const s = p.progress;
     if (p.command === "set-music" || p.command === "make-music") {
-      step = s.step === "download" ? `Downloading "${s.title}" (first use only)...` : s.step === "music" ? "ElevenLabs is making the music..." : s.step === "mixing" ? "Mixing the voice and the music..." : step;
+      step = s.step === "music" ? "ElevenLabs is making the music..." : s.step === "mixing" ? "Mixing the voice and the music..." : step;
       return;
     }
     if (p.command !== "make-voice") return;
@@ -154,7 +139,7 @@
       const r =
         kind === "elevenlabs"
           ? await runner<{ info: Info }>("make-music", { projectDir: dir, music: { provider: "elevenlabs", prompt } })
-          : await runner<{ info: Info }>("set-music", { projectDir: dir, music: kind === "free" ? { kind, id: trackId } : kind === "file" ? { kind, path: ownFile } : { kind: "none" } });
+          : await runner<{ info: Info }>("set-music", { projectDir: dir, music: kind === "file" ? { kind, path: ownFile } : { kind: "none" } });
       madeInfo = r.info;
       stamp = Date.now();
       await changed();
@@ -216,16 +201,7 @@
         <textarea rows="2" bind:value={prompt} aria-label="What the music should sound like"></textarea>
         <p class="hint">Describe the mood in English. Instrumental only. Commercial use needs a paid ElevenLabs plan.</p>
       {/if}
-      <label class="choice"><input type="radio" bind:group={kind} value="free" /> Free piano music (public domain, no credit needed)</label>
-      {#if kind === "free"}
-        <div class="row">
-          <select bind:value={trackId} aria-label="Free track">
-            {#each tracks as t}<option value={t.id}>{t.title}, {t.composer} ({t.mood})</option>{/each}
-          </select>
-          <button type="button" onclick={listenTrack}>Listen</button>
-        </div>
-        {#if listen}<audio controls autoplay src={listen}></audio>{/if}
-      {/if}
+      {#if !hasEleven}<p class="hint">Without an ElevenLabs key there is no background music, unless you add your own file.</p>{/if}
       <label class="choice"><input type="radio" bind:group={kind} value="file" disabled={!ownFile} /> My own file{ownFile ? `: ${ownFile.replace("audio/", "")}` : ""}</label>
       <div class="row"><button type="button" onclick={chooseMusic}>Choose a music file</button></div>
       <label class="choice"><input type="radio" bind:group={kind} value="none" /> No music</label>

@@ -241,3 +241,14 @@
     mert pénzbe kerül. A klipek a kompozícióban `<video>` elemek a jelenetek
     fölött; ha a hang később megváltozik, a build nem használja őket csendben,
     hanem szól. Élesben Zoltan kulcsával kell kipróbálni.
+62. **Zene: ElevenLabs kulcs nélkül nincs háttérzene** (Zoltan, 2026-09-30; a 60.
+    pontot módosítja). A CC0 zongoradarabok kikerültek, mert Zoltannak nem
+    tetszettek. Marad: ElevenLabs Music (kulccsal), saját fájl, zene nélkül. Az
+    Autopilot kulccsal ElevenLabs zenét tesz alá, kulcs nélkül zenét nem.
+63. **Avatar: behúzzuk, nem duplikáljuk** (Zoltan ötlete, 2026-09-30). Az app a
+    HeyGen-fiókban már meglévő avatarokat listázza karakterenként, a lookjaikkal,
+    a HeyGen saját előnézeti képével és videójával. Létrehozás és szerkesztés a
+    HeyGenben marad ("Open HeyGen" gomb). Zoltan régi, sokszor használt
+    avatarjai eddig nem voltak elérhetők; ha a kulcs nem lát saját avatart, az
+    app kiírja, hogy a kulcs valószínűleg másik munkaterülethez tartozik. Élesben
+    kell ellenőrizni.

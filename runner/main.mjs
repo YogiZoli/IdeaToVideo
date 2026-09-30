@@ -22,7 +22,6 @@ import { sentenceTable } from "./timing/sentences.mjs";
 import { lintAndCheck } from "./gates/build/index.mjs";
 import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, setMusic, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
-import { freeLibrary, ensureFreeTrack } from "./providers/music/free.mjs";
 import * as heygen from "./providers/avatar/heygen.mjs";
 import { avatarPlan, makeAvatar, removeAvatar } from "./gates/avatar/index.mjs";
 import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
@@ -219,16 +218,11 @@ const commands = {
     }
   },
 
-  // Gate 2, free music (DECISIONS 60): the list, and one track downloaded for
-  // listening before choosing it.
-  "free-music": async () => ({ tracks: freeLibrary() }),
-  "free-music-preview": async ({ id }) => ({ file: await ensureFreeTrack(id) }),
-
   // Gate 2, a different music under the same narration (no new reading). The
   // scene table stays valid (the timing is the voice's); only the build and
   // the approval of the voice start again.
   "set-music": async ({ projectDir, music }) => {
-    appendLog(projectDir, `music: ${music?.kind === "free" ? music.id : music?.kind}`);
+    appendLog(projectDir, `music: ${music?.kind}`);
     const info = await timed("remix", 1, emit, () => setMusic({ projectDir, music, onProgress: (p) => emit({ event: "progress", ...p }) }));
     let project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "custom" });
     if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });

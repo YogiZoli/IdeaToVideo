@@ -32,8 +32,6 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("voice-preview", None),
     ("voice-sample", Some(&["narrator", "provider"])),
     ("music-estimate", None),
-    ("free-music", None),
-    ("free-music-preview", None),
     ("set-music", None),
     ("make-music", Some(&["music", "provider"])),
     ("make-scenes", Some(&["llm", "provider"])),

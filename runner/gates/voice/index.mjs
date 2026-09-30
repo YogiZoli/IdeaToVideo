@@ -18,7 +18,6 @@ import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
 import { joinBlocks, mix, duration } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
-import { freeTrack, ensureFreeTrack } from "../../providers/music/free.mjs";
 
 export const VOICE_PROVIDERS = { elevenlabs, gemini };
 
@@ -126,31 +125,21 @@ export async function makeMusic({ projectDir, apiKey, prompt, env = process.env,
 }
 
 // Change the music of an existing narration without reading it again: none,
-// a free track (copied into the project, so the project stands on its own),
 // or the user's own file already imported as audio/music.<ext>. ElevenLabs
 // Music has its own command (makeMusic), because it needs a key.
-export async function setMusic({ projectDir, music, env = process.env, fetchImpl, onProgress = () => {} }) {
+export async function setMusic({ projectDir, music, env = process.env, onProgress = () => {} }) {
   const audioDir = path.join(projectDir, "audio");
   const vo = path.join(audioDir, "vo.mp3");
   if (!fs.existsSync(vo)) throw new Error("Make the voice first; the music goes under it.");
   let bgm = null;
   let source = "none";
   let label = null;
-  if (music?.kind === "free") {
-    const t = freeTrack(music.id);
-    onProgress({ step: "download", title: t.title });
-    const file = await ensureFreeTrack(music.id, { env, fetchImpl });
-    for (const f of fs.readdirSync(audioDir)) if (f.startsWith("music.")) fs.rmSync(path.join(audioDir, f), { force: true });
-    bgm = path.join(audioDir, `music.${t.ext}`);
-    fs.copyFileSync(file, bgm);
-    source = `free:${t.id}`;
-    label = `${t.title}, ${t.composer} (${t.license})`;
-  } else if (music?.kind === "file") {
+  if (music?.kind === "file") {
     bgm = musicPath(projectDir, music.path);
     source = "file";
     label = path.basename(bgm);
   } else if (music?.kind !== "none") {
-    throw new Error("Choose no music, a free track or your own file.");
+    throw new Error("Choose your own music file, or no music.");
   }
   onProgress({ step: "mixing" });
   const m = await mix({ vo, bgm, out: path.join(audioDir, "vo_bgm.mp3"), env });
