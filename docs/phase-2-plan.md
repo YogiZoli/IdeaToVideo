@@ -106,6 +106,26 @@ HeyGen kulcsával, ha a kreditje engedi.
   text, text-muted, bg, card-bg, border, positive, negative), a skálák (50-900)
   a fő színből számolva.
 
+- **Archetípusok, amik még nem általánosak** (2026-09-30, a `.src.html` fájlokból):
+  beégetett, képernyőn látható szöveg van a `quote` (az idézet), `grid` (25
+  nyelvkód), `panel-list` (a sorok), `before-after`, `end-card` ("See you
+  there"), `keyword-pill`, `highlighter`, `command`, `form` és `contact-record`
+  blokkban. Az `overlay-*` és a `device-footage` felvételhez való (talking_head,
+  screenrecording), explainerbe nem. A `library-card` a könyvtárat mutatja be.
+  Teljesen változós, azonnal használható: arrow, branch, countup-bars, cycle,
+  display-word, funnel, gauge, hero, lead-card, lens, line-chart, progress-ring,
+  proportion-bars, pulse-ring, question, rail, short-scene, signature-move,
+  skitch-markers, split, state-flip, statement, step-card, tiles. A 3. kapu v1
+  ezekből választ; a többit egy második brand-frames PR teszi változóssá
+  (regress teszttel), Zoltan jóváhagyásával.
+- **brand-frames PR #6** (`--outdir`, `--gsap`, semleges alapértékek): regress
+  2 változott (csak a név), 37 változatlan, alap újra elfogadva. A merge-et a
+  Claude Code biztonsági szűrője nem engedte, Zoltan merge-öli. Addig a
+  submodule a PR commitján (`acfb046`).
+- **Build és check az appból** (C2C bemenetekkel, a runnerből, a projekt saját
+  mappájában, helyi GSAP-pal): build, időzítés, csúszás-szűrő, lint, check 78 mp
+  alatt átment.
+
 ## Lépések, ebben a sorrendben
 
 Minden lépés a `phase-2` branchen, külön committal. A brand-frames változásai a
@@ -311,6 +331,16 @@ ettől egységes: a `FRAME.md` tokenjei a 3. lépés `--theme` rétegére képez
      címke, kiemelő vonal, haladásjelző, háttér-hangulat). Ez a HyperFrames
      saját elve: "atoms are sacred, composition is free".
    A 3. és 14. lépés ettől függ.
+
+## Javaslat: Mozgás varázsló (2026-09-30, Zoltan döntésére vár)
+
+Userenként rögzített Mozgás profil, amit minden videó örököl. A kánon
+`motion.js` gombjait állítja (easingek, időtartam és távolság szorzó, túllövés,
+stagger, lüktetés), plusz egy válogatott HyperFrames komponens-készlet
+(jelenetváltás, háttér-hangulat, logó-animáció). Alapból bájtra azonos a mai
+kimenettel. Csak a MOTION szabályokon belül (blur nincs, sebesség-plafon
+marad). 23 kérdés, ebből 16 igen-nem, a lista a chatben (2026-09-30).
+brand-frames PR-t igényel (`motion.js` profil-olvasás, `build-video --motion`).
 
 ## Nem ebben a fázisban
 

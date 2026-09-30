@@ -9,7 +9,11 @@ import { runHyperframes, resolveBrowser } from "../../tools.mjs";
 import { percentOf } from "../../tools.mjs";
 import { duration } from "../../audio.mjs";
 
-export const stamp = (d = new Date()) => d.toISOString().slice(0, 16).replace(/[-:]/g, "").replace("T", "-");
+// Local time, as the user reads the clock: video-20260930-1645.mp4
+export function stamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
 
 export async function renderVideo(projectDir, { env = process.env, quality = "standard", onProgress = () => {}, signal } = {}) {
   const build = path.join(projectDir, "build");

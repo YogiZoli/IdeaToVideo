@@ -23,5 +23,5 @@ test("build input: the scene list gets the project's mix next to index.html", ()
 });
 
 test("render names are new every time and sortable", () => {
-  assert.equal(stamp(new Date("2026-09-30T16:45:12Z")), "20260930-1645");
+  assert.equal(stamp(new Date(2026, 8, 30, 16, 45, 12)), "20260930-1645");
 });
