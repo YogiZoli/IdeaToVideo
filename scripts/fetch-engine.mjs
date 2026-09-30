@@ -6,8 +6,7 @@
 // (DECISIONS 26: 208 MB, not needed for render, check or composite).
 //
 // The app's own library (scene types from the HyperFrames registry) and all
-// pipeline code live in this repo; nothing comes from Zoltan's brand-frames
-// canon (DECISIONS 48).
+// pipeline code live in this repo (DECISIONS 48).
 //
 // Usage: node scripts/fetch-engine.mjs [--force]
 // Needs npm on PATH (the build machine only; the user never runs this).

@@ -1,5 +1,5 @@
-/* App chrome in the design canon's language (tokens from the design-system
-   repo, baked in at build time). No owner name or logo: the user's brand goes
+/* App chrome in the app's own look (tokens from the design-system repo, baked
+   in at build time). No owner name or logo: the user's brand goes
    into the videos, not the app. Fonts are self-hosted (no external calls, CSP). */
 @import "$design/tokens.css";
 @import "@fontsource/open-sans/latin-400.css";
