@@ -21,8 +21,23 @@ HeyGen kulcsával, ha a kreditje engedi.
 4. Az app felülete marad Zoltan IdeaToVideo brandjében (Shine, DECISIONS 39). A
    videók alapból a HyperFrames presetjeit kapják. Új: **opcionális Brand
    varázsló**, amivel a user a saját színeit, betűit és assetjeit adja meg.
-5. Zene: első használatkor letöltve, plusz "Use my own file". Ahol a user kulcsa
-   engedi, a meglévő szolgáltatói zene az első (lásd 6. lépés).
+5. Zene sorrendje: ElevenLabs Music, HeyGen katalógus, első használatkor
+   letöltött CC0 zenék, "Use my own file". Keverés az AUDIO.md szerint.
+6. Narrátor hang: ElevenLabs (a user kulcsával, a user fizeti), ingyenes út a
+   Gemini TTS a user Gemini kulcsával. A Microsoft online hangok csak akkor
+   kerülnek be, ha a Gemini TTS a mérésen elbukik (magyar minőség, keret,
+   időzítés).
+7. CI: a Mac build ideiglenesen nem fut PR-en, csak kézi indításra, amit Claude
+   indít (`gh workflow run`), a fázis végén a jóváhagyott változatra. PR-en csak
+   Windows build és unit tesztek. A renderelő e2e teszt szintén Claude indítja,
+   a fázis végén.
+8. ffmpeg Macen (Claude döntése, Zoltan kérésére): `eugeneware/ffmpeg-static`
+   rögzített GitHub kiadás, SHA256-tal. A CI Mac futása ellenőrzi a szükséges
+   kódolókat és szűrőket.
+9. A Brand varázsló külön az onboardingtól: az onboarding után az app
+   használható, a varázsló opcionális ("Set your own design"). Kevés, összevont
+   képernyő, mindegyiken kiírva, hogy Skip vagy Default is jó, és később
+   bármikor módosítható (lásd 14. lépés).
 
 ## Kiinduló tények (a repóból és a kánonból, 2026-09-30)
 
@@ -67,6 +82,7 @@ brand-frames repóban, külön branchen és PR-ben, git worktree-ben.
 
 - SPEC és gyökér `package.json` igazítása a DECISIONS 38-hoz, STATUS frissítése.
 - SPEC 3 frissítése a 2. lépés döntésével.
+- `build.yml`: PR-en csak Windows, a macOS job csak `workflow_dispatch`-re.
 
 ### 2. A kánon bekötése az appba
 
@@ -115,16 +131,18 @@ menete ugyanúgy fut, a regress teszt változatlan képet ad):
 
 ### 6. 2. kapu: hang és zene
 
-Narrátor hang (TTS), ebben a sorrendben ajánlva:
+Narrátor hang (TTS), ebben a sorrendben:
 
 1. **ElevenLabs** a user kulcsával: hanglista a fiókjából, meghallgatással,
-   időbélyeges TTS. A legjobb minőség, fizetős.
-2. **Microsoft online hangok** (a szolgáltatás neve "Edge TTS", de böngésző nem
-   kell hozzá, és az Edge böngészőhöz nincs köze): ingyenes, kulcs nélkül, van
-   magyar hang, szó-időzítést ad. Nem hivatalos felület, ezért kell tartalék.
-3. **Tartalék jelölt: Gemini TTS** a user már meglévő Gemini kulcsával (hivatalos
-   Google API). Mérendő: ingyenes kerete, magyar minősége, és hogy az időzítés
-   honnan jön, mert a Gemini TTS nem ad szó-időbélyeget.
+   időbélyeges TTS. A user fizeti. Az ElevenLabs ingyenes csomagja nem ad
+   kereskedelmi jogot, ezt a UI kiírja.
+2. **Gemini TTS** a user Gemini kulcsával (hivatalos Google API), az ingyenes út.
+   Először mérem: ingyenes keret, magyar minőség, és az időzítés. A Gemini TTS
+   nem ad szó-időbélyeget, ezért a szavak idejét a HyperFrames saját
+   `hyperframes transcribe` parancsa méri (whisper.cpp), ha a csomagolt appban
+   Python nélkül fut.
+3. **Microsoft online hangok** ("Edge TTS", böngésző nem kell hozzá) csak akkor,
+   ha a 2. pont mérése elbukik.
 
 Kokoro (`hyperframes tts`) kimarad: nincs magyar, Python és 340 MB kellene hozzá.
 
@@ -193,19 +211,31 @@ presetjei. Két forrása van: egy preset, vagy a Brand varázsló kimenete. A l�
 ettől egységes: a `FRAME.md` tokenjei a 3. lépés `--theme` rétegére képeződnek le.
 
 - **Presetek:** a 13 `FRAME.md` rögzített commitról, SHA256-tal, első használatkor
-  letöltve (DECISIONS 24). Csak a tokeneket használjuk (színek, betűk, sarkok).
-  A presetek elrendezési és mozgási szabályait nem: a kép a mi 39
-  archetípusunk marad, a MOTION szabályokkal.
+  letöltve (DECISIONS 24). Hogy a presetből mennyit használunk, az a "Zoltan
+  döntésére vár" 1. pontján múlik (A, B vagy C). A presetek maguk nem
+  tartalmaznak mozgást: mind a 13 `FRAME.md` kimondja, "Motion out of scope".
 - **Betűk:** a presetek Google Fonts betűket neveznek meg. A kánon szerint a
   kompozícióban nincs Google Fonts link, ezért a betűfájlok (OFL) helyben
   kerülnek a projektbe. A galéria jelzi, ha egy betűből hiányzik a tartalom
   nyelvének ékezete (ő, ű), és azt a presetet arra a nyelvre nem ajánlja.
-- **Galéria** az onboarding Brand lépésében és a Settingsben: előnézet a mi
-  blokkjainkból renderelt állóképekkel, nem a HyperFrames showcase-ével, hogy azt
-  lássa a user, amit kapni fog.
-- **Brand varázsló** (opcionális, Settingsből és az onboardingból indítható): a
-  kérdései Zoltan jóváhagyására várnak (lásd lent). Kimenete a user saját
-  `FRAME.md`-je és a feltöltött assetek a config mappában.
+- **Galéria** az onboarding Brand lépésében és a Settingsben. Az előnézet abból
+  készül, amit a user ténylegesen kapni fog.
+- **Brand varázsló** ("Set your own design"), az onboardingtól külön, az app
+  főképernyőjéről és a Settingsből. Kimenete a user saját `FRAME.md`-je és a
+  feltöltött assetek a config mappában. Képernyők:
+  1. Kiindulás és logó: "From my logo", "From a preset", "From scratch", logó
+     feltöltés (opcionális, világos és sötét változat).
+  2. Színek egy képernyőn: fő szín, háttér, második szín, kész kombinációkkal
+     (a 13 preset palettája, a HyperFrames 9 hangulat-palettája, és a logóból
+     kinyert javaslatok).
+  3. Betűk egy képernyőn: címbetű és szövegbetű, kész párokkal a presetekből,
+     ékezetes mintaszöveggel, a hiányos betűk kiszűrve.
+  4. Formák: sarkok, kártya árnyékkal vagy kerettel.
+  5. Név a képernyőn: név és titulus a névsávhoz és az idézetekhez.
+  6. Előnézet és mentés: 4-6 archetípus állóképe, kontrasztellenőrzés,
+     javítási javaslat.
+  Minden képernyőn: "Not sure? Skip or use the default. You can change this any
+  time in Settings."
 
 ### 15. Autopilot
 
@@ -238,14 +268,16 @@ ettől egységes: a `FRAME.md` tokenjei a 3. lépés `--theme` rétegére képez
 
 ## Zoltan döntésére vár
 
-1. **CI.** A meglévő CI marad, ahogy van: minden PR-en build és unit tesztek. A
-   renderelő végigfutó teszt csak kézi indításra fusson, a fázis végén egyszer.
-2. **TTS sorrend:** ElevenLabs, Microsoft online hangok, tartaléknak a Gemini TTS
-   mérés után.
-3. **Zene sorrend:** ElevenLabs Music, HeyGen katalógus (ha a feltételei
-   engedik), CC0 letöltés, saját fájl.
-4. **ffmpeg Macen:** `eugeneware/ffmpeg-static` GitHub kiadás, a CI ellenőrzi.
-5. **Brand varázsló kérdései** (javaslat a chatben, 2026-09-30).
+1. **A videó kinézete (a fázis legnagyobb döntése).** Három út, a chatben
+   kifejtve (2026-09-30):
+   - A: a mi 39 archetípusunk, a preset színeivel, betűivel és sarkaival.
+   - B: HyperFrames natív: az AI minden videónál minden jelenetet szabadon ír meg
+     a `FRAME.md` és a HyperFrames mozgás-szabályai (49 szabály, 23 minta)
+     alapján. A 39 archetípus és a MOTION szabályok nem kellenek hozzá.
+   - C (javaslat): A, plusz a preset összes "atomja" (kártya, árnyék, keret,
+     címke, kiemelő vonal, haladásjelző, háttér-hangulat). Ez a HyperFrames
+     saját elve: "atoms are sacred, composition is free".
+   A 3. és 14. lépés ettől függ.
 
 ## Nem ebben a fázisban
 
