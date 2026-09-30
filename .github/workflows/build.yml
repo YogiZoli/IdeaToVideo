@@ -47,6 +47,21 @@ jobs:
           token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
           path: design-system
 
+      # The canon (private brand-frames) at the commit the submodule pins. The
+      # token needs read access to brand-frames: its own BRAND_FRAMES_TOKEN, or
+      # the design-system token with brand-frames added to its repositories.
+      - name: Pinned canon commit
+        id: canon
+        shell: bash
+        run: echo "sha=$(git ls-tree HEAD vendor/brand-frames | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: YogiZoli/brand-frames
+          ref: ${{ steps.canon.outputs.sha }}
+          token: ${{ secrets.BRAND_FRAMES_TOKEN || secrets.DESIGN_SYSTEM_TOKEN }}
+          path: vendor/brand-frames
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24.16.0
@@ -73,6 +88,9 @@ jobs:
 
       - name: ffmpeg can do what the pipeline needs
         run: node scripts/check-ffmpeg.mjs
+
+      - name: Canon bundle (blocks, pipeline, hyperframes toolchain)
+        run: node scripts/fetch-canon.mjs
 
       - name: Rust tests
         working-directory: app/src-tauri

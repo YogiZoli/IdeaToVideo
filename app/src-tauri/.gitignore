@@ -12,3 +12,7 @@
 # Downloaded by scripts/fetch-ffmpeg.mjs, never committed
 /ffmpeg/
 /ffmpeg.new/
+
+# Built by scripts/fetch-canon.mjs from vendor/brand-frames, never committed
+/canon/
+/canon.new/

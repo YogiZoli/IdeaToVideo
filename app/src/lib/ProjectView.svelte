@@ -5,6 +5,7 @@
   import { ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import VoiceGate from "./VoiceGate.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
@@ -134,7 +135,7 @@
       {#each GATE_LABELS as [id, label]}
         <li class={data.project.gates[id]?.state ?? "todo"}>
           <span>{label}</span>
-          <span class="state">{id === "script" ? stateLabel(data.project.gates[id]) : "Next version"}</span>
+          <span class="state">{id === "script" || id === "voice" ? stateLabel(data.project.gates[id]) : "Next version"}</span>
         </li>
       {/each}
     </ol>
@@ -176,6 +177,8 @@
         <p class="hint">Click Write script. The AI uses your Audience, Brand Voice and landing page from Settings{data.brief ? ", and the Video Brief Card" : ""}.</p>
       {/if}
     </section>
+
+    <VoiceGate {app} {dir} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
   {/if}
 </div>
 

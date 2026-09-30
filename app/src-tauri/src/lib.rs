@@ -23,10 +23,13 @@ fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
     let resources = app.path().resource_dir().map_err(|e| format!("No resource folder: {e}"))?;
     let script = runner::plain_path(resources.join("runner").join("main.mjs"));
     let ffmpeg = Some(runner::plain_path(resources.join("ffmpeg")));
+    let canon = Some(runner::plain_path(resources.join("canon")));
+    // local, not roaming: the render browser alone is about 280 MB
+    let data = app.path().app_local_data_dir().ok().map(runner::plain_path);
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));
     }
-    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg })
+    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, canon, data })
 }
 
 fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String> {
@@ -46,11 +49,23 @@ async fn run_command(app: AppHandle, command: String, request: Value, api_key: O
     .map_err(|e| format!("The runner crashed: {e}"))?
 }
 
+/// The UI plays the project's audio and shows its images through the asset
+/// protocol. Its scope starts empty (tauri.conf.json) and gets exactly two
+/// folders: the projects folder and the cached voice samples.
+fn allow_media(app: &AppHandle, projects: &std::path::Path) {
+    let scope = app.asset_protocol_scope();
+    let _ = scope.allow_directory(projects, true);
+    if let Ok(d) = app.path().app_local_data_dir() {
+        let _ = scope.allow_directory(d.join("voice-previews"), true);
+    }
+}
+
 /// Everything the UI needs at start: settings, projects folder, which keys exist.
 #[tauri::command]
 fn app_state(app: AppHandle) -> Result<Value, String> {
     let cfg = config::load(&config_path(&app)?)?;
     let projects = projects_dir(&app, cfg.as_ref())?;
+    allow_media(&app, &projects);
     Ok(json!({
         "config": cfg,
         "projectsDir": projects,
@@ -133,6 +148,34 @@ fn import_logo(app: AppHandle, path: String) -> Result<String, String> {
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// Copies a music file the user picked into the project (audio/music.<ext>),
+/// returns that relative name for the voice gate. The runner never gets a
+/// path outside the projects folder.
+#[tauri::command]
+fn import_music(app: AppHandle, project_dir: String, path: String) -> Result<String, String> {
+    let cfg = config::load(&config_path(&app)?)?;
+    let root = projects_dir(&app, cfg.as_ref())?;
+    runner::check_paths(&json!({ "projectDir": project_dir }), &root)?;
+    let src = PathBuf::from(&path);
+    let name = runner::music_name(&src)?;
+    let size = std::fs::metadata(&src).map_err(|_| "Music file not found.")?.len();
+    if size > 200 * 1024 * 1024 {
+        return Err("The music file is larger than 200 MB.".into());
+    }
+    let audio = PathBuf::from(&project_dir).join("audio");
+    std::fs::create_dir_all(&audio).map_err(|e| e.to_string())?;
+    // one music file per project: drop an earlier one with another extension
+    if let Ok(entries) = std::fs::read_dir(&audio) {
+        for e in entries.flatten() {
+            if e.file_name().to_string_lossy().starts_with("music.") {
+                let _ = std::fs::remove_file(e.path());
+            }
+        }
+    }
+    std::fs::copy(&src, PathBuf::from(&project_dir).join(&name)).map_err(|e| format!("Could not copy the music file: {e}"))?;
+    Ok(name)
+}
+
 /// The app was called Studio during the first tests. Move its keys and
 /// settings over once, silently; a failure only means starting fresh.
 fn migrate_from_studio(app: &AppHandle) {
@@ -162,7 +205,8 @@ pub fn run() {
             key_status,
             delete_all_keys,
             run_runner,
-            import_logo
+            import_logo,
+            import_music
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

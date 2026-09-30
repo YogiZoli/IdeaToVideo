@@ -79,6 +79,13 @@ A `brand-frames` (blokkok, MOTION szabályok, pipeline szkriptek) **submodule**,
 pinnelt committal. A kánon egy helyen él, az app csak egy rögzített verzióját
 csomagolja. Kánon-frissítés = submodule léptetése + regress teszt + új release.
 
+A futó példányt a `scripts/fetch-canon.mjs` rakja össze build közben
+(`app/src-tauri/canon/`, a telepítő `resources` része): pipeline szkriptek, a 39
+kész blokk, `CATALOG.md`, `MOTION.md`, `AUDIO.md`, és a kánon saját
+lockfile-jából telepített hyperframes lánc `onnxruntime-node` nélkül (mérve
+2026-09-30: 188 MB, 5736 fájl). Zoltan brand-mappái (`zoltan-gero`, `voxflow`)
+soha nem kerülnek bele.
+
 ## 4. Adatmodell
 
 Minden helyi. A helyek a Tauri platform-mappái (`app_config_dir`, `app_data_dir`),
@@ -259,12 +266,16 @@ A `hyperframes` headless Chrome-mal renderel.
 **Döntés (2026-09-24, DECISIONS 25):** a render Chrome.
 
 1. **Alap:** a hyperframes által letöltött, rögzített verziójú chrome-headless-shell
-   (ma 152.0.7977.30), első indításkor, a felhasználói adatmappába (`hyperframes
-   browser ensure`, mérve 31 mp és 282 MB). Nem frissül magától, így egy
-   böngészőfrissítés nem töri el a rendert.
-2. **Tartalék:** a gépen lévő Google Chrome, ha a letöltés nem sikerül. Az app a
-   `HYPERFRAMES_BROWSER_PATH` változóval adja át, mert Windowson a hyperframes
-   magától nem találja meg.
+   (ma 152.0.7977.30), első indításkor (`hyperframes browser ensure`, mérve 31-42
+   mp és 282 MB). Nem frissül magától, így egy böngészőfrissítés nem töri el a
+   rendert. A hely az app saját helyi adatmappája: a runner a hyperframes
+   gyerekfolyamatainak a `<app_local_data>/hyperframes-home` mappát adja otthonnak
+   (`HOME`, `USERPROFILE`), így a böngésző és minden hyperframes gyorsítótár ott
+   van, nem a user `~/.cache` mappájában (`runner/tools.mjs`).
+2. **Tartalék:** a gépen lévő Google Chrome, ha a letöltés nem sikerül (vagy
+   Windows ARM-on, ahol nincs rögzített shell). A runner a választott böngészőt
+   mindig kifejezetten adja át (`HYPERFRAMES_BROWSER_PATH`), a hyperframes soha
+   nem választ magától.
 3. **Edge nem.** Mérve teljes értékű lenne, de Zoltan döntése szerint kimarad.
 
 Mérés (a letöltött shell, a rendszer Chrome és az Edge egyforma gyors és ugyanazt

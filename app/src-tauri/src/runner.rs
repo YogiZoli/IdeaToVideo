@@ -25,6 +25,11 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("write-script", Some(&["llm", "provider"])),
     ("save-script", None),
     ("approve-gate", None),
+    ("tools-status", None),
+    ("browser-ensure", None),
+    ("list-voices", Some(&["narrator", "provider"])),
+    ("make-voice", Some(&["narrator", "provider"])),
+    ("voice-preview", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {
@@ -89,6 +94,20 @@ pub struct Paths {
     /// The bundled ffmpeg folder (resources/ffmpeg), when it is there. Only the
     /// render chain needs it; the runner reports its absence itself.
     pub ffmpeg: Option<PathBuf>,
+    /// The bundled canon (resources/canon) and the app data folder, where the
+    /// runner keeps hyperframes' home (browser, caches). See runner/tools.mjs.
+    pub canon: Option<PathBuf>,
+    pub data: Option<PathBuf>,
+}
+
+/// "audio/music.<ext>" for a music file the voice gate accepts.
+pub fn music_name(src: &Path) -> Result<String, String> {
+    src.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .filter(|e| ["mp3", "wav", "m4a", "aac", "ogg", "flac"].contains(&e.as_str()))
+        .map(|e| format!("audio/music.{e}"))
+        .ok_or_else(|| "Use an mp3, wav, m4a, aac, ogg or flac file for music.".to_string())
 }
 
 /// ffmpeg and ffprobe inside the bundled folder, if both exist.
@@ -153,7 +172,16 @@ pub fn run(
         .env("HYPERFRAMES_NO_TELEMETRY", "1")
         .env("HYPERFRAMES_NO_UPDATE_CHECK", "1")
         .env_remove("HYPERFRAMES_FFMPEG_PATH")
-        .env_remove("HYPERFRAMES_FFPROBE_PATH");
+        .env_remove("HYPERFRAMES_FFPROBE_PATH")
+        .env_remove("HYPERFRAMES_BROWSER_PATH")
+        .env_remove("ITV_CANON_DIR")
+        .env_remove("ITV_DATA_DIR");
+    if let Some(c) = &paths.canon {
+        cmd.env("ITV_CANON_DIR", c);
+    }
+    if let Some(d) = &paths.data {
+        cmd.env("ITV_DATA_DIR", d);
+    }
     // Always our own ffmpeg, never one from the user's PATH (DECISIONS 43).
     if let Some((ffmpeg, ffprobe)) = paths.ffmpeg.as_deref().and_then(ffmpeg_bins) {
         cmd.env("HYPERFRAMES_FFMPEG_PATH", ffmpeg).env("HYPERFRAMES_FFPROBE_PATH", ffprobe);
@@ -261,8 +289,16 @@ mod tests {
     fn runner_starts_from_a_verbatim_path() {
         let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
         assert!(script.to_string_lossy().starts_with(r"\\?\"));
-        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None };
+        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None, canon: None, data: None };
         assert!(run(&paths, "providers", &json!({}), None, &mut |_| {}).is_ok());
+    }
+
+    #[test]
+    fn music_names_are_fixed_and_checked() {
+        assert_eq!(music_name(Path::new("C:/x/Song.MP3")).unwrap(), "audio/music.mp3");
+        assert_eq!(music_name(Path::new("/x/bed.wav")).unwrap(), "audio/music.wav");
+        assert!(music_name(Path::new("/x/evil.exe")).is_err());
+        assert!(music_name(Path::new("/x/noext")).is_err());
     }
 
     #[test]
@@ -294,7 +330,7 @@ mod tests {
     #[test]
     fn real_runner_roundtrip() {
         let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs");
-        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None };
+        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None, canon: None, data: None };
         let r = run(&paths, "providers", &json!({}), None, &mut |_| {}).unwrap();
         assert_eq!(r["providers"][0]["id"], "gemini");
         let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &mut |_| {}).unwrap_err();

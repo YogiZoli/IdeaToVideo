@@ -6,6 +6,7 @@
   import { runner, errorText } from "./api";
   import { LANGUAGES } from "./catalog";
   import ErrorBox from "./ErrorBox.svelte";
+  import EngineBanner from "./EngineBanner.svelte";
 
 
   let { app, openProject }: { app: AppState; openProject: (dir: string) => void } = $props();
@@ -82,6 +83,7 @@
 </script>
 
 <div class="page">
+  <EngineBanner />
   <header>
     <h1>Projects</h1>
     <button type="button" class="primary" onclick={() => (showNew = !showNew)}>{showNew ? "Cancel" : "New video"}</button>

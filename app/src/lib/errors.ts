@@ -13,6 +13,8 @@ export function errorCode(message: string): string {
   if (m.includes("empty answer") || m.includes("empty suggestion")) return "ITV-LLM-EMPTY";
   if (m.includes("did not pass the checks")) return "ITV-SCRIPT-CHECK";
   if (m.includes("could not reach")) return "ITV-NET";
+  if (m.includes("render browser")) return "ITV-BROWSER";
+  if (m.includes("video engine")) return "ITV-ENGINE";
   if (http) return `ITV-HTTP-${http}`;
   if (m.includes("runner") || m.includes("bundled node")) return "ITV-RUN";
   if (m.includes("keychain")) return "ITV-KEYCHAIN";

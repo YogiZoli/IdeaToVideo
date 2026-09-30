@@ -19,7 +19,7 @@ export type Config = {
     ctaText?: string | null;
     contentLanguage?: string;
   };
-  narrator: { provider: "edge-tts" | "elevenlabs"; voice?: string | null };
+  narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
   avatar?: { enabled: boolean };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
@@ -44,6 +44,7 @@ export const deleteKey = (name: string) => invoke<void>("delete_key", { name });
 export const keyStatus = () => invoke<Record<string, boolean>>("key_status");
 export const deleteAllKeys = () => invoke<void>("delete_all_keys");
 export const importLogo = (path: string) => invoke<string>("import_logo", { path });
+export const importMusic = (projectDir: string, path: string) => invoke<string>("import_music", { projectDir, path });
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {
   return invoke<T>("run_runner", { command, request });

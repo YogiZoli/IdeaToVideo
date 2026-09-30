@@ -16,6 +16,9 @@ import { validate, loadSchema } from "./schema/validate.mjs";
 import { createProject, loadProject, saveProject, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
 import { writeScript } from "./gates/script/index.mjs";
 import { suggestChannel } from "./gates/channel/index.mjs";
+import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
+import { downloadPreview } from "./providers/tts/elevenlabs.mjs";
+import { makeVoice, musicPath, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -97,6 +100,47 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, "script: edited by hand");
     return { gate: project.gates.script, status: project.status };
+  },
+
+  // What the render chain has: canon, ffmpeg, browser. Downloads nothing.
+  "tools-status": async () => toolsStatus(),
+
+  // First launch: the pinned render browser into the app's own folder.
+  "browser-ensure": async () => ensureBrowser({ onProgress: (p) => emit({ event: "progress", ...p }) }),
+
+  // Gate 2: the voices of the user's account, for the picker (with previews).
+  "list-voices": async ({ narrator }) => {
+    const p = VOICE_PROVIDERS[narrator?.provider];
+    if (!p?.listVoices) throw new Error(`No voice list for ${narrator?.provider}.`);
+    return { voices: await p.listVoices({ apiKey: key() }) };
+  },
+
+  // A voice sample, cached in the app's folder so the UI can play it.
+  "voice-preview": async ({ url }) => ({ file: await downloadPreview({ url, dir: path.join(dataDir(), "voice-previews") }) }),
+
+  // Gate 2: narration + music, one artifact (AUDIO.md).
+  "make-voice": async ({ projectDir, narrator, music }) => {
+    let project = setGate(loadProject(projectDir), "voice", { state: "running", mode: "recommended" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `voice: ${narrator?.provider}/${narrator?.voice ?? "?"}${music ? `, music ${music}` : ""}`);
+    try {
+      const info = await makeVoice({
+        projectDir,
+        narrator,
+        apiKey: key(),
+        music: musicPath(projectDir, music),
+        language: project.language,
+        onProgress: (p) => emit({ event: "progress", ...p }),
+      });
+      project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
+      saveProject(projectDir, project);
+      appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS`);
+      return { info, gate: project.gates.voice, status: project.status };
+    } catch (e) {
+      saveProject(projectDir, setGate(loadProject(projectDir), "voice", { state: "failed", error: String(e.message).slice(0, 2000) }));
+      appendLog(projectDir, `voice: failed, ${e.message}`);
+      throw e;
+    }
   },
 
   "approve-gate": async ({ projectDir, gate }) => {
