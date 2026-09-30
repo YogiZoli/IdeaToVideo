@@ -44,7 +44,8 @@
     "resources": {
       "../../runner/": "runner/",
       "ffmpeg/": "ffmpeg/",
-      "engine/": "engine/"
+      "engine/": "engine/",
+      "library/": "library/"
     },
     "shortDescription": "From idea to video, on your own machine",
     "windows": {

@@ -77,6 +77,9 @@ jobs:
       - name: Render engine (HyperFrames, GSAP, pinned by engine/package-lock.json)
         run: node scripts/fetch-engine.mjs
 
+      - name: Scene library (HyperFrames registry components, pinned and SHA256 checked)
+        run: node scripts/fetch-library.mjs
+
       - name: Rust tests
         working-directory: app/src-tauri
         run: cargo test

@@ -16,3 +16,7 @@
 # Built by scripts/fetch-engine.mjs from engine/package-lock.json, never committed
 /engine/
 /engine.new/
+
+# Built by scripts/fetch-library.mjs (HyperFrames registry, pinned), never committed
+/library/
+/library.new/

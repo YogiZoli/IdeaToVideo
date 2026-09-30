@@ -1,0 +1,21 @@
+{
+  "commit": "9a27b9f9349b43b9fd194a95ace830d7cbe38b42",
+  "files": {
+    "titlecard-lockup/titlecard-lockup.html": "6a5e54b3819357bd264337cf16240b6a4e65e1059c08ccd82554611a60cdb072",
+    "titlecard-lockup/registry-item.json": "f61eec5f3fe970de76611ccabc19d6805a5d8d2322a76f05f28af950011832ff",
+    "per-word-rise/per-word-rise.html": "e093265396dba184e2b451eb8154d7bbf3d80a49edd33d3a84d6676702a190f7",
+    "per-word-rise/registry-item.json": "e818a95095810b76a8f6203fed628b9517fdab51246cef46840ea94b9f013bd1",
+    "kinetic-type-swap/kinetic-type-swap.html": "e98407ad72306094c3f17f25043924c5214428ef290235db0409c44865e259ba",
+    "kinetic-type-swap/registry-item.json": "44f750b33cd855b60fe21e8b6dda17e8bd59e4e9b74ca679e28df4ddbc56d101",
+    "count-up/count-up.html": "6b34b9873a243fedb060d23f4eb5cef1b61a5b169ec1ae064030b70b48beea66",
+    "count-up/registry-item.json": "6d4a59b657c81b6d607ddd01e1a7c9a568bc01fd7bcedc1569c22591fd642d03",
+    "chart-story/chart-story.html": "d65180b77637521ea98676c9af1d59395f1e70ce0d0d5e1f604d02bee2821310",
+    "chart-story/registry-item.json": "62ebc6f7586075177bba9b44f36d4c9a08864b00a01931187e6d5618cba036fb",
+    "grid-card-assemble/grid-card-assemble.html": "8713fc92043a353732f4d9bd8832e0023a2019472d3a9cfffc566ff6fd194042",
+    "grid-card-assemble/registry-item.json": "56ca3d97a1391ec4a540bb95775bbd473311cb0310dfaf9a81e543a7022f11b3",
+    "vox-annotate/vox-annotate.html": "33485ba8f255cae458180f00380e2d2ed01141b382cbc33a1105d7905612c333",
+    "vox-annotate/registry-item.json": "bbb2b95c43ec2491eda273d4f089586ece6beacfcd56e4ca270acc57e28c4ac2",
+    "cta-close/cta-close.html": "1aff42f1ddfaebcd961b64987e59ed8a3bd1961b4d40d44d24e117093801c46f",
+    "cta-close/registry-item.json": "2e11f1cbf53c4cf8a8bf79f645ba1d3b6dd32fe1cb14ff21b37e686fd2c20c70"
+  }
+}

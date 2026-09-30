@@ -1,0 +1,6 @@
+{
+  "$comment": "The app's scene library (DECISIONS 48): HyperFrames registry components (Apache-2.0), pinned to one commit. scripts/fetch-library.mjs downloads them at build time, checks every file against library.lock.json, and bundles them. Nothing is copied into this repo.",
+  "source": "https://github.com/heygen-com/hyperframes",
+  "commit": "9a27b9f9349b43b9fd194a95ace830d7cbe38b42",
+  "components": ["titlecard-lockup", "per-word-rise", "kinetic-type-swap", "count-up", "chart-story", "grid-card-assemble", "vox-annotate", "cta-close"]
+}
