@@ -1,15 +1,28 @@
 # 2. fázis: terv
 
 Kimenet (PRD 13): **kész videó az appból.** A teljes 5 kapus menet a UI-ban,
-Autopilot, presetek.
+Autopilot, presetek, opcionális Brand varázsló.
 
-Branch: `phase-2` (a mainről, `b7f2289`). A fázis végén PR a main felé, utána
-Zoltan jóváhagyása. Állapot 2026-09-30: **terv, jóváhagyásra vár.**
+Branch: `phase-2` (a mainről, `b7f2289`). A fázis végén egy PR a main felé, utána
+Zoltan jóváhagyása. Állapot 2026-09-30: **terv, részben jóváhagyva** (lásd
+"Eldőlt" és "Zoltan döntésére vár").
 
 Kilépő feltétel: Zoltan a saját gépén, a telepített appból, egy új témából kész
 MP4-et készít (script, hang, jelenet-tábla, kontakt lap, render, felirat),
 egyszer kézi kapukkal, egyszer Autopilottal. Az avatar ág egyszer a saját
 HeyGen kulcsával, ha a kreditje engedi.
+
+## Eldőlt (Zoltan, 2026-09-30)
+
+1. Egy fázis, egy PR, köztes megállókkal.
+2. A brand-frames PR (projekt-mappa, téma-réteg, semleges alapértékek, helyi
+   GSAP) előre jóváhagyva. Merge a regress teszt után, utána jelzés Zoltannak.
+3. A `quote` és az `overlay-lower-third` alapértéke semleges lesz.
+4. Az app felülete marad Zoltan IdeaToVideo brandjében (Shine, DECISIONS 39). A
+   videók alapból a HyperFrames presetjeit kapják. Új: **opcionális Brand
+   varázsló**, amivel a user a saját színeit, betűit és assetjeit adja meg.
+5. Zene: első használatkor letöltve, plusz "Use my own file". Ahol a user kulcsa
+   engedi, a meglévő szolgáltatói zene az első (lásd 6. lépés).
 
 ## Kiinduló tények (a repóból és a kánonból, 2026-09-30)
 
@@ -18,32 +31,39 @@ HeyGen kulcsával, ha a kreditje engedi.
 2. **A blokkok Zoltan brandjével vannak sütve.** A `zg-frames/blocks/build.mjs` a
    `zg.css` tokenjeit (azúr, navy, Open Sans) minden blokkba beleégeti. A
    DECISIONS 23 szerint a videó a user brandjét vagy egy HyperFrames presetet
-   kapja. Ehhez a kánonban kell egy téma-réteg. Ez a fázis legnagyobb kérdése.
+   kapja. Ehhez a kánonban kell egy téma-réteg.
 3. **Két blokk alapértéke "Zoltan Gero"** (`quote` author, `overlay-lower-third`
-   name). A DECISIONS 18 szerint ez nem kerülhet a user videójába.
+   name).
 4. **A `build-video.mjs` a könyvtár mappájába ír** (0. fázis, 5. találat). Két
    projekt felülírná egymást.
 5. **A GSAP CDN-ről jön** (0. fázis, 6. találat): render közben internet kell.
-6. **A HyperFrames presetek nincsenek az npm csomagban** (`hyperframes@0.8.22`
-   `dist/` alatt nincs `blue-professional`). A forrásuk a HeyGen nyilvános repója,
-   a pontos útvonalat meg kell keresni.
-7. **A `hyperframes tts` Kokoro-t használ Pythonnal** (`kokoro_onnx`). A user
-   gépén nincs Python, és az `onnxruntime-node` a sidecarból ki van véve
-   (DECISIONS 26). Ingyenes TTS tartaléknak (SPEC 12.2) így nem jó.
-8. **A BtbN nem ad macOS buildet** (csak Windows és Linux). A DECISIONS 43 a
-   BtbN shared buildet választotta, Macre külön forrás kell.
-9. Doksi eltérések a kóddal: a SPEC még `studio.<provider>` kulcsnevet és
-   "Studio" nevet ír (a kód `ideatovideo.`, DECISIONS 38), a gyökér
-   `package.json` neve `packaged-video-creator`. A STATUS "Következő lépés 1."
-   (PR #2 merge) már megtörtént. Ezeket az 1. lépésben javítom.
+6. **A presetek helye:** `heygen-com/hyperframes`,
+   `skills/hyperframes-creative/frame-presets/`, 13 darab (biennale-yellow,
+   blockframe, blue-professional, bold-poster, broadside, capsule, cartesian,
+   cobalt-grid, code-editorial, coral, creative-mode, daisy-days,
+   editorial-forest). Mindegyik egy `FRAME.md` (YAML tokenek: színek, betűk,
+   sarkok, komponens-szabályok, plusz leírás), egy `caption-skin.html` és egy
+   `frame-showcase.html`. Apache-2.0. Az npm csomagban nincsenek benne.
+7. **A `hyperframes tts` Kokoro-82M modellt futtat Pythonnal** (`kokoro-onnx`,
+   311 MB modell és 27 MB hangadat első használatkor). Nyelvei: angol, spanyol,
+   francia, hindi, olasz, portugál, japán, kínai. **Magyar és német nincs.**
+8. **A BtbN nem ad macOS buildet** (a legfrissebb kiadásban csak Windows és
+   Linux). Kész, GitHubon kiadott macOS build: `eugeneware/ffmpeg-static`
+   (`ffmpeg` és `ffprobe`, darwin x64 és arm64, rögzített kiadás).
+9. **A HyperFrames saját zene-útja:** HeyGen kulccsal a HeyGen zenekatalógusából
+   keres (`GET /audio/sounds?type=music`), kulcs nélkül Pythonos helyi
+   generálás (Lyria, MusicGen). A Pythonos ág nálunk nem járható.
+10. Doksi eltérések a kóddal: a SPEC még `studio.<provider>` kulcsnevet és
+    "Studio" nevet ír (a kód `ideatovideo.`, DECISIONS 38), a gyökér
+    `package.json` neve `packaged-video-creator`. A STATUS "Következő lépés 1."
+    (PR #2 merge) már megtörtént.
 
 ## Lépések, ebben a sorrendben
 
 Minden lépés a `phase-2` branchen, külön committal. A brand-frames változásai a
-brand-frames repóban, külön branchen és PR-ben, git worktree-ben, és mindegyikről
-szólok, mielőtt merge-re kérem.
+brand-frames repóban, külön branchen és PR-ben, git worktree-ben.
 
-### 1. Házimunka (fél óra)
+### 1. Házimunka
 
 - SPEC és gyökér `package.json` igazítása a DECISIONS 38-hoz, STATUS frissítése.
 - SPEC 3 frissítése a 2. lépés döntésével.
@@ -57,34 +77,33 @@ szólok, mielőtt merge-re kérem.
   `hyperframes.json`, és a lecsupaszított `node_modules`.
 - Mérem: telepítő méret (ma 25 MB), első indítás, és hogy a telepített appból a
   runner eléri-e a `hyperframes` CLI-t.
-- **CI:** a privát brand-frames eléréséhez egy második, csak olvasható, csak arra
-  a repóra szóló token kell (`BRAND_FRAMES_TOKEN`), mint a `DESIGN_SYSTEM_TOKEN`.
-  Ezt Zoltannak kell létrehoznia (lépései a chatben jönnek, amikor ide érünk).
+- CI: a meglévő `build.yml` marad. A privát brand-frames eléréséhez egy második,
+  csak olvasható token kell (`BRAND_FRAMES_TOKEN`), mint a `DESIGN_SYSTEM_TOKEN`.
 
-### 3. brand-frames PR: projekt-mappa, téma, semleges alapértékek, helyi GSAP
+### 3. brand-frames PR (előre jóváhagyva)
 
-Egy PR a kánonban, négy kis változás, mind visszafelé kompatibilis (Zoltan
-saját menete ugyanúgy fut, a regress teszt változatlan képet ad):
+Egy PR a kánonban, négy kis változás, mind visszafelé kompatibilis (Zoltan saját
+menete ugyanúgy fut, a regress teszt változatlan képet ad):
 
 - `build-video.mjs --outdir <dir>`: az `index.html` és a `compositions/` a
-  projekt `build/` mappájába kerül, nem a könyvtárba (4. tény).
+  projekt `build/` mappájába kerül, nem a könyvtárba.
 - `--theme <tokens.css>`: a kompozíciókba a `zg.css` tokenjei után egy felülíró
-  `:root` blokk kerül. A blokkok forrása nem változik. Ehhez leltár kell arról,
-  melyik tokent használják a blokkok, és javaslat egy kis szemantikus készletre
-  (háttér, szöveg, kiemelő, CTA, figyelmeztető, betű), amire egy preset leképezhető.
-- A `quote` és `overlay-lower-third` alapértéke semleges szöveg (3. tény).
-- A GSAP a könyvtárból, helyi fájlként (5. tény), hogy a render netkapcsolat
-  nélkül is menjen. A letöltött Chrome-hoz az első indításkor úgyis kell net.
-
-Ez a pont a kánon kódját érinti, ezért a PR-t külön megmutatom, és csak a te
-jóváhagyásod után merge-ölöm.
+  `:root` blokk kerül. A blokkok forrása nem változik. Előtte leltár arról,
+  melyik tokent használják a blokkok, és egy kis szemantikus készlet (háttér,
+  szöveg, halvány szöveg, kiemelő, CTA, pozitív, negatív, sarok, betűk), amire
+  egy `FRAME.md` leképezhető.
+- A `quote` és `overlay-lower-third` alapértéke semleges szöveg.
+- A GSAP a könyvtárból, helyi fájlként.
 
 ### 4. Sidecarok: ffmpeg
 
-- `fetch-sidecars.mjs` bővítése: BtbN GPL shared, dátumozott kiadás, SHA256,
-  Windows x64 és arm64. `licenses/ffmpeg/`, About sor (DECISIONS 43).
-- Macre javaslatot hozok forrással, mérettel és licenccel (8. tény), döntés
-  nélkül.
+- `fetch-sidecars.mjs` bővítése, minden forrás rögzített kiadással és SHA256-tal:
+  - Windows x64 és arm64: BtbN GPL shared (DECISIONS 43).
+  - macOS x64 és arm64: `eugeneware/ffmpeg-static` GitHub kiadás. Saját build nincs.
+- A meglévő CI macOS futtatója ellenőrzi, hogy a Mac build tudja, ami kell
+  (libx264, aac, libvpx-vp9 dekódoló, overlay, psnr, loudnorm, ebur128). Ha nem
+  tudja, szólok, mielőtt bármi mást választanék.
+- `licenses/ffmpeg/`, About sor.
 - A runner minden hyperframes hívásnál: `HYPERFRAMES_FFMPEG_PATH`,
   `HYPERFRAMES_FFPROBE_PATH`, `HYPERFRAMES_NO_TELEMETRY=1`,
   `HYPERFRAMES_NO_UPDATE_CHECK=1` (DECISIONS 21).
@@ -92,24 +111,39 @@ jóváhagyásod után merge-ölöm.
 ### 5. Chrome első indításkor
 
 - `hyperframes browser ensure` az app adatmappájába (282 MB, kb. 30 mp), haladás
-  kijelzéssel. Tartalék a gépen lévő Google Chrome `HYPERFRAMES_BROWSER_PATH`-szal,
-  Edge nem (DECISIONS 25).
+  kijelzéssel. Tartalék a gépen lévő Google Chrome, Edge nem (DECISIONS 25).
 
 ### 6. 2. kapu: hang és zene
 
-- **Edge TTS** Node könyvtárral a sidecarban (Python nélkül), szó-határ
-  eseményekkel. Hanglista a tartalom nyelvére szűrve, meghallgatással.
-- **ElevenLabs**: hanglista a user fiókjából, meghallgatással (a minta a runneren
-  át töltődik le, a UI nem hív külső címet), TTS időbélyegekkel.
-- Mindkettő `audio/stt.json`-t ad a `sentences.mjs` formájában
-  (`{ words:[{text,start,end,type}] }`).
-- **Keverés az AUDIO.md szerint:** mindkét forrás mérése `ebur128`-cal, a zene
-  24 LU-val a narráció alatt, gyengéd ducking, a keverék -14 LUFS-re. Két fájl:
-  `vo_bgm.mp3` (jóváhagyásra) és `vo.mp3` (csak narráció).
-- UI: lejátszó a keverékre és a narrációra, hossz, LUFS, Approve / Regenerate /
-  hang csere.
-- **SPEC 12.2 (ingyenes TTS tartalék)** és **12.6 (zene)**: mérek, javaslatot
-  hozok (lásd lent, "Zoltan döntésére vár").
+Narrátor hang (TTS), ebben a sorrendben ajánlva:
+
+1. **ElevenLabs** a user kulcsával: hanglista a fiókjából, meghallgatással,
+   időbélyeges TTS. A legjobb minőség, fizetős.
+2. **Microsoft online hangok** (a szolgáltatás neve "Edge TTS", de böngésző nem
+   kell hozzá, és az Edge böngészőhöz nincs köze): ingyenes, kulcs nélkül, van
+   magyar hang, szó-időzítést ad. Nem hivatalos felület, ezért kell tartalék.
+3. **Tartalék jelölt: Gemini TTS** a user már meglévő Gemini kulcsával (hivatalos
+   Google API). Mérendő: ingyenes kerete, magyar minősége, és hogy az időzítés
+   honnan jön, mert a Gemini TTS nem ad szó-időbélyeget.
+
+Kokoro (`hyperframes tts`) kimarad: nincs magyar, Python és 340 MB kellene hozzá.
+
+Háttérzene, ebben a sorrendben ajánlva:
+
+1. **ElevenLabs Music** a user kulcsával: a videó hosszára generálva. Fizetős
+   csomagon kereskedelmi használatra is engedélyezett, kb. 0,15 USD percenként.
+2. **HeyGen zenekatalógus** a user HeyGen kulcsával, ugyanazzal a hívással, amit
+   a HyperFrames maga is használ. Mérendő: a HeyGen feltételei engedik-e a
+   HeyGenen kívüli videóban.
+3. **Pár licenctiszta (CC0) zeneszám**, rögzített forrásból első használatkor
+   letöltve, kulcs nélkül is.
+4. **Use my own file.**
+
+Keverés mindig az AUDIO.md szerint: mérés `ebur128`-cal, a zene 24 LU-val a
+narráció alatt, gyengéd ducking, a keverék -14 LUFS. Két fájl: `vo_bgm.mp3`
+(jóváhagyásra) és `vo.mp3`. Mindkét TTS út `audio/stt.json`-t ad a
+`sentences.mjs` formájában. UI: lejátszó, hossz, LUFS, Approve, Regenerate,
+hang csere. A hang- és zenemintákat a runner tölti le, a UI nem hív külső címet.
 
 ### 7. 3. lépés: mondattábla (automatikus)
 
@@ -119,10 +153,9 @@ jóváhagyásod után merge-ölöm.
 
 - `runner/gates/scenes/`: prompt a `CATALOG.md`-ből és a MOTION szabályokból
   levezetve, mondatonként archetípus, max 6 szó a képernyőn, `data-sent` horgony.
-  A válasz JSON, séma szerint validálva, a blokk-változók a blokkok meta
-  fejlécéből ellenőrizve, egy javító hívás, utána hiba (SPEC 5).
-- UI: a PIPELINE.md szöveges táblája (idő, hossz, archetípus, képernyő-szöveg),
-  soronként szerkeszthető (Custom), Approve.
+  JSON válasz séma szerint, a blokk-változók a blokkok meta fejlécéből
+  ellenőrizve, egy javító hívás, utána hiba (SPEC 5).
+- UI: a PIPELINE.md szöveges táblája, soronként szerkeszthető (Custom), Approve.
 
 ### 9. Build, lint, check (automatikus)
 
@@ -132,54 +165,64 @@ jóváhagyásod után merge-ölöm.
 
 ### 10. 4. kapu: kontakt lap
 
-- `hyperframes snapshot`, `review/contact.png`. A UI a képet a Tauri asset
-  protokollal mutatja, csak a Projects mappára szűkítve. A képernyő kiírja: a
-  kontakt lap nem mutat mozgást (PIPELINE.md).
+- `hyperframes snapshot`, `review/contact.png`, a Tauri asset protokollal
+  mutatva, csak a Projects mappára szűkítve. A képernyő kiírja: a kontakt lap
+  nem mutat mozgást.
 
 ### 11. Render
 
 - `hyperframes render`, időbélyeges fájlnév az `out/` alatt, haladás, Cancel.
-  Előre kiírt becslés: kb. 3 perc gépidő videópercenként (0. fázis mérése).
+  Előre kiírt becslés: kb. 3 perc gépidő videópercenként.
 
 ### 12. 5. kapu: avatar
 
 - HeyGen avatar lista a user fiókjából, előnézettel (DECISIONS 47).
-- Segments mód az alap (nyitás és záró CTA), a klipek a narrációból. Előtte kiírt
+- Segments mód az alap (nyitás és záró CTA), a klipek a narrációból, előtte
   kredit becslés. Alfa önellenőrzés, `avatar-composite.mjs`, `out/final.mp4`.
-- Mérendő kockázat: a kánon a HeyGen MCP-vel készítette az átlátszó webm-et.
-  Meg kell nézni, hogy a nyilvános HeyGen API ugyanezt adja-e, és a 402-es
-  (üres API pénztárca) hibát érthetően kell mutatni.
+- Mérendő: a nyilvános HeyGen API ad-e átlátszó webm-et (a kánon az MCP-vel
+  készítette), és a 402-es (üres API pénztárca) hiba érthetően jelenjen meg.
 
 ### 13. Feliratok, export
 
 - `out/video.srt` a `words.json`-ból. "Open folder" gomb.
 
-### 14. Presetek és brand
+### 14. Presetek és Brand varázsló
 
-- A HyperFrames presetek forrásának megkeresése a HeyGen nyilvános repójában,
-  pinnelt commit, SHA256, első használatkor letöltve (DECISIONS 24).
-- Galéria az onboarding Brand lépésében és a Settingsben, előnézettel.
-- Logóból színkinyerés (PRD 7) a sidecarban lévő `sharp`-pal, a preset színei a
-  logó színeire cserélve, a betű a presetből.
-- A preset a 3. lépés `--theme` tokenjeire képeződik le.
+A videó témája mindig egy `FRAME.md`, ugyanabban a formában, mint a HyperFrames
+presetjei. Két forrása van: egy preset, vagy a Brand varázsló kimenete. A lánc
+ettől egységes: a `FRAME.md` tokenjei a 3. lépés `--theme` rétegére képeződnek le.
+
+- **Presetek:** a 13 `FRAME.md` rögzített commitról, SHA256-tal, első használatkor
+  letöltve (DECISIONS 24). Csak a tokeneket használjuk (színek, betűk, sarkok).
+  A presetek elrendezési és mozgási szabályait nem: a kép a mi 39
+  archetípusunk marad, a MOTION szabályokkal.
+- **Betűk:** a presetek Google Fonts betűket neveznek meg. A kánon szerint a
+  kompozícióban nincs Google Fonts link, ezért a betűfájlok (OFL) helyben
+  kerülnek a projektbe. A galéria jelzi, ha egy betűből hiányzik a tartalom
+  nyelvének ékezete (ő, ű), és azt a presetet arra a nyelvre nem ajánlja.
+- **Galéria** az onboarding Brand lépésében és a Settingsben: előnézet a mi
+  blokkjainkból renderelt állóképekkel, nem a HyperFrames showcase-ével, hogy azt
+  lássa a user, amit kapni fog.
+- **Brand varázsló** (opcionális, Settingsből és az onboardingból indítható): a
+  kérdései Zoltan jóváhagyására várnak (lásd lent). Kimenete a user saját
+  `FRAME.md`-je és a feltöltött assetek a config mappában.
 
 ### 15. Autopilot
 
 - Ugyanaz a menet `recommended` módban, `pending` nélkül. Hibánál megáll, és a
-  hibás kapunál nyílik meg (SPEC 6). A kapu újrafuttatása érvényteleníti a
-  későbbieket (ez a runnerben már megvan).
+  hibás kapunál nyílik meg (SPEC 6).
 
 ### 16. vidIQ (opcionális)
 
 - Az 1. kapuban kulcsszó adat a vidIQ MCP szerveréből a user kulcsával, ha van
-  (DECISIONS 42). Ha nincs, a kulcsszó kézzel vagy a Brief Cardból jön.
+  (DECISIONS 42).
 
 ### 17. Tesztek
 
 - runner unit tesztek minden új kapura (mock szolgáltatókkal), Rust tesztek az új
   parancsokra (fehérlista, kulcsnév, útvonal a Projects alatt).
-- `scripts/phase2/e2e.mjs`: egy rögzített rövid script, edge TTS, mock LLM a
-  jelenet-táblára, végig a renderig, gyors módban, helyben.
+- `scripts/phase2/e2e.mjs`: rögzített rövid script, ingyenes TTS, mock LLM a
+  jelenet-táblára, végig a renderig, gyors módban.
 - A tiltott-nevek teszt kiterjesztése az új promptokra.
 
 ### 18. Kézi elfogadás Zoltannal, fázis vége
@@ -189,28 +232,25 @@ jóváhagyásod után merge-ölöm.
 
 ## Köztes megállók (nem merge, csak megnézed)
 
-1. A 3. lépés brand-frames PR-je (a kánon kódja).
-2. A 6. lépés után: a hang a UI-ban, meghallgatod.
-3. A 11. lépés után: az első render az appból, presettel.
+1. A 6. lépés után: a hang és a zene a UI-ban, meghallgatod.
+2. A 11. lépés után: az első render az appból, presettel.
+3. A 14. lépés után: a Brand varázsló, végigkattintod.
 
-## Zoltan döntésére vár (a terv jóváhagyásával együtt)
+## Zoltan döntésére vár
 
-1. **Egy fázis vagy kettő?** Javaslat: marad egy fázis, egy PR, a fenti köztes
-   megállókkal. A másik lehetőség 2A (1-11. lépés, avatar és presetgaléria
-   nélkül) és 2B külön PR-ben: kisebb PR-ek, de két kézi elfogadás.
-2. **CI a 2. fázisban.** A `BRAND_FRAMES_TOKEN` (ingyenes). Az e2e teszt a CI-ban
-   render miatt futásonként kb. 10 perc Windowson és a macOS 10-es szorzóval kb.
-   100 perc a keretből. Javaslat: az e2e csak kézi indításra fut a CI-ban, a
-   PR-en csak a build és a unit tesztek.
-3. **Zene (SPEC 12.6).** Javaslat: pár licenctiszta (CC0) háttérzene, pinnelt
-   forrásból első használatkor letöltve, mint a presetek, plusz "Use my own
-   file". A konkrét forrást a 6. lépésben mérve hozom.
-4. **Ingyenes TTS tartalék (SPEC 12.2).** A `hyperframes tts` kiesett (7. tény).
-   Javaslat: a 6. lépésben két jelöltet mérek (méret, minőség, Python nélkül
-   fut-e), és hozom a javaslatot. A v1 addig csak Edge TTS és ElevenLabs.
+1. **CI.** A meglévő CI marad, ahogy van: minden PR-en build és unit tesztek. A
+   renderelő végigfutó teszt csak kézi indításra fusson, a fázis végén egyszer.
+2. **TTS sorrend:** ElevenLabs, Microsoft online hangok, tartaléknak a Gemini TTS
+   mérés után.
+3. **Zene sorrend:** ElevenLabs Music, HeyGen katalógus (ha a feltételei
+   engedik), CC0 letöltés, saját fájl.
+4. **ffmpeg Macen:** `eugeneware/ffmpeg-static` GitHub kiadás, a CI ellenőrzi.
+5. **Brand varázsló kérdései** (javaslat a chatben, 2026-09-30).
 
 ## Nem ebben a fázisban
 
 Pilot barátokkal (3. fázis). Aláírás, updater, nyilvános telepítő repó (4.
 fázis). `talking_head` és `screenrecording` videótípus: a v1 csak `explainer`
-(avatarral vagy anélkül). Thumbnail generálás (PRD 4). Import a Tervező appból.
+(avatarral vagy anélkül). Beégetett felirat a preset `caption-skin`-jével (a v1
+SRT fájlt ad). A HyperFrames registry blokkjai és példa-sablonjai (`hyperframes
+add`, `init --example`). Thumbnail generálás. Import a Tervező appból.
