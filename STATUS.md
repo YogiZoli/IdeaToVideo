@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-09-30
+Frissítve: 2026-10-01
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -92,12 +92,34 @@ Kész (2026-09-30):
   ElevenLabs saját hangok (v2); feliratok és fejezetek; Autopilot; e2e teszt
   (`npm run e2e`, 11/11). Tesztek: 103 Node, 17 Rust.
 
-**A következő konkrét lépés: Zoltan próbája az új telepítővel**, élesben
-azokkal, amik kulcsot kérnek: ElevenLabs saját klón és Music, HeyGen avatar
-(a saját avatarjai látszanak-e), vidIQ kulcsteszt és kulcsszó-ötletek. A talált
-hibák javítása után a 2. fázisból csak a három varázsló marad
-(`docs/wizards/`), külön chatekben, utána a fázis vége: Mac build
-(`gh workflow run build -f platforms=both`, a jóváhagyott változaton), PR.
+- **Kész még (2026-10-01), a 3. feedback kör után:** Settings összeomlás
+  javítva (bindable fallback); projekt útvonal rögzítve a nézetben; avatar
+  előnézetek párhuzamosan, százalékkal; új hangnál a régi jelenet-tábla
+  törlődik, jóváhagyás csak illő táblára; Gemini 503-nál a másik Gemini
+  modell; avatar elhelyezés: kivágott (HeyGen WebM, átlátszó háttér), kör,
+  kártya, teljes kép; négy sarok, három méret; alap a Settingsben, videónként
+  az 5. kapuban, átváltás költség nélkül (DECISIONS 65); telepítő ikon.
+  Tesztek: 106 Node, 17 Rust, e2e 11/11. Utolsó telepítő: commit 862344b.
+- **UI próbakörnyezet:** `scripts/ui-mock/` (a leírás a `prepare.mjs` fejében):
+  az app felülete sima böngészőben, ál-Tauri maggal, ami minden hívást naplóz.
+  Így került elő a Settings összeomlás. UI hibánál ezzel kezdd.
+
+## Sorrend innen (Zoltan, 2026-10-01): négy külön chat
+
+1. **Hibátlanítás** (Opus 5.5, High). Zoltan a telepített appot használja, a
+   hibákat a `feedback/ÉÉÉÉ-HH-NN/` mappába teszi. A chat addig javít, amíg
+   nincs új hiba. Új funkció nem kerül bele, csak javítás.
+2. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
+   betűk.
+3. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
+   feladat a `docs/motion-wizard.md` átírása a D útra, Zoltan jóváhagyása,
+   csak utána kód.
+4. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltantól kell a
+   15 alap kulcsszó és a komment-CTA működése.
+
+Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
+jóváhagyott változaton), STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR
+`phase-2` a main felé, Zoltan jóváhagyása, merge.
 
 **Nyitott, a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
 betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseréli),
