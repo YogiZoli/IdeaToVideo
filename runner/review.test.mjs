@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { landedTimes, mountsOf, tileFilter } from "./gates/review/index.mjs";
+import { landedTimes, mountsOf, tileFilter, stillsOf } from "./gates/review/index.mjs";
 import { createProject, loadProject, saveProject, setGate } from "./project.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -34,5 +34,15 @@ test("build-video and render-video wait for the gate before them", () => {
   assert.match(run("render-video").message, /Approve the contact sheet first/);
   saveProject(proj, setGate(loadProject(proj), "review", { state: "pending" }));
   assert.match(run("render-video").message, /Approve the contact sheet first/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test("the stills in scene order, with their moment", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-stills-"));
+  assert.deepEqual(stillsOf(dir), []);
+  const shots = path.join(dir, "review", "snapshots");
+  fs.mkdirSync(shots, { recursive: true });
+  for (const f of ["frame-10-at-40.2s.png", "frame-02-at-9.36s.png", "frame-00-at-3.89s.png", "contact-sheet.jpg", "list.txt"]) fs.writeFileSync(path.join(shots, f), "");
+  assert.deepEqual(stillsOf(dir).map((s) => [s.scene, s.at]), [[1, 3.89], [2, 9.36], [3, 40.2]]);
   fs.rmSync(dir, { recursive: true, force: true });
 });

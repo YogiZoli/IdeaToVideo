@@ -67,7 +67,19 @@ export async function contactSheet(projectDir, { env = process.env, onProgress =
   fs.writeFileSync(list, pngs.map((f) => `file '${path.join(shots, f).replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n") + "\n");
   const sheet = path.join(review, "contact.png");
   await ffmpeg(["-f", "concat", "-safe", "0", "-i", list, "-vf", tileFilter(pngs.length), "-frames:v", "1", sheet], env);
-  return { sheet, frames: pngs.length };
+  return { sheet, frames: pngs.length, stills: stillsOf(projectDir) };
+}
+
+// The stills of the last build, in scene order, for the UI: one per scene,
+// with the moment it shows ("frame-03-at-12.9s.png" -> scene 4 at 12.9 s).
+export function stillsOf(projectDir) {
+  const shots = path.join(projectDir, "review", "snapshots");
+  if (!fs.existsSync(shots)) return [];
+  return fs
+    .readdirSync(shots)
+    .filter((f) => /^frame-\d+-at-[\d.]+s\.png$/.test(f))
+    .sort(byNumber)
+    .map((f, i) => ({ scene: i + 1, at: Number(/-at-([\d.]+)s\.png$/.exec(f)[1]), file: path.join(shots, f) }));
 }
 
 // Gate 4: build, check, sheet.

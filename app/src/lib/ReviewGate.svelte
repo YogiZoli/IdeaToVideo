@@ -1,8 +1,9 @@
 <script lang="ts">
   // Gate 4: build the video from the approved scene table, check it (0 errors),
-  // show the contact sheet (one still per scene), approve, then render once,
-  // locally, into the project's out/ folder, with captions (.srt) and the
-  // YouTube chapter list next to it.
+  // show one still per scene (click to enlarge, arrows to page), approve, then
+  // render once, locally, into the project's out/ folder, with captions (.srt)
+  // and the YouTube chapter list next to it. The page says what this step is
+  // for, what to look for and what comes next (Zoltan's feedback, 2026-09-30).
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import { onDestroy } from "svelte";
@@ -11,8 +12,20 @@
   import type { Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
+  type Still = { scene: number; at: number; file: string };
   type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string };
-  let { dir, gate, scenesApproved, latest, look = "blue-professional", changed }: { dir: string; gate?: Gate; scenesApproved: boolean; latest?: Video | null; look?: string; changed: () => Promise<void> } = $props();
+  let { dir, gate, scenesApproved, latest, stills = [], look = "blue-professional", changed }: { dir: string; gate?: Gate; scenesApproved: boolean; latest?: Video | null; stills?: Still[]; look?: string; changed: () => Promise<void> } = $props();
+
+  let open = $state<number | null>(null); // index of the enlarged still
+  const src = (f: string) => convertFileSrc(f) + `?t=${stamp}`;
+  const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  function onKey(e: KeyboardEvent) {
+    const i = open;
+    if (i === null) return;
+    if (e.key === "Escape") open = null;
+    if (e.key === "ArrowRight") open = Math.min(stills.length - 1, i + 1);
+    if (e.key === "ArrowLeft") open = Math.max(0, i - 1);
+  }
 
   const MINUTES_PER_VIDEO_MINUTE = 2.2; // measured, phase 2 pilot
 
@@ -37,7 +50,6 @@
   }
 
   const built = $derived(gate?.state === "pending" || gate?.state === "approved");
-  const sheetSrc = $derived(convertFileSrc(`${dir}/review/contact.png`) + `?t=${stamp}`);
 
   const unlisten = onProgress((p) => {
     const s = p.progress;
@@ -92,7 +104,8 @@
     }
   }
 
-  const estimate = $derived(seconds ? Math.max(1, Math.round((seconds / 60) * MINUTES_PER_VIDEO_MINUTE)) : null);
+  const length = $derived(seconds ?? (stills.length ? stills[stills.length - 1].at : null));
+  const estimate = $derived(length ? Math.max(1, Math.round((length / 60) * MINUTES_PER_VIDEO_MINUTE)) : null);
 </script>
 
 <section class="card">
@@ -104,16 +117,30 @@
   {#if !scenesApproved}
     <p class="hint">Approve the scene table first.</p>
   {:else}
+    {#if gate?.state !== "approved"}
+      <div class="explain">
+        <p><strong>What this step is:</strong> a quick check before the render. The app builds your video from the scene table and tests it for cut-off text, contrast and timing. This takes about a minute; the render itself takes {estimate ? `about ${estimate} minute${estimate > 1 ? "s" : ""}` : "a few minutes"}, so a mistake is cheaper to catch here.</p>
+        <p><strong>What you see:</strong> one picture per scene, as it looks just before the scene ends. Pictures do not move; the video does. Click a picture to see it large, use the arrow keys to page.</p>
+        <p><strong>What to look for:</strong> text cut off or too small, an empty picture, a wrong word.</p>
+        <p><strong>To change a scene:</strong> go back to 3. Scene table, swap the scene or edit its text, approve it, then build again here.</p>
+        <p><strong>Next:</strong> approve the pictures, then render the video.</p>
+      </div>
+    {/if}
     <div class="actions">
-      <span class="hint grow">Builds the video from your scene table and checks it. Then you see one still per scene.</span>
       <button type="button" class="primary" disabled={busy} onclick={build}>{built ? "Build again" : "Build and check (Recommended)"}</button>
     </div>
     {#if busy && !rendering}<Progress command="build-video" label={step || "Building the video"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "review" }} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={{ step: "review" }} />{/if}
 
-    {#if built}
-      <p class="hint">Contact sheet: one still per scene, as it looks just before the scene ends. It shows no motion.</p>
-      <img class="sheet" src={sheetSrc} alt="Contact sheet: one still per scene" />
+    {#if built && stills.length}
+      <div class="stills">
+        {#each stills as s, i (s.file)}
+          <button type="button" class="still" onclick={() => (open = i)} title="Scene {s.scene} at {clock(s.at)}: click to enlarge">
+            <img src={src(s.file)} alt="Scene {s.scene}" loading="lazy" />
+            <span>Scene {s.scene} · {clock(s.at)}</span>
+          </button>
+        {/each}
+      </div>
       <div class="actions">
         <button type="button" class="primary" disabled={busy || gate?.state === "approved"} onclick={approve}>{gate?.state === "approved" ? "Approved" : "Approve contact sheet"}</button>
       </div>
@@ -151,12 +178,37 @@
   {/if}
 </section>
 
+<svelte:window onkeydown={onKey} />
+{#if open !== null && stills[open]}
+  <div class="lightbox" role="dialog" aria-modal="true" aria-label="Scene {stills[open].scene}">
+    <button type="button" class="backdrop" aria-label="Close" onclick={() => (open = null)}></button>
+    <figure>
+      <img src={src(stills[open].file)} alt="Scene {stills[open].scene}" />
+      <figcaption>
+        <button type="button" disabled={open === 0} onclick={() => (open = Math.max(0, (open ?? 0) - 1))}>Previous</button>
+        <span>Scene {stills[open].scene} of {stills.length} · {clock(stills[open].at)}</span>
+        <button type="button" disabled={open === stills.length - 1} onclick={() => (open = Math.min(stills.length - 1, (open ?? 0) + 1))}>Next</button>
+        <button type="button" onclick={() => (open = null)}>Close</button>
+      </figcaption>
+    </figure>
+  </div>
+{/if}
+
 <style>
   .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   h2 { margin: 0; font-size: 17px; }
   .actions, .render { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; }
   .grow { flex: 1; }
-  .sheet { width: 100%; border-radius: 8px; margin-top: 8px; background: var(--muted); }
+  .explain { background: var(--muted); border-radius: 8px; padding: 10px 14px; font-size: 14px; }
+  .explain p { margin: 6px 0; }
+  .stills { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 12px; }
+  .still { display: grid; gap: 4px; padding: 4px; border-radius: 8px; background: var(--muted); cursor: zoom-in; text-align: left; font-size: 12px; }
+  .still img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; }
+  .lightbox { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; }
+  .backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / 0.75); border: 0; cursor: zoom-out; }
+  figure { position: relative; margin: 0; width: min(92vw, 1400px); display: grid; gap: 8px; }
+  figure img { width: 100%; border-radius: 8px; }
+  figcaption { display: flex; gap: 8px; align-items: center; justify-content: center; color: white; }
   video { width: 100%; margin-top: 8px; border-radius: 8px; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
   .good { color: var(--success); }

@@ -24,7 +24,7 @@ import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
-import { buildAndReview } from "./gates/review/index.mjs";
+import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
 import { isLightLook } from "./gates/build/assemble.mjs";
 import { timed } from "./timings.mjs";
@@ -116,7 +116,7 @@ const commands = {
   "load-project": async ({ projectDir }) => {
     const project = loadProject(projectDir);
     const md = path.join(projectDir, "script.md");
-    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir) };
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir) };
   },
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or

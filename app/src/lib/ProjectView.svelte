@@ -20,6 +20,7 @@
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     latestVideo: { file: string; chapters: string | null; srt: string | null } | null;
+    stills: { scene: number; at: number; file: string }[];
   };
 
   const GATE_LABELS: [string, string][] = [
@@ -260,7 +261,7 @@
 
     <VoiceGate {app} {dir} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
     <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
-    <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
+    <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} stills={data.stills} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
   {/if}
 </div>
 
