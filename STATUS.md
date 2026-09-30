@@ -48,26 +48,44 @@ Kész (2026-09-30):
   saját zenefájl, ElevenLabs Music, keverés -14 LUFS-re, UI lejátszókkal.
 - Saját mondattábla (`runner/timing/sentences.mjs`).
 - lint + check és render runner parancs (a C2C-n kipróbálva a régi úton).
-- Tesztek: 68 Node, 17 Rust, zöld. Telepítő utoljára 99 MB (még a kánonnal).
+- Telepítő utoljára 100 MB (2026-09-30, a 2. kapuval).
 
-**A következő konkrét lépés: a registry-próba befejezése.**
-1. `runner/assemble.mjs`: a jelenet-táblából (komponens + változók + mondat-
-   horgony) és a `sentences.json`-ból megírja a `build/index.html`-t: gyökér
-   kompozíció, `class="clip"` mountok `data-composition-src`-vel és
-   `data-variable-values`-szal, időzítés a mondatokból, hang, helyi GSAP,
-   témaváltozók a `:root`-on.
-2. Próba-videó: 8 jelenet (mindegyik komponens egyszer, a per-word-rise
-   kétszer, mert a timeline-kulcsuk rögzített, ütközhet), kb. 30 mp, kétféle
-   témával. lint, check, render, idő és hiba mérése, kontakt lap ffmpeg-gel.
-3. Ennek alapján: a könyvtár bővítése (kb. 20-25 komponens), utána a
-   3. kapu (jelenet-tábla) promptja a komponensek `registry-item.json`-jából.
+- **Registry-próba kész** (2026-09-30): `runner/gates/build/assemble.mjs` a
+  jelenet-táblából és a `sentences.json`-ból megírja a `build/`-et, jelenetenként
+  a saját hosszára illesztett komponens-másolattal. `scripts/phase2/pilot.mjs`:
+  15 jelenet, 50 mp, két téma, lint + check 0 hiba, render 112 mp (kb. 2,2 perc
+  gépidő videópercenként). Találatok: a HyperFrames minden változót CSS-változóként
+  is kiír (az `accent` ezért nem mehet be változóként, a téma `--itv-*` néven
+  él); a komponensek további téma-tokeneket olvasnak (`muted`, `surface`,
+  `border`, `radius`, három betű).
+- **Könyvtár: 15 komponens** (DECISIONS 55), mondat-szerepek szerint.
+- Telepítő a 2. kapuval: Zoltan telepítette, a hang és a zene rendben (2026-09-30).
+- Tesztek: 68 Node, 17 Rust, zöld.
+
+**A következő konkrét lépés: 3. kapu, jelenet-tábla** (terv 8. lépés).
+1. `runner/gates/scenes/`: a prompt a 15 komponens `registry-item.json`-jából
+   (leírás, szerep, változók). Mondatonként vagy mondatcsoportonként egy jelenet,
+   JSON séma szerint, a változók ellenőrzése az assembler `checkVars`-ával, egy
+   javító hívás. Napló arról, ha egy mondathoz nem talált illő szerepet.
+2. UI: a jelenet-tábla egyszerű nevekkel, soronként csere ugyanabban a
+   szerepben, Approve. Utána build, check, kontakt lap, render az appból.
+3. Tudnivaló a prompthoz: a `headline-slam` árnyéka világos témán sáros,
+   ott `shadow: false`.
+
+**Nyitott, a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
+betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseréli),
+és a komponensek tartalékként `Inter`-t írnak. Megoldás: helyi OFL betűfájlok
+`@font-face`-szel a buildben, így nincs hálózati hívás és idegen betű.
 
 ## Zoltan döntésére vár
 
-1. A kulcsszavas komment-CTA részletei (a vidrev.app 15 kulcsszava, márkanév
-   nélkül): Zoltan később adja.
-2. A `docs/motion-wizard.md` 2. változata (a D út miatt a MOTION-korlátok nélkül,
-   a "Visszatérő elemek" a CTA varázslóba kerül): átírandó, jóváhagyásra.
+1. A kulcsszavas komment-CTA és a CTA varázsló részletei: Zoltan később adja.
+2. A `docs/motion-wizard.md` 2. változata (a D út szerint átírandó,
+   jóváhagyásra).
+3. A v1 videótípusa: explainer? Zoltan még nem döntött, a DECISIONS-be még nem
+   kerül.
+4. A teljes registry (234 komponens): érvek a DECISIONS 56-ban, Zoltan később
+   átnézi.
 
 ## Hogyan indul egy új session
 

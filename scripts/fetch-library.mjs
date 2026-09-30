@@ -29,6 +29,7 @@ const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 export function rawUrl(commit, name, file) {
   if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error(`Not a pinned commit: ${commit}`);
   if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`Bad component name: ${name}`);
+  if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*\.[a-z0-9]+$/i.test(file)) throw new Error(`Bad file path in ${name}: ${file}`);
   return `https://raw.githubusercontent.com/heygen-com/hyperframes/${commit}/registry/components/${name}/${file}`;
 }
 
@@ -50,9 +51,14 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   const stage = `${out}.new`;
   fs.rmSync(stage, { recursive: true, force: true });
   for (const name of list.components) {
-    for (const file of [`${name}.html`, "registry-item.json"]) {
+    // registry-item.json first: it lists the component's files (the HTML, and
+    // for some, assets such as fonts), every one of them pinned in the lock.
+    const item = await get(rawUrl(list.commit, name, "registry-item.json"), fetchImpl);
+    const files = JSON.parse(item.toString("utf8")).files?.map((f) => f.path) ?? [];
+    if (!files.includes(`${name}.html`)) throw new Error(`${name}: registry-item.json does not list ${name}.html`);
+    for (const file of ["registry-item.json", ...files]) {
       const url = rawUrl(list.commit, name, file);
-      const buf = await get(url, fetchImpl);
+      const buf = file === "registry-item.json" ? item : await get(url, fetchImpl);
       const key = `${name}/${file}`;
       const got = sha256(buf);
       if (update) lock.files[key] = got;

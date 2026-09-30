@@ -58,7 +58,8 @@ HeyGen kulcsával, ha a kreditje engedi.
   `skills/hyperframes-creative/frame-presets/`, 13 darab. Mindegyik egy
   `FRAME.md` (színek, betűk, sarkok), egy `caption-skin.html` és egy
   `frame-showcase.html`. Apache-2.0. Mozgást nem tartalmaznak.
-- **Registry komponensek** (8 letöltve, `library/components.json`): minden
+- **Registry komponensek** (15 a könyvtárban, DECISIONS 55; a registryben 234,
+  DECISIONS 56): minden
   komponens egy `<template>`-es sub-kompozíció, `data-composition-variables`
   deklarációval, és a `registry-item.json` leírja a változókat (típus, szerep,
   alapérték, opciók) és a szinkronpontokat. Témaváltozóik: `--bg`, `--fg`,
@@ -106,7 +107,7 @@ Minden lépés a `phase-2` branchen, külön committal.
 
 - `runner/timing/sentences.mjs`: `sentences.json`, `words.json`.
 
-### 7. Registry-próba (MOST)
+### 7. Registry-próba (kész, 2026-09-30)
 
 1. `runner/assemble.mjs`: a jelenet-táblából (komponens, változók,
    mondat-horgony) és a `sentences.json`-ból megírja a `build/index.html`-t:
@@ -121,7 +122,7 @@ Minden lépés a `phase-2` branchen, külön committal.
    próba ütközést vagy időzítési hibát talál, a javítás módja (például a
    komponens másolatának átnevezése a build közben).
 
-### 8. 3. kapu: jelenet-tábla
+### 8. 3. kapu: jelenet-tábla (MOST)
 
 - `runner/gates/scenes/`: a prompt a komponensek `registry-item.json`-jából
   (leírás, `jobs`, változók, szinkronpontok) épül. Mondatonként egy jelenet

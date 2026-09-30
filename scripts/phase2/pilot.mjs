@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// pilot.mjs: the registry pilot (phase 2, step 7). One fixed ~30 s video, every
-// library component once and per-word-rise twice, in two themes. For each
+// pilot.mjs: the registry pilot (phase 2, step 7). One fixed ~60 s video, every
+// library component once, in two themes. For each
 // theme: assemble, lint, check, snapshots at scene midpoints, a contact sheet
 // (ffmpeg), and a render. Prints what each step took and how it ended.
 //
@@ -41,17 +41,24 @@ const exe = process.platform === "win32" ? ".exe" : "";
 env.HYPERFRAMES_FFMPEG_PATH ??= path.join(ff, `ffmpeg${exe}`);
 env.HYPERFRAMES_FFPROBE_PATH ??= path.join(ff, `ffprobe${exe}`);
 
-// Nine sentences, one scene each. Times as a voice gate would measure them.
+// One sentence per scene, every library component once. Times as a voice gate
+// would measure them.
 const LINES = [
   ["titlecard-lockup", "Here is a new way to make videos.", { kicker: "NEW", wordmark: "IDEA TO VIDEO", label: "FROM A THOUGHT TO A FILM" }],
+  ["titlecard-calm", "First, a simple principle.", { kicker: "CHAPTER ONE", headline: "Say one thing at a time" }],
   ["per-word-rise", "Every scene follows the voice.", { text: "FOLLOW THE VOICE" }],
   ["kinetic-type-swap", "It can be faster, simpler, and yours.", { prefix: "Make it", options: "faster,simpler,yours" }],
+  ["headline-slam", "Stop waiting for the perfect moment.", { text: "Start today", accent_word_index: 1, accent: "blue" }],
+  ["vox-annotate", "The story matters more than the tools.", { text: "Tell the story, not the tools", keyword: "story", note: "what people remember", style: "circle" }],
+  ["marker-highlight", "Clarity beats cleverness every time.", { text: "Clarity beats cleverness", emphasis_word: "Clarity", style: "underline" }],
   ["count-up", "Most viewers decide in the first eight seconds.", { start: 0, end: 8, suffix: " s" }],
   ["chart-story", "Retention climbs when the picture matches the words.", { type: "bars", data: "31, 44, 58, 72", labels: "Week 1, Week 2, Week 3, Week 4", emphasize: 4, unit: "%" }],
+  ["conic-progress-ring", "Three out of four finish the video.", { progress: 75, label: "75%" }],
   ["grid-card-assemble", "Write, record, build, and publish.", { items: "Write,Record,Build,Publish" }],
-  ["vox-annotate", "The story matters more than the tools.", { text: "Tell the story, not the tools", keyword: "story", note: "what people remember", style: "circle" }],
-  ["per-word-rise", "Keep one idea on the screen at a time.", { text: "ONE IDEA AT A TIME", split: "char", accent: "blue" }],
+  ["constellation-hub", "Everything connects to one idea.", { hub_label: "Your idea", nodes: "Script,Voice,Scenes,Video" }],
+  ["whiteboard-ink", "Sketch the idea before you build it.", { sketch: "bulb", caption: "Sketch it first" }],
   ["cta-close", "Start your first video today.", { action_line: "Start your first video", button_label: "Open the app" }],
+  ["logo-brand-close", "See you in the next one.", { wordmark: "IDEA TO VIDEO", tagline: "From a thought to a film", url: "example.com" }],
 ];
 const GAP = 0.35;
 const sentences = [];
@@ -110,7 +117,7 @@ for (const name of args.theme ? [args.theme] : Object.keys(THEMES)) {
 
   // One frame just before every scene ends (the landed state: components
   // build up over the whole scene, so the middle can show half of it), then a
-  // 3x3 contact sheet.
+  // 5x3 contact sheet.
   const html = fs.readFileSync(path.join(buildDir(dir), "index.html"), "utf8");
   const mids = [...html.matchAll(/id="scene-\d+"[^>]*data-start="([\d.]+)" data-duration="([\d.]+)"/g)].map((m) => (Number(m[1]) + Math.max(Number(m[2]) - 0.2, Number(m[2]) / 2)).toFixed(2));
   const shots = path.join(dir, "review", "snapshots");
@@ -124,7 +131,7 @@ for (const name of args.theme ? [args.theme] : Object.keys(THEMES)) {
     if (!pngs.length) throw new Error("no snapshots");
     const list = path.join(shots, "list.txt");
     fs.writeFileSync(list, pngs.map((f) => `file '${path.join(shots, f).replace(/\\/g, "/")}'`).join("\n") + "\n");
-    ffmpeg(["-f", "concat", "-safe", "0", "-i", list, "-vf", "scale=640:-1,tile=3x3:padding=8:margin=8:color=gray", "-frames:v", "1", path.join(dir, "review", "contact.png")]);
+    ffmpeg(["-f", "concat", "-safe", "0", "-i", list, "-vf", "scale=640:-1,tile=5x3:padding=8:margin=8:color=gray", "-frames:v", "1", path.join(dir, "review", "contact.png")]);
   });
   if (args.render && !args["no-render"]) {
     const r = await timed("render", () => renderVideo(dir, { env }));

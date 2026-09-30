@@ -72,8 +72,9 @@ const COMPONENT = '<html data-composition-duration="3"><template><div id="root" 
 test("a component is fitted to its scene's length", () => {
   const html = fitDuration(COMPONENT, "count-up", 4.25);
   assert.equal(html, '<html data-composition-duration="4.25"><template><div id="root" data-duration="4.25"><div class="clip" data-start="0" data-duration="4.25"></div></div></template></html>');
-  assert.throws(() => fitDuration('<div data-duration="3">', "x", 4), /no data-composition-duration/);
-  assert.throws(() => fitDuration('<html data-composition-duration="3"><div data-duration="3"></div><div data-duration="1.5"></div>', "x", 4), /other lengths \(1.5\)/);
+  assert.equal(fitDuration('<template><div id="root" data-duration="4"><i class="clip" data-duration="4"></i></div></template>', "x", 5), '<template><div id="root" data-duration="5"><i class="clip" data-duration="5"></i></div></template>', "no data-composition-duration: the root's length counts");
+  assert.throws(() => fitDuration('<div class="clip">', "x", 4), /no authored length/);
+  assert.throws(() => fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div><div data-duration="1.5"></div>', "x", 4), /other lengths \(1.5\)/);
 });
 
 function fixture() {

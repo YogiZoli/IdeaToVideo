@@ -56,16 +56,23 @@ export function loadComponent(name, { env = process.env } = {}) {
   const item = JSON.parse(fs.readFileSync(itemFile, "utf8"));
   const file = item.files?.find((f) => f.path === `${name}.html`);
   if (!file) throw new Error(`${name}: registry-item.json names no ${name}.html.`);
-  return { name, item, html: fs.readFileSync(path.join(dir, file.path), "utf8"), target: file.target };
+  // Other files (fonts and the like) go into build/ at their registry target,
+  // where the component's HTML expects them.
+  const assets = (item.files ?? []).filter((f) => f !== file).map((f) => {
+    if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*\.[a-z0-9]+$/i.test(f.target ?? "")) throw new Error(`${name}: bad file target ${f.target}.`);
+    return { from: path.join(dir, f.path), target: f.target };
+  });
+  return { name, item, html: fs.readFileSync(path.join(dir, file.path), "utf8"), target: file.target, assets };
 }
 
-// The component with its authored length replaced by `seconds`: the
-// data-composition-duration on <html>, and every data-duration equal to it
-// (the template root and the clip). Anything else would be a component with
-// more than one timed part, which the fit cannot stretch safely.
+// The component with its authored length replaced by `seconds`. The authored
+// length is the one on the template root (id="root"); every data-duration equal
+// to it (the root and the clip) and the data-composition-duration on <html>, if
+// there is one, get the new length. A component with timed parts of another
+// length cannot be stretched safely, so it is refused.
 export function fitDuration(html, name, seconds) {
-  const m = /data-composition-duration="([\d.]+)"/.exec(html);
-  if (!m) throw new Error(`${name}: no data-composition-duration, so its length cannot be fitted.`);
+  const m = /<div[^>]*\bid="root"[^>]*\bdata-duration="([\d.]+)"/.exec(html) ?? /data-composition-duration="([\d.]+)"/.exec(html);
+  if (!m) throw new Error(`${name}: no authored length, so it cannot be fitted to the scene.`);
   const authored = m[1];
   const others = [...html.matchAll(/data-duration="([\d.]+)"/g)].filter((x) => x[1] !== authored);
   if (others.length) throw new Error(`${name}: has timed parts of other lengths (${others.map((x) => x[1]).join(", ")}), so its length cannot be fitted.`);
@@ -285,6 +292,12 @@ export async function assemble(projectDir, { env = process.env, total, language,
 
   const { out } = prepareBuild(projectDir, { env });
   fs.mkdirSync(path.join(out, "compositions", "components"), { recursive: true });
+  for (const c of components.values()) {
+    for (const a of c.assets) {
+      fs.mkdirSync(path.dirname(path.join(out, a.target)), { recursive: true });
+      fs.copyFileSync(a.from, path.join(out, a.target));
+    }
+  }
   const mounts = scenes.map((sc, n) => {
     const src = `compositions/components/scene-${n + 1}-${sc.component}.html`;
     fs.writeFileSync(path.join(out, src), fitted[n]);

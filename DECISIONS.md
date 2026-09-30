@@ -154,3 +154,33 @@
 54. A kész brand-frames PR #6 (`--outdir`, helyi GSAP, semleges alapértékek) bent
     marad a kánonban, Zoltan saját menetének sem árt. A második (semlegesítő) PR
     leállítva, mert az appnak nem kell.
+55. **A könyvtár v1: 15 komponens a HyperFrames registryből** (Zoltan jóváhagyta a
+    18-at, a próba után 15 maradt). Mondat-szerepenként 2-3 lehetőség, hogy az AI
+    váltogathasson és a user cserélhessen, de ne kelljen választania: nyitás
+    (titlecard-lockup, titlecard-calm), kulcsmondat (per-word-rise,
+    kinetic-type-swap, headline-slam), kiemelés (vox-annotate, marker-highlight),
+    bizonyíték (count-up, chart-story, conic-progress-ring), felsorolás
+    (grid-card-assemble, constellation-hub), magyarázó rajz (whiteboard-ink),
+    zárás (cta-close, logo-brand-close). A próbán kiesett, mert nem követi a
+    témát vagy üres makettet mutat: decline-chart, marker-checklist-card,
+    comparison-split. Kihagyva: termékdemó és kurzor (felvétel kell), feliratok
+    (a v1 SRT-t ad), átmenetek (Mozgás varázsló), zajos effektek, vélemény- és
+    logó-kártyák (az AI kitalált véleményt vagy cégnevet írna). A bővítés a 3.
+    kapu naplójából jön: ahol nem talált illő szerepet.
+56. **NYITOTT, Zoltan később átnézi: a teljes registry, 234 komponens.** Ennyi van
+    a rögzített commiton (`9a27b9f`). Érvek, ha mind bekerülne:
+    - PRO: a legnagyobb változatosság; nincs előzetes válogatás; mind ugyanaz a
+      licenc (Apache-2.0) és ugyanaz a beillesztési szerződés; a méret nem gond
+      (a 18 komponens 432 KB, a 234 kb. 5-6 MB a telepítőben); egy sorral
+      bármelyik hozzáadható a `library/components.json`-ban.
+    - CON: kb. kétharmaduk nem explainerhez való (termékdemó, kurzor, UI makett,
+      feliratstílus, átmenet), felvétel vagy saját kép nélkül üres; a régebbi,
+      szerep-címke nélküli részük nem követi a témát vagy makettet mutat (a
+      próbán a 18-ból 3 így esett ki); mindegyiket két témával végig kell vinni
+      a próbán (lint, check, render, kontakt lap); a 3. kapu promptja kb. 13-szor
+      hosszabb (a 18 leírása 42 KB, a 234-é kb. 550 KB, kb. 140 ezer token
+      jelenet-táblánként a user kulcsán), és a sok hasonló lehetőség közül az AI
+      bizonytalanabbul választ; a user cserelistája is hosszú.
+    - Köztes út: mind a 234 a telepítőbe kerül, de az AI csak az ellenőrzött és
+      az adott videótípushoz engedélyezett készletből választ (explainer ma,
+      később screenrecording és talking_head saját készlettel).
