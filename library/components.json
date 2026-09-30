@@ -5,7 +5,7 @@
   "components": [
     "titlecard-lockup", "titlecard-calm",
     "per-word-rise", "kinetic-type-swap", "headline-slam",
-    "vox-annotate", "marker-highlight",
+    "marker-highlight",
     "count-up", "chart-story", "conic-progress-ring",
     "grid-card-assemble", "constellation-hub",
     "whiteboard-ink",

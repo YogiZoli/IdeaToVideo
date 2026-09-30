@@ -27,7 +27,7 @@ function fixture() {
     const d = path.join(dir, "library", "components", name);
     fs.mkdirSync(d, { recursive: true });
     fs.writeFileSync(path.join(d, "registry-item.json"), JSON.stringify({ name, description: `${name} does its thing`, variables: VARS, files: [{ path: `${name}.html`, target: `compositions/components/${name}.html` }] }));
-    fs.writeFileSync(path.join(d, `${name}.html`), `<html data-composition-duration="3"><template><div id="root" data-duration="3"></div></template></html>`);
+    fs.writeFileSync(path.join(d, `${name}.html`), `<html data-composition-duration="3"><template><div id="root" data-duration="3"></div><script>root.dataset.duration</script></template></html>`);
   }
   const proj = path.join(dir, "project");
   fs.mkdirSync(proj);
@@ -88,6 +88,7 @@ test("the checks name every problem the repair call has to fix", () => {
   assert.match(check([{ from: "S1", to: "S5", component: "per-word-rise", vars: { text: "one two three four five six seven" } }]), /too long \(at most 6 words\)/);
   assert.match(check([{ from: "S1", to: "S5", component: "grid-card-assemble", vars: { items: "One,Two words here now,Three" } }]), /"Two words here now" is too long \(at most 3 words\)/);
   assert.match(check([{ from: "S1", to: "S5", component: "per-word-rise", vars: { exit: "fade" } }]), /do not set exit/);
+  assert.match(check([{ from: "S1", to: "S5", component: "headline-slam", vars: { text: "Without a framework, videos ramble" } }]), /too long for this component \(at most 3 words\)/);
   assert.match(check([{ from: "S1", to: "S2", component: "per-word-rise" }, { from: "S3", to: "S5", component: "per-word-rise" }]), /same component as the scene before/);
   assert.match(check([{ from: "S1", to: "S2", component: "per-word-rise" }, { from: "S4", to: "S5", component: "headline-slam" }]), /next sentence is S3/);
   assert.match(check([{ from: "S1", to: "S4", component: "per-word-rise" }, { from: "S5", component: "cta-close" }]), /over 12 s: split it/);

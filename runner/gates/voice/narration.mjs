@@ -2,7 +2,7 @@
 // text; Custom edits only change script.md, so script.json may be stale).
 //
 // One block per "## " section (OPEN, 1. ..., OWN). Each block is one TTS call;
-// the voice gate puts a short pause (about 1.2 s) before each section, so
+// the voice gate puts a short pause (about 0.6 s) before each section, so
 // the viewer can follow a process. Not spoken: the "# " title line,
 // headings, and [CALLOUT: ...] notes (those are on-screen text, not narration).
 

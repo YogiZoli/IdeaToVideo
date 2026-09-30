@@ -26,7 +26,8 @@ decoration.
 ## On-screen text
 
 - At most 6 words per text variable, in the language of the narration, taken
-  from the sentences of that scene. Lists: 3 to 6 items of 1 to 3 words.
+  from the sentences of that scene. Lists: 3 to 6 items of 1 to 3 words. Some
+  components allow fewer words: their "maxWords" in the LIBRARY is a hard limit.
 - Numbers only when the narration of that scene says the number. Never invent a
   number, a percentage, a chart value, a name or a quote. If a sentence has no
   number, do not use a component of the role proof.

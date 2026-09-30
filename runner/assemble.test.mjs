@@ -67,14 +67,15 @@ test("accent never becomes a CSS variable; the mount points --brand at the chose
   assert.throws(() => mountTheme({ bg: "#000" }), /would overwrite the theme's --bg/);
 });
 
-const COMPONENT = '<html data-composition-duration="3"><template><div id="root" data-duration="3"><div class="clip" data-start="0" data-duration="3"></div></div></template></html>';
+const COMPONENT = '<html data-composition-duration="3"><template><div id="root" data-duration="3"><div class="clip" data-start="0" data-duration="3"></div><script>var d = parseFloat(root.dataset.duration || "3");</script></div></template></html>';
 
 test("a component is fitted to its scene's length", () => {
   const html = fitDuration(COMPONENT, "count-up", 4.25);
-  assert.equal(html, '<html data-composition-duration="4.25"><template><div id="root" data-duration="4.25"><div class="clip" data-start="0" data-duration="4.25"></div></div></template></html>');
-  assert.equal(fitDuration('<template><div id="root" data-duration="4"><i class="clip" data-duration="4"></i></div></template>', "x", 5), '<template><div id="root" data-duration="5"><i class="clip" data-duration="5"></i></div></template>', "no data-composition-duration: the root's length counts");
+  assert.equal(html, '<html data-composition-duration="4.25"><template><div id="root" data-duration="4.25"><div class="clip" data-start="0" data-duration="4.25"></div><script>var d = parseFloat("4.25" || "3");</script></div></template></html>');
+  assert.throws(() => fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div></html>', "x", 4), /does not read root.dataset.duration/);
+  assert.equal(fitDuration('<template><div id="root" data-duration="4"><i class="clip" data-duration="4"></i><script>Number(root.dataset.duration)</script></div></template>', "x", 5), '<template><div id="root" data-duration="5"><i class="clip" data-duration="5"></i><script>Number("5")</script></div></template>', "no data-composition-duration: the root's length counts");
   assert.throws(() => fitDuration('<div class="clip">', "x", 4), /no authored length/);
-  assert.throws(() => fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div><div data-duration="1.5"></div>', "x", 4), /other lengths \(1.5\)/);
+  assert.throws(() => fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div><div data-duration="1.5"></div>root.dataset.duration', "x", 4), /other lengths \(1.5\)/);
 });
 
 function fixture() {

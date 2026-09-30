@@ -195,3 +195,16 @@
       olvashatósági ökölszabály (a néző egyszerre hallgat és olvas), nem mért.
     Pontosítás: a számok egy helyen vannak (MIN_SECONDS, MAX_SECONDS, MAX_WORDS),
     átírásuk perc; a mérésükhöz valódi videók és nézői adat kell.
+58. **Az első valódi videó javításai** (Zoltan visszajelzése, 2026-09-30):
+    - A komponensek futás közben nem látják a jelenet hosszát: a HyperFrames
+      leveszi a beillesztett gyökérről a `data-duration`-t, így a script a
+      beégetett alapértékre (3,5-5 mp) esett vissza, és a hosszabb jelenet
+      végén üres kép maradt (0:03-0:07, 0:11-0:15). Az assembler a jelenet-
+      másolatban a `root.dataset.duration` olvasását a jelenet hosszára cseréli.
+    - Komponensenkénti szókorlát (`roles.mjs`): a `headline-slam` legfeljebb 3
+      szó (hosszabb sornál a fix betűköz összepréseli a betűket), a
+      `kinetic-type-swap` előtagja 3, utótagja 2 szó.
+    - A szakaszok előtti szünet 1,2 helyett 0,6 mp (üresjáratnak hatott).
+    - A `vox-annotate` kikerült (15 helyett 14 komponens): a vonal nem a szóra
+      mutat, a kiemelés elcsúszik, a jegyzet kilóg. A kiemelés szerepben a
+      `marker-highlight` marad, az tetszett.

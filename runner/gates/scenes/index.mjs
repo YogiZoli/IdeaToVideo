@@ -36,6 +36,7 @@ export function libraryCatalog({ env = process.env } = {}) {
       role: meta.role,
       label: meta.label,
       description: item.description,
+      ...(meta.words ? { maxWords: meta.words } : {}),
       variables: (item.variables ?? [])
         .filter((v) => !HIDDEN_VARS.has(v.id))
         .map((v) => {
@@ -78,7 +79,7 @@ export function buildData({ sentences, sections = [], name = null, themeIsLight 
 
 export function buildMessages(data, catalog) {
   const system = fs.readFileSync(path.join(here, "prompt.md"), "utf8");
-  const library = catalog.map((c) => ({ component: c.name, role: c.role, what: c.description, variables: c.variables }));
+  const library = catalog.map((c) => ({ component: c.name, role: c.role, what: c.description, ...(c.maxWords ? { maxWords: c.maxWords } : {}), variables: c.variables }));
   const roles = Object.fromEntries(Object.entries(ROLES).map(([id, r]) => [id, r.hint]));
   const user = `LIBRARY\n${JSON.stringify({ roles, components: library }, null, 1)}\nEND LIBRARY\n\nDATA\n${JSON.stringify(data, null, 1)}\nEND DATA\n\nPlan the scenes now. Answer with the JSON object only.`;
   return [
@@ -123,6 +124,9 @@ export function checkScenes(answer, { sentences, total, env = process.env }) {
     for (const id of HIDDEN_VARS) if (id in vars) issues.push(`${at}: do not set ${id}`);
     for (const l of onScreen(sc.component, vars)) {
       if (l.item ? words(l.text) > 3 : words(l.text) > MAX_WORDS) issues.push(`${at}: ${l.id} "${l.text}" is too long (at most ${l.item ? 3 : MAX_WORDS} words)`);
+    }
+    for (const [id, max] of Object.entries(COMPONENTS[sc.component].words ?? {})) {
+      if (typeof vars[id] === "string" && words(vars[id]) > max) issues.push(`${at}: ${sc.component} ${id} "${vars[id]}" is too long for this component (at most ${max} words)`);
     }
     if (i > 0 && scenes[i - 1]?.component === sc.component) issues.push(`${at}: same component as the scene before (${sc.component})`);
   });

@@ -50,7 +50,6 @@ const LINES = [
   ["per-word-rise", "Every scene follows the voice.", { text: "FOLLOW THE VOICE" }],
   ["kinetic-type-swap", "It can be faster, simpler, and yours.", { prefix: "Make it", options: "faster,simpler,yours" }],
   ["headline-slam", "Stop waiting for the perfect moment.", { text: "Start today", accent_word_index: 1, accent: "blue" }],
-  ["vox-annotate", "The story matters more than the tools.", { text: "Tell the story, not the tools", keyword: "story", note: "what people remember", style: "circle" }],
   ["marker-highlight", "Clarity beats cleverness every time.", { text: "Clarity beats cleverness", emphasis_word: "Clarity", style: "underline" }],
   ["count-up", "Most viewers decide in the first eight seconds.", { start: 0, end: 8, suffix: " s" }],
   ["chart-story", "Retention climbs when the picture matches the words.", { type: "bars", data: "31, 44, 58, 72", labels: "Week 1, Week 2, Week 3, Week 4", emphasize: 4, unit: "%" }],

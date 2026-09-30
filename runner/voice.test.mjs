@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { narrationFromMarkdown, wordCount } from "./gates/voice/narration.mjs";
 import { wordsFromCharacters } from "./providers/tts/align.mjs";
 import { listVoices, speak, previewAllowed } from "./providers/tts/elevenlabs.mjs";
-import { parseIntegrated, joinFilter, musicGainDb, mixFilter, joinBlocks, mix, loudness, duration } from "./audio.mjs";
+import { parseIntegrated, joinFilter, musicGainDb, mixFilter, joinBlocks, mix, loudness, duration, PAUSE_SECONDS } from "./audio.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const KEY = "el-test-0123456789abcdefghij";
@@ -127,13 +127,13 @@ test("join and mix with the real ffmpeg: offsets, length, -14 LUFS", { skip: !ha
   const vo = path.join(dir, "vo.mp3");
   const j = await joinBlocks([a, b], vo, { env });
   assert.equal(j.offsets[0], 0);
-  assert.ok(Math.abs(j.offsets[1] - 3.2) < 0.1, `second block at ${j.offsets[1]}`);
-  assert.ok(Math.abs((await duration(vo, env)) - 6.2) < 0.15);
+  assert.ok(Math.abs(j.offsets[1] - (2 + PAUSE_SECONDS)) < 0.1, `second block at ${j.offsets[1]}`);
+  assert.ok(Math.abs((await duration(vo, env)) - (5 + PAUSE_SECONDS)) < 0.15);
   const out = path.join(dir, "vo_bgm.mp3");
   const m = await mix({ vo, bgm: music, out, env });
   assert.ok(Math.abs(m.finalLufs - -14) < 1.5, `final ${m.finalLufs} LUFS`);
   assert.ok(m.musicGainDb < 0);
-  assert.ok(Math.abs((await duration(out, env)) - 6.2) < 0.15);
+  assert.ok(Math.abs((await duration(out, env)) - (5 + PAUSE_SECONDS)) < 0.15);
   const solo = path.join(dir, "solo.mp3");
   const s = await mix({ vo, out: solo, env });
   assert.equal(s.musicGainDb, null);

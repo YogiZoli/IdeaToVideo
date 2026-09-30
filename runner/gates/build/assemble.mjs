@@ -65,19 +65,30 @@ export function loadComponent(name, { env = process.env } = {}) {
   return { name, item, html: fs.readFileSync(path.join(dir, file.path), "utf8"), target: file.target, assets };
 }
 
-// The component with its authored length replaced by `seconds`. The authored
-// length is the one on the template root (id="root"); every data-duration equal
-// to it (the root and the clip) and the data-composition-duration on <html>, if
-// there is one, get the new length. A component with timed parts of another
-// length cannot be stretched safely, so it is refused.
+// The component with its authored length replaced by `seconds`. Two places:
+//   - the attributes: data-composition-duration on <html>, and every
+//     data-duration equal to the authored length (the template root and the
+//     clip), so the clip stays visible for the whole scene;
+//   - the script: every component reads its length from root.dataset.duration,
+//     but the runtime strips the mounted root's attributes (id,
+//     data-composition-id, data-duration), so the script would fall back to
+//     its authored default and leave the scene early (measured: titlecard-calm
+//     exits at 3.5 s of a 7.3 s scene). root.dataset.duration becomes the
+//     scene length as a string literal, which every one of the reads accepts.
+// A component with timed parts of another length, or one that never reads
+// root.dataset.duration, cannot be stretched safely, so it is refused.
 export function fitDuration(html, name, seconds) {
   const m = /<div[^>]*\bid="root"[^>]*\bdata-duration="([\d.]+)"/.exec(html) ?? /data-composition-duration="([\d.]+)"/.exec(html);
   if (!m) throw new Error(`${name}: no authored length, so it cannot be fitted to the scene.`);
   const authored = m[1];
   const others = [...html.matchAll(/data-duration="([\d.]+)"/g)].filter((x) => x[1] !== authored);
   if (others.length) throw new Error(`${name}: has timed parts of other lengths (${others.map((x) => x[1]).join(", ")}), so its length cannot be fitted.`);
+  if (!html.includes("root.dataset.duration")) throw new Error(`${name}: its script does not read root.dataset.duration, so its length cannot be fitted.`);
   const s = String(seconds);
-  return html.replace(/data-composition-duration="[\d.]+"/, `data-composition-duration="${s}"`).replaceAll(`data-duration="${authored}"`, `data-duration="${s}"`);
+  return html
+    .replace(/data-composition-duration="[\d.]+"/, `data-composition-duration="${s}"`)
+    .replaceAll(`data-duration="${authored}"`, `data-duration="${s}"`)
+    .replaceAll("root.dataset.duration", JSON.stringify(s));
 }
 
 // Problems with one scene's variables, as readable sentences. Missing

@@ -5,6 +5,9 @@
 //
 // mainVar: the on-screen text the user can edit in the table (Custom). null
 // when the component's content is not one line of text (numbers, lists).
+// words: word limits per variable where the component is made for less than
+// the general limit (MAX_WORDS). headline-slam shrinks a longer line until
+// its fixed letter spacing crushes the letters (seen in the first real video).
 
 export const ROLES = {
   opening: { label: "Opening or chapter", hint: "The start of the video, or a new section." },
@@ -20,9 +23,8 @@ export const COMPONENTS = {
   "titlecard-lockup": { role: "opening", label: "Title card", mainVar: "wordmark" },
   "titlecard-calm": { role: "opening", label: "Quiet chapter title", mainVar: "headline" },
   "per-word-rise": { role: "statement", label: "Words rise in", mainVar: "text" },
-  "kinetic-type-swap": { role: "statement", label: "One word changes", mainVar: null },
-  "headline-slam": { role: "statement", label: "Headline lands hard", mainVar: "text" },
-  "vox-annotate": { role: "emphasis", label: "Word circled with a note", mainVar: "text" },
+  "kinetic-type-swap": { role: "statement", label: "One word changes", mainVar: null, words: { prefix: 3, suffix: 2 } },
+  "headline-slam": { role: "statement", label: "Headline lands hard", mainVar: "text", words: { text: 3 } },
   "marker-highlight": { role: "emphasis", label: "Word marked", mainVar: "text" },
   "count-up": { role: "proof", label: "Number counts up", mainVar: null },
   "chart-story": { role: "proof", label: "Chart", mainVar: null },
@@ -30,7 +32,7 @@ export const COMPONENTS = {
   "grid-card-assemble": { role: "list", label: "Cards in a grid", mainVar: "items" },
   "constellation-hub": { role: "list", label: "Ideas around a center", mainVar: "nodes" },
   "whiteboard-ink": { role: "sketch", label: "Whiteboard sketch", mainVar: "caption" },
-  "cta-close": { role: "closing", label: "Call to action", mainVar: "action_line" },
+  "cta-close": { role: "closing", label: "Call to action", mainVar: "action_line", words: { button_label: 3 } },
   "logo-brand-close": { role: "closing", label: "Name at the end", mainVar: "wordmark" },
 };
 

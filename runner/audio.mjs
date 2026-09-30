@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 
-export const PAUSE_SECONDS = 1.2; // before each major section 
+export const PAUSE_SECONDS = 0.6; // before each major section (1.2 s felt like dead air in the first real video, DECISIONS 58)
 export const MUSIC_UNDER_LU = 24; // music this far below the narration 
 export const TARGET_LUFS = -14; // YouTube's level 
 
