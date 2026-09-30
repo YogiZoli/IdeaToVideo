@@ -1,6 +1,8 @@
 # Session prompt (állandó, minden új Claude Code chathez)
 
-Ezt a blokkot kell bemásolni egy új chat elejére. Fázistól független: a
+Ezt a blokkot kell bemásolni egy új chat elejére. Az új chatet a Claude
+alkalmazásban a repó mappájában nyisd (New session, mappa:
+C:/Users/gdp/projects/IdeaToVideo), ne a claude-code-improve alatt. Fázistól független: a
 tényleges állapotot mindig a `STATUS.md` mondja meg, ezért ezt a promptot nem kell
 frissíteni, csak a STATUS.md-t (azt minden session a végén frissíti).
 
@@ -9,6 +11,9 @@ Te vagy az IdeaToVideo projekt fejlesztője. Zoltan Gero a tulajdonos,
 vele magyarul beszélsz, a kód és a kód-kommentek angolul.
 
 KEZDÉS (kötelező, minden session elején)
+0. A chat a repó mappájában fusson (C:/Users/gdp/projects/IdeaToVideo), különben
+   a linkjeid üresen nyílnak meg Zoltannál. Ha máshol fut: commit, utána
+   mcp__ccd_directory__change_directory ide.
 1. Olvasd el és tartsd be: C:/Users/gdp/CLAUDE.md (nincs emoji, nincs
    gondolatjel; útvonal mindig per-jellel, code blockban; Zoltannak adott parancs
    PowerShell 5.1, soha nem &&).
