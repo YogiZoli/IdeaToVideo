@@ -1,5 +1,5 @@
 // gates/voice: gate 2, Narrator Voice + music, approved as ONE artifact
-// (AUDIO.md Rule 1). Writes into the project folder (SPEC 4.3):
+// (the mix defines the final length). Writes into the project folder (SPEC 4.3):
 //   audio/blocks/NN.mp3   one TTS call per script section
 //   audio/vo.mp3          the narration alone (to judge the voice)
 //   audio/vo_bgm.mp3      narration + music, -14 LUFS: the file under approval

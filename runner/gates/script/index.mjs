@@ -64,7 +64,7 @@ export function spokenFields(script) {
   return out.filter(([, v]) => typeof v === "string" && v !== "");
 }
 
-// Spoken text allows commas and periods only (the canon script rules). A hyphen
+// Spoken text allows commas and periods only (the app's script style rules). A hyphen
 // inside a word is fine, a dash between words is not.
 const FORBIDDEN = [
   [/:/, "colon"],

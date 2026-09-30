@@ -6,18 +6,20 @@ import path from "node:path";
 import { prepareBuild } from "./gates/build/index.mjs";
 import { stamp } from "./gates/render/index.mjs";
 
-test("build input: the scene list gets the project's mix next to index.html", () => {
+test("build folder: clean, with the approved mix and a local GSAP", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-build-"));
-  assert.throws(() => prepareBuild(dir), /no scene table/);
-  fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify({ title: "T", audio: "somewhere/else.mp3", scenes: [{ block: "statement", sent: "S1" }] }));
-  assert.throws(() => prepareBuild(dir), /no approved voice/);
+  const eng = path.join(dir, "engine", "node_modules", "gsap", "dist");
+  fs.mkdirSync(eng, { recursive: true });
+  fs.writeFileSync(path.join(eng, "gsap.min.js"), "gsap");
+  const env = { ITV_ENGINE_DIR: path.join(dir, "engine") };
+  assert.throws(() => prepareBuild(dir, { env }), /no approved voice/);
   fs.mkdirSync(path.join(dir, "audio"));
   fs.writeFileSync(path.join(dir, "audio", "vo_bgm.mp3"), "mp3");
   fs.mkdirSync(path.join(dir, "build"));
   fs.writeFileSync(path.join(dir, "build", "stale.html"), "old");
-  const { out, planFile } = prepareBuild(dir);
+  const { out } = prepareBuild(dir, { env });
   assert.equal(fs.readFileSync(path.join(out, "vo_bgm.mp3"), "utf8"), "mp3");
-  assert.equal(JSON.parse(fs.readFileSync(planFile, "utf8")).audio, "vo_bgm.mp3");
+  assert.equal(fs.readFileSync(path.join(out, "gsap.min.js"), "utf8"), "gsap");
   assert.ok(!fs.existsSync(path.join(out, "stale.html")), "a rebuild starts clean");
   fs.rmSync(dir, { recursive: true, force: true });
 });

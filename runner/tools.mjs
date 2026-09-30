@@ -1,8 +1,8 @@
-// tools.mjs: the render toolchain the runner drives: the bundled canon (with its
-// pinned hyperframes), the bundled ffmpeg, and the render browser.
+// tools.mjs: the render toolchain the runner drives: the bundled engine (the
+// pinned HyperFrames and GSAP), the bundled ffmpeg, and the render browser.
 //
 // Where things live (set by the Rust core, see runner.rs):
-//   ITV_CANON_DIR   resources/canon (scripts/fetch-canon.mjs)
+//   ITV_ENGINE_DIR  resources/engine (scripts/fetch-engine.mjs)
 //   ITV_DATA_DIR    the app data folder; hyperframes gets <data>/hyperframes-home
 //                   as its home, so its Chrome, font and model caches stay inside
 //                   the app's own folder and go away with "Delete the
@@ -22,8 +22,8 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export function canonDir(env = process.env) {
-  return env.ITV_CANON_DIR || path.join(here, "..", "app", "src-tauri", "canon");
+export function engineDir(env = process.env) {
+  return env.ITV_ENGINE_DIR || path.join(here, "..", "app", "src-tauri", "engine");
 }
 
 export function dataDir(env = process.env) {
@@ -34,8 +34,8 @@ export function dataDir(env = process.env) {
 
 export const hfHome = (env = process.env) => path.join(dataDir(env), "hyperframes-home");
 
-export function canonInfo(env = process.env) {
-  const f = path.join(canonDir(env), "CANON.json");
+export function engineInfo(env = process.env) {
+  const f = path.join(engineDir(env), "ENGINE.json");
   if (!fs.existsSync(f)) return null;
   try {
     return JSON.parse(fs.readFileSync(f, "utf8"));
@@ -45,7 +45,7 @@ export function canonInfo(env = process.env) {
 }
 
 export function hyperframesBin(env = process.env) {
-  return path.join(canonDir(env), "node_modules", "hyperframes", "bin", "hyperframes.mjs");
+  return path.join(engineDir(env), "node_modules", "hyperframes", "bin", "hyperframes.mjs");
 }
 
 // Env for every child the pipeline starts. Built from scratch on purpose: no key,
@@ -128,14 +128,14 @@ export function resolveBrowser(env = process.env) {
 
 // ---- running hyperframes ----------------------------------------------------------
 
-// Runs the canon's hyperframes CLI with our node. Streams every output line to
+// Runs the engine's hyperframes CLI with our node. Streams every output line to
 // onLine. Resolves { code, tail } (the last lines, for error messages).
 export function runHyperframes(args, { env = process.env, cwd, browser, onLine = () => {}, signal } = {}) {
   const bin = hyperframesBin(env);
   if (!fs.existsSync(bin)) return Promise.reject(new Error(`The video engine is missing (${bin}). Reinstall the app.`));
   fs.mkdirSync(hfHome(env), { recursive: true });
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [bin, ...args], { cwd: cwd ?? canonDir(env), env: childEnv({ env, browser }), windowsHide: true, signal });
+    const child = spawn(process.execPath, [bin, ...args], { cwd: cwd ?? engineDir(env), env: childEnv({ env, browser }), windowsHide: true, signal });
     const tail = [];
     const take = (buf) => {
       for (const raw of buf.toString("utf8").split(/\r?\n|\r/)) {
@@ -188,10 +188,10 @@ export async function ensureBrowser({ env = process.env, onProgress = () => {} }
 }
 
 export function toolsStatus(env = process.env) {
-  const canon = canonInfo(env);
+  const engine = engineInfo(env);
   const ff = ffmpegPaths(env);
   return {
-    canon: canon ? { commit: canon.commit, hyperframes: canon.hyperframes, blocks: canon.blocks?.length ?? 0 } : null,
+    engine: engine ? { hyperframes: engine.hyperframes, gsap: engine.gsap } : null,
     ffmpeg: !!ff,
     browser: resolveBrowser(env),
   };

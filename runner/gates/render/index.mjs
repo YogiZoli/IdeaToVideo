@@ -1,7 +1,7 @@
-// gates/render: PIPELINE step 8, the render, once, locally (0 tokens). The
-// canon's hyperframes renders the project's build/ folder into out/ under a
-// new time-stamped name every time (PIPELINE.md: "Minden render új,
-// időbélyeges fájlnévre"). Progress comes from hyperframes' own output.
+// gates/render: the render, once, locally (0 tokens). The engine's
+// hyperframes renders the project's build/ folder into out/ under a new
+// time-stamped name every time, so no render ever overwrites another.
+// Progress comes from hyperframes' own output.
 
 import fs from "node:fs";
 import path from "node:path";

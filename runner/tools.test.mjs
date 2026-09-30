@@ -75,10 +75,10 @@ test("ensureBrowser does nothing when the shell is already there", async () => {
   fs.rmSync(data, { recursive: true, force: true });
 });
 
-test("tools status reports a missing canon, ffmpeg and browser plainly", () => {
+test("tools status reports a missing engine, ffmpeg and browser plainly", () => {
   const data = tmp();
-  const s = toolsStatus({ ITV_DATA_DIR: data, ITV_CANON_DIR: path.join(data, "nope"), PROGRAMFILES: data, LOCALAPPDATA: data });
-  assert.equal(s.canon, null);
+  const s = toolsStatus({ ITV_DATA_DIR: data, ITV_ENGINE_DIR: path.join(data, "nope"), PROGRAMFILES: data, LOCALAPPDATA: data });
+  assert.equal(s.engine, null);
   assert.equal(s.ffmpeg, false);
   fs.rmSync(data, { recursive: true, force: true });
 });

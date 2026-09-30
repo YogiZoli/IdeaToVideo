@@ -23,13 +23,13 @@ fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
     let resources = app.path().resource_dir().map_err(|e| format!("No resource folder: {e}"))?;
     let script = runner::plain_path(resources.join("runner").join("main.mjs"));
     let ffmpeg = Some(runner::plain_path(resources.join("ffmpeg")));
-    let canon = Some(runner::plain_path(resources.join("canon")));
+    let engine = Some(runner::plain_path(resources.join("engine")));
     // local, not roaming: the render browser alone is about 280 MB
     let data = app.path().app_local_data_dir().ok().map(runner::plain_path);
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));
     }
-    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, canon, data })
+    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, engine, data })
 }
 
 fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String> {

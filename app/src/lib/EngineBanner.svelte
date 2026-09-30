@@ -6,7 +6,7 @@
   import ErrorBox from "./ErrorBox.svelte";
 
   type Browser = { source: "managed" | "system"; path: string; version?: string } | null;
-  type Status = { canon: { commit: string; hyperframes: string; blocks: number } | null; ffmpeg: boolean; browser: Browser };
+  type Status = { engine: { hyperframes: string; gsap: string } | null; ffmpeg: boolean; browser: Browser };
 
   let status = $state<Status | null>(null);
   let busy = $state(false);
@@ -45,14 +45,14 @@
     }
   }
 
-  const broken = $derived(status && (!status.canon || !status.ffmpeg));
+  const broken = $derived(status && (!status.engine || !status.ffmpeg));
   const needsBrowser = $derived(status && status.browser?.source !== "managed");
 </script>
 
 {#if broken}
   <section class="banner">
     <strong>The video engine is incomplete.</strong>
-    <p>Part of the app is missing ({!status?.canon ? "video library" : "ffmpeg"}). Reinstall IdeaToVideo.</p>
+    <p>Part of the app is missing ({!status?.engine ? "render engine" : "ffmpeg"}). Reinstall IdeaToVideo.</p>
   </section>
 {:else if needsBrowser}
   <section class="banner">

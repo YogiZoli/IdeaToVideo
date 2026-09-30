@@ -1,16 +1,16 @@
-// audio.mjs: the voice gate's ffmpeg work, following the canon's AUDIO.md:
+// audio.mjs: the voice gate's ffmpeg work, standard broadcast practice:
 //   - narration blocks joined with a pause between them
-//   - loudness MEASURED (ebur128), never a guessed relative dB value (Rule 2)
+//   - loudness MEASURED (ebur128), never a guessed relative dB value
 //   - music 24 LU under the narration, gentle ducking, faded in and out
-//   - the final mix normalised to -14 LUFS (Rule 3), true peak -1.5 dB
+//   - the final mix normalised to -14 LUFS, true peak -1.5 dB
 // ffmpeg / ffprobe are the bundled ones (HYPERFRAMES_FFMPEG_PATH / _FFPROBE_PATH).
 
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 
-export const PAUSE_SECONDS = 1.2; // before each major section (AUDIO.md)
-export const MUSIC_UNDER_LU = 24; // music this far below the narration (AUDIO.md)
-export const TARGET_LUFS = -14; // YouTube's level (AUDIO.md)
+export const PAUSE_SECONDS = 1.2; // before each major section 
+export const MUSIC_UNDER_LU = 24; // music this far below the narration 
+export const TARGET_LUFS = -14; // YouTube's level 
 
 export function bins(env = process.env) {
   const ffmpeg = env.HYPERFRAMES_FFMPEG_PATH;
@@ -83,11 +83,11 @@ export async function joinBlocks(files, out, { env = process.env, pause = PAUSE_
   return { offsets, seconds: Math.round(t * 1000) / 1000 };
 }
 
-// Music gain from two measurements (AUDIO.md Rule 2): music ends up
+// Music gain from two measurements: music ends up
 // MUSIC_UNDER_LU below the narration, whatever the source levels are.
 export const musicGainDb = (voLufs, bgmLufs) => Math.round((voLufs - MUSIC_UNDER_LU - bgmLufs) * 10) / 10;
 
-// AUDIO.md "The working command". Without music: only the -14 LUFS step.
+// "The working command". Without music: only the -14 LUFS step.
 export function mixFilter({ seconds, gainDb }) {
   const loud = `loudnorm=I=${TARGET_LUFS}:TP=-1.5:LRA=11`;
   if (gainDb === undefined) return `[0:a]${loud}[out]`;

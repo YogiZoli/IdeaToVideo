@@ -33,7 +33,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("voice-sample", Some(&["narrator", "provider"])),
     ("music-estimate", None),
     ("make-music", Some(&["music", "provider"])),
-    ("build-video", None),
+    ("check-video", None),
     ("render-video", None),
 ];
 
@@ -99,9 +99,10 @@ pub struct Paths {
     /// The bundled ffmpeg folder (resources/ffmpeg), when it is there. Only the
     /// render chain needs it; the runner reports its absence itself.
     pub ffmpeg: Option<PathBuf>,
-    /// The bundled canon (resources/canon) and the app data folder, where the
-    /// runner keeps hyperframes' home (browser, caches). See runner/tools.mjs.
-    pub canon: Option<PathBuf>,
+    /// The bundled render engine (resources/engine: HyperFrames, GSAP) and the
+    /// app data folder, where the runner keeps hyperframes' home (browser,
+    /// caches). See runner/tools.mjs.
+    pub engine: Option<PathBuf>,
     pub data: Option<PathBuf>,
 }
 
@@ -179,10 +180,10 @@ pub fn run(
         .env_remove("HYPERFRAMES_FFMPEG_PATH")
         .env_remove("HYPERFRAMES_FFPROBE_PATH")
         .env_remove("HYPERFRAMES_BROWSER_PATH")
-        .env_remove("ITV_CANON_DIR")
+        .env_remove("ITV_ENGINE_DIR")
         .env_remove("ITV_DATA_DIR");
-    if let Some(c) = &paths.canon {
-        cmd.env("ITV_CANON_DIR", c);
+    if let Some(e) = &paths.engine {
+        cmd.env("ITV_ENGINE_DIR", e);
     }
     if let Some(d) = &paths.data {
         cmd.env("ITV_DATA_DIR", d);
@@ -294,7 +295,7 @@ mod tests {
     fn runner_starts_from_a_verbatim_path() {
         let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
         assert!(script.to_string_lossy().starts_with(r"\\?\"));
-        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None, canon: None, data: None };
+        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None, engine: None, data: None };
         assert!(run(&paths, "providers", &json!({}), None, &mut |_| {}).is_ok());
     }
 
@@ -335,7 +336,7 @@ mod tests {
     #[test]
     fn real_runner_roundtrip() {
         let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs");
-        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None, canon: None, data: None };
+        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None, engine: None, data: None };
         let r = run(&paths, "providers", &json!({}), None, &mut |_| {}).unwrap();
         assert_eq!(r["providers"][0]["id"], "gemini");
         let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &mut |_| {}).unwrap_err();

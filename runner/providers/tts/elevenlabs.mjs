@@ -12,7 +12,7 @@ import { wordsFromCharacters } from "./align.mjs";
 
 const BASE = "https://api.elevenlabs.io";
 export const DEFAULT_MODEL = "eleven_multilingual_v2";
-// A calm teaching read (AUDIO.md): speed below 1.0 is easier to follow.
+// A calm teaching read: speed below 1.0 is easier to follow.
 export const DEFAULT_SETTINGS = { stability: 0.62, similarity_boost: 0.8, style: 0, speed: 0.96, use_speaker_boost: true };
 
 async function call(path, { apiKey, fetchImpl = fetch, method = "GET", body, timeoutMs = 120000 }) {

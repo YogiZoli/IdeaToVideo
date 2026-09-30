@@ -15,8 +15,10 @@ márkázott motion graphics videó, opcionális avatar, feliratok.
 
 A gyártás a user saját gépén fut, a user saját API kulcsaival (BYOK). Nincs
 szerver, nincs kredit, nincs előfizetés. A render a HyperFrames publikus
-motorján megy (0 kredit), és a Zoltan Gero féle blokk-könyvtár, mozgásrendszer
-és 5 kapus menet adja a minőséget.
+motorján megy (0 kredit). A minőséget az app saját, tesztelt könyvtára (a
+HyperFrames nyilvános registryjéből), a user Brand, Mozgás és CTA varázslója
+és az 5 kapus menet adja (DECISIONS 48, 2026-09-30: Zoltan saját
+blokk-könyvtára és mozgásrendszere nem kerül az appba).
 
 Egy mondatban: **amit a Subscribr-szerű SaaS eszközök kreditért, a saját
 szerverükön és motion graphics nélkül csinálnak, azt ez a user gépén,
@@ -194,8 +196,10 @@ Egyoldalas, képernyőképes telepítési leírás jár mellé.
 - Licenc, két réteg:
   - HyperFrames (HeyGen): Apache-2.0, licencszöveg és hivatkozás az appban
     ("Built on HyperFrames by HeyGen").
-  - Zoltan rétege (39 archetípus, MOTION szabályok, pipeline, app): zárt
-    licenc. Használható, nem csomagolható újra és nem adható el.
+  - Az app rétege (a registryből összeállított könyvtár, a varázslók, a
+    pipeline, az app): zárt licenc. Használható, nem csomagolható újra és nem
+    adható el. Zoltan saját kánonja (39 archetípus, MOTION) nincs benne
+    (DECISIONS 48).
   - A user brandje, beállításai és az elkészült videók a useréi.
 
 ## 12. Siker mérése

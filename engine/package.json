@@ -1,0 +1,9 @@
+{
+  "name": "ideatovideo-engine",
+  "private": true,
+  "description": "The render toolchain the app ships with: the HyperFrames engine (the only render engine, DECISIONS 18) and GSAP, pinned. Bumping a version is a deliberate step: new lockfile, the phase-2 e2e test, a new release.",
+  "dependencies": {
+    "gsap": "3.14.2",
+    "hyperframes": "0.8.22"
+  }
+}

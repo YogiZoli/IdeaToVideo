@@ -18,8 +18,8 @@ import { writeScript } from "./gates/script/index.mjs";
 import { suggestChannel } from "./gates/channel/index.mjs";
 import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
 import { downloadPreview } from "./providers/tts/elevenlabs.mjs";
-import { sentenceTable } from "./pipeline.mjs";
-import { buildAndCheck } from "./gates/build/index.mjs";
+import { sentenceTable } from "./timing/sentences.mjs";
+import { lintAndCheck } from "./gates/build/index.mjs";
 import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
@@ -106,7 +106,7 @@ const commands = {
     return { gate: project.gates.script, status: project.status };
   },
 
-  // What the render chain has: canon, ffmpeg, browser. Downloads nothing.
+  // What the render chain has: engine, ffmpeg, browser. Downloads nothing.
   "tools-status": async () => toolsStatus(),
 
   // First launch: the pinned render browser into the app's own folder.
@@ -125,7 +125,7 @@ const commands = {
   // A voice without a ready-made preview (Gemini): one short sentence, cached.
   "voice-sample": async ({ narrator, language }) => ({ file: await voiceSample({ narrator, apiKey: key(), language, dir: path.join(dataDir(), "voice-previews") }) }),
 
-  // Gate 2: narration + music, one artifact (AUDIO.md).
+  // Gate 2: narration + music, approved as one artifact.
   "make-voice": async ({ projectDir, narrator, music }) => {
     let project = setGate(loadProject(projectDir), "voice", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
@@ -141,7 +141,7 @@ const commands = {
       });
       // step 3, the sentence table: a measurement of this audio, no gate
       emit({ event: "progress", step: "sentences" });
-      const table = await sentenceTable(projectDir);
+      const table = sentenceTable(projectDir);
       info.sentences = table.sentences;
       project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
@@ -166,15 +166,17 @@ const commands = {
     return { info, gate: project.gates.voice, status: project.status };
   },
 
-  // Steps 5 and 6: build, timing, lint, check. No gate: 0 errors is the condition.
-  "build-video": async ({ projectDir }) => {
-    appendLog(projectDir, "build: start");
+  // Lint and check the project's build/ (0 errors is the condition). The
+  // assembler that writes build/ from the scene table comes with the registry
+  // pilot (DECISIONS 48).
+  "check-video": async ({ projectDir }) => {
+    appendLog(projectDir, "check: start");
     try {
-      const r = await buildAndCheck(projectDir, { onProgress: (p) => emit({ event: "progress", ...p }) });
-      appendLog(projectDir, "build: lint and check passed");
+      const r = await lintAndCheck(projectDir, { onProgress: (p) => emit({ event: "progress", ...p }) });
+      appendLog(projectDir, "check: lint and check passed");
       return r;
     } catch (e) {
-      appendLog(projectDir, `build: failed, ${e.message}`);
+      appendLog(projectDir, `check: failed, ${e.message}`);
       throw e;
     }
   },

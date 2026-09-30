@@ -128,3 +128,29 @@
     "Copy details", hogy egy tesztelő képernyőképéből látszódjon az ok.
 47. ElevenLabs hang és HeyGen avatar választás listából, meghallgatással és
     előnézettel: 2. fázis (Zoltan: nem kell előrehozni).
+
+## 2026-09-30 (2. fázis, menet közben)
+
+48. **Az app saját könyvtárat kap (D út), a Zoltan-kánon nélkül.** A jelenettípusok
+    a HyperFrames nyilvános registryjéből jönnek (Apache-2.0), a kinézet a
+    presetből vagy a Brand varázslóból, a mozgás a Mozgás varázslóból. Semmi C2C
+    előzmény, semmi Zoltan rendszeréből (39 archetípus, MOTION.md, BLOCKS.md). A
+    brand-frames kánon Zoltan saját videóié marad, érintetlenül. Módosítja a PRD
+    1. és 11. pontját, a DECISIONS 23. pontját és a 2. fázis mai C döntését
+    (Zoltan).
+49. Az időzítő szkriptek (mondattábla, jelenet-időzítés) és a többi pipeline-eszköz
+    is újraírva az app saját kódjaként, nem a kánon portjaként (Zoltan).
+50. Három külön, opcionális varázsló az onboarding után: Brand, Mozgás, CTA. A CTA
+    varázslóban: visszatérő szegmensek (generált, feltöltött saját videó vagy AI
+    avatar, hosszkorlát nélkül), kulcsszó-készlet, végképernyő (Zoltan).
+51. A kulcsszavas komment-CTA visszajön (a 35. pontot módosítja), alapból a
+    vidrev.app 15 kulcsszavával, a márkanév említése nélkül. Részletek később
+    (Zoltan).
+52. Mozgás varázsló: a kamera kikapcsolható, a lüktetés 0 is lehet. Bezáruló
+    gyűrű, haladásjelző nincs. Fejezetek igen: az app kiírja a YouTube
+    fejezetlistát a script szakaszaiból és a hang időzítéséből (Zoltan).
+53. YouTube végképernyő helye: alapból 20 mp, a Settingsben 5-20 mp között
+    állítható, a varázsló nem kérdezi (Zoltan kérésére Claude döntése).
+54. A kész brand-frames PR #6 (`--outdir`, helyi GSAP, semleges alapértékek) bent
+    marad a kánonban, Zoltan saját menetének sem árt. A második (semlegesítő) PR
+    leállítva, mert az appnak nem kell.

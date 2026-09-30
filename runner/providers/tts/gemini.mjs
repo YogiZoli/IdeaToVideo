@@ -5,16 +5,17 @@
 // needs a whisper.cpp build the user's machine does not have. So timing comes
 // from the text itself: one TTS call per sentence, the pieces joined with a
 // short gap. Every sentence's start and end are then exact; words inside a
-// sentence are placed by character position (as sentences.mjs does for .srt).
+// sentence are placed by character position.
 //
 // Output of speak(): { audio: WAV bytes (24 kHz mono 16-bit), words }.
 
 import { redact } from "../llm.mjs";
+import { closesSentence } from "../../timing/sentences.mjs";
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
 export const DEFAULT_MODEL = "gemini-3.8-flash-tts";
 export const GAP_SECONDS = 0.25; // between sentences inside one block
-// A calm teaching read (AUDIO.md: slower than the default is easier to follow).
+// A calm teaching read: slightly slower than the default is easier to follow.
 export const DEFAULT_STYLE = "calm, clear teaching voice, speaking a little slowly";
 
 export const VOICES = ["Kore", "Charon", "Puck", "Zephyr", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar", "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"];
@@ -23,14 +24,14 @@ export async function listVoices() {
   return VOICES.map((v) => ({ id: v, name: v, category: "prebuilt", gender: null, accent: null, description: null, previewUrl: null, languages: [] }));
 }
 
-// Sentences: end on . ? ! (optionally followed by a closing quote or bracket),
-// the same rule as the canon's sentences.mjs. "..." does not end one.
+// Sentences: the same rule as timing/sentences.mjs, so the TTS pieces and the
+// sentence table agree.
 export function splitSentences(text) {
   const out = [];
   let cur = [];
   for (const tok of String(text).split(/\s+/).filter(Boolean)) {
     cur.push(tok);
-    if (/[.?!]["'”’)\]]*$/.test(tok) && !/\.\.\.["'”’)\]]*$/.test(tok)) {
+    if (closesSentence(tok)) {
       out.push(cur.join(" "));
       cur = [];
     }

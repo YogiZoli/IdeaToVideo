@@ -1,6 +1,6 @@
 // music/elevenlabs.mjs: background music from ElevenLabs Music with the user's
 // own key (the user pays, about 0.15 USD per minute; commercial use on paid
-// plans). Instrumental only: the music sits under a narration (AUDIO.md).
+// plans). Instrumental only: the music sits under a narration.
 
 import { redact } from "../llm.mjs";
 

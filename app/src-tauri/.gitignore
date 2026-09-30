@@ -13,6 +13,6 @@
 /ffmpeg/
 /ffmpeg.new/
 
-# Built by scripts/fetch-canon.mjs from vendor/brand-frames, never committed
-/canon/
-/canon.new/
+# Built by scripts/fetch-engine.mjs from engine/package-lock.json, never committed
+/engine/
+/engine.new/

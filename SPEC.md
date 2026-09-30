@@ -70,21 +70,22 @@ IdeaToVideo/
     providers/            LLM, TTS, HeyGen, vidIQ kliensek
     gates/                kapunként egy modul (script, voice, scenes, review, avatar)
     schema/               JSON sémák (config, project, brief card)
-  vendor/brand-frames/    a kánon, pinnelt commit (git submodule, privát)
+  engine/                 a render lánc (hyperframes, gsap), pinnelt lockfile
   scripts/                build, sidecar letöltés, release
   .github/workflows/      build.yml (Win + Mac), release.yml
 ```
 
-A `brand-frames` (blokkok, MOTION szabályok, pipeline szkriptek) **submodule**,
-pinnelt committal. A kánon egy helyen él, az app csak egy rögzített verzióját
-csomagolja. Kánon-frissítés = submodule léptetése + regress teszt + új release.
+**Módosítva 2026-09-30 (DECISIONS 48, 49):** az app nem használja Zoltan
+brand-frames kánonját (39 archetípus, MOTION, pipeline szkriptek), submodule
+nincs. Az app saját részei:
 
-A futó példányt a `scripts/fetch-canon.mjs` rakja össze build közben
-(`app/src-tauri/canon/`, a telepítő `resources` része): pipeline szkriptek, a 39
-kész blokk, `CATALOG.md`, `MOTION.md`, `AUDIO.md`, és a kánon saját
-lockfile-jából telepített hyperframes lánc `onnxruntime-node` nélkül (mérve
-2026-09-30: 188 MB, 5736 fájl). Zoltan brand-mappái (`zoltan-gero`, `voxflow`)
-soha nem kerülnek bele.
+- `engine/`: a render lánc, `package.json` + `package-lock.json` (hyperframes
+  0.8.22, gsap 3.14.2). A `scripts/fetch-engine.mjs` build közben
+  `app/src-tauri/engine/`-be telepíti, `onnxruntime-node` nélkül (154 MB).
+- A könyvtár (jelenettípusok) a HyperFrames nyilvános registryjéből, az app
+  saját összerakójával (a registry-próba után).
+- Időzítés, mondattábla és a többi pipeline-eszköz: a runner saját kódja
+  (`runner/timing/`).
 
 ## 4. Adatmodell
 

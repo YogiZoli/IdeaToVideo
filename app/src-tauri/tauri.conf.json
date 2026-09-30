@@ -44,7 +44,7 @@
     "resources": {
       "../../runner/": "runner/",
       "ffmpeg/": "ffmpeg/",
-      "canon/": "canon/"
+      "engine/": "engine/"
     },
     "shortDescription": "From idea to video, on your own machine",
     "windows": {

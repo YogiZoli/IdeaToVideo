@@ -93,12 +93,12 @@ test("loudness summary is parsed from the last Summary block", () => {
   assert.equal(parseIntegrated(err), -27.2);
 });
 
-test("music gain puts the music 24 LU under the narration (AUDIO.md)", () => {
+test("music gain puts the music 24 LU under the narration, from measurements", () => {
   // the 2026-08-15 measurements: narration -27.2, music -11.5 => -39.7 dB
   assert.equal(musicGainDb(-27.2, -11.5), -39.7);
 });
 
-test("filters: pauses between blocks only, the AUDIO.md mix chain", () => {
+test("filters: pauses between blocks only, the ducked mix chain", () => {
   const j = joinFilter(3, 1.2);
   assert.equal((j.match(/apad=pad_dur=1.2/g) ?? []).length, 2);
   assert.ok(j.endsWith("concat=n=3:v=0:a=1[out]"));
@@ -150,18 +150,20 @@ test("voice samples only from ElevenLabs' own addresses", () => {
   assert.ok(!previewAllowed("file:///C:/Windows/win.ini"));
 });
 
-test("step 3 runs the canon's sentences.mjs on the voice timings", { skip: !fs.existsSync(path.join(here, "..", "app", "src-tauri", "canon", "pipeline", "sentences.mjs")) && "canon bundle not built" }, async () => {
-  const { sentenceTable } = await import("./pipeline.mjs");
+test("step 3: the app's own sentence table from the voice timings", async () => {
+  const { sentenceTable, closesSentence } = await import("./timing/sentences.mjs");
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-sent-"));
   fs.mkdirSync(path.join(dir, "audio"));
-  const words = ["Pick", "one", "viewer.", "Record", "today.", "Done!"].map((text, i) => ({ text, start: i * 0.5, end: i * 0.5 + 0.4, type: "word" }));
+  const words = ["Pick", "one", "viewer.", "Dr.", "Smith", "said", "so.", "Wait...", "record", "today!", "\"Done.\"", "Tail"].map((text, i) => ({ text, start: i * 0.5, end: i * 0.5 + 0.4, type: "word" }));
+  words.splice(3, 0, { text: " ", start: 1.45, end: 1.5, type: "spacing" });
   fs.writeFileSync(path.join(dir, "audio", "stt.json"), JSON.stringify({ words }));
-  const r = await sentenceTable(dir, { env: { ...process.env, ITV_DATA_DIR: dir } });
-  assert.equal(r.sentences, 3);
+  const r = sentenceTable(dir);
   const s = JSON.parse(fs.readFileSync(path.join(dir, "sentences.json"), "utf8"));
-  assert.deepEqual(s.map((x) => x.id), ["S1", "S2", "S3"]);
-  assert.equal(s[1].text, "Record today.");
-  assert.ok(fs.existsSync(path.join(dir, "words.json")));
+  assert.equal(r.sentences, 5);
+  assert.deepEqual(s.map((x) => x.text), ["Pick one viewer.", "Dr. Smith said so.", "Wait... record today!", "\"Done.\"", "Tail"]);
+  assert.deepEqual([s[0].id, s[0].start, s[0].end, s[0].words], ["S1", 0, 1.4, 3]);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, "words.json"), "utf8")).length, 12);
+  assert.ok(!closesSentence("J.") && !closesSentence("kb.") && closesSentence("end.)"));
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -169,7 +171,7 @@ test("step 3 runs the canon's sentences.mjs on the voice timings", { skip: !fs.e
 
 import { splitSentences, parseWav, writeWav, wordsByCharacters, speak as geminiSpeak, listVoices as geminiVoices } from "./providers/tts/gemini.mjs";
 
-test("gemini: sentences split like the canon's sentences.mjs", () => {
+test("gemini: sentences split like the sentence table", () => {
   assert.deepEqual(splitSentences("One idea. Two ideas? Wait... not yet! \"Quoted.\" Tail"), ["One idea.", "Two ideas?", "Wait... not yet!", "\"Quoted.\"", "Tail"]);
 });
 
