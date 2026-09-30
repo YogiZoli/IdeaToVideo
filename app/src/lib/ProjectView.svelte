@@ -178,8 +178,14 @@
         pilot = "Reading the script aloud and mixing";
         pilotCommand = "make-voice";
         const provider = narratorProvider(app.config?.narrator.provider);
-        let voice = app.config?.narrator.voice ?? null;
-        if (!voice) voice = (await runner<{ voices: { id: string }[] }>("list-voices", { narrator: { provider } })).voices[0]?.id ?? null;
+        // Settings may hold a voice id or its name; the user's own voices come first
+        const want = (app.config?.narrator.voice ?? "").trim();
+        const list = (await runner<{ voices: { id: string; name: string }[] }>("list-voices", { narrator: { provider } })).voices;
+        const voice =
+          list.find((v) => v.id === want)?.id ??
+          (want ? (list.find((v) => v.name.toLowerCase() === want.toLowerCase()) ?? list.find((v) => v.name.toLowerCase().includes(want.toLowerCase())))?.id : undefined) ??
+          list[0]?.id ??
+          null;
         if (!voice) throw new Error("No narrator voice is available. Pick one at 2. Voice and music.");
         await runner("make-voice", { projectDir: dir, narrator: { provider, voice }, music: null });
         // music (DECISIONS 62): ElevenLabs Music with a key, else none

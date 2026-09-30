@@ -140,8 +140,9 @@
   {:else}
     <KeyField name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
     <div class="field">
-      <label for="evoice">ElevenLabs voice ID</label>
-      <input id="evoice" bind:value={config.narrator.voice} spellcheck="false" placeholder="from your ElevenLabs voice library" />
+      <label for="evoice">ElevenLabs voice (name or ID)</label>
+      <input id="evoice" bind:value={config.narrator.voice} spellcheck="false" placeholder="for example the name of your own voice clone" />
+      <p class="hint">Optional. You can also pick the voice from a list, with samples, at 2. Voice and music in every project.</p>
       <p class="hint">You pay ElevenLabs directly. The free ElevenLabs plan does not allow commercial use.</p>
     </div>
   {/if}

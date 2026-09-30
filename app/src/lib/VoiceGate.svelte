@@ -49,7 +49,13 @@
     try {
       const r = await runner<{ voices: Voice[] }>("list-voices", { narrator: { provider } });
       voices = r.voices;
-      if (!voiceId && voices.length) voiceId = voices[0].id;
+      // Settings may hold the voice's name ("Zoltan BD") instead of its id:
+      // find it by name, else start with the user's own voice (listed first).
+      if (!voices.some((v) => v.id === voiceId)) {
+        const want = voiceId.trim().toLowerCase();
+        const byName = want ? (voices.find((v) => v.name.toLowerCase() === want) ?? voices.find((v) => v.name.toLowerCase().includes(want))) : undefined;
+        voiceId = byName?.id ?? voices[0]?.id ?? "";
+      }
     } catch (e) {
       error = errorText(e);
     }
