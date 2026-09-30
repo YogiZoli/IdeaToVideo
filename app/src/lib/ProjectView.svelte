@@ -69,6 +69,25 @@
     unlisten.then((f) => f());
   });
 
+  // Optional (DECISIONS 64): keyword ideas from vidIQ for the title; the chosen
+  // keyword goes into the script.
+  type Kw = { keyword: string; monthlySearches: number | null; competition: number | null; score: number | null; growthPct: number | null };
+  let keywords = $state<Kw[]>([]);
+  let keyword = $state("");
+  let kwBusy = $state(false);
+  const canVidiq = $derived(!!app.keys["vidiq"] && app.config?.research?.vidiq !== false);
+  async function keywordIdeas() {
+    kwBusy = true;
+    error = "";
+    try {
+      keywords = (await runner<{ keywords: Kw[] }>("keyword-ideas", { service: "vidiq", keyword: data!.project.title })).keywords;
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      kwBusy = false;
+    }
+  }
+
   async function writeRecommended() {
     if (data?.scriptMarkdown && !(await ask("Write a new script? The current one and every later gate will be replaced.", { title: "Write again", kind: "warning" }))) return;
     busy = true;
@@ -79,7 +98,7 @@
       const r = await runner<{ words: number }>("write-script", {
         projectDir: dir,
         llm: app.config!.llm,
-        input: { topic: data!.project.title, targetLengthMin: length },
+        input: { topic: data!.project.title, targetLengthMin: length, ...(keyword ? { keyword } : {}) },
         channel: app.config!.channel,
       });
       notice = `Script ready, ${r.words} words.`;
@@ -245,6 +264,30 @@
         </button>
       </div>
 
+      {#if canVidiq}
+        <div class="controls">
+          <span class="hint">{keyword ? `Keyword for the script: "${keyword}"` : "Optional: pick a search keyword for the script."}</span>
+          <span class="spacer"></span>
+          <button type="button" disabled={kwBusy || busy} onclick={keywordIdeas}>{kwBusy ? "Asking vidIQ..." : "Keyword ideas (vidIQ)"}</button>
+        </div>
+        {#if keywords.length}
+          <table class="kw">
+            <thead><tr><th>Keyword</th><th>Monthly searches</th><th>Competition</th><th>Score</th><th></th></tr></thead>
+            <tbody>
+              {#each keywords.slice(0, 12) as k}
+                <tr class:on={keyword === k.keyword}>
+                  <td>{k.keyword}</td>
+                  <td>{k.monthlySearches?.toLocaleString("en-US") ?? ""}</td>
+                  <td>{k.competition ?? ""}</td>
+                  <td>{k.score ?? ""}</td>
+                  <td><button type="button" class="ghost" onclick={() => (keyword = keyword === k.keyword ? "" : k.keyword)}>{keyword === k.keyword ? "Chosen" : "Use"}</button></td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+          <p class="hint">Score: vidIQ's opportunity score (higher is better). Competition: how many videos target it (lower is easier).</p>
+        {/if}
+      {/if}
       {#if busy && step && !pilot}<Progress command="write-script" label={step} />{/if}
       {#if error}
         <ErrorBox message={error} context={llmContext} />
@@ -294,6 +337,10 @@
   .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
   .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .controls input { width: 70px; }
+  .kw { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 6px; }
+  .kw th { text-align: left; color: var(--muted-foreground); font-weight: 600; padding: 4px; border-bottom: 1px solid var(--border); }
+  .kw td { padding: 4px; border-bottom: 1px solid var(--border); }
+  .kw tr.on { background: var(--primary-surface); }
   .label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
   textarea { width: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
   .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }

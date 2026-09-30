@@ -2,15 +2,18 @@
 // cheap read-only request that needs a valid key and costs no credit.
 
 import { redact } from "./llm.mjs";
+import { testVidiq } from "./research/vidiq.mjs";
 
 const CHECKS = {
   elevenlabs: { label: "ElevenLabs", url: "https://api.elevenlabs.io/v1/user", header: "xi-api-key" },
   heygen: { label: "HeyGen", url: "https://api.heygen.com/v3/users/me", header: "x-api-key" },
 };
 
-export const KEY_SERVICES = Object.keys(CHECKS);
+export const KEY_SERVICES = [...Object.keys(CHECKS), "vidiq"];
 
 export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeoutMs = 30000 }) {
+  // vidIQ has no REST API: its test is an MCP call (0 credits)
+  if (service === "vidiq") return testVidiq({ apiKey, fetchImpl });
   const c = CHECKS[service];
   if (!c) throw new Error(`Unknown service: ${service}`);
   if (!apiKey) throw new Error(`No API key set for ${c.label}. Add it in Settings.`);

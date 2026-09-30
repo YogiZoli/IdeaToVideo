@@ -252,3 +252,11 @@
     avatarjai eddig nem voltak elérhetők; ha a kulcs nem lát saját avatart, az
     app kiírja, hogy a kulcs valószínűleg másik munkaterülethez tartozik. Élesben
     kell ellenőrizni.
+64. **vidIQ kulcsszó-ötletek az 1. kapuban** (a 42. pontot valósítja meg). A
+    vidIQ-nak nincs REST API-ja; az app az MCP szerverüket hívja
+    (`https://mcp.vidiq.com/mcp`, JSON-RPC HTTP-n, JSON vagy eseményfolyam
+    válasz) a user MCP API kulcsával (app.vidiq.com/account/settings/mcp, csak
+    MCP-re szól, visszavonható). Kulcsteszt: `vidiq_balance` (0 kredit). Ötletek:
+    `vidiq_keyword_research` "research" módban a projekt címére; a kiválasztott
+    kulcsszó a script adataiba kerül. Élesben Zoltan kulcsával kell kipróbálni
+    (a Claude-munkamenetben a vidIQ OAuth-tal működött, 4100 kredittel).

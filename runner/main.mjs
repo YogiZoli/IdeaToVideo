@@ -23,6 +23,7 @@ import { lintAndCheck } from "./gates/build/index.mjs";
 import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, setMusic, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import * as heygen from "./providers/avatar/heygen.mjs";
+import { keywordIdeas } from "./providers/research/vidiq.mjs";
 import { avatarPlan, makeAvatar, removeAvatar } from "./gates/avatar/index.mjs";
 import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
@@ -157,6 +158,10 @@ const commands = {
       throw e;
     }
   },
+
+  // Gate 1, optional (DECISIONS 42, 64): keyword ideas from vidIQ for the
+  // topic, with the user's vidIQ key. The chosen one goes into the script.
+  "keyword-ideas": async ({ keyword, country }) => keywordIdeas({ apiKey: key(), keyword, country }),
 
   // Custom: the user edited the script by hand.
   "save-script": async ({ projectDir, markdown }) => {

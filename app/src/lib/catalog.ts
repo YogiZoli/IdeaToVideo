@@ -18,7 +18,7 @@ export const LLM_PROVIDERS: Provider[] = [
 export const SERVICE_KEY_URLS: Record<string, string> = {
   elevenlabs: "https://elevenlabs.io/app/settings/api-keys",
   heygen: "https://app.heygen.com/settings?nav=API",
-  vidiq: "https://app.vidiq.com",
+  vidiq: "https://app.vidiq.com/account/settings/mcp",
 };
 
 export const LANGUAGES: { code: string; label: string; voice: string }[] = [

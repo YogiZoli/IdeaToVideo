@@ -22,7 +22,7 @@ export const STEPS: Step[] = [
   { id: "language", title: "Content language", intro: "The language of your scripts, narration and on-screen text. The app itself stays in English.", canRecommend: true },
   { id: "narrator", title: "Narrator Voice", intro: "The voice that reads your script. Free by default, or ElevenLabs with your own key.", canRecommend: true },
   { id: "heygen", title: "HeyGen (avatar)", intro: "Optional: a talking avatar in the corner of your video, with your HeyGen key and credits.", canRecommend: false },
-  { id: "vidiq", title: "vidIQ (keywords)", intro: "Optional: keyword data for your topics. The key is stored now and used in a later version.", canRecommend: false },
+  { id: "vidiq", title: "vidIQ (keywords)", intro: "Optional: keyword data for your topics (monthly searches, competition). Make an MCP API key in vidIQ, Settings, MCP.", canRecommend: false },
   { id: "import", title: "Import from Planner", intro: "If you use the Planner app, you will be able to import your channel and video plans here.", canRecommend: false },
 ];
 

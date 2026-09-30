@@ -13,7 +13,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const WORDS_PER_MINUTE = 150;
 
 // The data block the model sees. Brief fields win over channel defaults.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin }) {
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword }) {
   const cta = brief.cta?.text || brief.cta?.landingUrl || channel.ctaText || channel.landingUrl
     ? { text: brief.cta?.text || channel.ctaText || null, landingUrl: brief.cta?.landingUrl || channel.landingUrl || null }
     : null;
@@ -24,7 +24,7 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     audience: brief.audience || channel.audience || null,
     brandVoice: channel.brandVoice || null,
     channelProfile: channel.profile || null,
-    keyword: brief.keyword || null,
+    keyword: keyword || brief.keyword || null,
     searchIntent: brief.searchIntent || null,
     playlist: brief.playlist || null,
     nextVideo: brief.playlist?.nextTitle || null,
