@@ -21,8 +21,9 @@ import { downloadPreview } from "./providers/tts/elevenlabs.mjs";
 import { sentenceTable } from "./timing/sentences.mjs";
 import { lintAndCheck } from "./gates/build/index.mjs";
 import { renderVideo } from "./gates/render/index.mjs";
-import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
-import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
+import { makeVoice, makeMusic, musicPath, voiceSample, setMusic, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
+import { freeLibrary, ensureFreeTrack } from "./providers/music/free.mjs";
+import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
@@ -62,6 +63,14 @@ function edited(projectDir, gate) {
   const project = setGate(setGate(loadProject(projectDir), gate, { state: "running" }), gate, { state: "pending", mode: "custom" });
   saveProject(projectDir, project);
   return project;
+}
+
+function readVoiceInfo(projectDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(projectDir, "audio", "voice.json"), "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 // The newest render of a project, with its captions and chapters, so the UI
@@ -116,7 +125,7 @@ const commands = {
   "load-project": async ({ projectDir }) => {
     const project = loadProject(projectDir);
     const md = path.join(projectDir, "script.md");
-    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir) };
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir) };
   },
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
@@ -208,8 +217,26 @@ const commands = {
     }
   },
 
+  // Gate 2, free music (DECISIONS 60): the list, and one track downloaded for
+  // listening before choosing it.
+  "free-music": async () => ({ tracks: freeLibrary() }),
+  "free-music-preview": async ({ id }) => ({ file: await ensureFreeTrack(id) }),
+
+  // Gate 2, a different music under the same narration (no new reading). The
+  // scene table stays valid (the timing is the voice's); only the build and
+  // the approval of the voice start again.
+  "set-music": async ({ projectDir, music }) => {
+    appendLog(projectDir, `music: ${music?.kind === "free" ? music.id : music?.kind}`);
+    const info = await timed("remix", 1, emit, () => setMusic({ projectDir, music, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    let project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "custom" });
+    if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `music: mixed, final ${info.finalLufs} LUFS${info.musicGainDb !== undefined && info.musicGainDb !== null ? `, music ${info.musicGainDb} dB` : ""}`);
+    return { info, gate: project.gates.voice, status: project.status };
+  },
+
   // Gate 2, music made for this video. The key is the ElevenLabs one.
-  "music-estimate": async ({ seconds }) => ({ usd: costEstimateUsd(Number(seconds) || 0) }),
+  "music-estimate": async ({ seconds }) => ({ usd: costEstimateUsd(Number(seconds) || 0), prompt: MUSIC_PROMPT }),
 
   "make-music": async ({ projectDir, music }) => {
     appendLog(projectDir, "music: ElevenLabs Music");

@@ -21,6 +21,7 @@
     scriptMarkdown: string | null;
     latestVideo: { file: string; chapters: string | null; srt: string | null } | null;
     stills: { scene: number; at: number; file: string }[];
+    voiceInfo: { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number } | null;
   };
 
   const GATE_LABELS: [string, string][] = [
@@ -161,6 +162,17 @@
         if (!voice) voice = (await runner<{ voices: { id: string }[] }>("list-voices", { narrator: { provider } })).voices[0]?.id ?? null;
         if (!voice) throw new Error("No narrator voice is available. Pick one at 2. Voice and music.");
         await runner("make-voice", { projectDir: dir, narrator: { provider, voice }, music: null });
+        // music in the decided order (DECISIONS 60): ElevenLabs Music with a
+        // key, else the first free piano piece
+        pilot = "Adding the background music";
+        if (app.keys["elevenlabs"]) {
+          pilotCommand = "make-music";
+          await runner("make-music", { projectDir: dir, music: { provider: "elevenlabs" } });
+        } else {
+          pilotCommand = "set-music";
+          const { tracks } = await runner<{ tracks: { id: string }[] }>("free-music");
+          await runner("set-music", { projectDir: dir, music: { kind: "free", id: tracks[0].id } });
+        }
         await approveGate("voice");
       }
       if (!approved("scenes")) {
@@ -259,7 +271,7 @@
       {/if}
     </section>
 
-    <VoiceGate {app} {dir} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
+    <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
     <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
     <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} stills={data.stills} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
   {/if}

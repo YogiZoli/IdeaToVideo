@@ -18,6 +18,7 @@ import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
 import { joinBlocks, mix, duration } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
+import { freeTrack, ensureFreeTrack } from "../../providers/music/free.mjs";
 
 export const VOICE_PROVIDERS = { elevenlabs, gemini };
 
@@ -117,7 +118,42 @@ export async function makeMusic({ projectDir, apiKey, prompt, env = process.env,
   onProgress({ step: "mixing" });
   const m = await mix({ vo, bgm: music, out: path.join(audioDir, "vo_bgm.mp3"), env });
   const infoFile = path.join(audioDir, "voice.json");
-  const info = { ...(fs.existsSync(infoFile) ? JSON.parse(fs.readFileSync(infoFile, "utf8")) : {}), ...m, music: "music.mp3", musicSource: "elevenlabs-music", musicPrompt: prompt || elevenlabsMusic.DEFAULT_PROMPT };
+  const info = { ...(fs.existsSync(infoFile) ? JSON.parse(fs.readFileSync(infoFile, "utf8")) : {}), ...m, music: "music.mp3", musicSource: "elevenlabs-music", musicLabel: "Made for this video (ElevenLabs Music)", musicPrompt: prompt || elevenlabsMusic.DEFAULT_PROMPT };
+  fs.writeFileSync(infoFile, JSON.stringify(info, null, 2) + "\n");
+  return info;
+}
+
+// Change the music of an existing narration without reading it again: none,
+// a free track (copied into the project, so the project stands on its own),
+// or the user's own file already imported as audio/music.<ext>. ElevenLabs
+// Music has its own command (makeMusic), because it needs a key.
+export async function setMusic({ projectDir, music, env = process.env, fetchImpl, onProgress = () => {} }) {
+  const audioDir = path.join(projectDir, "audio");
+  const vo = path.join(audioDir, "vo.mp3");
+  if (!fs.existsSync(vo)) throw new Error("Make the voice first; the music goes under it.");
+  let bgm = null;
+  let source = "none";
+  let label = null;
+  if (music?.kind === "free") {
+    const t = freeTrack(music.id);
+    onProgress({ step: "download", title: t.title });
+    const file = await ensureFreeTrack(music.id, { env, fetchImpl });
+    for (const f of fs.readdirSync(audioDir)) if (f.startsWith("music.")) fs.rmSync(path.join(audioDir, f), { force: true });
+    bgm = path.join(audioDir, `music.${t.ext}`);
+    fs.copyFileSync(file, bgm);
+    source = `free:${t.id}`;
+    label = `${t.title}, ${t.composer} (${t.license})`;
+  } else if (music?.kind === "file") {
+    bgm = musicPath(projectDir, music.path);
+    source = "file";
+    label = path.basename(bgm);
+  } else if (music?.kind !== "none") {
+    throw new Error("Choose no music, a free track or your own file.");
+  }
+  onProgress({ step: "mixing" });
+  const m = await mix({ vo, bgm, out: path.join(audioDir, "vo_bgm.mp3"), env });
+  const infoFile = path.join(audioDir, "voice.json");
+  const info = { ...(fs.existsSync(infoFile) ? JSON.parse(fs.readFileSync(infoFile, "utf8")) : {}), ...m, music: bgm ? path.basename(bgm) : null, musicSource: source, musicLabel: label };
   fs.writeFileSync(infoFile, JSON.stringify(info, null, 2) + "\n");
   return info;
 }

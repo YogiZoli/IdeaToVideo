@@ -216,3 +216,18 @@
     A preset áttetsző kártya- és keretszíne átlátszatlan megfelelőre cserélve,
     mert a constellation-hub a kártyák mögé rajzol. Külön sötét téma nincs a
     felületen (Zoltan: a Blue Professional "helyette", nem mellette).
+60. **Háttérzene, ebben a sorrendben** (Zoltan, 2026-09-30):
+    1. ElevenLabs Music, ha a usernek van ElevenLabs kulcsa (ugyanaz a
+       szolgáltató, mint a hang, a videó hosszára készül, fizetős csomagon
+       kereskedelmi használatra is).
+    2. Ha nincs: öt ingyenes zongoradarab a Wikimedia Commonsról, mind CC0 vagy
+       public domain (Satie, Bach-Siloti, három Chopin-nocturne), rögzített
+       URL-lel, mérettel és SHA256-tal, első használatkor letöltve
+       (`runner/providers/music/free.mjs`). Egy CC BY-os jelölt kiesett, mert
+       feltüntetést kér. A FreePD, az eredeti ötlet, 2025-ben bezárt.
+    3. Saját fájl, vagy zene nélkül.
+    A HeyGen zenekatalógus (`GET /v3/audio/sounds`) kimarad, amíg nem tisztázott,
+    hogy a zene HeyGenen kívül készült videóban is használható-e (a
+    dokumentáció és a feltételek erről hallgatnak). Zene csere a kész hang alatt
+    újrakeverés, a hangot nem olvassa fel újra. Az Autopilot ugyanezt a
+    sorrendet követi.
