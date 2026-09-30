@@ -78,7 +78,17 @@ Kész (2026-09-30):
   Custom szerkesztés (script, jelenet-tábla) mostantól nullázza a későbbi kapukat
   (SPEC 6).
 
-**A következő konkrét lépés: Zoltan kézi próbája a telepítőből** (script, hang,
+- **Az első teljes videó az appból** (Zoltan, 2026-09-30): a visszajelzés és
+  állapota: `feedback/2026-09-30/NOTES.md`. Javítva: üres jelenetvégek,
+  keskeny betűk, vox-annotate ki (14 komponens), 0,6 mp szünet, -14 LUFS
+  (DECISIONS 58).
+- Varázslók indító leírásai: `docs/wizards/` (brand, motion, cta).
+
+**A következő konkrét lépés: a nyitott feedback-tételek** (NOTES.md 5-8):
+haladásjelző minden hosszú lépésnél, a gép ébren tartása, a 4. kapu
+magyarázata, zene (ElevenLabs Music, HeyGen, CC0). Utána új telepítő.
+
+**Korábbi lépés (kész): Zoltan kézi próbája a telepítőből** (script, hang,
 jelenet-tábla, kontakt lap, render), a talált hibák javítása. Utána: 13.
 feliratok és fejezetek, 14. presetek és Brand varázsló (betűk helyben), 12.
 avatar, 17. Autopilot.
