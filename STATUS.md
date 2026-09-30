@@ -60,17 +60,21 @@ Kész (2026-09-30):
   `border`, `radius`, három betű).
 - **Könyvtár: 15 komponens** (DECISIONS 55), mondat-szerepek szerint.
 - Telepítő a 2. kapuval: Zoltan telepítette, a hang és a zene rendben (2026-09-30).
-- Tesztek: 68 Node, 17 Rust, zöld.
+- Tesztek: 82 Node, 17 Rust, zöld.
 
-**A következő konkrét lépés: 3. kapu, jelenet-tábla** (terv 8. lépés).
-1. `runner/gates/scenes/`: a prompt a 15 komponens `registry-item.json`-jából
-   (leírás, szerep, változók). Mondatonként vagy mondatcsoportonként egy jelenet,
-   JSON séma szerint, a változók ellenőrzése az assembler `checkVars`-ával, egy
-   javító hívás. Napló arról, ha egy mondathoz nem talált illő szerepet.
-2. UI: a jelenet-tábla egyszerű nevekkel, soronként csere ugyanabban a
-   szerepben, Approve. Utána build, check, kontakt lap, render az appból.
-3. Tudnivaló a prompthoz: a `headline-slam` árnyéka világos témán sáros,
-   ott `shadow: false`.
+- **3. kapu kész** (2026-09-30): `runner/gates/scenes/`, az AI a 15 komponensből
+  tervez szerepek szerint (`roles.mjs`), ellenőrzés, egy javító hívás, csere
+  ugyanabban a szerepben, Custom szöveg, hiányzó szerepek naplója. Határok:
+  DECISIONS 57. UI: `SceneGate.svelte`. Valódi LLM-mel Zoltan próbálja ki.
+- **4. kapu kész** (2026-09-30): `runner/gates/review/`, build + lint + check +
+  kontakt lap (jelenetenként egy kocka a vége előtt), jóváhagyás, utána render
+  az appból (minőség, haladás, lejátszó, "Show in folder"). UI: `ReviewGate.svelte`.
+  E2E a runner parancsokkal: build 27 mp, render 110 mp egy 50 mp-es videóra.
+
+**A következő konkrét lépés: Zoltan kézi próbája a telepítőből** (script, hang,
+jelenet-tábla, kontakt lap, render), a talált hibák javítása. Utána: 13.
+feliratok és fejezetek, 14. presetek és Brand varázsló (betűk helyben), 12.
+avatar, 17. Autopilot.
 
 **Nyitott, a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
 betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseréli),

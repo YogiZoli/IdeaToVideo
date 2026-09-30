@@ -122,7 +122,7 @@ Minden lépés a `phase-2` branchen, külön committal.
    próba ütközést vagy időzítési hibát talál, a javítás módja (például a
    komponens másolatának átnevezése a build közben).
 
-### 8. 3. kapu: jelenet-tábla (MOST)
+### 8. 3. kapu: jelenet-tábla (kész, 2026-09-30)
 
 - `runner/gates/scenes/`: a prompt a komponensek `registry-item.json`-jából
   (leírás, `jobs`, változók, szinkronpontok) épül. Mondatonként egy jelenet
@@ -131,18 +131,18 @@ Minden lépés a `phase-2` branchen, külön committal.
   utána hiba (SPEC 5).
 - UI: a jelenet-tábla soronként szerkeszthető (Custom), Approve.
 
-### 9. Build, lint, check (automatikus)
+### 9. Build, lint, check (kész, a 4. kapu része)
 
 - `assemble.mjs`, utána `hyperframes lint` és `hyperframes check`. 0 hiba a
   feltétel, különben a hiba a UI-ban `ITV-...` kóddal.
 
-### 10. 4. kapu: kontakt lap
+### 10. 4. kapu: kontakt lap (kész)
 
 - `hyperframes snapshot` a jelenetek közepén, `review/contact.png` ffmpeg-gel, a
   Tauri asset protokollal mutatva, csak a Projects mappára szűkítve. A képernyő
   kiírja: a kontakt lap nem mutat mozgást.
 
-### 11. Render
+### 11. Render (kész, az appból)
 
 - `hyperframes render`, időbélyeges fájlnév az `out/` alatt, haladás, Cancel.
   Előre kiírt becslés a próba mérése alapján.

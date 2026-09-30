@@ -184,3 +184,14 @@
     - Köztes út: mind a 234 a telepítőbe kerül, de az AI csak az ellenőrzött és
       az adott videótípushoz engedélyezett készletből választ (explainer ma,
       később screenrecording és talking_head saját készlettel).
+57. **A jelenet-tábla kezdő határai** (3. kapu, `runner/gates/scenes/index.mjs`),
+    az első éles videók után pontosítandók (Zoltan):
+    - Egy jelenet legalább 2 mp: a komponensek belépő animációja 1-3 mp (a
+      count-up 1,7 mp alatt pörög fel), ennél rövidebben a kész állapot alig
+      látszik. Mért alap.
+    - Legfeljebb 12 mp, ha több mondatot fog össze: ízlés alapján, nem mérve.
+      Egyetlen hosszú mondatot nem vág szét.
+    - A képernyőn legfeljebb 6 szó egy szövegben, listaelemenként 3: általános
+      olvashatósági ökölszabály (a néző egyszerre hallgat és olvas), nem mért.
+    Pontosítás: a számok egy helyen vannak (MIN_SECONDS, MAX_SECONDS, MAX_WORDS),
+    átírásuk perc; a mérésükhöz valódi videók és nézői adat kell.

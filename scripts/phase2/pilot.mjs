@@ -17,9 +17,10 @@ import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { assemble } from "../../runner/gates/build/assemble.mjs";
-import { lintAndCheck, buildDir } from "../../runner/gates/build/index.mjs";
+import { lintAndCheck } from "../../runner/gates/build/index.mjs";
 import { renderVideo } from "../../runner/gates/render/index.mjs";
-import { runHyperframes, resolveBrowser, ffmpegPaths } from "../../runner/tools.mjs";
+import { resolveBrowser, ffmpegPaths } from "../../runner/tools.mjs";
+import { contactSheet } from "../../runner/gates/review/index.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const { values: args } = parseArgs({
@@ -115,24 +116,7 @@ for (const name of args.theme ? [args.theme] : Object.keys(THEMES)) {
   if (!built) continue;
   await timed("lint + check", () => lintAndCheck(dir, { env }));
 
-  // One frame just before every scene ends (the landed state: components
-  // build up over the whole scene, so the middle can show half of it), then a
-  // 5x3 contact sheet.
-  const html = fs.readFileSync(path.join(buildDir(dir), "index.html"), "utf8");
-  const mids = [...html.matchAll(/id="scene-\d+"[^>]*data-start="([\d.]+)" data-duration="([\d.]+)"/g)].map((m) => (Number(m[1]) + Math.max(Number(m[2]) - 0.2, Number(m[2]) / 2)).toFixed(2));
-  const shots = path.join(dir, "review", "snapshots");
-  await timed(`snapshot (${mids.length} frames)`, async () => {
-    const r = await runHyperframes(["snapshot", "-o", shots, "--at", mids.join(","), "--no-end", "--describe", "false"], { env, cwd: buildDir(dir), browser: browser.path });
-    fs.writeFileSync(path.join(dir, "review", "snapshot.log"), r.tail + "\n");
-    if (r.code !== 0) throw new Error(r.tail.split("\n").slice(-4).join(" "));
-  });
-  await timed("contact sheet", async () => {
-    const pngs = fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
-    if (!pngs.length) throw new Error("no snapshots");
-    const list = path.join(shots, "list.txt");
-    fs.writeFileSync(list, pngs.map((f) => `file '${path.join(shots, f).replace(/\\/g, "/")}'`).join("\n") + "\n");
-    ffmpeg(["-f", "concat", "-safe", "0", "-i", list, "-vf", "scale=640:-1,tile=5x3:padding=8:margin=8:color=gray", "-frames:v", "1", path.join(dir, "review", "contact.png")]);
-  });
+  await timed("snapshots + contact sheet", () => contactSheet(dir, { env }));
   if (args.render && !args["no-render"]) {
     const r = await timed("render", () => renderVideo(dir, { env }));
     if (r) console.log(`  video: ${r.file}, ${r.seconds} s, rendered in ${r.renderSeconds} s`);

@@ -24,6 +24,7 @@ import { renderVideo } from "./gates/render/index.mjs";
 import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
+import { buildAndReview } from "./gates/review/index.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -225,8 +226,30 @@ const commands = {
     }
   },
 
-  // Step 8: the render, once, locally.
+  // Gate 4: build the video from the approved scene table, lint + check, and
+  // the contact sheet (review/contact.png) to approve before the render.
+  "build-video": async ({ projectDir }) => {
+    let project = loadProject(projectDir);
+    if (project.gates.scenes?.state !== "approved") throw new Error("Approve the scene table first.");
+    project = setGate(project, "review", { state: "running", mode: "recommended" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, "review: build, check, contact sheet");
+    try {
+      const r = await buildAndReview(projectDir, { language: project.language, title: project.title, onProgress: (p) => emit({ event: "progress", ...p }) });
+      project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
+      saveProject(projectDir, project);
+      appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
+      return { ...r, gate: project.gates.review, status: project.status };
+    } catch (e) {
+      saveProject(projectDir, setGate(loadProject(projectDir), "review", { state: "failed", error: String(e.message).slice(0, 2000) }));
+      appendLog(projectDir, `review: failed, ${e.message}`);
+      throw e;
+    }
+  },
+
+  // The render, once, locally, after the contact sheet is approved.
   "render-video": async ({ projectDir, quality }) => {
+    if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the contact sheet first.");
     appendLog(projectDir, "render: start");
     const r = await renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) });
     appendLog(projectDir, `render: done, ${r.file}, ${r.seconds}s video in ${r.renderSeconds}s`);

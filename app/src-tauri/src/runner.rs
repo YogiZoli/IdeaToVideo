@@ -37,6 +37,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("scene-table", None),
     ("save-scenes", None),
     ("refill-scene", Some(&["llm", "provider"])),
+    ("build-video", None),
     ("check-video", None),
     ("render-video", None),
 ];
