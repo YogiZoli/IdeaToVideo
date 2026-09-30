@@ -86,6 +86,17 @@ fn dunce_canonical(p: &Path) -> Result<PathBuf, String> {
 pub struct Paths {
     pub node: PathBuf,
     pub script: PathBuf,
+    /// The bundled ffmpeg folder (resources/ffmpeg), when it is there. Only the
+    /// render chain needs it; the runner reports its absence itself.
+    pub ffmpeg: Option<PathBuf>,
+}
+
+/// ffmpeg and ffprobe inside the bundled folder, if both exist.
+pub fn ffmpeg_bins(dir: &Path) -> Option<(PathBuf, PathBuf)> {
+    let exe = if cfg!(windows) { ".exe" } else { "" };
+    let ffmpeg = dir.join(format!("ffmpeg{exe}"));
+    let ffprobe = dir.join(format!("ffprobe{exe}"));
+    (ffmpeg.exists() && ffprobe.exists()).then_some((ffmpeg, ffprobe))
 }
 
 /// Node sits next to the app executable (Tauri externalBin drops the target
@@ -140,7 +151,13 @@ pub fn run(
         .env_remove("NODE_PATH")
         .env_remove("STUDIO_API_KEY")
         .env("HYPERFRAMES_NO_TELEMETRY", "1")
-        .env("HYPERFRAMES_NO_UPDATE_CHECK", "1");
+        .env("HYPERFRAMES_NO_UPDATE_CHECK", "1")
+        .env_remove("HYPERFRAMES_FFMPEG_PATH")
+        .env_remove("HYPERFRAMES_FFPROBE_PATH");
+    // Always our own ffmpeg, never one from the user's PATH (DECISIONS 43).
+    if let Some((ffmpeg, ffprobe)) = paths.ffmpeg.as_deref().and_then(ffmpeg_bins) {
+        cmd.env("HYPERFRAMES_FFMPEG_PATH", ffmpeg).env("HYPERFRAMES_FFPROBE_PATH", ffprobe);
+    }
     if let Some(k) = api_key {
         cmd.env("STUDIO_API_KEY", k);
     }
@@ -244,8 +261,22 @@ mod tests {
     fn runner_starts_from_a_verbatim_path() {
         let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
         assert!(script.to_string_lossy().starts_with(r"\\?\"));
-        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script) };
+        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None };
         assert!(run(&paths, "providers", &json!({}), None, &mut |_| {}).is_ok());
+    }
+
+    #[test]
+    fn ffmpeg_needs_both_binaries() {
+        let dir = std::env::temp_dir().join(format!("itv-ffmpeg-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let exe = if cfg!(windows) { ".exe" } else { "" };
+        assert!(ffmpeg_bins(&dir).is_none());
+        std::fs::write(dir.join(format!("ffmpeg{exe}")), b"").unwrap();
+        assert!(ffmpeg_bins(&dir).is_none());
+        std::fs::write(dir.join(format!("ffprobe{exe}")), b"").unwrap();
+        let (a, b) = ffmpeg_bins(&dir).unwrap();
+        assert!(a.ends_with(format!("ffmpeg{exe}")) && b.ends_with(format!("ffprobe{exe}")));
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
@@ -263,7 +294,7 @@ mod tests {
     #[test]
     fn real_runner_roundtrip() {
         let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs");
-        let paths = Paths { node: PathBuf::from("node"), script };
+        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None };
         let r = run(&paths, "providers", &json!({}), None, &mut |_| {}).unwrap();
         assert_eq!(r["providers"][0]["id"], "gemini");
         let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &mut |_| {}).unwrap_err();

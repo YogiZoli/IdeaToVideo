@@ -1,4 +1,4 @@
-# SPEC: Studio (munkanév)
+# SPEC: IdeaToVideo
 
 Verzió: 0.1, 2026-09-24, jóváhagyva (Zoltan)
 Alapja: `PRD.md` 0.1 és `DECISIONS.md`
@@ -116,7 +116,7 @@ A kulcsok **nincsenek** benne. Csak az, hogy van-e (`"vidiq": false`).
 ### 4.2 Kulcsok
 
 OS kulcstár (`keyring` crate): Windows Credential Manager, macOS Keychain.
-Szolgáltatásnév: `studio.<provider>`, pl. `studio.gemini`, `studio.elevenlabs`.
+Szolgáltatásnév: `ideatovideo.<provider>`, pl. `ideatovideo.gemini`, `ideatovideo.elevenlabs` (DECISIONS 38).
 A UI soha nem kapja vissza a kulcsot, csak annyit: be van-e állítva, és
 sikerült-e a "Test key".
 
@@ -185,7 +185,7 @@ vár), `approved`, `skipped`, `failed`. `mode`: `recommended`, `default`, `custo
 }
 ```
 
-Kötelező mező: `schema`, `title`. A többi opcionális, hiányzó mezőt a Studio
+Kötelező mező: `schema`, `title`. A többi opcionális, hiányzó mezőt az IdeaToVideo
 Recommended módban kitölt. A Tervező app ugyanezt a sémát írja; a séma
 verziója a `schema` mezőben van, így a két app külön fejlődhet.
 

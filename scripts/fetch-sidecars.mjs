@@ -3,6 +3,8 @@
 // (DECISIONS 26: the user never installs Node) and places it where Tauri's
 // `externalBin` expects it:
 //   app/src-tauri/binaries/node-<target-triple>[.exe]
+// Then the pinned ffmpeg + ffprobe for the same target (fetch-ffmpeg.mjs).
+// With --all only Node is fetched: the ffmpeg folder holds one target at a time.
 //
 // Usage:
 //   node scripts/fetch-sidecars.mjs                 the host's target triple
@@ -19,6 +21,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { fetchFfmpeg } from "./fetch-ffmpeg.mjs";
 
 export const NODE_VERSION = "24.16.0";
 
@@ -117,6 +120,7 @@ async function main(argv) {
   else if (argv.includes("--target")) triples = [argv[argv.indexOf("--target") + 1]];
   else triples = [hostTriple()];
   for (const t of triples) await fetchSidecar(t);
+  if (!argv.includes("--all")) await fetchFfmpeg(triples[0]);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

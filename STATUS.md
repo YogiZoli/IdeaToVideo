@@ -27,14 +27,26 @@ Settings megnyitás, üres kulcsteszt, eltűnő hibaüzenet.
 
 ## Következő lépés
 
-1. A PR #2 merge-e zöld CI után (Zoltan jóváhagyta).
-2. 2. fázis terve (`docs/phase-2-plan.md`): hang (edge TTS, ElevenLabs hanglista
-   meghallgatással), jelenet-tábla, build, kontakt lap, render (ffmpeg és a
-   hyperframes bekötése), HeyGen avatar lista, presetek, Autopilot.
+**2. fázis, branch `phase-2`.** Terv: `docs/phase-2-plan.md` (részben jóváhagyva,
+2026-09-30). A PR #2 merge-ölve (main `b7f2289`).
+
+Kész a 2. fázisból (2026-09-30):
+- 1. lépés: SPEC, PRD, `package.json` névigazítás; a CI PR-en csak Windowst
+  épít, a macOS build kézi (`gh workflow run build -f platforms=both`).
+- 4. lépés: ffmpeg sidecar (`scripts/fetch-ffmpeg.mjs`): Windows BtbN
+  n8.1.2 GPL shared, macOS ffmpeg-static 6.1.1, SHA256-tal; `check-ffmpeg.mjs`
+  ellenőrzi a képességeket (Windowson mind megvan), a CI is futtatja; a runner
+  a csomagolt ffmpeg-et kapja (`HYPERFRAMES_FFMPEG_PATH`). 43 Node és 16 Rust
+  teszt zöld.
+
+Következik: 5. lépés (Chrome első indításkor), 2. lépés (a kánon bekötése),
+3. lépés (brand-frames PR), 6. lépés (hang).
 
 ## Zoltan döntésére vár
 
-Semmi.
+1. A videó kinézete: A, B vagy C (`docs/phase-2-plan.md`, "Zoltan döntésére
+   vár"). A 3. és a 14. lépés ettől függ.
+2. `BRAND_FRAMES_TOKEN` létrehozása a CI-hoz (a 2. lépésnél kérem, lépésenként).
 
 ## Hogyan indul egy új session
 

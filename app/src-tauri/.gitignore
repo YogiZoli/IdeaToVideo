@@ -8,3 +8,7 @@
 
 # Downloaded by scripts/fetch-sidecars.mjs, never committed
 /binaries/
+
+# Downloaded by scripts/fetch-ffmpeg.mjs, never committed
+/ffmpeg/
+/ffmpeg.new/

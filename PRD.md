@@ -1,4 +1,4 @@
-# PRD: Studio (munkanév)
+# PRD: IdeaToVideo
 
 Verzió: 0.1 vázlat, 2026-09-24
 Tulajdonos: Zoltan Gero
