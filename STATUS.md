@@ -29,14 +29,14 @@ Settings megnyitás, üres kulcsteszt, eltűnő hibaüzenet.
 
 **2. fázis, branch `phase-2`.** Terv: `docs/phase-2-plan.md`, a Mozgás varázsló
 specifikációja: `docs/motion-wizard.md`. A fázis közben irányt váltott: **D út**
-(DECISIONS 48-54): az app nem használja Zoltan brand-frames kánonját, saját
-könyvtárat kap a HyperFrames registry komponenseiből, és saját pipeline-kódot.
+(DECISIONS 48-54): az app saját könyvtárat kap a HyperFrames registry
+komponenseiből, és saját pipeline-kódot.
 
 Kész (2026-09-30):
 - Névigazítás; CI PR-en csak Windows, a macOS kézi (Claude indítja).
 - `engine/`: saját render lánc (hyperframes 0.8.22, gsap 3.14.2, lockfile),
-  `scripts/fetch-engine.mjs` (154 MB). A kánon submodule törölve.
-- `library/components.json` + `scripts/fetch-library.mjs`: 8 registry komponens
+  `scripts/fetch-engine.mjs` (154 MB).
+- `library/components.json` + `scripts/fetch-library.mjs`: registry komponensek
   (titlecard-lockup, per-word-rise, kinetic-type-swap, count-up, chart-story,
   grid-card-assemble, vox-annotate, cta-close), rögzített commit, SHA256 lock,
   helyi GSAP. Témaváltozóik: `--bg`, `--fg`, `--brand`, `--accent`,
@@ -47,7 +47,7 @@ Kész (2026-09-30):
 - Hang kapu: ElevenLabs és Gemini TTS (mondatonkénti időzítés), hangminták,
   saját zenefájl, ElevenLabs Music, keverés -14 LUFS-re, UI lejátszókkal.
 - Saját mondattábla (`runner/timing/sentences.mjs`).
-- lint + check és render runner parancs (a C2C-n kipróbálva a régi úton).
+- lint + check és render runner parancs.
 - Telepítő utoljára 100 MB (2026-09-30, a 2. kapuval).
 
 - **Registry-próba kész** (2026-09-30): `runner/gates/build/assemble.mjs` a
