@@ -10,6 +10,7 @@
   import ReviewGate from "./ReviewGate.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
+  import { narratorProvider } from "./catalog";
 
   let { app, dir, back }: { app: AppState; dir: string; back: () => void } = $props();
 
@@ -17,6 +18,7 @@
     project: { id: string; title: string; status: string; language: string; autopilot?: boolean; gates: Record<string, Gate> };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
+    latestVideo: { file: string; chapters: string | null; srt: string | null } | null;
   };
 
   const GATE_LABELS: [string, string][] = [
@@ -116,6 +118,69 @@
     }
   }
 
+  // Autopilot (SPEC 6): every remaining gate in Recommended mode, each approved
+  // as soon as it is made, then the render. The same runner commands as the
+  // buttons below, one after the other, so each uses its own key. Stops at the
+  // first error; that gate shows it.
+  let pilot = $state("");
+  let pilotError = $state("");
+
+  async function autopilot() {
+    if (!data) return;
+    pilotError = "";
+    busy = true;
+    const gates = () => data!.project.gates;
+    const approved = (g: string) => gates()[g]?.state === "approved";
+    if (["script", "voice", "scenes", "review"].every(approved) && data.latestVideo) {
+      notice = "Every step is done already. Render again at 4. Review and render if you want a new file.";
+      busy = false;
+      return;
+    }
+    const approveGate = async (gate: string) => {
+      if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
+      await load();
+    };
+    try {
+      if (!approved("script")) {
+        if (!data.scriptMarkdown) {
+          pilot = "Writing the script...";
+          await runner("write-script", { projectDir: dir, llm: app.config!.llm, input: { topic: data.project.title, targetLengthMin: length }, channel: app.config!.channel });
+          await load();
+        }
+        await approveGate("script");
+      }
+      if (!approved("voice")) {
+        pilot = "Reading the script aloud and mixing...";
+        const provider = narratorProvider(app.config?.narrator.provider);
+        let voice = app.config?.narrator.voice ?? null;
+        if (!voice) voice = (await runner<{ voices: { id: string }[] }>("list-voices", { narrator: { provider } })).voices[0]?.id ?? null;
+        if (!voice) throw new Error("No narrator voice is available. Pick one at 2. Voice and music.");
+        await runner("make-voice", { projectDir: dir, narrator: { provider, voice }, music: null });
+        await approveGate("voice");
+      }
+      if (!approved("scenes")) {
+        pilot = "Planning the scenes...";
+        await runner("make-scenes", { projectDir: dir, llm: app.config!.llm });
+        await approveGate("scenes");
+      }
+      if (!approved("review")) {
+        pilot = "Building and checking the video...";
+        await runner("build-video", { projectDir: dir });
+        await approveGate("review");
+      }
+      pilot = "Rendering the video. Keep the computer on...";
+      await runner("render-video", { projectDir: dir, quality: "standard" });
+      await load();
+      notice = "Autopilot finished: your video is at 4. Review and render.";
+    } catch (e) {
+      pilotError = `Autopilot stopped: ${errorText(e)}`;
+      await load();
+    } finally {
+      busy = false;
+      pilot = "";
+    }
+  }
+
   const stateLabel = (g?: Gate) =>
     ({ todo: "Not started", running: "Running", pending: "Waiting for your approval", approved: "Approved", skipped: "Skipped", failed: "Failed" })[g?.state ?? "todo"] ?? g?.state;
 </script>
@@ -131,7 +196,13 @@
     {#if error}<ErrorBox message={error} context={{ step: "load-project" }} />{:else}<p class="hint">Loading...</p>{/if}
   {:else}
     <h1>{data.project.title}</h1>
-    <p class="hint">Status: <strong>{data.project.status}</strong>. Language: {data.project.language}.{data.project.autopilot ? " Autopilot on." : ""}</p>
+    <div class="status">
+      <p class="hint">Status: <strong>{data.project.status}</strong>. Language: {data.project.language}.{data.project.autopilot ? " Autopilot on." : ""}</p>
+      <span class="spacer"></span>
+      <button type="button" disabled={busy} onclick={autopilot} title="Every remaining step with the recommended settings, then the render">Finish on Autopilot</button>
+    </div>
+    {#if pilot}<p class="hint">Autopilot: {pilot} You can leave this page open and wait.</p>{/if}
+    {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
 
     <ol class="gates">
       {#each GATE_LABELS as [id, label]}
@@ -182,13 +253,14 @@
 
     <VoiceGate {app} {dir} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
     <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
-    <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} changed={load} />
+    <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} changed={load} />
   {/if}
 </div>
 
 <style>
   .page { padding: 24px; max-width: 900px; margin: 0 auto; display: grid; gap: 14px; }
-  header { display: flex; gap: 8px; align-items: center; }
+  header, .status { display: flex; gap: 8px; align-items: center; }
+  .status p { margin: 0; }
   .spacer { flex: 1; }
   h1 { margin: 0; }
   h2 { margin: 0; font-size: 17px; }

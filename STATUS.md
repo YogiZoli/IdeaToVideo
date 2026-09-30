@@ -60,7 +60,7 @@ Kész (2026-09-30):
   `border`, `radius`, három betű).
 - **Könyvtár: 15 komponens** (DECISIONS 55), mondat-szerepek szerint.
 - Telepítő a 2. kapuval: Zoltan telepítette, a hang és a zene rendben (2026-09-30).
-- Tesztek: 82 Node, 17 Rust, zöld.
+- Tesztek: 88 Node, 17 Rust, zöld.
 
 - **3. kapu kész** (2026-09-30): `runner/gates/scenes/`, az AI a 15 komponensből
   tervez szerepek szerint (`roles.mjs`), ellenőrzés, egy javító hívás, csere
@@ -70,6 +70,13 @@ Kész (2026-09-30):
   kontakt lap (jelenetenként egy kocka a vége előtt), jóváhagyás, utána render
   az appból (minőség, haladás, lejátszó, "Show in folder"). UI: `ReviewGate.svelte`.
   E2E a runner parancsokkal: build 27 mp, render 110 mp egy 50 mp-es videóra.
+
+- **13. és 17. kész** (2026-09-30, a 20:17-es telepítőben még nincs benne):
+  render után `.srt` felirat és YouTube fejezetlista a videó mellé
+  (`runner/gates/render/export.mjs`, "Copy chapters"); "Finish on Autopilot"
+  gomb, ami a hátralévő kapukat Recommended módban végigviszi a renderig. A
+  Custom szerkesztés (script, jelenet-tábla) mostantól nullázza a későbbi kapukat
+  (SPEC 6).
 
 **A következő konkrét lépés: Zoltan kézi próbája a telepítőből** (script, hang,
 jelenet-tábla, kontakt lap, render), a talált hibák javítása. Utána: 13.

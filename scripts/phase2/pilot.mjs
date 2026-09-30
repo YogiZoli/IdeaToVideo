@@ -109,7 +109,16 @@ for (const name of args.theme ? [args.theme] : Object.keys(THEMES)) {
   fs.mkdirSync(path.join(dir, "audio"), { recursive: true });
   ffmpeg(["-f", "lavfi", "-i", `sine=frequency=220:duration=${TOTAL}`, "-af", "volume=0.05", "-ar", "48000", "-ac", "2", "-b:a", "128k", path.join(dir, "audio", "vo_bgm.mp3")]);
   fs.writeFileSync(path.join(dir, "sentences.json"), JSON.stringify(sentences, null, 2) + "\n");
-  const scenes = LINES.map(([component, , vars], i) => ({ component, from: `S${i + 1}`, vars }));
+  // Words spread evenly over each sentence, and a script with three sections,
+  // for the captions and the chapter list the render writes.
+  const words = sentences.flatMap((s) =>
+    s.text.split(/\s+/).map((text, i, all) => ({ text, start: Math.round((s.start + (s.dur * i) / all.length) * 1000) / 1000, end: Math.round((s.start + (s.dur * (i + 1)) / all.length) * 1000) / 1000 })),
+  );
+  fs.writeFileSync(path.join(dir, "words.json"), JSON.stringify(words, null, 2) + "\n");
+  const third = Math.ceil(LINES.length / 3);
+  const part = (a, b) => LINES.slice(a, b).map(([, t]) => t).join(" ");
+  fs.writeFileSync(path.join(dir, "script.md"), `# Pilot\n\n## OPEN\n\n${part(0, third)}\n\n## 1. The library\n\n${part(third, 2 * third)}\n\n## OWN\n\n${part(2 * third)}\n`);
+  const scenes =LINES.map(([component, , vars], i) => ({ component, from: `S${i + 1}`, vars }));
   fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify({ theme: THEMES[name], scenes }, null, 2) + "\n");
 
   const built = await timed("assemble", () => assemble(dir, { env, total: TOTAL, title: `Pilot ${name}` }));

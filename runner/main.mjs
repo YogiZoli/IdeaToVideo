@@ -25,9 +25,31 @@ import { makeVoice, makeMusic, musicPath, voiceSample, VOICE_PROVIDERS } from ".
 import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview } from "./gates/review/index.mjs";
+import { writeExtras } from "./gates/render/export.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
+
+// A Custom edit changes the gate's output, so every later gate starts again
+// (SPEC 6: running a gate again invalidates the later ones).
+function edited(projectDir, gate) {
+  const project = setGate(setGate(loadProject(projectDir), gate, { state: "running" }), gate, { state: "pending", mode: "custom" });
+  saveProject(projectDir, project);
+  return project;
+}
+
+// The newest render of a project, with its captions and chapters, so the UI
+// shows it again after a restart or an Autopilot run.
+function latestVideo(projectDir) {
+  const out = path.join(projectDir, "out");
+  if (!fs.existsSync(out)) return null;
+  const mp4 = fs.readdirSync(out).filter((f) => /^video-.*\.mp4$/.test(f)).sort().pop();
+  if (!mp4) return null;
+  const file = path.join(out, mp4);
+  const base = file.replace(/\.mp4$/, "");
+  const chapters = fs.existsSync(`${base}.chapters.txt`) ? fs.readFileSync(`${base}.chapters.txt`, "utf8").trim() : null;
+  return { file, chapters, srt: fs.existsSync(`${base}.srt`) ? `${base}.srt` : null };
+}
 
 const commands = {
   providers: async () => ({ providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, model: p.model })) }),
@@ -68,7 +90,7 @@ const commands = {
   "load-project": async ({ projectDir }) => {
     const project = loadProject(projectDir);
     const md = path.join(projectDir, "script.md");
-    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null };
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir) };
   },
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
@@ -102,7 +124,7 @@ const commands = {
   "save-script": async ({ projectDir, markdown }) => {
     if (typeof markdown !== "string" || markdown.trim() === "") throw new Error("The script is empty.");
     writeAtomic(path.join(projectDir, "script.md"), markdown.endsWith("\n") ? markdown : markdown + "\n");
-    const project = setGate(loadProject(projectDir), "script", { state: "pending", mode: "custom" });
+    const project = edited(projectDir, "script");
     saveProject(projectDir, project);
     appendLog(projectDir, "script: edited by hand");
     return { gate: project.gates.script, status: project.status };
@@ -196,7 +218,7 @@ const commands = {
 
   "save-scenes": async ({ projectDir, scenes }) => {
     const r = await saveScenes({ projectDir, scenes });
-    const project = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "custom" });
+    const project = edited(projectDir, "scenes");
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: edited by hand");
     return { ...r, ...(await sceneRows(projectDir)), gate: project.gates.scenes, status: project.status };
@@ -205,7 +227,7 @@ const commands = {
   "refill-scene": async ({ projectDir, llm, index, component }) => {
     const project = loadProject(projectDir);
     await refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language });
-    const next = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "custom" });
+    const next = edited(projectDir, "scenes");
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
     return { ...(await sceneRows(projectDir)), gate: next.gates.scenes, status: next.status };
@@ -253,7 +275,16 @@ const commands = {
     appendLog(projectDir, "render: start");
     const r = await renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) });
     appendLog(projectDir, `render: done, ${r.file}, ${r.seconds}s video in ${r.renderSeconds}s`);
-    return r;
+    // Captions and chapters next to the video. A problem here never loses the
+    // render: the video is there, the note says what is missing.
+    try {
+      const extras = writeExtras(projectDir, r.file, { language: loadProject(projectDir).language, total: r.seconds });
+      appendLog(projectDir, `render: captions and chapters written${extras.chaptersNote ? `, ${extras.chaptersNote}` : ""}`);
+      return { ...r, ...extras };
+    } catch (e) {
+      appendLog(projectDir, `render: captions and chapters failed, ${e.message}`);
+      return { ...r, extrasError: String(e.message) };
+    }
   },
 
   "approve-gate": async ({ projectDir, gate }) => {

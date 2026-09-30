@@ -155,7 +155,7 @@ Minden lépés a `phase-2` branchen, külön committal.
 - Mérendő: a nyilvános HeyGen API ad-e átlátszó webm-et, és a 402-es (üres API
   pénztárca) hiba érthetően jelenjen meg.
 
-### 13. Feliratok, fejezetek, export
+### 13. Feliratok, fejezetek, export (kész, 2026-09-30)
 
 - `out/video.srt` a `words.json`-ból. YouTube fejezetlista a script
   szakaszaiból. "Open folder" gomb.
@@ -191,7 +191,7 @@ presetjei. Két forrása van: egy preset, vagy a Brand varázsló kimenete. A
   hosszkorlát nélkül), kulcsszó-készlet, végképernyő (DECISIONS 50, 51, 53).
   A részleteket Zoltan adja.
 
-### 17. Autopilot
+### 17. Autopilot (kész, 2026-09-30)
 
 - Ugyanaz a menet `recommended` módban, `pending` nélkül. Hibánál megáll, és a
   hibás kapunál nyílik meg (SPEC 6).
