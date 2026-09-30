@@ -27,35 +27,47 @@ Settings megnyitás, üres kulcsteszt, eltűnő hibaüzenet.
 
 ## Következő lépés
 
-**2. fázis, branch `phase-2`.** Terv: `docs/phase-2-plan.md` (részben jóváhagyva,
-2026-09-30). A PR #2 merge-ölve (main `b7f2289`).
+**2. fázis, branch `phase-2`.** Terv: `docs/phase-2-plan.md`, a Mozgás varázsló
+specifikációja: `docs/motion-wizard.md`. A fázis közben irányt váltott: **D út**
+(DECISIONS 48-54): az app nem használja Zoltan brand-frames kánonját, saját
+könyvtárat kap a HyperFrames registry komponenseiből, és saját pipeline-kódot.
 
-Kész a 2. fázisból (2026-09-30):
-- 1. lépés: névigazítás; CI PR-en csak Windows, a macOS build kézi (Claude indítja).
-- 2. lépés: `vendor/brand-frames` submodule (`3efb25f`), `scripts/fetch-canon.mjs`
-  (188 MB, 39 blokk, hyperframes 0.8.22, onnxruntime nélkül, Zoltan brand-mappái
-  nélkül). CI: a kánon a `BRAND_FRAMES_TOKEN` vagy a design-system token
-  kiterjesztésével érhető el.
-- 4. lépés: ffmpeg sidecar, képesség-ellenőrzéssel.
-- 5. lépés: Chrome az app helyi adatmappájába (`runner/tools.mjs`), sáv a
-  Projects oldalon ("Download now").
-- 6. lépés (részben): hang kapu ElevenLabs-szel és Gemini TTS-sel, hangminták,
-  "Use my own file" zene, keverés az AUDIO.md szerint (-14 LUFS), UI lejátszókkal.
-- 7. lépés: mondattábla a hang után automatikusan.
-- 9. lépés runner oldala (`runner/gates/build`), a brand-frames PR után köthető be.
-- Telepítő: 99 MB. Tesztek: 68 Node, 17 Rust, zöld.
-- brand-frames `app-integration` branch (worktree `C:/Users/gdp/HyperFrames/_frames-wt-app`):
-  `--outdir`, `--gsap` (npm `gsap` 3.14.2), semleges alapértékek. Alapból bájtra
-  azonos kimenet. Regress teszt fut.
+Kész (2026-09-30):
+- Névigazítás; CI PR-en csak Windows, a macOS kézi (Claude indítja).
+- `engine/`: saját render lánc (hyperframes 0.8.22, gsap 3.14.2, lockfile),
+  `scripts/fetch-engine.mjs` (154 MB). A kánon submodule törölve.
+- `library/components.json` + `scripts/fetch-library.mjs`: 8 registry komponens
+  (titlecard-lockup, per-word-rise, kinetic-type-swap, count-up, chart-story,
+  grid-card-assemble, vox-annotate, cta-close), rögzített commit, SHA256 lock,
+  helyi GSAP. Témaváltozóik: `--bg`, `--fg`, `--brand`, `--accent`,
+  `--accent-2`, `--font-display`.
+- ffmpeg sidecar (Windows BtbN 8.1.2, macOS ffmpeg-static 6.1.1) képesség-
+  ellenőrzéssel.
+- Chrome az app helyi adatmappájába (`runner/tools.mjs`), "Download now" sáv.
+- Hang kapu: ElevenLabs és Gemini TTS (mondatonkénti időzítés), hangminták,
+  saját zenefájl, ElevenLabs Music, keverés -14 LUFS-re, UI lejátszókkal.
+- Saját mondattábla (`runner/timing/sentences.mjs`).
+- lint + check és render runner parancs (a C2C-n kipróbálva a régi úton).
+- Tesztek: 68 Node, 17 Rust, zöld. Telepítő utoljára 99 MB (még a kánonnal).
 
-Következik: brand-frames PR merge és submodule léptetés, 3. kapu (jelenet-tábla),
-4. kapu, render, zene szolgáltatók, a Gemini TTS mérése Zoltan kulcsával.
+**A következő konkrét lépés: a registry-próba befejezése.**
+1. `runner/assemble.mjs`: a jelenet-táblából (komponens + változók + mondat-
+   horgony) és a `sentences.json`-ból megírja a `build/index.html`-t: gyökér
+   kompozíció, `class="clip"` mountok `data-composition-src`-vel és
+   `data-variable-values`-szal, időzítés a mondatokból, hang, helyi GSAP,
+   témaváltozók a `:root`-on.
+2. Próba-videó: 8 jelenet (mindegyik komponens egyszer, a per-word-rise
+   kétszer, mert a timeline-kulcsuk rögzített, ütközhet), kb. 30 mp, kétféle
+   témával. lint, check, render, idő és hiba mérése, kontakt lap ffmpeg-gel.
+3. Ennek alapján: a könyvtár bővítése (kb. 20-25 komponens), utána a
+   3. kapu (jelenet-tábla) promptja a komponensek `registry-item.json`-jából.
 
 ## Zoltan döntésére vár
 
-1. A videó kinézete: A, B vagy C (`docs/phase-2-plan.md`, "Zoltan döntésére
-   vár"). A 3. és a 14. lépés ettől függ.
-2. `BRAND_FRAMES_TOKEN` létrehozása a CI-hoz (a 2. lépésnél kérem, lépésenként).
+1. A kulcsszavas komment-CTA részletei (a vidrev.app 15 kulcsszava, márkanév
+   nélkül): Zoltan később adja.
+2. A `docs/motion-wizard.md` 2. változata (a D út miatt a MOTION-korlátok nélkül,
+   a "Visszatérő elemek" a CTA varázslóba kerül): átírandó, jóváhagyásra.
 
 ## Hogyan indul egy új session
 
