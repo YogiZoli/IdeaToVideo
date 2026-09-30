@@ -28,6 +28,8 @@
 
   const llmContext = $derived({ step: "scenes", provider: app.config?.llm.provider, model: app.config?.llm.model });
   const dirty = $derived(Object.keys(edits).length > 0);
+  // a table that does not fit the current voice (the voice was made again)
+  const stale = $derived(table.rows.length > 0 && table.rows.some((r) => r.start === null));
 
   async function load() {
     try {
@@ -113,7 +115,9 @@
     {#if busy && current}{#key current}<Progress command={current} label={step} />{/key}{/if}
     {#if error}<ErrorBox message={error} context={llmContext} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={llmContext} />{/if}
 
-    {#if table.rows.length}
+    {#if stale}
+      <p class="warn">This scene table was made for an earlier voice, so it no longer fits. Click Plan again.</p>
+    {:else if table.rows.length}
       <table>
         <thead><tr><th>Time</th><th>What is said</th><th>Scene</th><th>On screen</th></tr></thead>
         <tbody>

@@ -50,7 +50,8 @@
     "shortDescription": "From idea to video, on your own machine",
     "windows": {
       "nsis": {
-        "installerHooks": "windows/hooks.nsh"
+        "installerHooks": "windows/hooks.nsh",
+        "installerIcon": "icons/icon.ico"
       }
     }
   }

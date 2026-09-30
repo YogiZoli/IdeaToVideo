@@ -326,3 +326,14 @@ test("no third-party method names anywhere in the repo", () => {
   walk(root);
   assert.deepEqual(hits, []);
 });
+
+test("Gemini overloaded after the retries: the same request once on the other Gemini model", async () => {
+  const f = fakeFetch([{ status: 503, text: "" }, { status: 503, text: "" }, { status: 503, text: "" }, answer("from the other model")]);
+  const used = [];
+  const text = await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep, onFallback: (m) => used.push(m) });
+  assert.equal(text, "from the other model");
+  assert.deepEqual(used, ["gemini-3.8-flash"]);
+  assert.equal(f.calls.at(-1).body.model, "gemini-3.8-flash");
+  const quota = fakeFetch([{ status: 429, text: "" }]);
+  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: quota, sleep: noSleep }), /quota/, "a quota error is not an overload: no other model");
+});

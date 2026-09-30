@@ -6,7 +6,9 @@
 // never part of an error message: every message goes through redact().
 
 export const PROVIDERS = {
-  gemini: { label: "Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-3.5-flash", jsonMode: true },
+  // overloaded (5xx) after the retries: the same request once more on the
+  // other Gemini model, before the user sees an error (Zoltan, 2026-10-01)
+  gemini: { label: "Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-3.5-flash", jsonMode: true, fallbackModels: ["gemini-3.5-flash", "gemini-3.8-flash"] },
   openrouter: { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1/", model: "openrouter/auto", jsonMode: true },
   claude: { label: "Claude", baseUrl: "https://api.anthropic.com/v1/", model: "claude-sonnet-5", jsonMode: false },
   openai: { label: "ChatGPT (OpenAI API)", baseUrl: "https://api.openai.com/v1/", model: null, jsonMode: true },
@@ -46,7 +48,20 @@ export function friendlyError(label, status, body) {
 
 // One chat completion. Retries 429 and 5xx (and network errors) with
 // exponential backoff, 3 attempts in total (SPEC 5). Returns the text content.
-export async function chat({ provider, apiKey, model, messages, json = false, maxTokens, allowEmpty = false, temperature = 0.7, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 120000 }) {
+export async function chat(opts) {
+  try {
+    return await chatOnce(opts);
+  } catch (e) {
+    const p = PROVIDERS[opts.provider];
+    const used = opts.model || p?.model;
+    const next = e instanceof LlmError && e.status >= 500 && !opts.noFallback ? p?.fallbackModels?.find((m) => m !== used) : null;
+    if (!next) throw e;
+    opts.onFallback?.(next);
+    return chatOnce({ ...opts, model: next });
+  }
+}
+
+async function chatOnce({ provider, apiKey, model, messages, json = false, maxTokens, allowEmpty = false, temperature = 0.7, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 120000 }) {
   const p = PROVIDERS[provider];
   if (!p) throw new LlmError(`Unknown provider: ${provider}`);
   if (!apiKey) throw new LlmError(`No API key set for ${p.label}. Add it in Settings.`);

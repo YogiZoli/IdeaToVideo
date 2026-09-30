@@ -212,6 +212,14 @@ const commands = {
       emit({ event: "progress", step: "sentences" });
       const table = sentenceTable(projectDir);
       info.sentences = table.sentences;
+      // A new voice means new sentences: an older scene table no longer fits
+      // (it caused "there is no sentence S12", 2026-10-01). It goes; gate 3
+      // plans again.
+      const oldTable = path.join(projectDir, "scenes.json");
+      if (fs.existsSync(oldTable)) {
+        fs.rmSync(oldTable, { force: true });
+        appendLog(projectDir, "scenes: the old scene table was for the earlier voice, removed");
+      }
       project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS, ${table.sentences} sentences`);
@@ -421,6 +429,12 @@ const commands = {
 
   "approve-gate": async ({ projectDir, gate }) => {
     const current = loadProject(projectDir);
+    // A scene table is approved only if it fits the current voice.
+    if (gate === "scenes") {
+      const { rows } = await sceneRows(projectDir);
+      if (!rows.length) throw new Error("There is no scene table yet. Click Plan scenes.");
+      if (rows.some((r) => r.start === null)) throw new Error("This scene table was made for an earlier voice. Click Plan again.");
+    }
     const mode = current.gates[gate]?.mode;
     const project = setGate(current, gate, { state: "approved", mode });
     saveProject(projectDir, project);
