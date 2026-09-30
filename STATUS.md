@@ -60,7 +60,7 @@ Kész (2026-09-30):
   `border`, `radius`, három betű).
 - **Könyvtár: 15 komponens** (DECISIONS 55), mondat-szerepek szerint.
 - Telepítő a 2. kapuval: Zoltan telepítette, a hang és a zene rendben (2026-09-30).
-- Tesztek: 88 Node, 17 Rust, zöld.
+- Tesztek: 103 Node, 17 Rust, zöld.
 
 - **3. kapu kész** (2026-09-30): `runner/gates/scenes/`, az AI a 15 komponensből
   tervez szerepek szerint (`roles.mjs`), ellenőrzés, egy javító hívás, csere
@@ -84,14 +84,20 @@ Kész (2026-09-30):
   (DECISIONS 58).
 - Varázslók indító leírásai: `docs/wizards/` (brand, motion, cta).
 
-**A következő konkrét lépés: a nyitott feedback-tételek** (NOTES.md 5-8):
-haladásjelző minden hosszú lépésnél, a gép ébren tartása, a 4. kapu
-magyarázata, zene (ElevenLabs Music, HeyGen, CC0). Utána új telepítő.
+- **Kész még (2026-09-30), a feedback nyomán is:** haladásjelző és ébren
+  tartás; a 4. kapu magyarázata és állóképei; videó-kinézet a brand presetből
+  (Blue Professional, Warm paper, DECISIONS 59); zene: ElevenLabs Music, saját
+  fájl, kulcs nélkül nincs (DECISIONS 60, 62); 5. kapu: HeyGen avatar a saját
+  narrációval (DECISIONS 61, 63); vidIQ kulcsszó-ötletek (DECISIONS 64);
+  ElevenLabs saját hangok (v2); feliratok és fejezetek; Autopilot; e2e teszt
+  (`npm run e2e`, 11/11). Tesztek: 103 Node, 17 Rust.
 
-**Korábbi lépés (kész): Zoltan kézi próbája a telepítőből** (script, hang,
-jelenet-tábla, kontakt lap, render), a talált hibák javítása. Utána: 13.
-feliratok és fejezetek, 14. presetek és Brand varázsló (betűk helyben), 12.
-avatar, 17. Autopilot.
+**A következő konkrét lépés: Zoltan próbája az új telepítővel**, élesben
+azokkal, amik kulcsot kérnek: ElevenLabs saját klón és Music, HeyGen avatar
+(a saját avatarjai látszanak-e), vidIQ kulcsteszt és kulcsszó-ötletek. A talált
+hibák javítása után a 2. fázisból csak a három varázsló marad
+(`docs/wizards/`), külön chatekben, utána a fázis vége: Mac build
+(`gh workflow run build -f platforms=both`, a jóváhagyott változaton), PR.
 
 **Nyitott, a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
 betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseréli),

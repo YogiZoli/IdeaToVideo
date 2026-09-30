@@ -147,7 +147,7 @@ Minden lépés a `phase-2` branchen, külön committal.
 - `hyperframes render`, időbélyeges fájlnév az `out/` alatt, haladás, Cancel.
   Előre kiírt becslés a próba mérése alapján.
 
-### 12. 5. kapu: avatar
+### 12. 5. kapu: avatar (kész, élesben ellenőrizendő)
 
 - HeyGen avatar lista a user fiókjából, előnézettel (DECISIONS 47).
 - Nyitás és záró CTA avatarral, előtte kredit becslés. Az avatar klip a
@@ -196,12 +196,12 @@ presetjei. Két forrása van: egy preset, vagy a Brand varázsló kimenete. A
 - Ugyanaz a menet `recommended` módban, `pending` nélkül. Hibánál megáll, és a
   hibás kapunál nyílik meg (SPEC 6).
 
-### 18. vidIQ (opcionális)
+### 18. vidIQ (opcionális) (kész, élesben ellenőrizendő)
 
 - Az 1. kapuban kulcsszó adat a vidIQ MCP szerveréből a user kulcsával, ha van
   (DECISIONS 42).
 
-### 19. Tesztek
+### 19. Tesztek (kész: e2e, `npm run e2e`)
 
 - runner unit tesztek minden új kapura (mock szolgáltatókkal), Rust tesztek az
   új parancsokra (fehérlista, kulcsnév, útvonal a Projects alatt).
