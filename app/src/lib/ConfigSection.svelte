@@ -64,9 +64,12 @@
   <p class="warn">A ChatGPT Plus or Claude Pro subscription is not an API key. The API is a separate account with its own key.</p>
 {:else if id === "brand"}
   <div class="field">
-    <label for="preset">Brand preset</label>
-    <input id="preset" bind:value={config.brand!.preset} spellcheck="false" />
-    <p class="hint">The preset gallery comes in the next version. Until then the default is blue-professional.</p>
+    <label for="preset">Video look</label>
+    <select id="preset" bind:value={config.brand!.preset}>
+      <option value="blue-professional">Blue Professional: cream and cobalt (HyperFrames preset)</option>
+      <option value="warm-paper">Warm paper: beige, green and blue, serif titles</option>
+    </select>
+    <p class="hint">More presets, and your own colors and fonts, come with the Brand wizard. To change a finished video, build it again at 4. Review and render.</p>
   </div>
   <div class="field">
     <span class="label">Logo</span>

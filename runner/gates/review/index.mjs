@@ -71,9 +71,9 @@ export async function contactSheet(projectDir, { env = process.env, onProgress =
 }
 
 // Gate 4: build, check, sheet.
-export async function buildAndReview(projectDir, { env = process.env, language, title, onProgress = () => {} } = {}) {
+export async function buildAndReview(projectDir, { env = process.env, language, title, look, onProgress = () => {} } = {}) {
   onProgress({ step: "build" });
-  const built = await assemble(projectDir, { env, language, title });
+  const built = await assemble(projectDir, { env, language, title, look });
   await lintAndCheck(projectDir, { env, onProgress });
   const sheet = await contactSheet(projectDir, { env, onProgress });
   return { scenes: built.scenes, seconds: built.seconds, ...sheet };

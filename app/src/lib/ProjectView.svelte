@@ -160,12 +160,12 @@
       }
       if (!approved("scenes")) {
         pilot = "Planning the scenes...";
-        await runner("make-scenes", { projectDir: dir, llm: app.config!.llm });
+        await runner("make-scenes", { projectDir: dir, llm: app.config!.llm, look: app.config?.brand?.preset ?? "blue-professional" });
         await approveGate("scenes");
       }
       if (!approved("review")) {
         pilot = "Building and checking the video...";
-        await runner("build-video", { projectDir: dir });
+        await runner("build-video", { projectDir: dir, look: app.config?.brand?.preset ?? "blue-professional" });
         await approveGate("review");
       }
       pilot = "Rendering the video. Keep the computer on...";
@@ -253,7 +253,7 @@
 
     <VoiceGate {app} {dir} gate={data.project.gates.voice} scriptApproved={script?.state === "approved"} changed={load} />
     <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
-    <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} changed={load} />
+    <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
   {/if}
 </div>
 

@@ -208,3 +208,11 @@
     - A `vox-annotate` kikerült (15 helyett 14 komponens): a vonal nem a szóra
       mutat, a kiemelés elcsúszik, a jegyzet kilóg. A kiemelés szerepben a
       `marker-highlight` marad, az tetszett.
+59. **A videó kinézete a Brand varázslóig: a `config.brand.preset`**, amit az
+    onboarding már most is beállít. Alap és irány: a HyperFrames
+    **Blue Professional** presetje (krém háttér, egyetlen kobaltkék kiemelő,
+    Space Grotesk és Inter), Zoltan jóváhagyta a próba kontakt lapja alapján.
+    Választható még: **Warm paper** (az első próbavideó témája, azt is szerette).
+    A preset áttetsző kártya- és keretszíne átlátszatlan megfelelőre cserélve,
+    mert a constellation-hub a kártyák mögé rajzol. Külön sötét téma nincs a
+    felületen (Zoltan: a Blue Professional "helyette", nem mellette).

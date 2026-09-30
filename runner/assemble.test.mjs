@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { checkVars, sceneTimes, themeCss, mountTheme, fitDuration, assemble, THEME_KEYS } from "./gates/build/assemble.mjs";
+import { checkVars, sceneTimes, themeCss, mountTheme, fitDuration, assemble, THEME_KEYS, BLUE_PROFESSIONAL, baseTheme, isLightLook } from "./gates/build/assemble.mjs";
 
 const ITEM = {
   name: "count-up",
@@ -55,6 +55,10 @@ test("theme: every token is always set, bad values are refused", () => {
   assert.throws(() => themeCss({ bg: "red; } body { display: none" }), /not a usable CSS value/);
   assert.throws(() => themeCss({ bg: "</style><script>" }), /not a usable CSS value/);
   assert.throws(() => themeCss({ colour: "#fff" }), /Unknown theme value/);
+  assert.match(themeCss({}, BLUE_PROFESSIONAL), /--itv-bg: #fdfae7;/, "the default look");
+  assert.match(themeCss({ bg: "#000" }, BLUE_PROFESSIONAL), /--itv-bg: #000;[\s\S]*--itv-fg: #111111;/, "a project theme wins over the look");
+  assert.equal(baseTheme(undefined), BLUE_PROFESSIONAL);
+  assert.equal(isLightLook("dark"), false);
 });
 
 test("accent never becomes a CSS variable; the mount points --brand at the chosen colour", () => {

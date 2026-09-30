@@ -26,6 +26,7 @@ import { costEstimateUsd } from "./providers/music/elevenlabs.mjs";
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
+import { isLightLook } from "./gates/build/assemble.mjs";
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -192,7 +193,7 @@ const commands = {
 
   // Gate 3: the scene table. The AI plans it from the sentence table and the
   // library; the user swaps rows (refill-scene) or edits text (save-scenes).
-  "make-scenes": async ({ projectDir, llm }) => {
+  "make-scenes": async ({ projectDir, llm, look }) => {
     let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `scenes: planning with ${llm.provider}/${llm.model || "default model"}`);
@@ -201,6 +202,7 @@ const commands = {
         llm: { provider: llm.provider, model: llm.model, apiKey: key() },
         projectDir,
         language: project.language,
+        themeIsLight: isLightLook(look),
         onProgress: (p) => emit({ event: "progress", ...p }),
       });
       project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
@@ -224,9 +226,9 @@ const commands = {
     return { ...r, ...(await sceneRows(projectDir)), gate: project.gates.scenes, status: project.status };
   },
 
-  "refill-scene": async ({ projectDir, llm, index, component }) => {
+  "refill-scene": async ({ projectDir, llm, index, component, look }) => {
     const project = loadProject(projectDir);
-    await refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language });
+    await refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, themeIsLight: isLightLook(look) });
     const next = edited(projectDir, "scenes");
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
@@ -250,14 +252,14 @@ const commands = {
 
   // Gate 4: build the video from the approved scene table, lint + check, and
   // the contact sheet (review/contact.png) to approve before the render.
-  "build-video": async ({ projectDir }) => {
+  "build-video": async ({ projectDir, look }) => {
     let project = loadProject(projectDir);
     if (project.gates.scenes?.state !== "approved") throw new Error("Approve the scene table first.");
     project = setGate(project, "review", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, "review: build, check, contact sheet");
     try {
-      const r = await buildAndReview(projectDir, { language: project.language, title: project.title, onProgress: (p) => emit({ event: "progress", ...p }) });
+      const r = await buildAndReview(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) });
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);

@@ -11,7 +11,7 @@
   import { runner, onProgress, errorText } from "./api";
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string };
-  let { dir, gate, scenesApproved, latest, changed }: { dir: string; gate?: Gate; scenesApproved: boolean; latest?: Video | null; changed: () => Promise<void> } = $props();
+  let { dir, gate, scenesApproved, latest, look = "blue-professional", changed }: { dir: string; gate?: Gate; scenesApproved: boolean; latest?: Video | null; look?: string; changed: () => Promise<void> } = $props();
 
   const MINUTES_PER_VIDEO_MINUTE = 2.2; // measured, phase 2 pilot
 
@@ -53,7 +53,7 @@
     error = "";
     step = "Starting...";
     try {
-      const r = await runner<{ seconds: number }>("build-video", { projectDir: dir });
+      const r = await runner<{ seconds: number }>("build-video", { projectDir: dir, look });
       seconds = r.seconds;
       stamp = Date.now();
       await changed();

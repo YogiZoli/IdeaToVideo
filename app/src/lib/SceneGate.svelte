@@ -64,8 +64,9 @@
     }
   }
 
-  const plan = () => run("make-scenes", { llm: app.config!.llm }, "Starting...");
-  const swap = (row: Row, component: string) => run("refill-scene", { llm: app.config!.llm, index: row.index, component }, "Filling in the new scene...");
+  const look = $derived(app.config?.brand?.preset ?? "blue-professional");
+  const plan = () => run("make-scenes", { llm: app.config!.llm, look }, "Starting...");
+  const swap = (row: Row, component: string) => run("refill-scene", { llm: app.config!.llm, index: row.index, component, look }, "Filling in the new scene...");
 
   function save() {
     const scenes = (table.scenes ?? []).map((s, i) => {

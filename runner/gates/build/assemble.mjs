@@ -169,6 +169,52 @@ export const DEFAULT_THEME = {
   "font-mono": "ui-monospace, Consolas, monospace",
 };
 
+// The video look until the Brand wizard (DECISIONS 59): config.brand.preset,
+// which onboarding already sets to "blue-professional". That HyperFrames preset
+// (Apache-2.0, FRAME.md at the library's pinned commit, skills/hyperframes-
+// creative/frame-presets/blue-professional) mapped onto the components' tokens:
+// cream canvas, cobalt as the only accent (so all three accent choices are
+// cobalt, as the preset asks), tinted cards without shadow, Space Grotesk for
+// display, Inter for body. The preset's card fill and border are 4% and 20%
+// cobalt over the canvas; here they are the same colors made opaque, because
+// constellation-hub draws its lines behind the cards.
+export const BLUE_PROFESSIONAL = {
+  bg: "#fdfae7",
+  fg: "#111111",
+  muted: "#6b6b6b",
+  surface: "#f4f2e8",
+  border: "#d0d1eb",
+  brand: "#1e2bfa",
+  accent: "#1e2bfa",
+  "accent-2": "#1e2bfa",
+  radius: "14px",
+  "font-display": "'Space Grotesk', Inter, system-ui, sans-serif",
+  "font-body": "Inter, system-ui, sans-serif",
+  "font-mono": "ui-monospace, Consolas, monospace",
+};
+
+// "Warm paper": the look of the first pilot video, which Zoltan liked
+// (2026-09-30): paper background, green and blue accents, serif display.
+export const WARM_PAPER = {
+  ...DEFAULT_THEME,
+  bg: "#f6f3ec",
+  fg: "#1b1d22",
+  muted: "#5d6470",
+  surface: "#ffffff",
+  border: "#d9d3c7",
+  brand: "#0a7d55",
+  accent: "#1f5fbf",
+  "accent-2": "#7a3fb8",
+  "font-display": "Georgia, 'Times New Roman', serif",
+};
+
+// Other preset names fall back to blue-professional until the Brand wizard
+// brings the gallery. "dark" is the pilot's theme, kept for tests and pilots.
+export const LOOKS = { "blue-professional": BLUE_PROFESSIONAL, "warm-paper": WARM_PAPER, dark: DEFAULT_THEME };
+export const DEFAULT_LOOK = "blue-professional";
+export const baseTheme = (look) => LOOKS[look] ?? LOOKS[DEFAULT_LOOK];
+export const isLightLook = (look) => baseTheme(look) !== DEFAULT_THEME;
+
 // The runtime writes every variable of a mounted component as a CSS property
 // on the mount (id "accent" -> --accent): the per-instance value always, and
 // the declared default wherever that property is still empty, which it is
@@ -194,12 +240,12 @@ export function mountTheme(vars = {}) {
 
 // The theme as CSS variables. Values are CSS values (colours, lengths, font
 // stacks); anything that could close the rule or the style element is refused.
-export function themeCss(theme = {}) {
+export function themeCss(theme = {}, base = DEFAULT_THEME) {
   const lines = [];
   for (const k of Object.keys(theme)) {
     if (!THEME_KEYS.includes(k)) throw new Error(`Unknown theme value: ${k} (known: ${THEME_KEYS.join(", ")}).`);
   }
-  for (const [k, v] of Object.entries({ ...DEFAULT_THEME, ...theme })) {
+  for (const [k, v] of Object.entries({ ...base, ...theme })) {
     if (typeof v !== "string" || !v.trim() || /[;{}<>\\]/.test(v)) throw new Error(`Theme ${k}: not a usable CSS value.`);
     lines.push(`  --itv-${k}: ${v.trim()};`, `  --${k}: var(--itv-${k});`);
   }
@@ -209,7 +255,7 @@ export function themeCss(theme = {}) {
 const attr = (s) => String(s).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/</g, "&lt;");
 const text = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
-export function indexHtml({ width, height, total, theme, mounts, language = "en", title = "Video" }) {
+export function indexHtml({ width, height, total, theme, look, mounts, language = "en", title = "Video" }) {
   const hosts = mounts
     .map(
       (m) =>
@@ -225,7 +271,7 @@ export function indexHtml({ width, height, total, theme, mounts, language = "en"
     <meta name="viewport" content="width=${width}, height=${height}" />
     <title>${text(title)}</title>
     <style>
-${themeCss(theme)
+${themeCss(theme, baseTheme(look))
   .split("\n")
   .map((l) => "      " + l)
   .join("\n")}
@@ -265,7 +311,7 @@ ${hosts}
 
 // Reads scenes.json + sentences.json, checks everything, then writes build/.
 // `total` (seconds) is the audio length; measured from the mix when not given.
-export async function assemble(projectDir, { env = process.env, total, language, title } = {}) {
+export async function assemble(projectDir, { env = process.env, total, language, title, look = DEFAULT_LOOK } = {}) {
   const read = (f, what) => {
     const p = path.join(projectDir, f);
     if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet (${f}).`);
@@ -293,7 +339,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     errors.push(...found);
   }
   if (errors.length) throw new Error(errors.join(" "));
-  themeCss(table.theme); // refuse a bad theme before touching build/
+  themeCss(table.theme, baseTheme(look)); // refuse a bad theme before touching build/
 
   if (total === undefined) total = await duration(path.join(projectDir, "audio", "vo_bgm.mp3"), env);
   total = Math.round(total * 1000) / 1000;
@@ -314,7 +360,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.writeFileSync(path.join(out, src), fitted[n]);
     return { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
   });
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, mounts, language, title }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, language, title }));
   return { out, scenes: mounts.length, seconds: total };
 }
 
