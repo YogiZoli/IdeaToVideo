@@ -12,7 +12,8 @@
   import { runner, onProgress, errorText } from "./api";
   import { onDestroy } from "svelte";
 
-  type Look = { id: string; name: string; type: string; gender: string | null; image: string | null; video: string | null; mine: boolean };
+  type Look = { id: string; name: string; type: string; gender: string | null; image: string | null; video: string | null };
+  type Group = { id: string; name: string; image: string | null; status: string; note: string | null; looks: Look[] };
   type Segment = { name: string; label: string; start: number; duration: number; file?: string };
   type Plan = { segments: Segment[]; current: { lookId: string; segments: Segment[] } | null; estimate: { low: number; high: number }; account: { kind?: string; remaining?: number | null; currency?: string | null; error?: string } | null };
 
@@ -20,7 +21,8 @@
 
   const hasKey = $derived(!!app.keys["heygen"]);
   let open = $state(false);
-  let looks = $state<Look[]>([]);
+  let own = $state<Group[]>([]);
+  let stock = $state<Look[]>([]);
   let plan = $state<Plan | null>(null);
   let lookId = $state("");
   let which = $state<string[]>(["open", "close"]);
@@ -40,9 +42,9 @@
     error = "";
     step = "Loading your avatars and your HeyGen balance...";
     try {
-      looks = (await runner<{ looks: Look[] }>("avatar-looks", { service: "heygen" })).looks;
+      ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen" }));
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
-      lookId = plan.current?.lookId ?? looks[0]?.id ?? "";
+      lookId = plan.current?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -133,18 +135,41 @@
     {#if busy}<Progress command="make-avatar" label={step || "Working"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "avatar", provider: "heygen" }} />{/if}
 
-    {#if looks.length}
-      <p class="hint">Choose who speaks. Your own avatars come first. Click a picture's "Preview" to see it move.</p>
-      <div class="looks">
-        {#each looks as l (l.id)}
-          <label class="look" class:on={lookId === l.id}>
-            <input type="radio" bind:group={lookId} value={l.id} disabled={busy} />
-            {#if l.image}<img src={convertFileSrc(l.image)} alt={l.name} loading="lazy" />{:else}<span class="noimg">{l.name}</span>{/if}
-            <span class="name">{l.name}{l.mine ? " (yours)" : ""}</span>
-            {#if l.video}<button type="button" class="ghost" onclick={() => showPreview(l)}>Preview</button>{/if}
-          </label>
-        {/each}
-      </div>
+    {#if own.length || stock.length}
+      <p class="label">Your avatars</p>
+      {#if !own.length}<p class="hint">No avatar of your own in this HeyGen account yet. You can pick a HeyGen stock avatar below.</p>{/if}
+      {#each own as g (g.id)}
+        <div class="group">
+          <div class="ghead">
+            {#if g.image}<img src={convertFileSrc(g.image)} alt="" />{/if}
+            <strong>{g.name}</strong>
+            {#if g.note}<span class="hint">({g.note})</span>{:else}<span class="hint">{g.looks.length} look{g.looks.length === 1 ? "" : "s"}</span>{/if}
+          </div>
+          {#each g.looks as l (l.id)}
+            <label class="row-look" class:on={lookId === l.id}>
+              <input type="radio" bind:group={lookId} value={l.id} disabled={busy} />
+              {#if l.image}<img src={convertFileSrc(l.image)} alt="" loading="lazy" />{/if}
+              <span class="grow">{l.name}</span>
+              {#if l.video}<button type="button" class="ghost" onclick={() => showPreview(l)}>Preview</button>{/if}
+            </label>
+          {/each}
+        </div>
+      {/each}
+      {#if stock.length}
+        <details>
+          <summary class="label">HeyGen stock avatars</summary>
+          <div class="looks">
+            {#each stock as l (l.id)}
+              <label class="look" class:on={lookId === l.id}>
+                <input type="radio" bind:group={lookId} value={l.id} disabled={busy} />
+                {#if l.image}<img src={convertFileSrc(l.image)} alt={l.name} loading="lazy" />{:else}<span class="noimg">{l.name}</span>{/if}
+                <span class="name">{l.name}</span>
+                {#if l.video}<button type="button" class="ghost" onclick={() => showPreview(l)}>Preview</button>{/if}
+              </label>
+            {/each}
+          </div>
+        </details>
+      {/if}
       <!-- svelte-ignore a11y_media_has_caption -->
       {#if preview}<video controls autoplay src={preview}></video>{/if}
     {/if}
@@ -190,6 +215,13 @@
   .look input { position: absolute; opacity: 0; }
   .look img, .noimg { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: grid; place-items: center; background: var(--border); }
   .name { font-weight: 600; }
+  .group { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; display: grid; gap: 6px; }
+  .ghead { display: flex; gap: 8px; align-items: center; }
+  .ghead img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+  .row-look { display: flex; gap: 10px; align-items: center; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .row-look.on { background: var(--primary-surface); }
+  .row-look img { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
+  details { margin-top: 8px; }
   .clips { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
   .clips div { display: grid; gap: 4px; }
   video { width: 100%; border-radius: 8px; margin-top: 8px; }

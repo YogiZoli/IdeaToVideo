@@ -95,6 +95,8 @@ export async function voiceSample({ narrator, apiKey, language = "en", dir, fetc
   const lang = SAMPLE_TEXT[language] ? language : "en";
   const file = path.join(dir, `${narrator.provider}-${String(narrator.voice).replace(/[^A-Za-z0-9_-]/g, "")}-${lang}.wav`);
   if (fs.existsSync(file)) return file;
+  const mp3 = file.replace(/\.wav$/, ".mp3");
+  if (fs.existsSync(mp3)) return mp3; // ElevenLabs samples are mp3: cached too, never paid twice
   const r = await provider.speak({ apiKey, fetchImpl, voiceId: narrator.voice, text: SAMPLE_TEXT[lang] });
   fs.mkdirSync(dir, { recursive: true });
   const out = r.ext === "wav" ? file : file.replace(/\.wav$/, ".mp3");

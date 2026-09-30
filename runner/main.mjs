@@ -298,19 +298,22 @@ const commands = {
   // Gate 5, optional: an avatar says the opening and the closing (DECISIONS
   // 61). The HeyGen key comes by "service". Previews are cached locally.
   "avatar-looks": async () => {
-    const looks = await heygen.listLooks({ apiKey: key() });
+    const { own, stock } = await heygen.listAvatars({ apiKey: key() });
     const dir = path.join(dataDir(), "avatar-previews");
-    const out = [];
-    for (const l of looks) {
-      let image = null;
+    // previews cached locally; a missing one never hides the avatar
+    const local = async (url) => {
       try {
-        if (l.image) image = await heygen.cachePreview({ url: l.image, dir });
+        return url ? await heygen.cachePreview({ url, dir }) : null;
       } catch {
-        image = null; // a missing preview never hides the avatar
+        return null;
       }
-      out.push({ ...l, image });
+    };
+    for (const g of own) {
+      g.image = await local(g.image);
+      for (const l of g.looks) l.image = await local(l.image);
     }
-    return { looks: out };
+    for (const l of stock) l.image = await local(l.image);
+    return { own, stock };
   },
 
   "avatar-preview": async ({ url }) => ({ file: await heygen.cachePreview({ url, dir: path.join(dataDir(), "avatar-previews") }) }),

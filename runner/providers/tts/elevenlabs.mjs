@@ -43,18 +43,34 @@ async function call(path, { apiKey, fetchImpl = fetch, method = "GET", body, tim
   throw new Error(`ElevenLabs answered with HTTP ${res.status}${why}. Try again later.`);
 }
 
+// Every voice in the account, the user's own first (clones, designed and
+// professional voices), then ElevenLabs' premade ones. /v2/voices pages
+// through all of them; the older /v1/voices showed Zoltan only the premade
+// voices, not his own clone (2026-09-30). A voice without a ready preview is
+// played with a short sample instead (voice-sample).
+const OWN = new Set(["cloned", "generated", "professional"]);
+
 export async function listVoices({ apiKey, fetchImpl }) {
-  const j = await call("/v1/voices", { apiKey, fetchImpl });
-  return (j.voices ?? []).map((v) => ({
+  const all = [];
+  let token = "";
+  for (let page = 0; page < 10; page++) {
+    const j = await call(`/v2/voices?page_size=100&sort=name&sort_direction=asc${token ? `&next_page_token=${encodeURIComponent(token)}` : ""}`, { apiKey, fetchImpl });
+    all.push(...(j.voices ?? []));
+    if (!j.has_more || !j.next_page_token) break;
+    token = j.next_page_token;
+  }
+  const voices = all.map((v) => ({
     id: v.voice_id,
     name: v.name,
     category: v.category ?? null,
+    own: OWN.has(v.category) || v.is_owner === true,
     gender: v.labels?.gender ?? null,
     accent: v.labels?.accent ?? null,
     description: v.labels?.description ?? v.description ?? null,
     previewUrl: v.preview_url ?? null,
     languages: (v.verified_languages ?? []).map((l) => l.language).filter(Boolean),
   }));
+  return [...voices.filter((v) => v.own), ...voices.filter((v) => !v.own)];
 }
 
 // previous/next text keep the intonation continuous across blocks.

@@ -59,29 +59,58 @@ async function call(apiKey, pathname, { method = "GET", body, fetchImpl = fetch,
   return raw ? json : json.data;
 }
 
-// The looks the user can pick: their own first (digital twins, photo
-// avatars), then a page of HeyGen's public ones.
-export async function listLooks({ apiKey, fetchImpl, publicLimit = 30 }) {
-  const own = [];
+// Every page of a list endpoint (cursor pagination, at most `pages` pages).
+async function all(apiKey, pathname, fetchImpl, pages = 5) {
+  const out = [];
   let token = "";
-  for (let page = 0; page < 5; page++) {
-    const r = await call(apiKey, `/v3/avatars/looks?ownership=private&limit=50${token ? `&token=${encodeURIComponent(token)}` : ""}`, { fetchImpl, raw: true });
-    own.push(...(r?.data ?? []));
+  for (let page = 0; page < pages; page++) {
+    const sep = pathname.includes("?") ? "&" : "?";
+    const r = await call(apiKey, `${pathname}${token ? `${sep}token=${encodeURIComponent(token)}` : ""}`, { fetchImpl, raw: true });
+    out.push(...(r?.data ?? []));
     if (!r?.has_more || !r.next_token) break;
     token = r.next_token;
   }
-  const pub = (await call(apiKey, `/v3/avatars/looks?ownership=public&limit=${publicLimit}`, { fetchImpl, raw: true }))?.data ?? [];
-  const shape = (l, mine) => ({
-    id: l.id,
-    name: l.name,
-    type: l.avatar_type,
-    gender: l.gender ?? null,
-    image: l.preview_image_url ?? null,
-    video: l.preview_video_url ?? null,
-    engines: l.supported_api_engines ?? [],
-    mine,
-  });
-  return [...own.filter((l) => !l.status || l.status === "completed").map((l) => shape(l, true)), ...pub.map((l) => shape(l, false))];
+  return out;
+}
+
+const shapeLook = (l) => ({
+  id: l.id,
+  name: l.name,
+  type: l.avatar_type,
+  gender: l.gender ?? null,
+  image: l.preview_image_url ?? null,
+  video: l.preview_video_url ?? null,
+  engines: l.supported_api_engines ?? [],
+  status: l.status ?? null,
+});
+
+const GROUP_STATUS = {
+  processing: "still training at HeyGen",
+  pending_consent: "waiting for your consent at HeyGen",
+  failed: "training failed at HeyGen",
+};
+
+// What the user can pick, the way HeyGen organises it: their own avatars
+// (characters), each with its looks; then a page of HeyGen's stock looks. An
+// own avatar that is not ready yet is listed with the reason, so the user
+// sees why it cannot be chosen.
+export async function listAvatars({ apiKey, fetchImpl, stockLimit = 30 }) {
+  const groups = await all(apiKey, "/v3/avatars?ownership=private&limit=50", fetchImpl);
+  const own = [];
+  for (const g of groups) {
+    const ready = !g.status || g.status === "completed";
+    const looks = ready ? (await all(apiKey, `/v3/avatars/looks?group_id=${encodeURIComponent(g.id)}&limit=50`, fetchImpl)).map(shapeLook) : [];
+    own.push({
+      id: g.id,
+      name: g.name,
+      image: g.preview_image_url ?? null,
+      status: g.status ?? "completed",
+      note: ready ? (looks.length ? null : "no looks yet") : (GROUP_STATUS[g.status] ?? g.status),
+      looks: looks.filter((l) => !l.status || l.status === "completed"),
+    });
+  }
+  const stock = ((await call(apiKey, `/v3/avatars/looks?ownership=public&limit=${stockLimit}`, { fetchImpl, raw: true }))?.data ?? []).map(shapeLook);
+  return { own, stock };
 }
 
 // The account's remaining money or credits, as HeyGen reports it.

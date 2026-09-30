@@ -20,13 +20,16 @@ function fakeFetch(routes) {
   return impl;
 }
 
-test("looks: the user's own first, completed only, then public; key in the header", async () => {
+test("avatars: the user's own characters with their looks, the reason when not ready, then stock", async () => {
   const f = fakeFetch([
-    ["ownership=private", json(200, { data: [{ id: "mine1", name: "Me", avatar_type: "digital_twin", status: "completed", preview_image_url: "https://files.heygen.ai/a.jpg" }, { id: "mine2", name: "Training", status: "processing" }], has_more: false })],
+    ["/v3/avatars?ownership=private", json(200, { data: [{ id: "g1", name: "Zoltan", status: "completed" }, { id: "g2", name: "New twin", status: "pending_consent" }], has_more: false })],
+    ["group_id=g1", (calls) => (calls.filter((c) => c.url.includes("group_id=g1")).length === 1 ? json(200, { data: [{ id: "look1", name: "Office", avatar_type: "digital_twin" }], has_more: true, next_token: "p2" }) : json(200, { data: [{ id: "look2", name: "Studio", status: "completed" }, { id: "look3", name: "Busy", status: "processing" }], has_more: false }))],
     ["ownership=public", json(200, { data: [{ id: "pub1", name: "Monica", avatar_type: "studio_avatar" }] })],
   ]);
-  const looks = await heygen.listLooks({ apiKey: KEY, fetchImpl: f });
-  assert.deepEqual(looks.map((l) => [l.id, l.mine]), [["mine1", true], ["pub1", false]]);
+  const r = await heygen.listAvatars({ apiKey: KEY, fetchImpl: f });
+  assert.deepEqual(r.own.map((g) => [g.name, g.looks.map((l) => l.id), g.note]), [["Zoltan", ["look1", "look2"], null], ["New twin", [], "waiting for your consent at HeyGen"]]);
+  assert.deepEqual(r.stock.map((l) => l.id), ["pub1"]);
+  assert.ok(f.calls.some((c) => c.url.includes("token=p2")), "all pages of looks");
   assert.equal(f.calls[0].headers["x-api-key"], KEY);
 });
 

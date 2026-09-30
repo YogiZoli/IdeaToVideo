@@ -16,7 +16,7 @@
   import { narratorProvider } from "./catalog";
 
   type Info = { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number };
-  type Voice = { id: string; name: string; gender: string | null; accent: string | null; description: string | null; previewUrl: string | null; languages: string[] };
+  type Voice = { id: string; name: string; own?: boolean; gender: string | null; accent: string | null; description: string | null; previewUrl: string | null; languages: string[] };
   type Track = { id: string; title: string; composer: string; license: string; mood: string; seconds: number; file: string | null };
 
   let { app, dir, gate, scriptApproved, voiceInfo = null, changed }: { app: AppState; dir: string; gate?: Gate; scriptApproved: boolean; voiceInfo?: Info | null; changed: () => Promise<void> } = $props();
@@ -196,9 +196,14 @@
     <div class="row">
       <label for="voice">Narrator Voice</label>
       <select id="voice" bind:value={voiceId} disabled={busy}>
-        {#each voices as v}
-          <option value={v.id}>{v.name}{v.accent ? `, ${v.accent}` : ""}{v.gender ? `, ${v.gender}` : ""}</option>
-        {/each}
+        {#if voices.some((v) => v.own)}
+          <optgroup label="Your voices">
+            {#each voices.filter((v) => v.own) as v}<option value={v.id}>{v.name}{v.accent ? `, ${v.accent}` : ""}{v.gender ? `, ${v.gender}` : ""}</option>{/each}
+          </optgroup>
+        {/if}
+        <optgroup label={provider === "elevenlabs" ? "ElevenLabs voices" : "Voices"}>
+          {#each voices.filter((v) => !v.own) as v}<option value={v.id}>{v.name}{v.accent ? `, ${v.accent}` : ""}{v.gender ? `, ${v.gender}` : ""}</option>{/each}
+        </optgroup>
       </select>
       <button type="button" onclick={playSample} disabled={!voiceId || sampling}>{sampling ? "Loading..." : "Play sample"}</button>
     </div>

@@ -65,10 +65,13 @@ function fakeFetch(res) {
   return impl;
 }
 
-test("ElevenLabs voices: mapped, key only in the header", async () => {
-  const f = fakeFetch({ status: 200, json: { voices: [{ voice_id: "v1", name: "Anna", category: "premade", labels: { gender: "female", accent: "hungarian" }, preview_url: "https://x/p.mp3", verified_languages: [{ language: "hu" }] }] } });
+test("ElevenLabs voices: all of the account (v2), the user's own clone first, key only in the header", async () => {
+  const f = fakeFetch({ status: 200, json: { voices: [{ voice_id: "v1", name: "Anna", category: "premade", labels: { gender: "female", accent: "hungarian" }, preview_url: "https://x/p.mp3", verified_languages: [{ language: "hu" }] }, { voice_id: "me", name: "Zoltan clone", category: "cloned", labels: {} }], has_more: false } });
   const v = await listVoices({ apiKey: KEY, fetchImpl: f });
-  assert.deepEqual(v[0], { id: "v1", name: "Anna", category: "premade", gender: "female", accent: "hungarian", description: null, previewUrl: "https://x/p.mp3", languages: ["hu"] });
+  assert.deepEqual(v.map((x) => [x.id, x.own]), [["me", true], ["v1", false]]);
+  assert.deepEqual(v[1], { id: "v1", name: "Anna", category: "premade", own: false, gender: "female", accent: "hungarian", description: null, previewUrl: "https://x/p.mp3", languages: ["hu"] });
+  assert.equal(v[0].previewUrl, null, "no ready preview: the UI plays a sample instead");
+  assert.match(f.calls[0].url, /\/v2\/voices\?page_size=100/);
   assert.equal(f.calls[0].init.headers["xi-api-key"], KEY);
   assert.ok(!f.calls[0].url.includes(KEY));
 });
