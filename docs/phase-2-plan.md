@@ -39,6 +39,18 @@ HeyGen kulcsával, ha a kreditje engedi.
     kiemelő vonal, haladásjelző, háttér). A mozgás a kánon MOTION szabályai
     szerint. Javaslat alatt: opcionális Mozgás varázsló (lásd "Zoltan döntésére
     vár").
+11. Zoltan, 2026-09-30, a Mozgás varázslóról: a kamera kikapcsolható, a
+    lüktetés 0 is lehet; a bezáruló gyűrű semmilyen formában nem kerül az appba
+    (választhatóként sem); haladásjelző nincs; helyette fejezetek (a script
+    szakaszaiból YouTube fejezetlista, időbélyeggel); a YouTube végképernyő
+    helye választható hosszú (5-20 mp); a visszatérő szegmensek a user saját
+    feltöltött videói is lehetnek, hosszkorlát nélkül; a kulcsszavas komment-CTA
+    visszajön (a DECISIONS 35-öt módosítja), alapból a vidrev.app 15
+    kulcsszavával, a márkanév említése nélkül. A részleteket Zoltan később adja.
+12. NYITOTT (Zoltan, 2026-09-30): az app könyvtára egyáltalán ne őrizzen semmit
+    a C2C előzményből és Zoltan rendszeréből (39 archetípus, MOTION.md), hanem
+    most épüljön újra a HyperFrames nyilvános anyagából és a varázslókból. Ez a
+    PRD 1, 11 és a DECISIONS 23 módosítása, megerősítésre vár (chat, 2026-09-30).
 9. A Brand varázsló külön az onboardingtól: az onboarding után az app
    használható, a varázsló opcionális ("Set your own design"). Kevés, összevont
    képernyő, mindegyiken kiírva, hogy Skip vagy Default is jó, és később
