@@ -6,6 +6,7 @@
   // approve.
   import { onDestroy } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Progress from "./Progress.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
@@ -46,8 +47,11 @@
   });
   onDestroy(() => unlisten.then((f) => f()));
 
+  let current = $state("");
+
   async function run<T>(command: string, request: Record<string, unknown>, label: string) {
     busy = true;
+    current = command === "save-scenes" ? "" : command;
     error = "";
     step = label;
     try {
@@ -106,7 +110,7 @@
       <span class="hint grow">The AI picks a scene for every sentence, from what the voice says. You can swap a scene or change its text.</span>
       <button type="button" class="primary" disabled={busy} onclick={plan}>{table.rows.length ? "Plan again" : "Plan scenes (Recommended)"}</button>
     </div>
-    {#if busy && step}<p class="hint">{step} This usually takes under a minute.</p>{/if}
+    {#if busy && current}{#key current}<Progress command={current} label={step} />{/key}{/if}
     {#if error}<ErrorBox message={error} context={llmContext} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={llmContext} />{/if}
 
     {#if table.rows.length}

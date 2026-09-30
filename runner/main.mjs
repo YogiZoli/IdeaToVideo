@@ -27,6 +27,31 @@ import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/i
 import { buildAndReview } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
 import { isLightLook } from "./gates/build/assemble.mjs";
+import { timed } from "./timings.mjs";
+
+// Rough size of the narration, before the voice exists: sentences in script.md.
+function sentenceCount(projectDir) {
+  const md = path.join(projectDir, "script.md");
+  if (!fs.existsSync(md)) return 10;
+  const text = fs.readFileSync(md, "utf8").replace(/^#.*$/gm, "");
+  return Math.max(1, (text.match(/[.?!](\s|$)/g) ?? []).length);
+}
+// The video's length from the sentence table (the render measures it later).
+function videoSeconds(projectDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(projectDir, "sentences.json"), "utf8")).at(-1)?.end ?? 60;
+  } catch {
+    return 60;
+  }
+}
+const jsonCount = (projectDir, f, key) => {
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(projectDir, f), "utf8"));
+    return (key ? v[key] : v).length || 1;
+  } catch {
+    return 10;
+  }
+};
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -101,11 +126,13 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
     try {
-      const res = await writeScript({
-        llm: { provider: llm.provider, model: llm.model, apiKey: key() },
-        input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language },
-        onProgress: (p) => emit({ event: "progress", ...p }),
-      });
+      const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
+        writeScript({
+          llm: { provider: llm.provider, model: llm.model, apiKey: key() },
+          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language },
+          onProgress: (p) => emit({ event: "progress", ...p }),
+        }),
+      );
       writeJson(path.join(projectDir, "script.json"), res.script);
       writeAtomic(path.join(projectDir, "script.md"), res.markdown);
       project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
@@ -156,14 +183,16 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `voice: ${narrator?.provider}/${narrator?.voice ?? "?"}${music ? `, music ${music}` : ""}`);
     try {
-      const info = await makeVoice({
-        projectDir,
-        narrator,
-        apiKey: key(),
-        music: musicPath(projectDir, music),
-        language: project.language,
-        onProgress: (p) => emit({ event: "progress", ...p }),
-      });
+      const info = await timed("voice", sentenceCount(projectDir), emit, () =>
+        makeVoice({
+          projectDir,
+          narrator,
+          apiKey: key(),
+          music: musicPath(projectDir, music),
+          language: project.language,
+          onProgress: (p) => emit({ event: "progress", ...p }),
+        }),
+      );
       // step 3, the sentence table: a measurement of this audio, no gate
       emit({ event: "progress", step: "sentences" });
       const table = sentenceTable(projectDir);
@@ -184,7 +213,7 @@ const commands = {
 
   "make-music": async ({ projectDir, music }) => {
     appendLog(projectDir, "music: ElevenLabs Music");
-    const info = await makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) });
+    const info = await timed("music", 60, emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) }));
     const project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
@@ -198,13 +227,15 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `scenes: planning with ${llm.provider}/${llm.model || "default model"}`);
     try {
-      const r = await makeScenes({
-        llm: { provider: llm.provider, model: llm.model, apiKey: key() },
-        projectDir,
-        language: project.language,
-        themeIsLight: isLightLook(look),
-        onProgress: (p) => emit({ event: "progress", ...p }),
-      });
+      const r = await timed("scenes", jsonCount(projectDir, "sentences.json"), emit, () =>
+        makeScenes({
+          llm: { provider: llm.provider, model: llm.model, apiKey: key() },
+          projectDir,
+          language: project.language,
+          themeIsLight: isLightLook(look),
+          onProgress: (p) => emit({ event: "progress", ...p }),
+        }),
+      );
       project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `scenes: done, ${r.scenes} scenes${r.gaps.length ? `, gaps: ${r.gaps.map((g) => `${g.at} ${g.need}`).join("; ")}` : ""}`);
@@ -228,7 +259,7 @@ const commands = {
 
   "refill-scene": async ({ projectDir, llm, index, component, look }) => {
     const project = loadProject(projectDir);
-    await refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, themeIsLight: isLightLook(look) });
+    await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, themeIsLight: isLightLook(look) }));
     const next = edited(projectDir, "scenes");
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
@@ -259,7 +290,7 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, "review: build, check, contact sheet");
     try {
-      const r = await buildAndReview(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) });
+      const r = await timed("build", jsonCount(projectDir, "scenes.json", "scenes"), emit, () => buildAndReview(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
@@ -275,7 +306,7 @@ const commands = {
   "render-video": async ({ projectDir, quality }) => {
     if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the contact sheet first.");
     appendLog(projectDir, "render: start");
-    const r = await renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) });
+    const r = await timed("render", videoSeconds(projectDir), emit, () => renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) }));
     appendLog(projectDir, `render: done, ${r.file}, ${r.seconds}s video in ${r.renderSeconds}s`);
     // Captions and chapters next to the video. A problem here never loses the
     // render: the video is there, the note says what is missing.

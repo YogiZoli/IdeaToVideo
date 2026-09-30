@@ -6,6 +6,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Progress from "./Progress.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText, importMusic } from "./api";
   import { narratorProvider } from "./catalog";
@@ -146,7 +147,7 @@
     <div class="actions">
       <button type="button" class="primary" disabled={busy || !voiceId} onclick={make}>{made ? "Make again" : "Make voice (Recommended)"}</button>
     </div>
-    {#if busy && step}<p class="hint">{step}</p>{/if}
+    {#if busy}<Progress command="make-voice" label={step || "Making the voice"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "voice", provider }} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={{ step: "voice", provider }} />{/if}
 
     {#if made}

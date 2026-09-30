@@ -40,6 +40,18 @@ fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String>
 async fn run_command(app: AppHandle, command: String, request: Value, api_key: Option<String>) -> Result<Value, String> {
     let paths = runner_paths(&app)?;
     tauri::async_runtime::spawn_blocking(move || {
+        // The computer must not fall asleep while a script is written, a voice
+        // is read or a video renders (Zoltan, 2026-09-30). Held for exactly
+        // as long as the runner works. On Windows the request belongs to the
+        // calling thread, so it is made and released here, on this thread. If
+        // the system refuses, the work runs anyway.
+        let _awake = keepawake::Builder::default()
+            .idle(true)
+            .reason("IdeaToVideo is making your video")
+            .app_name("IdeaToVideo")
+            .app_reverse_domain("app.ideatovideo.desktop")
+            .create()
+            .ok();
         let mut on_progress = |v: Value| {
             let _ = app.emit("runner-progress", runner::progress_payload(&command, v));
         };

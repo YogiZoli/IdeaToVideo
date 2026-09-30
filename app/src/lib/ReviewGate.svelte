@@ -7,6 +7,7 @@
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import { onDestroy } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Progress from "./Progress.svelte";
   import type { Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
@@ -22,7 +23,6 @@
   let stamp = $state(Date.now());
   let quality = $state("standard");
   let rendering = $state(false);
-  let percent = $state<number | null>(null);
   let rendered = $state<Video | null>(null);
   // this session's render, else the newest one on disk (after a restart or an
   // Autopilot run)
@@ -44,7 +44,6 @@
     if (p.command === "build-video") {
       step = ({ build: "Building the video...", lint: "Checking the build (lint)...", check: "Checking layout, motion and contrast...", snapshots: `Taking ${s.frames ?? ""} stills...`, sheet: "Making the contact sheet..." } as Record<string, string>)[String(s.step)] ?? step;
     }
-    if (p.command === "render-video" && typeof s.percent === "number") percent = s.percent;
   });
   onDestroy(() => unlisten.then((f) => f()));
 
@@ -82,7 +81,6 @@
     rendering = true;
     busy = true;
     error = "";
-    percent = 0;
     try {
       rendered = await runner<Video>("render-video", { projectDir: dir, quality });
       await changed();
@@ -91,7 +89,6 @@
     } finally {
       rendering = false;
       busy = false;
-      percent = null;
     }
   }
 
@@ -111,7 +108,7 @@
       <span class="hint grow">Builds the video from your scene table and checks it. Then you see one still per scene.</span>
       <button type="button" class="primary" disabled={busy} onclick={build}>{built ? "Build again" : "Build and check (Recommended)"}</button>
     </div>
-    {#if busy && step}<p class="hint">{step} This takes about a minute.</p>{/if}
+    {#if busy && !rendering}<Progress command="build-video" label={step || "Building the video"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "review" }} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={{ step: "review" }} />{/if}
 
     {#if built}
@@ -133,7 +130,7 @@
         <span class="hint grow">{estimate ? `About ${estimate} minute${estimate > 1 ? "s" : ""} on this computer. Keep it on.` : "Keep the computer on while it renders."}</span>
         <button type="button" class="primary" disabled={busy} onclick={render}>{video ? "Render again" : "Render video"}</button>
       </div>
-      {#if rendering}<progress max="100" value={percent ?? 0}></progress><p class="hint">Rendering {percent ?? 0}%...</p>{/if}
+      {#if rendering}<Progress command="render-video" label="Rendering the video" />{/if}
       {#if video}
         {#if video.renderSeconds}<p class="good">Done: {video.seconds} s of video in {video.renderSeconds} s.</p>{:else}<p class="good">Your latest video:</p>{/if}
         <!-- svelte-ignore a11y_media_has_caption -->
@@ -161,7 +158,6 @@
   .grow { flex: 1; }
   .sheet { width: 100%; border-radius: 8px; margin-top: 8px; background: var(--muted); }
   video { width: 100%; margin-top: 8px; border-radius: 8px; }
-  progress { width: 100%; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
   .good { color: var(--success); }
   .label { display: block; font-weight: 600; font-size: 14px; margin-top: 12px; }

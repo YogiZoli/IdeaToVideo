@@ -5,6 +5,7 @@
   import { ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Progress from "./Progress.svelte";
   import VoiceGate from "./VoiceGate.svelte";
   import SceneGate from "./SceneGate.svelte";
   import ReviewGate from "./ReviewGate.svelte";
@@ -123,6 +124,7 @@
   // buttons below, one after the other, so each uses its own key. Stops at the
   // first error; that gate shows it.
   let pilot = $state("");
+  let pilotCommand = $state("");
   let pilotError = $state("");
 
   async function autopilot() {
@@ -143,14 +145,16 @@
     try {
       if (!approved("script")) {
         if (!data.scriptMarkdown) {
-          pilot = "Writing the script...";
+          pilot = "Writing the script";
+          pilotCommand = "write-script";
           await runner("write-script", { projectDir: dir, llm: app.config!.llm, input: { topic: data.project.title, targetLengthMin: length }, channel: app.config!.channel });
           await load();
         }
         await approveGate("script");
       }
       if (!approved("voice")) {
-        pilot = "Reading the script aloud and mixing...";
+        pilot = "Reading the script aloud and mixing";
+        pilotCommand = "make-voice";
         const provider = narratorProvider(app.config?.narrator.provider);
         let voice = app.config?.narrator.voice ?? null;
         if (!voice) voice = (await runner<{ voices: { id: string }[] }>("list-voices", { narrator: { provider } })).voices[0]?.id ?? null;
@@ -159,16 +163,19 @@
         await approveGate("voice");
       }
       if (!approved("scenes")) {
-        pilot = "Planning the scenes...";
+        pilot = "Planning the scenes";
+        pilotCommand = "make-scenes";
         await runner("make-scenes", { projectDir: dir, llm: app.config!.llm, look: app.config?.brand?.preset ?? "blue-professional" });
         await approveGate("scenes");
       }
       if (!approved("review")) {
-        pilot = "Building and checking the video...";
+        pilot = "Building and checking the video";
+        pilotCommand = "build-video";
         await runner("build-video", { projectDir: dir, look: app.config?.brand?.preset ?? "blue-professional" });
         await approveGate("review");
       }
-      pilot = "Rendering the video. Keep the computer on...";
+      pilot = "Rendering the video";
+      pilotCommand = "render-video";
       await runner("render-video", { projectDir: dir, quality: "standard" });
       await load();
       notice = "Autopilot finished: your video is at 4. Review and render.";
@@ -201,7 +208,7 @@
       <span class="spacer"></span>
       <button type="button" disabled={busy} onclick={autopilot} title="Every remaining step with the recommended settings, then the render">Finish on Autopilot</button>
     </div>
-    {#if pilot}<p class="hint">Autopilot: {pilot} You can leave this page open and wait.</p>{/if}
+    {#if pilot}{#key pilotCommand}<Progress command={pilotCommand} label={`Autopilot: ${pilot}`} />{/key}{/if}
     {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
 
     <ol class="gates">
@@ -229,7 +236,7 @@
         </button>
       </div>
 
-      {#if busy && step}<p class="hint">{step} This usually takes under a minute.</p>{/if}
+      {#if busy && step && !pilot}<Progress command="write-script" label={step} />{/if}
       {#if error}
         <ErrorBox message={error} context={llmContext} />
       {:else if script?.state === "failed" && script.error}
