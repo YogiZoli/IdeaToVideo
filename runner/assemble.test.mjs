@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { checkVars, sceneTimes, themeCss, mountTheme, assemble, THEME_KEYS } from "./gates/build/assemble.mjs";
+import { checkVars, sceneTimes, themeCss, mountTheme, fitDuration, assemble, THEME_KEYS } from "./gates/build/assemble.mjs";
 
 const ITEM = {
   name: "count-up",
@@ -67,12 +67,21 @@ test("accent never becomes a CSS variable; the mount points --brand at the chose
   assert.throws(() => mountTheme({ bg: "#000" }), /would overwrite the theme's --bg/);
 });
 
+const COMPONENT = '<html data-composition-duration="3"><template><div id="root" data-duration="3"><div class="clip" data-start="0" data-duration="3"></div></div></template></html>';
+
+test("a component is fitted to its scene's length", () => {
+  const html = fitDuration(COMPONENT, "count-up", 4.25);
+  assert.equal(html, '<html data-composition-duration="4.25"><template><div id="root" data-duration="4.25"><div class="clip" data-start="0" data-duration="4.25"></div></div></template></html>');
+  assert.throws(() => fitDuration('<div data-duration="3">', "x", 4), /no data-composition-duration/);
+  assert.throws(() => fitDuration('<html data-composition-duration="3"><div data-duration="3"></div><div data-duration="1.5"></div>', "x", 4), /other lengths \(1.5\)/);
+});
+
 function fixture() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-asm-"));
   const lib = path.join(dir, "library", "components", "count-up");
   fs.mkdirSync(lib, { recursive: true });
   fs.writeFileSync(path.join(lib, "registry-item.json"), JSON.stringify({ ...ITEM, files: [{ path: "count-up.html", target: "compositions/components/count-up.html" }] }));
-  fs.writeFileSync(path.join(lib, "count-up.html"), "<template>count</template>");
+  fs.writeFileSync(path.join(lib, "count-up.html"), COMPONENT);
   const eng = path.join(dir, "engine", "node_modules", "gsap", "dist");
   fs.mkdirSync(eng, { recursive: true });
   fs.writeFileSync(path.join(eng, "gsap.min.js"), "gsap");
@@ -95,12 +104,13 @@ test("assemble writes the root composition and the components it uses", async ()
   assert.deepEqual({ scenes: r.scenes, seconds: r.seconds }, { scenes: 2, seconds: 7 });
   const html = fs.readFileSync(path.join(r.out, "index.html"), "utf8");
   assert.match(html, /data-composition-id="main" data-start="0" data-duration="7"/);
-  assert.match(html, /id="scene-1" class="clip" data-composition-id="count-up" data-composition-src="compositions\/components\/count-up.html" data-start="0" data-duration="4.3"/);
+  assert.match(html, /id="scene-1" class="clip" data-composition-id="count-up" data-composition-src="compositions\/scenes\/scene-1.html" data-start="0" data-duration="4.3"/);
   assert.match(html, /id="scene-2"[^>]*data-start="4.3" data-duration="2.7"[^>]*data-variable-values='\{"end":3\}'/);
   assert.match(html, /--itv-bg: #101010;/);
   assert.match(html, /<title>A &lt;b> test<\/title>/);
   assert.match(html, /<audio id="main-audio" src="vo_bgm.mp3"/);
-  assert.equal(fs.readFileSync(path.join(r.out, "compositions", "components", "count-up.html"), "utf8"), "<template>count</template>");
+  assert.match(fs.readFileSync(path.join(r.out, "compositions", "scenes", "scene-1.html"), "utf8"), /id="root" data-duration="4.3"/);
+  assert.match(fs.readFileSync(path.join(r.out, "compositions", "scenes", "scene-2.html"), "utf8"), /id="root" data-duration="2.7"/);
   assert.equal(fs.readFileSync(path.join(r.out, "gsap.min.js"), "utf8"), "gsap");
   fs.rmSync(dir, { recursive: true, force: true });
 });

@@ -2,13 +2,13 @@
 // the project's build/ from the approved scene table and the sentence table:
 //
 //   build/index.html                              the root composition
-//   build/compositions/components/<name>.html     each library component used
+//   build/compositions/scenes/scene-<n>.html      each scene's component, fitted
 //   build/vo_bgm.mp3, build/gsap.min.js           from prepareBuild
 //
 // In: scenes.json
 //   {
 //     "width": 1920, "height": 1080,                     optional, 1920x1080
-//     "theme": { "bg", "fg", "brand", "accent", "accent-2", "font-display" },
+//     "theme": { "bg", "fg", "brand", "accent", ... }     THEME_KEYS, optional
 //     "scenes": [ { "component": "count-up", "from": "S3", "to": "S4",
 //                   "vars": { "end": 42 } } ]
 //   }
@@ -23,6 +23,12 @@
 // data-variable-values). Variables are checked against the component's
 // registry-item.json before anything is written. The theme becomes the
 // components' own CSS variables on :root (all of them, DEFAULT_THEME fills in).
+//
+// A component is authored for one length (its root and its clip carry the same
+// data-duration). A mount longer than that shows nothing once the inner clip
+// ends, so every scene gets its own copy with that length set to the scene's
+// (fitDuration). The components' envelopes are made for this: fixed in and out,
+// an elastic hold, read from the root's data-duration.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -50,6 +56,20 @@ export function loadComponent(name, { env = process.env } = {}) {
   const file = item.files?.find((f) => f.path === `${name}.html`);
   if (!file) throw new Error(`${name}: registry-item.json names no ${name}.html.`);
   return { name, item, html: fs.readFileSync(path.join(dir, file.path), "utf8"), target: file.target };
+}
+
+// The component with its authored length replaced by `seconds`: the
+// data-composition-duration on <html>, and every data-duration equal to it
+// (the template root and the clip). Anything else would be a component with
+// more than one timed part, which the fit cannot stretch safely.
+export function fitDuration(html, name, seconds) {
+  const m = /data-composition-duration="([\d.]+)"/.exec(html);
+  if (!m) throw new Error(`${name}: no data-composition-duration, so its length cannot be fitted.`);
+  const authored = m[1];
+  const others = [...html.matchAll(/data-duration="([\d.]+)"/g)].filter((x) => x[1] !== authored);
+  if (others.length) throw new Error(`${name}: has timed parts of other lengths (${others.map((x) => x[1]).join(", ")}), so its length cannot be fitted.`);
+  const s = String(seconds);
+  return html.replace(/data-composition-duration="[\d.]+"/, `data-composition-duration="${s}"`).replaceAll(`data-duration="${authored}"`, `data-duration="${s}"`);
 }
 
 // Problems with one scene's variables, as readable sentences. Missing
@@ -260,19 +280,15 @@ export async function assemble(projectDir, { env = process.env, total, language,
   total = Math.round(total * 1000) / 1000;
   const times = sceneTimes(scenes, sentences, total);
 
+  const fitted = scenes.map((sc, n) => fitDuration(components.get(sc.component).html, sc.component, times[n].duration));
+
   const { out } = prepareBuild(projectDir, { env });
-  for (const c of components.values()) {
-    const dst = path.join(out, c.target);
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.writeFileSync(dst, c.html);
-  }
-  const mounts = scenes.map((sc, n) => ({
-    id: `scene-${n + 1}`,
-    compositionId: sc.component,
-    src: components.get(sc.component).target,
-    ...mountTheme(sc.vars),
-    ...times[n],
-  }));
+  fs.mkdirSync(path.join(out, "compositions", "scenes"), { recursive: true });
+  const mounts = scenes.map((sc, n) => {
+    const src = `compositions/scenes/scene-${n + 1}.html`;
+    fs.writeFileSync(path.join(out, src), fitted[n]);
+    return { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
+  });
   fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, mounts, language, title }));
   return { out, scenes: mounts.length, seconds: total };
 }
