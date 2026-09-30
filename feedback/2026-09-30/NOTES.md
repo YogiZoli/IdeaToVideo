@@ -25,3 +25,13 @@ Projekt: `2026-09-30_from-idea-to-video`, telepítő 20:17. Képek: 1-10.png.
 | 11 | A Test gomb csak mentés után működik, akkor meg minek | a Save már magától tesztelt, ez nem látszott | kész: "Save and test", a mentett kulcsnál "Test again" (ingyenes, megnézi, él-e még a kulcs és megvannak-e a jogai) |
 | 12 | A vidIQ csinál-e valamit a script írásakor | a kulcsszó bekerült a script adataiba, de a prompt nem mondta meg, mit kezdjen vele | kész: a kulcsszó a címbe kerül, és természetesen elhangzik a nyitásban, legfeljebb még 1-2-szer |
 | 13 | Az ElevenLabs és a HeyGen lista sosem jelent meg, a kézzel beírt "Zoltan BD" maradt | a lista csak a 2. és az 5. kapuban volt, a régi kulcsállapot miatt ott sem látszott; a Settingsben szabad szöveg volt | kész: a Settingsben ElevenLabs hanglista (saját hangok elöl, Play sample, a régi név alapján megtalálja) és HeyGen "Default avatar" lista (saját karakterek lookjai) |
+
+## Harmadik kör, telepítő 23:15 (képek: 14-19.png)
+
+| # | Mit láttunk | Ok | Állapot |
+|---|---|---|---|
+| 14 | "projectDir must be a string" az 5. és a 4. kapuban | a hosszú avatar-készítés alatt a Settingsre kattintva a projekt nézet bezárult, a még futó munka utána üres projektútvonallal hívott tovább | kész: a projekt nézet megjegyzi a saját útvonalát. Az avatar-klipek ettől függetlenül elkészültek (nyitó 7,3 mp, záró 5,7 mp, a projekt `avatar` mappájában), újra fizetni nem kell |
+| 15 | A Settings nem kattintható (a kurzor változik, de semmi nem történik) | a Settings oldal indulás közben összeomlott: az új avatar-lista egy még nem létező beállítást kötött magához (Svelte props_invalid_value) | kész, böngészős másolaton ellenőrizve: a Settings megnyílik, a "Zoltan BD" név alapján megvan a hang |
+| 16 | Az avatarlista "örökké tölt", 0% | az összes előnézeti képet egyenként töltötte le, jelzés nélkül, és a haladásjelző rossz parancsot figyelt | kész: 8 kép egyszerre, valódi százalék, a képek gyorsítótárban maradnak |
+| 17 | A hibadoboz ideje 7 órával eltér | UTC-ben írta | kész: helyi idő, mellette az UTC-eltérés |
+| + | Az avatar háttere a look saját felvett háttere, nem a téma színe | a HeyGen a háttérszínt csak háttér-eltávolítással tanított avatarnál cseréli | tudnivaló, nem hiba |

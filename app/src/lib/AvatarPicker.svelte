@@ -8,7 +8,8 @@
 
   type Look = { id: string; name: string };
   type Group = { id: string; name: string; note: string | null; looks: Look[] };
-  let { lookId = $bindable(""), keySet }: { lookId?: string | null; keySet: boolean } = $props();
+  // no fallback on the bindable (see VoicePicker): lookId starts undefined
+  let { lookId = $bindable(), keySet }: { lookId?: string | null; keySet: boolean } = $props();
 
   let own = $state<Group[]>([]);
   let stock = $state<Look[]>([]);
@@ -41,7 +42,7 @@
     <p class="hint">Loading your HeyGen avatars...</p>
   {:else}
     <div class="row">
-      <select id="avatar-look" bind:value={lookId}>
+      <select id="avatar-look" value={lookId ?? ""} onchange={(e) => (lookId = (e.currentTarget as HTMLSelectElement).value || null)}>
         <option value="">Choose at the avatar step of each video</option>
         {#each own as g}
           <optgroup label={`${g.name}${g.note ? ` (${g.note})` : ""}`}>{#each g.looks as l}<option value={l.id}>{l.name}</option>{/each}</optgroup>

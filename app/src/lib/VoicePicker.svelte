@@ -6,7 +6,9 @@
   import { runner, errorText } from "./api";
 
   type Voice = { id: string; name: string; own?: boolean; accent: string | null; gender: string | null; previewUrl: string | null };
-  let { voice = $bindable(""), keySet, language = "en" }: { voice?: string | null; keySet: boolean; language?: string } = $props();
+  // no fallback on the bindable: a config without a voice yet is undefined,
+  // and a fallback there makes Svelte refuse the binding (props_invalid_value)
+  let { voice = $bindable(), keySet, language = "en" }: { voice?: string | null; keySet: boolean; language?: string } = $props();
 
   let voices = $state<Voice[]>([]);
   let error = $state("");
@@ -55,7 +57,7 @@
     <p class="hint">Loading your voices...</p>
   {:else}
     <div class="row">
-      <select id="evoice" bind:value={voice}>
+      <select id="evoice" value={voice ?? ""} onchange={(e) => (voice = (e.currentTarget as HTMLSelectElement).value)}>
         {#if voices.some((v) => v.own)}
           <optgroup label="Your voices">{#each voices.filter((v) => v.own) as v}<option value={v.id}>{label(v)}</option>{/each}</optgroup>
         {/if}

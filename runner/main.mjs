@@ -300,19 +300,24 @@ const commands = {
     const { own, stock } = await heygen.listAvatars({ apiKey: key() });
     if (!previews) return { own, stock }; // Settings: names only, fast
     const dir = path.join(dataDir(), "avatar-previews");
-    // previews cached locally; a missing one never hides the avatar
-    const local = async (url) => {
-      try {
-        return url ? await heygen.cachePreview({ url, dir }) : null;
-      } catch {
-        return null;
+    // Previews cached locally (the UI loads no remote address), 8 at a time,
+    // with progress; a missing one never hides the avatar. Cached ones are
+    // instant the next time.
+    const items = [...own, ...own.flatMap((g) => g.looks), ...stock].filter((x) => x.image);
+    let done = 0;
+    emit({ event: "progress", step: "previews", done, of: items.length });
+    const queue = [...items];
+    const worker = async () => {
+      for (let x = queue.shift(); x; x = queue.shift()) {
+        try {
+          x.image = await heygen.cachePreview({ url: x.image, dir });
+        } catch {
+          x.image = null;
+        }
+        emit({ event: "progress", step: "previews", done: ++done, of: items.length });
       }
     };
-    for (const g of own) {
-      g.image = await local(g.image);
-      for (const l of g.looks) l.image = await local(l.image);
-    }
-    for (const l of stock) l.image = await local(l.image);
+    await Promise.all(Array.from({ length: 8 }, worker));
     return { own, stock };
   },
 

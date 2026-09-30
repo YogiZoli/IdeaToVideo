@@ -6,6 +6,7 @@
   //   render-video  hyperframes' own percent
   //   make-voice    part n of N, sentence k of K
   //   build-video   its phases (build, lint, check, stills, sheet)
+  //   avatar-looks  preview pictures downloaded, n of N
   // Everything else fills by elapsed time against the estimate and never
   // claims 100% before the result is there.
   import { onDestroy } from "svelte";
@@ -40,6 +41,10 @@
       } else if (typeof s.step === "string" && s.step in VOICE_TAIL) real = VOICE_TAIL[s.step];
     }
     if (command === "build-video" && typeof s.step === "string" && s.step in BUILD_FLOORS) floor = BUILD_FLOORS[s.step];
+    if (command === "avatar-looks" && s.step === "previews" && typeof s.done === "number" && typeof s.of === "number") {
+      expect = expect ?? 1;
+      real = s.of ? Math.round((s.done / s.of) * 100) : 100;
+    }
   });
   const timer = setInterval(() => (now = Date.now()), 500);
   onDestroy(() => {
@@ -52,7 +57,7 @@
   const percent = $derived(Math.round(Math.min(99, real ?? Math.max(floor, byTime))));
   // time left: from the real rate once there is enough of it, else the estimate
   const left = $derived(
-    real !== null && real >= 5 && command === "render-video" ? (elapsed * (100 - real)) / real : expect ? Math.max(0, expect - elapsed) : null,
+    real !== null && real >= 5 && (command === "render-video" || command === "avatar-looks") ? (elapsed * (100 - real)) / real : expect ? Math.max(0, expect - elapsed) : null,
   );
   const late = $derived(expect !== null && elapsed > expect * 1.4);
 

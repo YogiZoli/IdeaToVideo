@@ -27,6 +27,10 @@ export type ErrorContext = { step?: string; provider?: string; model?: string };
 
 export function detailLine(message: string, version: string, ctx: ErrorContext = {}, at = new Date()): string {
   const llm = ctx.provider ? `${ctx.provider}${ctx.model ? "/" + ctx.model : ""}` : null;
-  const when = at.toISOString().slice(0, 16).replace("T", " ");
+  // local time as the user reads the clock, with the UTC offset for a report
+  const p = (n: number) => String(n).padStart(2, "0");
+  const off = -at.getTimezoneOffset();
+  const utc = `UTC${off >= 0 ? "+" : "-"}${Math.floor(Math.abs(off) / 60)}${Math.abs(off) % 60 ? ":" + p(Math.abs(off) % 60) : ""}`;
+  const when = `${at.getFullYear()}-${p(at.getMonth() + 1)}-${p(at.getDate())} ${p(at.getHours())}:${p(at.getMinutes())} ${utc}`;
   return [errorCode(message), `v${version}`, ctx.step, llm, when].filter(Boolean).join(" · ");
 }

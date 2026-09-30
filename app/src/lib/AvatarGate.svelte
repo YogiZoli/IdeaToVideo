@@ -37,11 +37,14 @@
   const seconds = $derived((plan?.segments ?? []).filter((s) => which.includes(s.name)).reduce((n, s) => n + s.duration, 0));
   const scale = $derived(plan && plan.segments.length ? seconds / plan.segments.reduce((n, s) => n + s.duration, 0) : 1);
 
+  let command = $state("make-avatar");
+
   async function start() {
     open = true;
     busy = true;
+    command = "avatar-looks";
     error = "";
-    step = "Loading your avatars and your HeyGen balance...";
+    step = "Loading your avatars and their pictures (faster next time)...";
     try {
       ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen" }));
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
@@ -51,6 +54,7 @@
     } finally {
       busy = false;
       step = "";
+      command = "make-avatar";
     }
   }
 
@@ -133,7 +137,7 @@
       <button type="button" onclick={start}>{current ? "Change the avatar" : "Add an avatar"}</button>
     </div>
   {:else}
-    {#if busy}<Progress command="make-avatar" label={step || "Working"} />{/if}
+    {#if busy}{#key command}<Progress {command} label={step || "Working"} />{/key}{/if}
     {#if error}<ErrorBox message={error} context={{ step: "avatar", provider: "heygen" }} />{/if}
 
     {#if own.length || stock.length}

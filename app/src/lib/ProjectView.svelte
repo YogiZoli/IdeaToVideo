@@ -14,7 +14,11 @@
   import { runner, onProgress, errorText } from "./api";
   import { narratorProvider } from "./catalog";
 
-  let { app, dir, back }: { app: AppState; dir: string; back: () => void } = $props();
+  let { app, dir: dirProp, back }: { app: AppState; dir: string; back: () => void } = $props();
+  // The project this view was opened for, fixed: a long job (an avatar, a
+  // render) keeps writing to it even if the user opens Settings meanwhile,
+  // when the parent's project becomes null.
+  const dir = untrack(() => dirProp);
 
   type Loaded = {
     project: { id: string; title: string; status: string; language: string; autopilot?: boolean; gates: Record<string, Gate> };
