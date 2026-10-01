@@ -63,6 +63,8 @@
       await changed();
     } catch (e) {
       error = errorText(e);
+      // a failed swap leaves the old scene: reload so the menu shows it again
+      await load();
       await changed();
     } finally {
       busy = false;
@@ -82,9 +84,15 @@
     return run("save-scenes", { scenes }, "Saving...");
   }
 
+  // An earlier error (a failed swap or plan) never blocks the approval of
+  // the table on screen (Zoltan, 2026-10-01: the button did nothing). Only a
+  // failed save of the user's own edits does.
   async function approve() {
-    if (dirty) await save();
-    if (error) return;
+    error = "";
+    if (dirty) {
+      await save();
+      if (error) return;
+    }
     busy = true;
     try {
       await runner("approve-gate", { projectDir: dir, gate: "scenes" });
@@ -157,10 +165,12 @@
       {#if table.warnings.length}
         <div class="warn">
           {#each table.warnings as w}<p>{w}</p>{/each}
+          <p class="note">Notes only: they do not stop the approval.</p>
         </div>
       {/if}
       {#if table.gaps.length}<p class="hint">For {table.gaps.length} sentence{table.gaps.length > 1 ? "s" : ""} the AI would have liked a scene type the app does not have yet. This is noted in the project log.</p>{/if}
 
+      {#if error}<ErrorBox message={error} context={llmContext} />{/if}
       <div class="actions">
         <button type="button" disabled={busy || !dirty} onclick={save}>Save my edits</button>
         <button type="button" class="primary" disabled={busy || gate?.state === "approved"} onclick={approve}>{gate?.state === "approved" ? "Approved" : "Approve scene table"}</button>
@@ -182,6 +192,7 @@
   td select, td input { width: 100%; }
   .keep { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--success-surface); border-radius: 8px; padding: 10px 14px; }
   .keep p { margin: 0; }
+  .note { opacity: 0.75; font-size: 12px; }
   .warn { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
   .warn p { margin: 2px 0; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
