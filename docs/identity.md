@@ -1,7 +1,6 @@
 # Identity: terv (2. fázis, "Sorrend innen" 2. pont)
 
-Állapot: **jóváhagyva** (Zoltan, 2026-10-01). Nyitva csak a felületi szó
-(Identity vagy Solo), az egy helyen él (6. pont), a kódot nem érinti.
+Állapot: **jóváhagyva** (Zoltan, 2026-10-01). A felületi szó: Identity.
 Alapja: DECISIONS 67 (Identity), 66 (mentés), 68 (szótár), 69-71 (suite,
 árazás). Modell: Opus 5.5, High.
 
@@ -222,7 +221,7 @@ marad.
   eredményét kapja; a Duplicate a varázslók eredményét is viszi; új Identity
   az alapértékekkel indul, és a varázsló a Settings Identity oldaláról
   indítható.
-- **Egy jövőbeli kaput a suite felé**: a Brand Card (DECISIONS 69,
+- **Egy jövőbeli kaput a suite felé**: a Brand Identity Card (DECISIONS 69,
   javaslat) importja és exportja Identity-szintű lesz, ugyanígy az Offer Card
   importja (Audience, landing, CTA). Ma egyik sem épül, csak a hely.
 
@@ -237,9 +236,11 @@ egyszerre, ha nem ugyanazt az erőforrást terheli. A munkák két fajtája:
   helyen a kódban. Ha a sor tele, a munka vár, és kiírja: "Waiting: the
   render of <ONE Video> runs first".
 - **Hálózati** (script, hang, zene, avatar, kulcsszó): a szolgáltató
-  dolgozik, a gép alig. Ezek szabadon futnak a render mellett.
-  Szolgáltatónként legfeljebb 2 egyszerre, hogy az ingyenes kvóta (Gemini
-  429) ne fogyjon el egy pillanat alatt.
+  dolgozik, a gép alig. Ezek a render mellett futnak, de **egy kulcson
+  egyszerre csak egy munka** (Zoltan, 2026-10-01: összekavarodhat). Ha két
+  Identity ugyanazt az App kulcsot használja, a második vár; ha az egyiknek
+  saját kulcsa van, mehetnek egyszerre. A szabály egy helyen van a kódban,
+  később változhat.
 - **Felső sáv**: egy "Jobs" jelző mutatja az összes futó és várakozó munkát,
   Identity-vel és ONE Videóval, kattintásra oda visz.
 - **Később** (külön kör, mérés után): a korlát a Settings App részében
@@ -248,13 +249,32 @@ egyszerre, ha nem ugyanazt az erőforrást terheli. A munkák két fajtája:
   egy render maga is több szálon fut. Erős gépen (Máté) várhatóan 2-3 is
   elmegy; gyenge gépen 1.
 
-## 10. Ami ebben a körben nem épül
+## 10. Identity export és import (a minta-üzlet)
+
+Zoltan (2026-10-01), még a 2. fázisban: egy Identity egy fájlba menthető, és
+egy másik gépen vagy másik usernél abból új Identity indul (DECISIONS 71,
+mintázó üzlet).
+
+- **Export**: Settings, Identity oldal, "Export Identity". Egy
+  `<Név>.identity.zip` fájl: `manifest.json` (formátum és verzió, a termék
+  neve, a dátum), `identity.json`, és az Identity mappájának fájljai
+  (`brand/`, később a varázslók eredményei). **Kulcs soha nincs benne**, és
+  a saját kulcs jelölése sem, csak a szolgáltató és a modell neve.
+- **Import**: a választó menüjében "Import Identity". Új id és új mappa,
+  ütközésnél új név ("VoxFlow 2"); a korlát (Solo 1) itt is érvényes.
+  Utána a Settings Identity oldala nyílik.
+- **Biztonság**: a zip minden fájlneve ellenőrizve (nincs `..`, nincs
+  abszolút út), csak ismert fájltípusok, méretkorlát, az `identity.json`
+  sémával validálva, a szöveg adatként kezelve (SPEC 9).
+- A ONE Videók nem kerülnek bele (azok a mentés dolga, DECISIONS 66).
+
+## 11. Ami ebben a körben nem épül
 
 Licenc és aktiválás (4. fázis); affiliate; white label; mentés (DECISIONS 66,
-külön kör); szótár (Brand varázsló köre); Offer Card és Brand Card import;
+külön kör); szótár (Brand varázsló köre); Offer Card és Brand Identity Card import;
 Identity-k közötti ONE Video áthelyezés.
 
-## 11. Tesztek és munkamenet
+## 12. Tesztek és munkamenet
 
 - **Rust** (`cargo test`): kulcs-feloldás (Identity, utána App), az Identity
   megállapítása a projektmappából, az átállás egy schema 1 config mintán
@@ -269,10 +289,13 @@ Identity-k közötti ONE Video áthelyezés.
 - **Becsült idő** a jóváhagyás után: kód és tesztek kb. 3-4 óra, a telepítő
   build kb. 15 perc. Közben nem pollozok, a végén jelzek.
 
-## 12. Döntések (Zoltan, 2026-10-01)
+## 13. Döntések (Zoltan, 2026-10-01)
 
 1. A terv: jóváhagyva.
 2. Első Identity neve: "My Identity", átírható, a `@handle` nem követve.
 3. Duplicate viszi a saját kulcsokat, felülírhatóan (7. pont).
-4. Váltás futó munka közben: igen, párhuzamos munka a 9. pont szerint.
-5. Nyitott: a felületi szó, Identity vagy Solo.
+4. Váltás futó munka közben: igen, párhuzamos munka a 9. pont szerint,
+   egy kulcson egyszerre egy munka. Az állítható render-korlát és a mérés
+   később.
+5. A felületi szó: Identity. A közös kinézet-fájl neve: Brand Identity Card.
+6. Identity export és import: ebben a körben (10. pont).

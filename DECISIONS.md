@@ -342,6 +342,19 @@
       `IdeaToVideo_Backup/<Egység>/<Cím_dátum>/` (a 66. pont kiegészül).
     - **Átállás:** a mai beállításokból lesz az első egység. Zoltan szerint a
       tesztadat elveszhet; a legegyszerűbb megoldás így is az átvétel.
+    - **A terv jóváhagyva** (Zoltan, 2026-10-01): `docs/identity.md`. A
+      felületi szó végleg **Identity** (a Solo a csomag neve, nem a tárgyé:
+      "12 Solo" nem értelmes, és faceless channelre, SMB brandre félrevinne).
+      Az első Identity neve "My Identity", átírható, a YouTube `@handle` nem
+      követve. A Duplicate viszi a saját kulcsokat, felülírhatóan (jelölő, az
+      alapérték egy helyről, Agency: be). Futó munka közben lehet Identity-t
+      váltani; a helyi nehéz munkák (build, check, render) egy sorban, ma 1
+      egyszerre; a hálózati munkák (script, hang, zene, avatar) a render
+      mellett futnak, de **egy kulcson egyszerre csak egy** (Zoltan:
+      összekavarodhat). Az állítható render-korlát és a mérés később.
+    - **Identity export és import** még a 2. fázisban (Zoltan, 2026-10-01):
+      egy fájl kulcsok nélkül, amiből egy másik user a saját Identity-jét
+      indítja. Lásd 71.
 
 68. **Szótár az egységben** (Zoltan ötlete, 2026-10-01; a Brand varázsló
     chatjében készül). Listák, amiket a script kapu betart és ellenőriz:
@@ -389,14 +402,15 @@
         lenne, és duplikáció, mert az IdeaToVideo Brand varázslója már
         tartalmazza, és kell a Lead Magnethez és a YouTube Brand Channel
         varázslóhoz is. **Javaslat** (Claude, 2026-10-01, döntés később): egy
-        közös, verziózott **Brand Card** Identity-nként (színek, betűk, logó
+        közös, verziózott **Brand Identity Card** Identity-nként (színek, betűk, logó
         világos és sötét, sarkok), ugyanúgy szerződés, mint a Brief Card. Az
         a varázsló készíti, amelyikkel a user először találkozik, a többi
         importálja, egyik sem kérdezi újra. GHL-ben Custom Value-kra képeződik
         (szín, betű, logó URL), így a landing és a PDF sablonok egy
         kattintással a user kinézetét kapják; a PDF lead magnet kész
         sablonokból választ, nem külön design lépés. Az IdeaToVideo Brand
-        varázslója a Brand Cardot írja és olvassa.
+        varázslója a Brand Identity Cardot írja és olvassa. A név Zoltané
+        (2026-10-01): "Brand Identity Card", hogy ne keveredjen semmivel.
     - **3x AI Agent In A Box:** külön, önálló SaaS (Zoltan, 2026-10-01; nem
       az IdeaToVideo része, Notionban vezetve).
     - **YouTube Brand Channel varázsló** (később, valószínűleg SaaS, a
@@ -423,3 +437,10 @@
     egységenkénti ár; Creator és Agency szint; white label; affiliate
     program. Javaslat: bónusszal indul, utána egyszeri Creator és Agency
     licenc, white label a legvégén. Döntés később.
+    - **Mintázó üzlet** (Zoltan ötlete, 2026-10-01): nem ügynökség, hanem
+      egy saját használatra felépített minta-üzlet, amiből "1000 kisüzlet nő
+      ki". Technikailag egy minta-Identity: Brand Identity Card, szótár, CTA,
+      mozgás, hang, ajánlat. Ezt a user Identity exportként (kulcsok nélkül)
+      kapja meg, importálja, és a saját kisüzletét abból indítja. Árazásban:
+      a minta maga is termék lehet (Solo vevő egy kész mintából indul). Az
+      export és import a 2. fázisban épül (67).
