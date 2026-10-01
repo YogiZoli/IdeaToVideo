@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-01
+Frissítve: 2026-10-01 (Identity kész)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -110,17 +110,26 @@ Kész (2026-09-30):
   nem, ne altasd el a gépet; app bezárásakor megszakadt lépés "failed" lesz.
   Állapot: `feedback/2026-10-01/NOTES.md`. Tesztek: 111 Node, 17 Rust, e2e 11/11.
 
+- **Identity kész (2026-10-01)**, terv: `docs/identity.md`, DECISIONS 67.
+  Két szint: App (`config.json` schema 2) és Identity
+  (`identities/<id>/identity.json`); ONE Videos az Identity mappájában;
+  kulcs-öröklés (App kulcs, az Identity saját kulcsa felülírja); választó a
+  felső sávban (New, Duplicate, Import, Identity settings); Settings két
+  csoportban; Duplicate a saját kulcsokkal (jelölő); Delete (a videók
+  maradnak); **Identity export és import** zipben, kulcs nélkül (a mintázó
+  üzlet, DECISIONS 71); Solo és Agency egy helyen (`edition.rs`, ma Agency);
+  Jobs jelző, render-sor (1), egy kulcson egy munka; átállás a mai
+  beállításból: "My Identity". Tesztek: 116 Node, 34 Rust, e2e 13/13; UI
+  próba a `scripts/ui-mock`-ban (`?fresh=1`, `?tier=solo`, `?one=1`).
+
 ## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
-1. **Hibátlanítás: kész** (2026-10-01). Zoltan az új telepítővel (commit
-   833dbeb) végigtesztelte, új hiba nem jött. A stratégiai döntések a chatből:
-   DECISIONS 66-71 (mentés, Identity, szótár, suite, ajánlat, árazás).
-   **Következő: 2. pont, új chatben.**
-2. **Identity, a meta szint** (Opus 5.5, High): DECISIONS 67. Egy Identity =
-   egy brand, álnév vagy ügyfél, 0 vagy 1 YouTube channel; a mai project neve
-   ONE Video; kulcsok öröklése (App, utána Identity); licencszint helye
-   (Agency korlátlan, Solo egy), licenc még nélkül. Előbb terv
-   (`docs/identity.md`), Zoltan jóváhagyása, utána kód.
+1. **Hibátlanítás: kész** (2026-10-01).
+2. **Identity: kész** (2026-10-01, fent). Zoltan próbája az új telepítővel
+   következik: az átállás a saját beállításaiból, váltás, Duplicate, export.
+   **Javaslat (Claude, Zoltan dönt):** a Backup (6. pont) jöjjön most, a
+   varázslók előtt: ugyanarra a mappaszerkezetre épül, és Zoltan valódi
+   videói ma csak a gépén vannak.
 3. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
    betűk és a szótár (DECISIONS 68).
 4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
@@ -140,6 +149,10 @@ betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseré
 `@font-face`-szel a buildben, így nincs hálózati hívás és idegen betű.
 
 ## Zoltan döntésére vár
+
+0. A mintázó üzlet iránya (a 2026-10-01-i chat négy kérdése: kié az 1000
+   kisüzlet, niche- vagy módszer-minta, ki fizet és miért, a doc 3
+   sorrend-kérdése). A válasz után DECISIONS 69 és 71.
 
 1. A kulcsszavas komment-CTA és a CTA varázsló részletei: Zoltan később adja.
 2. A `docs/motion-wizard.md` 2. változata (a D út szerint átírandó,

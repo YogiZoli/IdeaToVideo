@@ -1,22 +1,38 @@
 <script lang="ts">
-  // First-run wizard (PRD 5): 12 steps, each with fill in / Use recommended /
-  // Skip, use default. Only the AI key is mandatory.
-  import type { Config } from "./api";
-  import { saveConfig, errorText, type AppState } from "./api";
+  // The setup wizard (PRD 5): each step with fill in / Use recommended /
+  // Skip, use default. Only the AI key is mandatory. Three uses: the first
+  // run (every step), "New Identity" (the Identity's steps) and Settings
+  // re-running one page. The parent says how to save (`save`).
+  import type { Config, KeyScope } from "./api";
+  import { errorText, type AppState } from "./api";
   import { cleanConfig } from "./catalog";
   import { STEPS, skipStep, recommendStep, stepReady, type StepId } from "./steps";
   import ConfigSection from "./ConfigSection.svelte";
   import ErrorBox from "./ErrorBox.svelte";
 
 
-  // only + cancel: Settings re-runs the wizard for one part (a sub-page).
+  // only + cancel: a part of the wizard (New Identity, a Settings sub-page).
   let {
     config = $bindable(),
     keys = $bindable(),
     done,
+    save,
     only,
     cancel,
-  }: { config: Config; keys: Record<string, boolean>; done: (s: AppState) => void; only?: StepId[]; cancel?: () => void } = $props();
+    keyScope = "app",
+    newIdentity = false,
+    title,
+  }: {
+    config: Config;
+    keys: Record<string, boolean>;
+    done: (s: AppState) => void;
+    save: (c: Config) => Promise<AppState>;
+    only?: StepId[];
+    cancel?: () => void;
+    keyScope?: KeyScope;
+    newIdentity?: boolean;
+    title?: string;
+  } = $props();
 
   const steps = $derived(only ? STEPS.filter((s) => only.includes(s.id)) : STEPS);
   let index = $state(0);
@@ -33,7 +49,7 @@
     }
     busy = true;
     try {
-      done(await saveConfig(cleanConfig({ ...config, onboarded: true })));
+      done(await save(cleanConfig({ ...config, onboarded: true })));
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -69,11 +85,11 @@
   </ol>
 
   <section class="card">
-    <p class="count">Step {index + 1} of {steps.length}</p>
+    <p class="count">{title ? `${title}: ` : ""}Step {index + 1} of {steps.length}</p>
     <h1>{step.title}</h1>
     <p class="intro">{step.intro}</p>
 
-    <ConfigSection id={step.id} bind:config bind:keys />
+    <ConfigSection id={step.id} bind:config bind:keys {keyScope} {newIdentity} />
 
     {#if error}<ErrorBox message={error} context={{ step: `onboarding:${step.id}`, provider: config.llm.provider, model: config.llm.model }} />{/if}
     {#if blocker}<p class="hint">{blocker}</p>{/if}

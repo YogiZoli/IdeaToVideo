@@ -70,7 +70,20 @@ console.log("e2e: phase 2, gates 3 and 4 to a rendered video");
 const work = path.resolve(args.work);
 fs.rmSync(work, { recursive: true, force: true });
 fs.mkdirSync(work, { recursive: true });
-const { dir } = createProject({ projectsDir: work, title: "End to end" });
+// Two Identities, each with its own ONE Videos folder (docs/identity.md 3):
+// the video is made in the first one, the second one stays empty.
+const mine = path.join(work, "My Identity");
+const other = path.join(work, "VoxFlow");
+fs.mkdirSync(mine, { recursive: true });
+fs.mkdirSync(other, { recursive: true });
+const { dir } = createProject({ projectsDir: mine, title: "End to end", identity: "my-identity" });
+{
+  const listed = (folder) => runner("list-projects", { projectsDir: folder }).data?.projects ?? [];
+  const a = listed(mine);
+  const b = listed(other);
+  check("ONE Video in its Identity's folder", a.length === 1 && path.dirname(a[0].dir) === mine && b.length === 0, `${a.length} in My Identity, ${b.length} in VoxFlow`);
+  check("ONE Video knows its Identity", loadProject(dir).identity === "my-identity");
+}
 
 // An approved script and voice, as gates 1 and 2 would leave them.
 const sentences = [];

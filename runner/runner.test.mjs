@@ -50,25 +50,50 @@ const goodScript = {
 
 // ---- schemas ------------------------------------------------------------------
 
-test("config schema accepts the SPEC 4.1 example and rejects secrets", () => {
+test("config schema (App, schema 2) accepts the App settings and rejects secrets and Identity fields", () => {
   const cfg = {
-    schema: 1,
+    schema: 2,
+    onboarded: true,
     ui: { language: "en" },
     llm: { provider: "gemini", model: "gemini-3.5-flash" },
-    brand: { preset: "blue-professional", logo: "brand/logo.png", overrides: { primary: "#1e2bfa" } },
-    channel: { audience: "...", brandVoice: "...", profile: "...", youtubeUrl: null, landingUrl: null, contentLanguage: "en" },
-    narrator: { provider: "edge-tts", voice: "en-US-AndrewNeural" },
-    avatar: { enabled: false },
-    research: { vidiq: false },
-    defaults: { scriptTemplate: "ownership", autopilot: false },
+    projectsDir: null,
+    activeIdentity: "my-identity",
+    defaults: { autopilot: false },
   };
   assert.deepEqual(validate(cfg, loadSchema("config")), []);
   const withKey = structuredClone(cfg);
   withKey.llm.apiKey = KEY;
   assert.match(validate(withKey, loadSchema("config")).join(), /unknown field apiKey/);
-  const badColor = structuredClone(cfg);
+  assert.match(validate({ ...cfg, channel: {} }, loadSchema("config")).join(), /unknown field channel/);
+  assert.match(validate({ ...cfg, schema: 1 }, loadSchema("config")).join(), /must be 2/);
+  assert.match(validate({ ...cfg, activeIdentity: "../x" }, loadSchema("config")).join(), /does not match/);
+});
+
+test("identity schema accepts the SPEC 4.1 fields, an optional AI override, and rejects secrets", () => {
+  const ident = {
+    schema: 1,
+    id: "zoltan-gero",
+    name: "Zoltan Gero",
+    folder: "Zoltan Gero",
+    createdAt: "2026-10-01T10:00:00.000Z",
+    llm: null,
+    brand: { preset: "blue-professional", logo: null, overrides: { primary: "#1e2bfa" } },
+    channel: { audience: "...", brandVoice: "...", profile: "...", youtubeUrl: null, landingUrl: null, contentLanguage: "en" },
+    narrator: { provider: "gemini", voice: "Kore" },
+    avatar: { enabled: false },
+    research: { vidiq: false },
+    defaults: { scriptTemplate: "ownership", targetLengthMin: 8 },
+  };
+  const s = loadSchema("identity");
+  assert.deepEqual(validate(ident, s), []);
+  assert.deepEqual(validate({ ...ident, llm: { provider: "claude", model: "claude-sonnet-5" } }, s), []);
+  assert.match(validate({ ...ident, llm: { provider: "claude", model: "x", apiKey: KEY } }, s).join(), /unknown field apiKey/);
+  assert.match(validate({ ...ident, id: "Zoltan Gero" }, s).join(), /does not match/);
+  assert.match(validate({ ...ident, name: "" }, s).join(), /shorter than 1/);
+  const badColor = structuredClone(ident);
   badColor.brand.overrides.primary = "blue";
-  assert.match(validate(badColor, loadSchema("config")).join(), /does not match/);
+  assert.match(validate(badColor, s).join(), /does not match/);
+  assert.match(validate({ ...ident, defaults: { autopilot: true } }, s).join(), /unknown field autopilot/);
 });
 
 test("brief card schema: only schema and title are required, extra fields refused", () => {
@@ -277,6 +302,9 @@ test("createProject, gates and status", () => {
   assert.equal(p.gates.voice.state, "todo", "re-running a gate invalidates later ones");
   assert.equal(p.status, "Idea");
   assert.throws(() => createProject({ projectsDir: dir, title: "x", brief: { schema: "video-brief-card/1" } }), /not valid/);
+  const c = createProject({ projectsDir: dir, title: "Owned", identity: "zoltan-gero", now });
+  assert.equal(loadProject(c.dir).identity, "zoltan-gero", "a ONE Video knows its Identity");
+  assert.equal(loadProject(a.dir).identity, undefined);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

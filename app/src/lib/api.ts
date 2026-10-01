@@ -1,11 +1,19 @@
 // api.ts: the only place the UI talks to the Rust core. Keys go in (set_key),
 // only booleans come back (key_status). Every network call runs in the runner.
+// Settings come in two levels, the App and the active Identity (docs/identity.md);
+// `AppState.config` is the two merged, the shape every gate reads.
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { effectiveConfig } from "./identity";
 
+export type Llm = { provider: string; model: string };
+
+/** The effective settings: the active Identity over the App defaults. */
 export type Config = {
-  schema: 1;
+  schema?: 1;
+  /** The Identity's name (setup and Settings edit it here). */
+  name?: string;
   onboarded?: boolean;
   ui?: { language: "en" };
   llm: { provider: string; model: string };
@@ -23,8 +31,42 @@ export type Config = {
   avatar?: { enabled: boolean; lookId?: string | null; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
-  projectsDir?: string | null;
 };
+
+/** config.json, schema 2: what is the same for every Identity. */
+export type AppConfig = {
+  schema: 2;
+  onboarded?: boolean;
+  ui?: { language: "en" };
+  llm: Llm;
+  projectsDir?: string | null;
+  activeIdentity?: string | null;
+  defaults?: { autopilot?: boolean };
+};
+
+/** identities/<id>/identity.json. `llm` null: the App's AI settings. */
+export type Identity = {
+  schema: 1;
+  id: string;
+  name: string;
+  folder: string;
+  createdAt?: string;
+  llm?: Llm | null;
+  brand?: Config["brand"];
+  channel: Config["channel"];
+  narrator: Config["narrator"];
+  avatar?: Config["avatar"];
+  research?: Config["research"];
+  defaults?: { scriptTemplate?: "ownership"; targetLengthMin?: number };
+};
+
+/** A new Identity before the core gives it an id and a folder. */
+export type NewIdentity = Omit<Identity, "schema" | "id" | "folder"> & { id?: undefined };
+
+export type IdentityRef = { id: string; name: string; folder: string; youtubeUrl: string | null };
+export type Edition = { product: string; tier: "Solo" | "Agency"; identityLimit: number | null; copyKeysDefault: boolean };
+export type KeySource = { app: boolean; identity: boolean };
+export type Job = { id: number; command: string; identity: string | null; identityName: string | null; project: string | null; state: "running" | "waiting" };
 
 export type AvatarStyle = "cutout" | "circle" | "card" | "full";
 export type AvatarPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
@@ -32,23 +74,52 @@ export type AvatarSize = "small" | "medium" | "large";
 export type AvatarLayout = { style: AvatarStyle; position: AvatarPosition; size: AvatarSize };
 
 export type AppState = {
+  app: AppConfig | null;
+  identity: Identity | null;
+  identities: IdentityRef[];
+  edition: Edition;
+  /** Effective settings (App + active Identity), null before setup. */
   config: Config | null;
+  projectsRoot: string;
+  /** The active Identity's ONE Videos folder. */
   projectsDir: string;
   defaultProjectsDir: string | null;
+  /** Can a job of the active Identity use this key (its own or the App's). */
   keys: Record<string, boolean>;
+  keySources: Record<string, KeySource>;
   version: string;
+  /** A one-time sentence from the core (a folder that could not be moved...). */
+  notice?: string | null;
 };
+
+type RawState = Omit<AppState, "config">;
+const withConfig = (s: RawState): AppState => ({ ...s, config: s.app && s.identity ? effectiveConfig(s.app, s.identity) : null });
 
 export type Gate = { state: string; mode?: string; at?: string; error?: string; reason?: string };
 export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate> };
 
-export const appState = () => invoke<AppState>("app_state");
-export const saveConfig = (config: Config) => invoke<AppState>("save_config", { config });
-export const setKey = (name: string, value: string) => invoke<void>("set_key", { name, value });
-export const deleteKey = (name: string) => invoke<void>("delete_key", { name });
-export const keyStatus = () => invoke<Record<string, boolean>>("key_status");
+export type KeyScope = "app" | "identity";
+
+export const appState = () => invoke<RawState>("app_state").then(withConfig);
+/** Saves the App settings and/or one Identity; an Identity without id is new. */
+export const saveSettings = (config: AppConfig | null, identity: Identity | NewIdentity | null) =>
+  invoke<RawState>("save_settings", { config, identity }).then(withConfig);
+export const setActiveIdentity = (id: string) => invoke<RawState>("set_active_identity", { id }).then(withConfig);
+export const duplicateIdentity = (id: string, name: string, copyKeys: boolean) =>
+  invoke<RawState>("duplicate_identity", { id, name, copyKeys }).then(withConfig);
+export const deleteIdentity = (id: string) => invoke<RawState>("delete_identity", { id }).then(withConfig);
+export const exportIdentity = (id: string, path: string) => invoke<string>("export_identity", { id, path });
+export const importIdentity = (path: string) => invoke<RawState>("import_identity", { path }).then(withConfig);
+export const setKey = (name: string, value: string, scope: KeyScope = "app") => invoke<void>("set_key", { name, value, scope });
+export const deleteKey = (name: string, scope: KeyScope = "app") => invoke<void>("delete_key", { name, scope });
+export const keyStatus = () => invoke<{ keys: Record<string, boolean>; keySources: Record<string, KeySource> }>("key_status");
 export const deleteAllKeys = () => invoke<void>("delete_all_keys");
-export const importLogo = (path: string) => invoke<string>("import_logo", { path });
+/** forNew: the logo of an Identity that does not exist yet (setup, New Identity). */
+export const importLogo = (path: string, forNew = false) => invoke<string>("import_logo", { path, forNew });
+export const jobList = () => invoke<Job[]>("job_list");
+export function onJobsChanged(fn: (jobs: Job[]) => void): Promise<UnlistenFn> {
+  return listen<Job[]>("jobs-changed", (e) => fn(e.payload));
+}
 export const importMusic = (projectDir: string, path: string) => invoke<string>("import_music", { projectDir, path });
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {

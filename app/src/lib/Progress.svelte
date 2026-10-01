@@ -16,6 +16,8 @@
   // provider: the narrator provider, for what make-voice costs
   let { command, label = "", provider }: { command: string; label?: string; provider?: string } = $props();
   let phase = $state<string | null>(null);
+  // the job waits for another one (jobs.rs): a render, or the same key
+  let waiting = $state<string | null>(null);
 
   let expect = $state<number | null>(null);
   let started = $state(Date.now());
@@ -29,6 +31,14 @@
   const unlisten = onProgress((p) => {
     if (p.command !== command) return;
     const s = p.progress as Record<string, unknown>;
+    if (s.step === "waiting" && typeof s.message === "string") {
+      waiting = s.message;
+      return;
+    }
+    if (waiting) {
+      waiting = null;
+      started = Date.now();
+    }
     const said = phaseText(command, typeof s.step === "string" ? s.step : undefined);
     if (said) phase = said;
     if (s.step === "estimate" && typeof s.expectSeconds === "number") {
@@ -87,7 +97,7 @@
   </div>
   <progress max="100" value={percent}></progress>
   <div class="line">
-    <span class="hint">{phase ? `Now: ${phase}.` : "Working."} {status}</span>
+    <span class="hint">{waiting ?? `${phase ? `Now: ${phase}.` : "Working."} ${status}`}</span>
     <span class="hint clock">Running for {clock(elapsed)}</span>
   </div>
   <p class="hint">{costText(command, provider)}</p>

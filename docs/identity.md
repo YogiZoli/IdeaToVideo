@@ -1,6 +1,6 @@
 # Identity: terv (2. fázis, "Sorrend innen" 2. pont)
 
-Állapot: **jóváhagyva** (Zoltan, 2026-10-01). A felületi szó: Identity.
+Állapot: **jóváhagyva és megépült** (Zoltan, 2026-10-01). A felületi szó: Identity.
 Alapja: DECISIONS 67 (Identity), 66 (mentés), 68 (szótár), 69-71 (suite,
 árazás). Modell: Opus 5.5, High.
 

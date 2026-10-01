@@ -102,7 +102,14 @@ function latestVideo(projectDir) {
 const commands = {
   providers: async () => ({ providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, model: p.model })) }),
 
-  "validate-config": async ({ config }) => ({ errors: validate(config, loadSchema("config")) }),
+  // The App settings (config.json) and/or one Identity (identity.json),
+  // checked before every save and every Identity import.
+  "validate-config": async ({ config, identity }) => ({
+    errors: [
+      ...(config !== undefined ? validate(config, loadSchema("config")) : []),
+      ...(identity !== undefined ? validate(identity, loadSchema("identity")).map((e) => e.replace(/^\$/, "identity")) : []),
+    ],
+  }),
 
   "validate-brief": async ({ brief }) => ({ errors: validate(brief, loadSchema("brief-card")) }),
 
@@ -114,8 +121,8 @@ const commands = {
   "suggest-channel": async ({ llm, field, channel, topic }) =>
     suggestChannel({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, field, channel, topic }),
 
-  "create-project": async ({ projectsDir, title, language, brief, autopilot }) => {
-    const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot });
+  "create-project": async ({ projectsDir, title, language, brief, autopilot, identity }) => {
+    const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot, identity });
     return { id, dir };
   },
 

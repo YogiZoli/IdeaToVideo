@@ -1,18 +1,29 @@
-// pages.ts: how Settings splits the onboarding steps into sub-pages, so one
-// page shows at a time instead of one long scroll (2026-10-01). Pure data,
-// no Tauri imports, so the Node tests can load it.
+// pages.ts: how Settings splits into sub-pages, one shown at a time
+// (2026-10-01), in two groups (docs/identity.md 7): "App" for every Identity
+// on this computer, and the active Identity's own pages. Pure data, no Tauri
+// imports, so the Node tests can load it.
 
 import type { StepId } from "./steps";
 
-export type PageId = "ai" | "channel" | "look" | "voice" | "research" | "general";
+export type PageId = "app-ai" | "folders" | "plan" | "general" | "identity" | "channel" | "look" | "voice" | "research" | "identity-ai";
+export type Group = "app" | "identity";
 
-export type SettingsPage = { id: PageId; title: string; steps: StepId[] };
+export type SettingsPage = { id: PageId; title: string; group: Group; steps: StepId[] };
 
 export const SETTINGS_PAGES: SettingsPage[] = [
-  { id: "ai", title: "AI and keys", steps: ["ai"] },
-  { id: "channel", title: "Channel", steps: ["audience", "brandVoice", "profile", "youtube", "landing", "language"] },
-  { id: "look", title: "Look", steps: ["brand"] },
-  { id: "voice", title: "Voice and avatar", steps: ["narrator", "heygen"] },
-  { id: "research", title: "Research", steps: ["vidiq"] },
-  { id: "general", title: "General", steps: [] },
+  { id: "app-ai", title: "AI and keys", group: "app", steps: ["ai"] },
+  { id: "folders", title: "Folders", group: "app", steps: [] },
+  { id: "plan", title: "Plan", group: "app", steps: [] },
+  { id: "general", title: "General", group: "app", steps: [] },
+  { id: "identity", title: "Identity", group: "identity", steps: ["name"] },
+  { id: "channel", title: "YouTube channel and audience", group: "identity", steps: ["audience", "brandVoice", "profile", "youtube", "landing", "language"] },
+  { id: "look", title: "Look", group: "identity", steps: ["brand"] },
+  { id: "voice", title: "Voice and avatar", group: "identity", steps: ["narrator", "heygen"] },
+  { id: "research", title: "Research", group: "identity", steps: ["vidiq"] },
+  { id: "identity-ai", title: "AI and keys", group: "identity", steps: [] },
 ];
+
+export const GROUP_NOTE: Record<Group, string> = {
+  app: "For all Identities on this computer",
+  identity: "Only for this Identity",
+};

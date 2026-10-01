@@ -1,22 +1,52 @@
 // lib.rs: the Tauri commands the UI can call. Nothing here returns a key.
 // Every outgoing network call happens in the Node runner, the UI talks to no
 // external address (strict CSP in tauri.conf.json).
+//
+// Two levels of settings (DECISIONS 67, docs/identity.md): the App
+// (config.json: AI default, projects folder, active Identity) and the
+// Identities (identities/<id>/identity.json). The UI merges the two into the
+// effective settings the gates read (app/src/lib/identity.ts).
 
 mod config;
+mod edition;
+mod identity;
+mod jobs;
 mod keys;
 mod runner;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
+/// App-wide state: the job registry and a one-time notice for the UI (what
+/// the move to Identities could not do).
+#[derive(Default)]
+struct Core {
+    jobs: jobs::Jobs,
+    notice: Mutex<Option<String>>,
+}
+
+fn config_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path().app_config_dir().map_err(|e| format!("No config folder: {e}"))
+}
+
 fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(app
-        .path()
-        .app_config_dir()
-        .map_err(|e| format!("No config folder: {e}"))?
-        .join(config::FILE_NAME))
+    Ok(config_dir(app)?.join(config::FILE_NAME))
+}
+
+/// The App settings, schema 2. A schema 1 file means the move to Identities
+/// failed at start; the UI shows the reason.
+fn load_app_config(app: &AppHandle) -> Result<Option<Value>, String> {
+    let cfg = config::load(&config_path(app)?)?;
+    if let Some(c) = &cfg {
+        if c.get("schema").and_then(Value::as_u64) != Some(2) {
+            let why = app.state::<Core>().notice.lock().map(|n| n.clone()).unwrap_or_default();
+            return Err(format!("The settings could not be moved to Identities. {}", why.unwrap_or_default()));
+        }
+    }
+    Ok(cfg)
 }
 
 fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
@@ -36,10 +66,35 @@ fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String>
     config::projects_dir(cfg, app.path().document_dir().ok(), app.path().home_dir().ok())
 }
 
+/// The active Identity: the one config.json names, else the first one.
+fn active<'a>(cfg: Option<&Value>, all: &'a [Value]) -> Option<&'a Value> {
+    let want = cfg.and_then(|c| c.get("activeIdentity")).and_then(Value::as_str);
+    all.iter().find(|v| Some(identity::str_of(v, "id")) == want).or_else(|| all.first())
+}
+
 /// Runs a runner command on a blocking thread, forwarding progress as events.
-async fn run_command(app: AppHandle, command: String, request: Value, api_key: Option<String>) -> Result<Value, String> {
+/// `job`: registered in the Jobs list and queued by its class (jobs.rs).
+async fn run_command(
+    app: AppHandle,
+    command: String,
+    request: Value,
+    api_key: Option<String>,
+    job: Option<(jobs::Info, jobs::Class)>,
+) -> Result<Value, String> {
     let paths = runner_paths(&app)?;
     tauri::async_runtime::spawn_blocking(move || {
+        let core = app.state::<Core>();
+        let mut on_progress = |v: Value| {
+            let _ = app.emit("runner-progress", runner::progress_payload(&command, v));
+        };
+        let ticket = job.map(|(info, class)| {
+            let t = core.jobs.start(info, class, &mut |message| {
+                on_progress(json!({ "event": "progress", "step": "waiting", "message": message }));
+                let _ = app.emit("jobs-changed", core.jobs.list());
+            });
+            let _ = app.emit("jobs-changed", core.jobs.list());
+            t
+        });
         // The computer must not fall asleep while a script is written, a voice
         // is read or a video renders (Zoltan, 2026-09-30). Held for exactly
         // as long as the runner works. On Windows the request belongs to the
@@ -47,25 +102,50 @@ async fn run_command(app: AppHandle, command: String, request: Value, api_key: O
         // the system refuses, the work runs anyway.
         let _awake = keepawake::Builder::default()
             .idle(true)
-            .reason("IdeaToVideo is making your video")
-            .app_name("IdeaToVideo")
+            .reason(format!("{} is making your video", edition::PRODUCT_NAME))
+            .app_name(edition::PRODUCT_NAME)
             .app_reverse_domain("app.ideatovideo.desktop")
             .create()
             .ok();
-        let mut on_progress = |v: Value| {
-            let _ = app.emit("runner-progress", runner::progress_payload(&command, v));
-        };
-        runner::run(&paths, &command, &request, api_key, &mut on_progress)
+        let result = runner::run(&paths, &command, &request, api_key, &mut on_progress);
+        if ticket.is_some() {
+            drop(ticket);
+            let _ = app.emit("jobs-changed", core.jobs.list());
+        }
+        result
     })
     .await
     .map_err(|e| format!("The runner crashed: {e}"))?
+}
+
+/// The App settings and/or one Identity through the runner's schema check.
+async fn validate(app: &AppHandle, config: Option<&Value>, ident: Option<&Value>) -> Result<(), String> {
+    let mut req = json!({});
+    if let Some(c) = config {
+        req["config"] = c.clone();
+    }
+    if let Some(i) = ident {
+        req["identity"] = i.clone();
+    }
+    let result = run_command(app.clone(), "validate-config".into(), req, None, None).await?;
+    let errors = config::errors_from_validation(&result);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("Settings not saved: {}", errors.join("; ")))
+    }
+}
+
+fn write_app_config(app: &AppHandle, cfg: &Value) -> Result<(), String> {
+    let bytes = serde_json::to_vec_pretty(cfg).map_err(|e| e.to_string())?;
+    config::write_atomic(&config_path(app)?, &bytes)
 }
 
 /// The UI plays the project's audio and shows its images through the asset
 /// protocol. Its scope starts empty (tauri.conf.json) and gets exactly three
 /// folders: the projects folder, the cached voice samples and the cached
 /// avatar previews.
-fn allow_media(app: &AppHandle, projects: &std::path::Path) {
+fn allow_media(app: &AppHandle, projects: &Path) {
     let scope = app.asset_protocol_scope();
     let _ = scope.allow_directory(projects, true);
     if let Ok(d) = app.path().app_local_data_dir() {
@@ -74,76 +154,289 @@ fn allow_media(app: &AppHandle, projects: &std::path::Path) {
     }
 }
 
-/// Everything the UI needs at start: settings, projects folder, which keys exist.
+/// Everything the UI needs at start: the App settings, the active Identity
+/// and the list, the plan, folders, and where keys are saved.
 #[tauri::command]
 fn app_state(app: AppHandle) -> Result<Value, String> {
-    let cfg = config::load(&config_path(&app)?)?;
-    let projects = projects_dir(&app, cfg.as_ref())?;
-    allow_media(&app, &projects);
+    let cfg = load_app_config(&app)?;
+    let all = identity::list(&config_dir(&app)?);
+    let current = active(cfg.as_ref(), &all);
+    let root = projects_dir(&app, cfg.as_ref())?;
+    let videos = current.map(|i| root.join(identity::str_of(i, "folder"))).unwrap_or_else(|| root.clone());
+    allow_media(&app, &root);
+    let id = current.map(|i| identity::str_of(i, "id"));
+    let sources = keys::sources(id);
+    let notice = app.state::<Core>().notice.lock().ok().and_then(|mut n| n.take());
     Ok(json!({
-        "config": cfg,
-        "projectsDir": projects,
+        "app": cfg,
+        "identity": current,
+        "identities": all.iter().map(|v| json!({
+            "id": v["id"], "name": v["name"], "folder": v["folder"],
+            "youtubeUrl": v.pointer("/channel/youtubeUrl").cloned().unwrap_or(Value::Null),
+        })).collect::<Vec<_>>(),
+        "edition": edition::info(edition::tier()),
+        "projectsRoot": root,
+        "projectsDir": videos,
         "defaultProjectsDir": projects_dir(&app, None).ok(),
-        "keys": keys::status(),
+        "keys": keys::status_from(&sources),
+        "keySources": sources,
         "version": app.package_info().version.to_string(),
+        "notice": notice,
     }))
 }
 
-#[tauri::command]
-async fn save_config(app: AppHandle, config: Value) -> Result<Value, String> {
-    let result = run_command(app.clone(), "validate-config".into(), json!({ "config": config }), None).await?;
-    let errors = config::errors_from_validation(&result);
-    if !errors.is_empty() {
-        return Err(format!("Settings not saved: {}", errors.join("; ")));
+fn with_notice(mut state: Value, notice: Option<String>) -> Value {
+    if notice.is_some() {
+        state["notice"] = json!(notice);
     }
-    let projects = projects_dir(&app, Some(&config))?;
-    std::fs::create_dir_all(&projects)
-        .map_err(|e| format!("Could not create the projects folder {}: {e}", projects.display()))?;
-    let bytes = serde_json::to_vec_pretty(&config).map_err(|e| e.to_string())?;
-    config::write_atomic(&config_path(&app)?, &bytes)?;
+    state
+}
+
+/// Saves the App settings and/or one Identity. An Identity without a known
+/// id is new: it gets an id and a folder (within the plan's limit) and
+/// becomes the active one. A new name renames the ONE Videos folder.
+#[tauri::command]
+async fn save_settings(app: AppHandle, config: Option<Value>, identity: Option<Value>) -> Result<Value, String> {
+    let dir = config_dir(&app)?;
+    let all = identity::list(&dir);
+    let mut cfg = match config {
+        Some(c) => c,
+        None => load_app_config(&app)?.ok_or("Finish the setup first.")?,
+    };
+    let root = projects_dir(&app, Some(&cfg))?;
+    let mut notice = None;
+
+    if let Some(mut ident) = identity {
+        let known = ident
+            .get("id")
+            .and_then(Value::as_str)
+            .and_then(|id| all.iter().find(|v| identity::str_of(v, "id") == id))
+            .cloned();
+        match known {
+            None => {
+                edition::check_room(edition::tier(), all.len())?;
+                ident = identity::complete_new(ident, &all)?;
+                validate(&app, Some(&cfg), Some(&ident)).await?;
+                identity::save(&dir, &ident)?;
+                identity::adopt_staging(&dir, &mut ident)?;
+                cfg["activeIdentity"] = ident["id"].clone();
+            }
+            Some(old) => {
+                for f in ["schema", "id", "folder", "createdAt"] {
+                    ident[f] = old[f].clone();
+                }
+                validate(&app, Some(&cfg), Some(&ident)).await?;
+                if identity::str_of(&ident, "name") != identity::str_of(&old, "name") {
+                    let busy = app.state::<Core>().jobs.busy_identities().contains(identity::str_of(&old, "id"));
+                    let (folder, note) =
+                        identity::rename_folder(&root, identity::str_of(&old, "folder"), identity::str_of(&ident, "name"), &all, busy);
+                    ident["folder"] = json!(folder);
+                    notice = note;
+                }
+            }
+        }
+        identity::save(&dir, &ident)?;
+        let videos = root.join(identity::str_of(&ident, "folder"));
+        std::fs::create_dir_all(&videos).map_err(|e| format!("Could not create the folder {}: {e}", videos.display()))?;
+    } else {
+        validate(&app, Some(&cfg), None).await?;
+    }
+
+    std::fs::create_dir_all(&root).map_err(|e| format!("Could not create the projects folder {}: {e}", root.display()))?;
+    write_app_config(&app, &cfg)?;
+    Ok(with_notice(app_state(app)?, notice))
+}
+
+fn set_active(app: &AppHandle, id: &str) -> Result<(), String> {
+    let mut cfg = load_app_config(app)?.ok_or("Finish the setup first.")?;
+    cfg["activeIdentity"] = json!(id);
+    write_app_config(app, &cfg)
+}
+
+#[tauri::command]
+fn set_active_identity(app: AppHandle, id: String) -> Result<Value, String> {
+    identity::load(&config_dir(&app)?, &id)?;
+    set_active(&app, &id)?;
     app_state(app)
 }
 
+/// "Duplicate this Identity": settings and files under a new name, the own
+/// keys copied inside the core when `copy_keys` (the UI's default comes from
+/// the plan). The ONE Videos are not copied.
 #[tauri::command]
-fn set_key(name: String, value: String) -> Result<(), String> {
-    keys::set(&name, &value)
+fn duplicate_identity(app: AppHandle, id: String, name: String, copy_keys: bool) -> Result<Value, String> {
+    let dir = config_dir(&app)?;
+    let all = identity::list(&dir);
+    edition::check_room(edition::tier(), all.len())?;
+    let src = identity::load(&dir, &id)?;
+    let copy = identity::duplicate(&dir, &src, &name, &all)?;
+    let new_id = identity::id_of(&copy)?;
+    if copy_keys {
+        keys::copy_identity(&id, &new_id)?;
+    }
+    let cfg = load_app_config(&app)?;
+    let videos = projects_dir(&app, cfg.as_ref())?.join(identity::str_of(&copy, "folder"));
+    std::fs::create_dir_all(&videos).map_err(|e| e.to_string())?;
+    set_active(&app, &new_id)?;
+    app_state(app)
+}
+
+/// Removes an Identity's settings and own keys. Its ONE Videos stay on disk.
+#[tauri::command]
+fn delete_identity(app: AppHandle, id: String) -> Result<Value, String> {
+    let dir = config_dir(&app)?;
+    let all = identity::list(&dir);
+    if all.len() <= 1 {
+        return Err("This is the only Identity, so it cannot be deleted.".into());
+    }
+    if app.state::<Core>().jobs.busy_identities().contains(&id) {
+        return Err("A job runs for this Identity. Delete it when the job is done.".into());
+    }
+    identity::load(&dir, &id)?;
+    keys::delete_identity(&id)?;
+    identity::remove(&dir, &id)?;
+    let cfg = load_app_config(&app)?;
+    if cfg.as_ref().and_then(|c| c.get("activeIdentity")).and_then(Value::as_str) == Some(id.as_str()) {
+        let next = identity::list(&dir).first().map(|v| identity::str_of(v, "id").to_string());
+        if let Some(n) = next {
+            set_active(&app, &n)?;
+        }
+    }
+    app_state(app)
+}
+
+/// "Export Identity": a zip without keys, for another computer or user.
+#[tauri::command]
+fn export_identity(app: AppHandle, id: String, path: String) -> Result<String, String> {
+    let dir = config_dir(&app)?;
+    let ident = identity::load(&dir, &id)?;
+    let mut out = PathBuf::from(path);
+    if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("zip".into()) {
+        out.set_extension("zip");
+    }
+    identity::export(&dir, &ident, edition::PRODUCT_NAME, &out)?;
+    Ok(out.to_string_lossy().to_string())
+}
+
+/// "Import Identity": a new Identity from an export, checked file by file
+/// and against the schema, within the plan's limit. It becomes the active one.
+#[tauri::command]
+async fn import_identity(app: AppHandle, path: String) -> Result<Value, String> {
+    let dir = config_dir(&app)?;
+    let all = identity::list(&dir);
+    edition::check_room(edition::tier(), all.len())?;
+    let (ident, files) = identity::read_export(Path::new(&path))?;
+    // the schema check runs before anything is written
+    let probe = identity::complete_new(ident.clone(), &all)?;
+    validate(&app, None, Some(&probe)).await.map_err(|e| e.replace("Settings not saved", "This Identity file cannot be imported"))?;
+    let new = identity::import(&dir, ident, files, &all)?;
+    identity::save(&dir, &new)?;
+    let cfg = load_app_config(&app)?;
+    let videos = projects_dir(&app, cfg.as_ref())?.join(identity::str_of(&new, "folder"));
+    std::fs::create_dir_all(&videos).map_err(|e| e.to_string())?;
+    set_active(&app, identity::str_of(&new, "id"))?;
+    app_state(app)
+}
+
+fn active_id(app: &AppHandle) -> Result<Option<String>, String> {
+    let cfg = load_app_config(app)?;
+    let all = identity::list(&config_dir(app)?);
+    Ok(active(cfg.as_ref(), &all).map(|v| identity::str_of(v, "id").to_string()))
+}
+
+/// `scope`: "app" or "identity" (the active Identity's own key).
+fn key_scope<'a>(scope: &str, id: &'a Option<String>) -> Result<keys::Scope<'a>, String> {
+    match (scope, id) {
+        ("app", _) => Ok(keys::Scope::App),
+        ("identity", Some(id)) => Ok(keys::Scope::Identity(id)),
+        ("identity", None) => Err("There is no Identity yet.".into()),
+        _ => Err(format!("Unknown key scope: {scope}")),
+    }
 }
 
 #[tauri::command]
-fn delete_key(name: String) -> Result<(), String> {
-    keys::delete(&name)
+fn set_key(app: AppHandle, name: String, value: String, scope: String) -> Result<(), String> {
+    let id = active_id(&app)?;
+    keys::set(&name, &value, key_scope(&scope, &id)?)
 }
 
 #[tauri::command]
-fn delete_all_keys() -> Result<(), String> {
-    keys::delete_all()
+fn delete_key(app: AppHandle, name: String, scope: String) -> Result<(), String> {
+    let id = active_id(&app)?;
+    keys::delete(&name, key_scope(&scope, &id)?)
 }
 
 #[tauri::command]
-fn key_status() -> std::collections::BTreeMap<String, bool> {
-    keys::status()
+fn delete_all_keys(app: AppHandle) -> Result<(), String> {
+    keys::delete_all(&identity::ids(&identity::list(&config_dir(&app)?)))
 }
 
-/// The one door to the runner: whitelisted command, paths checked, key added.
+/// For the active Identity: which keys a job can use, and where they are saved.
+#[tauri::command]
+fn key_status(app: AppHandle) -> Result<Value, String> {
+    let id = active_id(&app)?;
+    let sources = keys::sources(id.as_deref());
+    Ok(json!({ "keys": keys::status_from(&sources), "keySources": sources }))
+}
+
+/// The running and waiting jobs of every Identity.
+#[tauri::command]
+fn job_list(app: AppHandle) -> Value {
+    app.state::<Core>().jobs.list()
+}
+
+/// The one door to the runner: whitelisted command, paths checked, the key
+/// of the right Identity added, the job queued by its class.
 #[tauri::command]
 async fn run_runner(app: AppHandle, command: String, request: Value) -> Result<Value, String> {
     let key_name = runner::key_name_for(&command, &request)?;
-    if request.get("projectsDir").is_some() || request.get("projectDir").is_some() {
-        let cfg = config::load(&config_path(&app)?)?;
-        let root = projects_dir(&app, cfg.as_ref())?;
+    let cfg = load_app_config(&app)?;
+    let all = identity::list(&config_dir(&app)?);
+    let root = projects_dir(&app, cfg.as_ref())?;
+    let folders = identity::folders(&all);
+    let path_of = |f: &str| request.get(f).and_then(Value::as_str).map(PathBuf::from);
+    let (project, videos) = (path_of("projectDir"), path_of("projectsDir"));
+    if project.is_some() || videos.is_some() {
         std::fs::create_dir_all(&root).map_err(|e| format!("Could not create the projects folder: {e}"))?;
-        runner::check_paths(&request, &root)?;
+        for f in &folders {
+            let _ = std::fs::create_dir_all(root.join(f));
+        }
+        runner::check_paths(&request, &root, &folders)?;
     }
-    let api_key = match key_name {
-        Some(n) => keys::get(&n)?,
+    // A job belongs to the Identity whose folder holds its ONE Video, not to
+    // whichever Identity is on screen: a render keeps its own key when the
+    // user switches meanwhile.
+    let owner = project
+        .as_deref()
+        .or(videos.as_deref())
+        .and_then(|p| identity::owner_of(p, &root, &all))
+        .or_else(|| active(cfg.as_ref(), &all).map(|v| identity::str_of(v, "id").to_string()));
+    let app_only = request.get("keyScope").and_then(Value::as_str) == Some("app");
+    let resolved = match &key_name {
+        Some(n) => keys::resolve(n, owner.as_deref(), app_only)?,
         None => None,
     };
-    run_command(app, command, request, api_key).await
+    let class = jobs::class_of(
+        &command,
+        key_name.as_deref().zip(resolved.as_ref().map(|(_, who)| who.as_str())),
+    );
+    let info = jobs::Info {
+        command: command.clone(),
+        identity_name: owner
+            .as_deref()
+            .and_then(|o| all.iter().find(|v| identity::str_of(v, "id") == o))
+            .map(|v| identity::str_of(v, "name").to_string()),
+        identity: owner,
+        project: project.map(|p| p.to_string_lossy().to_string()),
+    };
+    run_command(app, command, request, resolved.map(|(k, _)| k), Some((info, class))).await
 }
 
-/// Copies the chosen logo into the app data folder, returns the stored path.
+/// Copies the chosen logo into the active Identity's folder (or, during setup
+/// of a new Identity, into a waiting folder it adopts on save). Returns the
+/// stored path.
 #[tauri::command]
-fn import_logo(app: AppHandle, path: String) -> Result<String, String> {
+fn import_logo(app: AppHandle, path: String, for_new: bool) -> Result<String, String> {
     let src = PathBuf::from(&path);
     let ext = src
         .extension()
@@ -155,7 +448,16 @@ fn import_logo(app: AppHandle, path: String) -> Result<String, String> {
     if size > 5 * 1024 * 1024 {
         return Err("The logo file is larger than 5 MB.".into());
     }
-    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("brand");
+    let cfg_dir = config_dir(&app)?;
+    let base = match (for_new, active_id(&app)?) {
+        (false, Some(id)) => identity::dir_of(&cfg_dir, &id)?,
+        _ => {
+            let s = identity::staging_dir(&cfg_dir);
+            let _ = std::fs::remove_dir_all(&s);
+            s
+        }
+    };
+    let dir = base.join("brand");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let dest = dir.join(format!("logo.{ext}"));
     std::fs::copy(&src, &dest).map_err(|e| format!("Could not copy the logo: {e}"))?;
@@ -167,9 +469,9 @@ fn import_logo(app: AppHandle, path: String) -> Result<String, String> {
 /// path outside the projects folder.
 #[tauri::command]
 fn import_music(app: AppHandle, project_dir: String, path: String) -> Result<String, String> {
-    let cfg = config::load(&config_path(&app)?)?;
+    let cfg = load_app_config(&app)?;
     let root = projects_dir(&app, cfg.as_ref())?;
-    runner::check_paths(&json!({ "projectDir": project_dir }), &root)?;
+    runner::check_paths(&json!({ "projectDir": project_dir }), &root, &[])?;
     let src = PathBuf::from(&path);
     let name = runner::music_name(&src)?;
     let size = std::fs::metadata(&src).map_err(|_| "Music file not found.")?.len();
@@ -202,22 +504,44 @@ fn migrate_from_studio(app: &AppHandle) {
     }
 }
 
+/// The one-file settings (schema 1) become the App settings and the first
+/// Identity, "My Identity" (docs/identity.md 5).
+fn migrate_to_identities(app: &AppHandle) {
+    let (Ok(dir), Ok(data)) = (app.path().app_config_dir(), app.path().app_data_dir()) else { return };
+    let result = identity::migrate_v1(&dir, &data.join("brand"), |cfg| projects_dir(app, Some(cfg)).ok());
+    let notice = match result {
+        Ok(n) => n,
+        Err(e) => Some(e),
+    };
+    if let Ok(mut n) = app.state::<Core>().notice.lock() {
+        *n = notice;
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(Core::default())
         .setup(|app| {
             migrate_from_studio(app.handle());
+            migrate_to_identities(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             app_state,
-            save_config,
+            save_settings,
+            set_active_identity,
+            duplicate_identity,
+            delete_identity,
+            export_identity,
+            import_identity,
             set_key,
             delete_key,
             key_status,
             delete_all_keys,
+            job_list,
             run_runner,
             import_logo,
             import_music

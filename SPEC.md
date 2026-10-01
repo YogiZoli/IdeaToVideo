@@ -121,6 +121,16 @@ Windowson `%APPDATA%`, Macen `~/Library/Application Support`.
 
 A kulcsok **nincsenek** benne. Csak az, hogy van-e (`"vidiq": false`).
 
+**Módosítva 2026-10-01 (DECISIONS 67, `docs/identity.md`): két szint.** A
+`config.json` schema 2 csak az App szintet tartja (`ui`, `llm` alap,
+`projectsDir`, `activeIdentity`, `onboarded`, `defaults.autopilot`). A fenti
+többi mező Identity-nként a `<app config dir>/identities/<id>/identity.json`
+fájlban él (`runner/schema/identity.schema.json`), mellette az Identity saját
+fájljai (`brand/logo`, később a varázslók eredményei). Az Identity `llm`
+mezője felülírhatja az App AI-ját (`null`: az App-é). A kapuk az összefésült,
+fenti formát kapják (`app/src/lib/identity.ts`). A régi egyfájlos config az
+első indításkor átáll: belőle lesz a "My Identity" (`identity.rs`).
+
 ### 4.2 Kulcsok
 
 OS kulcstár (`keyring` crate): Windows Credential Manager, macOS Keychain.
@@ -128,14 +138,21 @@ Szolgáltatásnév: `ideatovideo.<provider>`, pl. `ideatovideo.gemini`, `ideatov
 A UI soha nem kapja vissza a kulcsot, csak annyit: be van-e állítva, és
 sikerült-e a "Test key".
 
+**Módosítva 2026-10-01:** fiók `default` = App kulcs (minden Identity-é),
+fiók `identity-<id>` = egy Identity saját kulcsa. Egy munka az Identity saját
+kulcsát használja, ha van, különben az App kulcsot. Hogy melyik Identity-é a
+munka, azt a Rust a ONE Video mappájából állapítja meg, nem a felülettől
+kapja. Egy kulcson egyszerre egy munka, a helyi nehéz munkák (build, check,
+render) egy sorban, ma egyszerre egy (`jobs.rs`).
+
 ### 4.3 Project mappa
 
 Egy videó = egy mappa a `Projects/` alatt (alapból a Dokumentumok mappában,
 Settings-ben átállítható).
 
 ```text
-Projects/2026-09-24_how-to-start/
-  project.json        állapot, kapuk, választások
+Projects/<Identity mappája>/2026-09-24_how-to-start/   (2026-10-01 óta, DECISIONS 67)
+  project.json        állapot, kapuk, választások, az Identity id-je
   brief.json          Video Brief Card (beolvasva vagy az 1. lépésben kitöltve)
   script.md           1. kapu kimenete
   audio/vo.mp3        2. kapu kimenete (+ vo_bgm.mp3)

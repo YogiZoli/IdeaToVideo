@@ -10,6 +10,7 @@
     "status": { "enum": ["Idea", "Scripted", "Voiced", "Scened", "Reviewed", "Rendered", "Done"] },
     "language": { "type": "string", "minLength": 2, "maxLength": 10 },
     "autopilot": { "type": "boolean" },
+    "identity": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$" },
     "createdAt": { "type": "string" },
     "gates": {
       "type": "object",

@@ -1,49 +1,77 @@
 <script lang="ts">
-  // Settings: every onboarding field, editable any time (PRD 5), plus the
-  // projects folder, split into sub-pages (pages.ts) so one shows at a time.
-  // Each page can re-run its part of the setup wizard. Keys save
-  // immediately; the rest on "Save settings".
+  // Settings: every onboarding field, editable any time (PRD 5), split into
+  // sub-pages (pages.ts) in two groups (docs/identity.md 7): "App", for every
+  // Identity on this computer, and the active Identity's own pages. Each page
+  // can re-run its part of the setup wizard. Keys save immediately; the rest
+  // on "Save settings".
   import { untrack } from "svelte";
-  import { open } from "@tauri-apps/plugin-dialog";
-  import type { Config, AppState } from "./api";
-  import { saveConfig, errorText, deleteAllKeys, keyStatus } from "./api";
-  import { ask } from "@tauri-apps/plugin-dialog";
-  import { cleanConfig } from "./catalog";
+  import { open, save as saveDialog, ask } from "@tauri-apps/plugin-dialog";
+  import type { Config, AppState, AppConfig, Llm } from "./api";
+  import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity, exportIdentity } from "./api";
+  import { cleanConfig, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
-  import { SETTINGS_PAGES, type PageId } from "./pages";
+  import { SETTINGS_PAGES, GROUP_NOTE, type PageId } from "./pages";
+  import { identityFromConfig, roomForIdentity, copyName } from "./identity";
+  import { planText, fullPlanText, PRODUCT } from "./edition";
+  import { refreshKeySources } from "./keystate.svelte";
   import ConfigSection from "./ConfigSection.svelte";
+  import AiSection from "./AiSection.svelte";
+  import KeyField from "./KeyField.svelte";
   import Onboarding from "./Onboarding.svelte";
   import ErrorBox from "./ErrorBox.svelte";
 
 
-  let { app, saved }: { app: AppState; saved: (s: AppState) => void } = $props();
+  let { app, saved, startPage = "identity" }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId } = $props();
 
-  // a working copy: edits stay local until "Save settings". $state.snapshot,
+  // working copies: edits stay local until "Save settings". $state.snapshot,
   // not structuredClone: a reactive proxy cannot be cloned (DataCloneError).
-  let config = $state<Config>(untrack(() => $state.snapshot(app.config!) as Config));
+  const snap = <T,>(v: T): T => $state.snapshot(v) as T;
+  let appCfg = $state<AppConfig>(untrack(() => snap(app.app!)));
+  let config = $state<Config>(untrack(() => snap(app.config!)));
+  let ownLlm = $state(untrack(() => !!app.identity?.llm));
+  let identLlm = $state<Llm>(untrack(() => snap(app.identity?.llm ?? app.app!.llm)));
   let keys = $state(untrack(() => ({ ...app.keys })));
   let busy = $state(false);
   let message = $state("");
   let error = $state("");
-  let pageId = $state<PageId>("ai");
+  let pageId = $state<PageId>(untrack(() => startPage));
   let wizard = $state(false);
   const page = $derived(SETTINGS_PAGES.find((p) => p.id === pageId)!);
+  const GROUPS = ["app", "identity"] as const;
+  const appProvider = $derived(LLM_PROVIDERS.find((p) => p.id === appCfg.llm.provider) ?? LLM_PROVIDERS[0]);
 
-  function wizardDone(s: AppState) {
-    saved(s);
-    config = $state.snapshot(s.config!) as Config;
-    wizard = false;
-    message = "Settings saved.";
+  let dupName = $state(untrack(() => copyName(app.identity?.name ?? "", app.identities.map((i) => i.name))));
+  let dupKeys = $state(untrack(() => app.edition.copyKeysDefault));
+  const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
+
+  function reset(s: AppState) {
+    appCfg = snap(s.app!);
+    config = snap(s.config!);
+    ownLlm = !!s.identity?.llm;
+    identLlm = snap(s.identity?.llm ?? s.app!.llm);
+    keys = { ...s.keys };
+    dupName = copyName(s.identity?.name ?? "", s.identities.map((i) => i.name));
   }
 
-  async function save() {
+  function after(s: AppState, text: string) {
+    saved(s);
+    reset(s);
+    message = s.notice ? `${text} ${s.notice}` : text;
+  }
+
+  async function persist(c: Config = config): Promise<AppState> {
+    const clean = cleanConfig({ ...c, llm: ownLlm ? identLlm : appCfg.llm });
+    const identity = identityFromConfig(clean, app.identity, ownLlm ? snap(identLlm) : null);
+    const projectsDir = appCfg.projectsDir?.trim() ? appCfg.projectsDir.trim() : null;
+    return saveSettings({ ...snap(appCfg), projectsDir }, identity);
+  }
+
+  async function run(work: () => Promise<void>) {
     busy = true;
     message = "";
     error = "";
     try {
-      const s = await saveConfig(cleanConfig(config));
-      saved(s);
-      message = "Settings saved.";
+      await work();
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -51,51 +79,98 @@
     }
   }
 
-  async function recommend(id: "audience" | "brandVoice") {
-    busy = true;
-    error = "";
-    try {
-      config = await recommendStep(id, config);
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = false;
+  const save = () => run(async () => after(await persist(), "Settings saved."));
+
+  // the wizard of one page: an App page edits the App's AI, the others the Identity
+  function wizardSave(c: Config): Promise<AppState> {
+    if (page.group === "app") {
+      appCfg.llm = { ...c.llm };
+      return persist(config);
     }
+    return persist(c);
+  }
+
+  function wizardDone(s: AppState) {
+    after(s, "Settings saved.");
+    wizard = false;
+  }
+
+  function recommend(id: "audience" | "brandVoice") {
+    return run(async () => {
+      config = await recommendStep(id, config);
+    });
   }
 
   async function removeAllKeys() {
-    if (!(await ask("Remove every API key this app saved in the system keychain? You can add them again any time.", { title: "Remove all keys", kind: "warning" }))) return;
-    busy = true;
-    error = "";
-    try {
+    if (!(await ask("Remove every API key this app saved in the system keychain, for the App and every Identity? You can add them again any time.", { title: "Remove all keys", kind: "warning" }))) return;
+    await run(async () => {
       await deleteAllKeys();
-      keys = await keyStatus();
+      keys = await refreshKeySources();
       message = "All keys removed from the system keychain.";
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = false;
-    }
+    });
   }
 
   async function chooseFolder() {
     const dir = await open({ directory: true, multiple: false });
-    if (typeof dir === "string") config.projectsDir = dir;
+    if (typeof dir === "string") appCfg.projectsDir = dir;
+  }
+
+  const duplicate = () =>
+    run(async () => {
+      const s = await duplicateIdentity(app.identity!.id, dupName.trim() || copyName(app.identity!.name, []), dupKeys);
+      after(s, `Made "${s.identity?.name}". You are now working in it. Change what is different, for example the name, the YouTube channel and the language.`);
+      pageId = "identity";
+    });
+
+  async function exportIt() {
+    const path = await saveDialog({ defaultPath: `${app.identity!.name}.identity.zip`, filters: [{ name: "Identity", extensions: ["zip"] }] });
+    if (typeof path !== "string") return;
+    await run(async () => {
+      const out = await exportIdentity(app.identity!.id, path);
+      message = `Exported to ${out}. No API key is in the file.`;
+    });
+  }
+
+  async function remove() {
+    const name = app.identity!.name;
+    if (!(await ask(`Delete the Identity "${name}"? Its settings and its own keys are removed. Its ONE Videos stay on your disk, in the folder "${app.identity!.folder}".`, { title: "Delete Identity", kind: "warning" }))) return;
+    await run(async () => {
+      const s = await deleteIdentity(app.identity!.id);
+      after(s, `"${name}" deleted. Its ONE Videos are still in their folder.`);
+    });
   }
 </script>
 
 {#if wizard}
-  <Onboarding bind:config bind:keys only={page.steps} done={wizardDone} cancel={() => (wizard = false)} />
+  <Onboarding
+    bind:config
+    bind:keys
+    only={page.steps}
+    save={wizardSave}
+    done={wizardDone}
+    cancel={() => (wizard = false)}
+    keyScope={page.group === "app" ? "app" : "identity"}
+    title={page.group === "identity" ? app.identity?.name : "App"}
+  />
 {:else}
 <div class="layout">
   <nav class="pages">
-    {#each SETTINGS_PAGES as p}
-      <button type="button" class:current={p.id === pageId} onclick={() => { pageId = p.id; message = ""; }}>{p.title}</button>
+    {#each GROUPS as group}
+      <div class="group">
+        <span class="gname">{group === "app" ? "App" : app.identity?.name}</span>
+        <span class="gnote">{GROUP_NOTE[group]}</span>
+      </div>
+      {#each SETTINGS_PAGES.filter((p) => p.group === group) as p}
+        <button type="button" class:current={p.id === pageId} onclick={() => { pageId = p.id; message = ""; }}>{p.title}</button>
+      {/each}
     {/each}
   </nav>
   <div class="page">
     <header>
-      <h1>{page.title}</h1>
+      <div>
+        <p class="for">{page.group === "app" ? "Settings for all Identities" : `Settings for: ${app.identity?.name}`}</p>
+        <h1>{page.title}</h1>
+      </div>
       <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
     </header>
     {#if message}<p class="good">{message}</p>{/if}
@@ -108,42 +183,111 @@
       </div>
     {/if}
 
-    {#each STEPS.filter((s) => page.steps.includes(s.id)) as s (s.id)}
+    {#if pageId === "app-ai"}
+      <section class="card">
+        <h2>AI for every Identity</h2>
+        <p class="hint">The default. An Identity can use a different AI on its own "AI and keys" page.</p>
+        <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" />
+      </section>
+      <section class="card">
+        <h2>Service keys for every Identity</h2>
+        <p class="hint">An Identity can use its own key instead, for example a client's, so that the costs go to the client.</p>
+        <div class="keys">
+          <KeyField name="elevenlabs" label="ElevenLabs" scope="app" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
+          <KeyField name="heygen" label="HeyGen" scope="app" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
+          <KeyField name="vidiq" label="vidIQ" scope="app" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
+        </div>
+      </section>
+      <section class="card">
+        <h2>Remove all keys</h2>
+        <p class="hint">Keys are stored only in your system keychain. This removes the App keys and every Identity's own keys, for example before you uninstall.</p>
+        <div class="row"><button type="button" disabled={busy} onclick={removeAllKeys}>Remove all keys</button></div>
+      </section>
+    {:else if pageId === "folders"}
+      <section class="card">
+        <h2>Projects folder</h2>
+        <p class="hint">Now: {appCfg.projectsDir || app.defaultProjectsDir}</p>
+        <p class="hint">Every Identity has its own folder in it. This Identity's ONE Videos: {app.projectsDir}</p>
+        <div class="row">
+          <button type="button" onclick={chooseFolder}>Choose folder</button>
+          {#if appCfg.projectsDir}
+            <button type="button" class="ghost" onclick={() => (appCfg.projectsDir = null)}>Use default</button>
+          {/if}
+        </div>
+      </section>
+    {:else if pageId === "plan"}
+      <section class="card">
+        <h2>{app.edition.tier}</h2>
+        <p>{planText(app.edition, app.identities.length)}</p>
+        <ul class="list">
+          {#each app.identities as i}<li>{i.name}</li>{/each}
+        </ul>
+      </section>
+    {:else if pageId === "general"}
+      <section class="card about">
+        <h2>About</h2>
+        <p>{PRODUCT} {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
+        <p>No support, no installation help.</p>
+      </section>
+    {:else if pageId === "identity-ai"}
+      <section class="card">
+        <h2>AI for this Identity</h2>
+        <label class="radio"><input type="radio" name="ownllm" checked={!ownLlm} onchange={() => (ownLlm = false)} /> Use the App's AI ({appProvider.label}, {appCfg.llm.model})</label>
+        <label class="radio"><input type="radio" name="ownllm" checked={ownLlm} onchange={() => (ownLlm = true)} /> Use a different AI for this Identity</label>
+        {#if ownLlm}
+          <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" /></div>
+        {/if}
+      </section>
+      <section class="card">
+        <h2>Service keys of this Identity</h2>
+        <p class="hint">Without its own key, this Identity uses the App key.</p>
+        <div class="keys">
+          <KeyField name="elevenlabs" label="ElevenLabs" scope="identity" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
+          <KeyField name="heygen" label="HeyGen" scope="identity" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
+          <KeyField name="vidiq" label="vidIQ" scope="identity" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
+        </div>
+      </section>
+    {/if}
+
+    {#each STEPS.filter((s) => page.group === "identity" && page.steps.includes(s.id)) as s (s.id)}
       <section class="card">
         <div class="head">
-          <h2>{s.title}</h2>
+          <h2>{s.id === "name" ? "Name" : s.title}</h2>
           {#if s.id === "audience" || s.id === "brandVoice"}
             <button type="button" disabled={busy} onclick={() => recommend(s.id as "audience" | "brandVoice")}>Use recommended</button>
           {/if}
         </div>
-        <ConfigSection id={s.id} bind:config bind:keys />
+        <ConfigSection id={s.id} bind:config bind:keys keyScope="identity" />
       </section>
     {/each}
 
-    {#if pageId === "ai"}
+    {#if pageId === "identity"}
       <section class="card">
-        <h2>Remove all keys</h2>
-        <p class="hint">Keys are stored only in your system keychain. Remove them all here, for example before you uninstall.</p>
-        <div class="row"><button type="button" disabled={busy} onclick={removeAllKeys}>Remove all keys</button></div>
+        <h2>Duplicate</h2>
+        <p class="hint">A new Identity with the same settings, for example a second YouTube channel. The ONE Videos are not copied.</p>
+        {#if room}
+          <div class="row">
+            <input bind:value={dupName} maxlength="80" aria-label="Name of the copy" />
+            <button type="button" disabled={busy} onclick={duplicate}>Duplicate this Identity</button>
+          </div>
+          <label class="radio"><input type="checkbox" bind:checked={dupKeys} /> Copy this Identity's own keys</label>
+        {:else}
+          <p class="hint">{fullPlanText(app.edition)}</p>
+        {/if}
       </section>
-    {/if}
-
-    {#if pageId === "general"}
       <section class="card">
-        <h2>Projects folder</h2>
-        <p class="hint">Now: {config.projectsDir || app.defaultProjectsDir}</p>
-        <div class="row">
-          <button type="button" onclick={chooseFolder}>Choose folder</button>
-          {#if config.projectsDir}
-            <button type="button" class="ghost" onclick={() => (config.projectsDir = null)}>Use default</button>
-          {/if}
-        </div>
+        <h2>Export</h2>
+        <p class="hint">One file with this Identity's settings, logo and look, to start an Identity from it on another computer or for another person. API keys are never in it.</p>
+        <div class="row"><button type="button" disabled={busy} onclick={exportIt}>Export Identity</button></div>
       </section>
-
-      <section class="card about">
-        <h2>About</h2>
-        <p>IdeaToVideo {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
-        <p>No support, no installation help.</p>
+      <section class="card">
+        <h2>Delete</h2>
+        {#if app.identities.length > 1}
+          <p class="hint">Removes this Identity's settings and own keys. Its ONE Videos stay on your disk.</p>
+          <div class="row"><button type="button" class="ghost" disabled={busy} onclick={remove}>Delete this Identity</button></div>
+        {:else}
+          <p class="hint">This is the only Identity, so it cannot be deleted.</p>
+        {/if}
       </section>
     {/if}
   </div>
@@ -151,20 +295,30 @@
 {/if}
 
 <style>
-  .layout { display: grid; grid-template-columns: 200px 1fr; gap: 24px; padding: 24px; max-width: 1040px; margin: 0 auto; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; padding: 24px; max-width: 1060px; margin: 0 auto; }
   .pages { display: grid; gap: 2px; align-content: start; }
   .pages button { width: 100%; justify-content: flex-start; text-align: left; border: none; background: none; padding: 6px 10px; border-radius: 6px; }
   .pages .current { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
+  .group { display: grid; padding: 12px 10px 4px; }
+  .group:first-child { padding-top: 0; }
+  .gname { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; overflow-wrap: anywhere; }
+  .gnote { font-size: 12px; color: var(--muted-foreground); }
   .page { display: grid; gap: 16px; align-content: start; min-width: 0; }
   .rerun { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
   .rerun .hint { margin: 0; word-break: normal; }
   .rerun button { white-space: nowrap; flex: none; }
   header { display: flex; justify-content: space-between; align-items: center; }
+  .for { margin: 0; font-size: 13px; color: var(--muted-foreground); }
   h1 { margin: 0; }
   h2 { margin: 0 0 12px; font-size: 17px; }
   .head { display: flex; justify-content: space-between; align-items: center; }
-  .row { display: flex; gap: 8px; }
-  .hint { font-size: 13px; color: var(--muted-foreground); word-break: break-all; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row input { flex: 1; }
+  .keys { display: grid; gap: 18px; }
+  .radio { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+  .inner { margin-top: 12px; }
+  .list { margin: 8px 0 0; padding-left: 18px; color: var(--muted-foreground); }
+  .hint { font-size: 13px; color: var(--muted-foreground); word-break: break-word; }
   .good { color: var(--success); margin: 0; }
   .about p { margin: 4px 0; color: var(--muted-foreground); }
 </style>

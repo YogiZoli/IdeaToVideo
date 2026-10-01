@@ -1,11 +1,16 @@
 <script lang="ts">
-  // The fields of one onboarding step / Settings section, bound to the config.
+  // The fields of one onboarding step / Settings section, bound to the
+  // effective settings. keyScope: whose keys the key fields edit, the App's
+  // (setup) or the active Identity's own (Settings, Identity pages).
+  // newIdentity: the Identity does not exist yet (setup, New Identity), so a
+  // logo waits in a holding folder until it is saved.
   import { open } from "@tauri-apps/plugin-dialog";
-  import type { Config } from "./api";
+  import type { Config, KeyScope } from "./api";
   import { importLogo, errorText } from "./api";
   import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider } from "./catalog";
   import type { StepId } from "./steps";
   import KeyField from "./KeyField.svelte";
+  import AiSection from "./AiSection.svelte";
   import VoicePicker from "./VoicePicker.svelte";
   import AvatarPicker from "./AvatarPicker.svelte";
   import LayoutPicker from "./LayoutPicker.svelte";
@@ -14,15 +19,11 @@
     id,
     config = $bindable(),
     keys = $bindable(),
-  }: { id: StepId; config: Config; keys: Record<string, boolean> } = $props();
+    keyScope = "app",
+    newIdentity = false,
+  }: { id: StepId; config: Config; keys: Record<string, boolean>; keyScope?: KeyScope; newIdentity?: boolean } = $props();
 
   let logoError = $state("");
-  const provider = $derived(LLM_PROVIDERS.find((p) => p.id === config.llm.provider) ?? LLM_PROVIDERS[0]);
-
-  function pickProvider(pid: string) {
-    const p = LLM_PROVIDERS.find((x) => x.id === pid)!;
-    config.llm = { provider: p.id, model: p.model };
-  }
 
   function pickLanguage(code: string) {
     config.channel.contentLanguage = code;
@@ -33,7 +34,7 @@
     const path = await open({ multiple: false, directory: false, filters: [{ name: "Logo", extensions: ["png", "jpg", "jpeg", "svg", "webp"] }] });
     if (typeof path !== "string") return;
     try {
-      config.brand = { ...config.brand, logo: await importLogo(path) };
+      config.brand = { ...config.brand, logo: await importLogo(path, newIdentity) };
     } catch (e) {
       logoError = errorText(e);
     }
@@ -43,28 +44,13 @@
 </script>
 
 {#if id === "ai"}
+  <AiSection bind:llm={config.llm} bind:keys {keyScope} />
+{:else if id === "name"}
   <div class="field">
-    <label for="provider">AI provider</label>
-    <select id="provider" value={config.llm.provider} onchange={(e) => pickProvider(e.currentTarget.value)}>
-      {#each LLM_PROVIDERS as p}<option value={p.id}>{p.label}</option>{/each}
-    </select>
-    {#if provider.note}<p class="hint">{provider.note}</p>{/if}
+    <label for="iname">Name</label>
+    <input id="iname" bind:value={config.name} maxlength="80" placeholder="Example: Zoltan Gero, VoxFlow, or a client's brand" />
+    <p class="hint">Only you see this name. It is also the name of the folder with this Identity's videos.</p>
   </div>
-  <div class="field">
-    <label for="model">Model</label>
-    <input id="model" bind:value={config.llm.model} placeholder="model name" spellcheck="false" />
-    <p class="hint">Model names change often. You can edit this any time in Settings.</p>
-  </div>
-  {#key config.llm.provider}
-    <KeyField
-      name={config.llm.provider}
-      label={provider.label}
-      keyUrl={provider.keyUrl}
-      bind:isSet={keys[config.llm.provider]}
-      test={() => ({ command: "test-llm", provider: config.llm.provider, model: config.llm.model })}
-    />
-  {/key}
-  <p class="warn">A ChatGPT Plus or Claude Pro subscription is not an API key. The API is a separate account with its own key.</p>
 {:else if id === "brand"}
   <div class="field">
     <label for="preset">Video look</label>
@@ -131,7 +117,7 @@
   </div>
   {#if narratorProvider(config.narrator.provider) === "gemini"}
     {#if config.llm.provider !== "gemini"}
-      <KeyField name="gemini" label="Gemini" keyUrl={LLM_PROVIDERS.find((p) => p.id === "gemini")?.keyUrl ?? ""} bind:isSet={keys.gemini} test={() => ({ command: "test-llm", provider: "gemini", model: "gemini-3.5-flash" })} />
+      <KeyField name="gemini" label="Gemini" scope={keyScope} keyUrl={LLM_PROVIDERS.find((p) => p.id === "gemini")?.keyUrl ?? ""} bind:isSet={keys.gemini} test={() => ({ command: "test-llm", provider: "gemini", model: "gemini-3.5-flash" })} />
     {/if}
     <div class="field">
       <label for="gvoice">Voice</label>
@@ -141,12 +127,12 @@
       <p class="hint">Uses your Gemini key, free within Google's limits. Speaks your content language, Hungarian too. You can listen to samples at the voice step of a video.</p>
     </div>
   {:else}
-    <KeyField name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
+    <KeyField name="elevenlabs" label="ElevenLabs" scope={keyScope} keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
     <VoicePicker bind:voice={config.narrator.voice} keySet={!!keys.elevenlabs} language={config.channel.contentLanguage ?? "en"} />
     <p class="hint">You pay ElevenLabs directly. The free ElevenLabs plan does not allow commercial use.</p>
   {/if}
 {:else if id === "heygen"}
-  <KeyField name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
+  <KeyField name="heygen" label="HeyGen" scope={keyScope} keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
   <label class="radio"><input type="checkbox" bind:checked={config.avatar!.enabled} disabled={!keys.heygen} /> Add an avatar to my videos</label>
   {#if config.avatar?.enabled}
     <AvatarPicker bind:lookId={config.avatar!.lookId} keySet={!!keys.heygen} />
@@ -154,7 +140,7 @@
     <p class="hint">The default for new videos. You can change it for each video at 5. Avatar.</p>
   {/if}
 {:else if id === "vidiq"}
-  <KeyField name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
+  <KeyField name="vidiq" label="vidIQ" scope={keyScope} keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
   <label class="radio"><input type="checkbox" bind:checked={config.research!.vidiq} disabled={!keys.vidiq} /> Use vidIQ keyword data when available</label>
 {:else if id === "import"}
   <p class="hint">The Planner app is not available yet. Skip this step, you can import later from Settings.</p>
@@ -166,6 +152,5 @@
   .radio { font-weight: 400; display: flex; gap: 6px; align-items: center; }
   .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .hint { margin: 0; font-size: 13px; color: var(--muted-foreground); }
-  .warn { font-size: 13px; background: var(--warning-surface); color: var(--warning-text); padding: 8px 10px; border-radius: 6px; }
   .bad { color: var(--danger-text); font-size: 13px; margin: 0; }
 </style>

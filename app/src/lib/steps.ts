@@ -1,18 +1,22 @@
-// steps.ts: the 12 onboarding steps (PRD 5) and what "Use recommended" and
-// "Skip, use default" do on each. Settings shows the same sections.
+// steps.ts: the onboarding steps (PRD 5, plus the Identity's name,
+// docs/identity.md 7) and what "Use recommended" and "Skip, use default" do on
+// each. Settings shows the same sections. Every step but "ai" belongs to the
+// Identity; "New Identity" runs IDENTITY_STEPS.
 
 import type { Config } from "./api";
 import { runner } from "./api";
 import { DEFAULT_PRESET, LLM_PROVIDERS, GEMINI_DEFAULT_VOICE } from "./catalog";
+import { FIRST_IDENTITY_NAME } from "./identity";
 
 export type StepId =
-  | "ai" | "brand" | "audience" | "brandVoice" | "profile" | "youtube"
+  | "ai" | "name" | "brand" | "audience" | "brandVoice" | "profile" | "youtube"
   | "landing" | "language" | "narrator" | "heygen" | "vidiq" | "import";
 
 export type Step = { id: StepId; title: string; intro: string; required?: boolean; canRecommend: boolean };
 
 export const STEPS: Step[] = [
   { id: "ai", title: "AI key", intro: "The AI writes your scripts. It uses your own API key, which is stored only in your system keychain.", required: true, canRecommend: true },
+  { id: "name", title: "Identity", intro: "An Identity is one brand, pen name or client, with its own look, voice and audience, and at most one YouTube channel. Give it a name. Its videos go in a folder with this name. You can change it any time in Settings.", canRecommend: false },
   { id: "brand", title: "Brand", intro: "Colors and fonts of your videos come from a preset. Add your logo if you have one.", canRecommend: true },
   { id: "audience", title: "Audience", intro: "Who do you make videos for? One clear viewer makes every script better.", canRecommend: true },
   { id: "brandVoice", title: "Brand Voice", intro: "How your scripts sound: tone, style, words to avoid. This is not the Narrator Voice.", canRecommend: true },
@@ -26,12 +30,17 @@ export const STEPS: Step[] = [
   { id: "import", title: "Import from Planner", intro: "If you use the Planner app, you will be able to import your channel and video plans here.", canRecommend: false },
 ];
 
+/** The steps of "New Identity": everything but the App's AI key and the Planner import. */
+export const IDENTITY_STEPS: StepId[] = STEPS.map((s) => s.id).filter((id) => id !== "ai" && id !== "import");
+
 /** "Skip, use default": resets the step to the PRD 5 default. */
 export function skipStep(id: StepId, c: Config): Config {
   const ch = { ...c.channel };
   switch (id) {
     case "ai":
       return { ...c, llm: { provider: "gemini", model: "gemini-3.5-flash" } };
+    case "name":
+      return { ...c, name: FIRST_IDENTITY_NAME };
     case "brand":
       return { ...c, brand: { preset: DEFAULT_PRESET, logo: null } };
     case "audience":
@@ -77,6 +86,7 @@ export function stepReady(id: StepId, c: Config, keys: Record<string, boolean>):
     if (!keys[c.llm.provider]) return "Save an API key to continue. Without it the app cannot write scripts.";
     if (!c.llm.model.trim()) return "Type a model name to continue.";
   }
+  if (id === "name" && !(c.name ?? "").trim()) return "Type a name, or skip to use \"My Identity\".";
   if (id === "narrator" && c.narrator.provider === "elevenlabs") {
     if (!keys.elevenlabs) return "Save your ElevenLabs key, or skip to use the free voice.";
     if (!c.narrator.voice?.trim()) return "Type an ElevenLabs voice ID, or skip to use the free voice. You can also pick one later, with samples, at the voice step of a video.";

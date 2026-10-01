@@ -3,6 +3,7 @@
 // truth for the actual calls.
 
 import type { Config } from "./api";
+import { FIRST_IDENTITY_NAME } from "./identity";
 
 export type Provider = { id: string; label: string; model: string; keyUrl: string; note?: string };
 
@@ -46,9 +47,10 @@ export function defaultVoice(lang: string | undefined): string {
   return LANGUAGES.find((l) => l.code === lang)?.voice ?? LANGUAGES[0].voice;
 }
 
+/** The effective settings of a fresh setup (App defaults + a new Identity). */
 export function defaultConfig(): Config {
   return {
-    schema: 1,
+    name: FIRST_IDENTITY_NAME,
     onboarded: false,
     ui: { language: "en" },
     llm: { provider: "gemini", model: "gemini-3.5-flash" },
@@ -58,7 +60,6 @@ export function defaultConfig(): Config {
     avatar: { enabled: false },
     research: { vidiq: false },
     defaults: { scriptTemplate: "ownership", autopilot: false, targetLengthMin: 8 },
-    projectsDir: null,
   };
 }
 
@@ -69,6 +70,5 @@ export function cleanConfig(c: Config): Config {
     ...c,
     channel: { ...c.channel, youtubeUrl: n(c.channel.youtubeUrl), landingUrl: n(c.channel.landingUrl), ctaText: n(c.channel.ctaText) },
     narrator: { ...c.narrator, voice: n(c.narrator.voice) },
-    projectsDir: n(c.projectsDir),
   };
 }

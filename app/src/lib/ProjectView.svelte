@@ -13,6 +13,7 @@
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { narratorProvider } from "./catalog";
+  import { ONE_VIDEOS } from "./edition";
 
   let { app, dir: dirProp, back }: { app: AppState; dir: string; back: () => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
@@ -232,7 +233,7 @@
 
 <div class="page">
   <header>
-    <button type="button" class="ghost" onclick={back}>All projects</button>
+    <button type="button" class="ghost" onclick={back}>All {ONE_VIDEOS}</button>
     <span class="spacer"></span>
     <button type="button" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
   </header>

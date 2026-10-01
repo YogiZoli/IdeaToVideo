@@ -1,0 +1,70 @@
+{
+  "$comment": "identities/<id>/identity.json (docs/identity.md 3): one brand, pen name or client, with 0 or 1 YouTube channel. The same field shapes as the effective settings the gates read. Non-secret only: own keys live in the OS keychain under the account identity-<id>.",
+  "type": "object",
+  "required": ["schema", "id", "name", "folder", "channel", "narrator"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 80},
+    "folder": {"type": "string", "minLength": 1, "maxLength": 80},
+    "createdAt": {"type": "string", "maxLength": 40},
+    "llm": {
+      "type": ["object", "null"],
+      "required": ["provider", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": {"enum": ["gemini", "openrouter", "claude", "openai", "deepseek", "grok"]},
+        "model": {"type": "string", "minLength": 1, "maxLength": 200}
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preset": {"type": "string", "maxLength": 100},
+        "logo": {"type": ["string", "null"], "maxLength": 1000},
+        "overrides": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}}
+      }
+    },
+    "channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "audience": {"type": "string", "maxLength": 4000},
+        "brandVoice": {"type": "string", "maxLength": 4000},
+        "profile": {"type": "string", "maxLength": 4000},
+        "youtubeUrl": {"type": ["string", "null"], "maxLength": 500},
+        "landingUrl": {"type": ["string", "null"], "maxLength": 1000},
+        "ctaText": {"type": ["string", "null"], "maxLength": 200},
+        "contentLanguage": {"type": "string", "minLength": 2, "maxLength": 10}
+      }
+    },
+    "narrator": {
+      "type": "object",
+      "required": ["provider"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": {"enum": ["gemini", "elevenlabs", "edge-tts"]},
+        "voice": {"type": ["string", "null"], "maxLength": 200}
+      }
+    },
+    "avatar": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "lookId": {"type": ["string", "null"], "maxLength": 200},
+        "style": {"enum": ["cutout", "circle", "card", "full"]},
+        "position": {"enum": ["bottom-right", "bottom-left", "top-right", "top-left"]},
+        "size": {"enum": ["small", "medium", "large"]}
+      }
+    },
+    "research": {"type": "object", "additionalProperties": false, "properties": {"vidiq": {"type": "boolean"}}},
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"scriptTemplate": {"enum": ["ownership"]}, "targetLengthMin": {"type": "number", "minimum": 1, "maximum": 30}}
+    }
+  }
+}

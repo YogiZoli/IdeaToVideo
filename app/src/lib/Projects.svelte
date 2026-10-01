@@ -1,10 +1,12 @@
 <script lang="ts">
-  // Projects list + New video (topic, length, language, optional Video Brief
-  // Card JSON, validated by the runner before anything is created).
+  // The active Identity's ONE Videos + New ONE Video (topic, length,
+  // language, optional Video Brief Card JSON, validated by the runner before
+  // anything is created). A ONE Video goes in the Identity's own folder.
   import { untrack } from "svelte";
   import type { AppState, ProjectSummary } from "./api";
   import { runner, errorText } from "./api";
   import { LANGUAGES } from "./catalog";
+  import { ONE_VIDEO, ONE_VIDEOS } from "./edition";
   import ErrorBox from "./ErrorBox.svelte";
   import EngineBanner from "./EngineBanner.svelte";
 
@@ -70,6 +72,7 @@
         language,
         brief,
         autopilot,
+        identity: app.identity?.id,
       });
       openProject(r.dir);
     } catch (e) {
@@ -85,13 +88,16 @@
 <div class="page">
   <EngineBanner />
   <header>
-    <h1>Projects</h1>
-    <button type="button" class="primary" onclick={() => (showNew = !showNew)}>{showNew ? "Cancel" : "New video"}</button>
+    <div>
+      <p class="for">{app.identity?.name}</p>
+      <h1>{ONE_VIDEOS}</h1>
+    </div>
+    <button type="button" class="primary" onclick={() => (showNew = !showNew)}>{showNew ? "Cancel" : `New ${ONE_VIDEO}`}</button>
   </header>
 
   {#if showNew}
     <section class="card new">
-      <h2>New video</h2>
+      <h2>New {ONE_VIDEO}</h2>
       <div class="field">
         <label for="topic">Topic or title</label>
         <input id="topic" bind:value={title} placeholder="Example: How to start a YouTube channel in 2026" />
@@ -112,7 +118,7 @@
       </div>
       <label class="check"><input type="checkbox" bind:checked={autopilot} /> Autopilot: approve every gate automatically</label>
       <div class="actions">
-        <button type="button" class="primary" disabled={creating || (!title.trim() && !brief)} onclick={create}>Create project</button>
+        <button type="button" class="primary" disabled={creating || (!title.trim() && !brief)} onclick={create}>Create {ONE_VIDEO}</button>
       </div>
     </section>
   {/if}
@@ -123,8 +129,8 @@
     <p class="hint">Loading...</p>
   {:else if projects.length === 0}
     <section class="card empty">
-      <p>No videos yet. Click <strong>New video</strong> to start with a topic.</p>
-      <p class="hint">Projects are saved in {app.projectsDir}</p>
+      <p>No {ONE_VIDEOS} for {app.identity?.name} yet. Click <strong>New {ONE_VIDEO}</strong> to start with a topic.</p>
+      <p class="hint">They are saved in {app.projectsDir}</p>
     </section>
   {:else}
     <ul class="list">
@@ -145,6 +151,7 @@
   .page { padding: 24px; max-width: 900px; margin: 0 auto; display: grid; gap: 16px; }
   header { display: flex; justify-content: space-between; align-items: center; }
   h1 { margin: 0; }
+  .for { margin: 0; font-size: 13px; color: var(--muted-foreground); }
   h2 { margin: 0 0 12px; font-size: 17px; }
   .field { display: grid; gap: 6px; margin-bottom: 12px; }
   label { font-weight: 600; font-size: 14px; }

@@ -72,12 +72,17 @@ pub fn key_name_for(command: &str, request: &Value) -> Result<Option<String>, St
 
 /// Every path the UI sends must stay inside the projects folder (SPEC 9: file
 /// access only to the Projects and the app folders). `projectsDir` must be the
-/// folder itself, `projectDir` a folder directly or deeper inside it.
-pub fn check_paths(request: &Value, projects_root: &Path) -> Result<(), String> {
+/// projects folder itself or one Identity's ONE Videos folder in it
+/// (`identity_folders`); `projectDir` a folder directly or deeper inside it.
+pub fn check_paths(request: &Value, projects_root: &Path, identity_folders: &[String]) -> Result<(), String> {
     let root = dunce_canonical(projects_root)?;
     if let Some(p) = request.get("projectsDir") {
-        let p = PathBuf::from(p.as_str().ok_or("projectsDir must be a string")?);
-        if dunce_canonical(&p)? != root {
+        let p = dunce_canonical(&PathBuf::from(p.as_str().ok_or("projectsDir must be a string")?))?;
+        let allowed = p == root
+            || identity_folders
+                .iter()
+                .any(|f| dunce_canonical(&projects_root.join(f)).is_ok_and(|c| c == p));
+        if !allowed {
             return Err("That folder is not the projects folder set in Settings.".into());
         }
     }
@@ -276,20 +281,27 @@ mod tests {
     fn paths_stay_inside_the_projects_folder() {
         let base = std::env::temp_dir().join(format!("studio-paths-{}", std::process::id()));
         let root = base.join("Projects");
-        let proj = root.join("2026-09-29_x");
+        let ident = root.join("VoxFlow");
+        let proj = ident.join("2026-09-29_x");
         let outside = base.join("elsewhere");
+        let stranger = root.join("Not an Identity");
         std::fs::create_dir_all(&proj).unwrap();
         std::fs::create_dir_all(&outside).unwrap();
+        std::fs::create_dir_all(&stranger).unwrap();
         let s = |p: &Path| p.to_string_lossy().to_string();
+        let f = vec!["VoxFlow".to_string()];
 
-        assert!(check_paths(&json!({}), &root).is_ok());
-        assert!(check_paths(&json!({"projectsDir": s(&root)}), &root).is_ok());
-        assert!(check_paths(&json!({"projectDir": s(&proj)}), &root).is_ok());
-        assert!(check_paths(&json!({"projectsDir": s(&outside)}), &root).is_err());
-        assert!(check_paths(&json!({"projectDir": s(&outside)}), &root).is_err());
-        assert!(check_paths(&json!({"projectDir": s(&root)}), &root).is_err());
+        assert!(check_paths(&json!({}), &root, &f).is_ok());
+        assert!(check_paths(&json!({"projectsDir": s(&root)}), &root, &f).is_ok());
+        assert!(check_paths(&json!({"projectsDir": s(&ident)}), &root, &f).is_ok());
+        assert!(check_paths(&json!({"projectsDir": s(&stranger)}), &root, &f).is_err());
+        assert!(check_paths(&json!({"projectsDir": s(&proj)}), &root, &f).is_err());
+        assert!(check_paths(&json!({"projectDir": s(&proj)}), &root, &f).is_ok());
+        assert!(check_paths(&json!({"projectsDir": s(&outside)}), &root, &f).is_err());
+        assert!(check_paths(&json!({"projectDir": s(&outside)}), &root, &f).is_err());
+        assert!(check_paths(&json!({"projectDir": s(&root)}), &root, &f).is_err());
         let sneaky = format!("{}{}..{}elsewhere", s(&root), std::path::MAIN_SEPARATOR, std::path::MAIN_SEPARATOR);
-        assert!(check_paths(&json!({"projectDir": sneaky}), &root).is_err());
+        assert!(check_paths(&json!({"projectDir": sneaky}), &root, &f).is_err());
         std::fs::remove_dir_all(&base).unwrap();
     }
 
