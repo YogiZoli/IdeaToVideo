@@ -489,6 +489,17 @@
         megerősíti): előbb a **módszer-minta** (szakértői kisüzlet, a
         Zoltan Gero channel maga), utána a **niche-minta** (például helyi
         kisvállalkozás), ami a módszer-minta egy kitöltött változata.
+      - **Megerősítve** (Zoltan, 2026-10-02): a sorrend (előbb módszer-,
+        utána niche-minta) és az átmeneti szakasz keretei (3 hónap, ugyanaz a
+        minta, rögzített tartalom, ár és záró dátum). Cél: kb. 1500-1600 USD
+        havonta, 4 ügyféllel. A módszer-minta három personája: tipikus
+        online marketer ("From Freelancer To Owner"), kezdő online marketer
+        (97 USD-s GHL affiliate), nem marketer szakértő. A niche-minta:
+        **Local biz** (Google Reviews, local SEO, local ads, Merchynt).
+      - **A korábbi stratégiai doksik feltételesek** (Zoltan, 2026-10-02): a
+        Drive Strategic_Overview mappa 00-20 doksija és a Strategy Overview
+        v2 vázlat, bármi felülírható; az érvényes összefoglaló a
+        `21_Strategy_Update_2026-10-02 (READ FIRST)` Drive doksi.
       - **YouTube channelek szerepe:** **Zoltan Gero** (régi, emberi,
         kb. 1100 feliratkozó, nem monetizált): minden YouTube marketing,
         GHL és a minta-üzlet, ez a fő Living Proof. **Privi** (régen vett,
