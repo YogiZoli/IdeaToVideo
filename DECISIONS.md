@@ -284,11 +284,15 @@
       (kicsi); plusz a kész MP4 és az avatar klipek (kb. 10-40 MB
       videópercenként). Előtte méret-becslés a meglévő projektekből, és a
       szint projektenként felülírható.
-    - **Nevek** (Zoltan, 2026-10-01): szóköz és magyar szó nélkül, `_` és
-      CamelCase. Mappa: `IdeaToVideo_Backup/2026-10-01_VideoTitle/`, a dátum
-      csak a projekt mappanevében. A fájlok neve a teljes címet hordozza,
-      dátum nélkül, hogy önmagában is egyértelmű legyen:
-      `VideoTitle_script.md`, `VideoTitle_voice.mp3`, `VideoTitle_video.mp4`.
+    - **Nevek** (Zoltan, 2026-10-01): a videó címe mindig teljes hosszában,
+      a szavak között `_`, szóköz nélkül; a dátum csak a mappanév végén:
+      `IdeaToVideo_Backup/Freelancer_to_Owner_2026-10-01/`, benne
+      `Freelancer_to_Owner_script.md`, `Freelancer_to_Owner_voice.mp3`,
+      `Freelancer_to_Owner_video.mp4`. A címből kimarad, amit a Windows nem
+      enged fájlnévben (`\ / : * ? " < > |`), az ékezet ékezet nélküli
+      betű lesz. Ugyanaz a cím ugyanazon a napon: `_2` a mappanév végére.
+      Rövidítés csak akkor, ha a teljes útvonal elérné a Windows 260
+      karakteres határát; ilyenkor az app kiírja.
     - **Mikor:** egy kapu jóváhagyásakor és render után, magától; plusz "Back
       up now" gomb; állapot projektenként ("backed up 14:02").
     - **Visszatöltés:** "Restore from backup" a Projects oldalon, ami a
