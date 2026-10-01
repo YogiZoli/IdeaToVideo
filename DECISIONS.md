@@ -270,3 +270,27 @@
     vált, és kiírja. Hely, méret és forma HeyGen-költség nélkül váltható, csak
     a kivágotthoz kell átlátszó klip. Mért: a render megtartja a WebM alfa
     csatornáját (próba 2026-10-01).
+66. **Mentés (Backup) aloldal a Settingsben: javaslat, a varázslók után**
+    (Zoltan ötlete, 2026-10-01; még nem döntés, nincs kód). Kiderült: a
+    projektek (hang, avatar klipek, MP4) és a beállítások csak helyben vannak,
+    géphalálnál elvesznek. Javaslat:
+    - **1. változat, saját felhő-kapcsolat nélkül:** a user kiválaszt egy
+      mentési mappát, ami a Google Drive, Dropbox vagy OneDrive asztali
+      kliensének mappájában van; a kliens tölti fel. Nincs OAuth, nincs
+      kulcs, nincs szerver, nincs díj (PRD szabály), és minden szolgáltatóval
+      megy. Közvetlen Drive vagy Dropbox API csak akkor, ha ez kevés.
+    - **Szintek, a user választja:** csak a script (néhány KB); script és
+      hang (kb. 1-2 MB videópercenként); plusz a jelenet-tábla és a build
+      (kicsi); plusz a kész MP4 és az avatar klipek (kb. 10-40 MB
+      videópercenként). Előtte méret-becslés a meglévő projektekből, és a
+      szint projektenként felülírható.
+    - **Beszélő nevek:** `IdeaToVideo Backup/<ÉÉÉÉ-HH-NN>_<cím>/` alatt
+      `script.md`, `voice.mp3`, `video.mp4`, a projekt saját mappanevével.
+    - **Mikor:** egy kapu jóváhagyásakor és render után, magától; plusz "Back
+      up now" gomb; állapot projektenként ("backed up 14:02").
+    - **Visszatöltés:** "Restore from backup" a Projects oldalon, ami a
+      mentésből visszahozza a projektet (a hiányzó részek újragenerálhatók).
+    - **Beállítások mentése:** a Settings fájl (kulcsok nélkül) is a mentési
+      mappába kerül, új gépen "Import settings". A kulcsok soha nem kerülnek
+      bele, azokat újra be kell írni.
+    - A törlés a mentésből soha nem automatikus.
