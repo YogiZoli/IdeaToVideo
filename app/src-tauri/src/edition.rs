@@ -8,6 +8,8 @@ use serde_json::{json, Value};
 
 pub const PRODUCT_NAME: &str = "IdeaToVideo";
 
+// Solo is only reachable in debug builds until the licence file (phase 4).
+#[cfg_attr(not(debug_assertions), allow(dead_code))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tier {
     /// One Identity.
