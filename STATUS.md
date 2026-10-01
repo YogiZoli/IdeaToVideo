@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-01 (Identity, Mentés és Napló kész)
+Frissítve: 2026-10-02 (Identity, Mentés és Napló kész; következik a Brand varázsló)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -142,7 +142,12 @@ Kész (2026-09-30):
    Import, Duplicate, Delete rendben. A saját kulcs és a futó render melletti
    váltás próbája egy barátnál.
 2b. **Mentés és Napló: kész** (2026-10-01, Zoltan döntése szerint a
-   varázslók előtt). Zoltan próbája az új telepítővel következik.
+   varázslók előtt). Utolsó telepítő: commit d2a83b1 (2026-10-01 23:29),
+   benne a jelenet-tábla javítása (egy korábbi sikertelen csere vagy
+   tervezés nem blokkolja a jóváhagyást). Zoltan próbája ezzel: mentés a
+   `G:/My Drive`-ba, napló, és a "Zoltan Gero" Identity első videója.
+   **Következő: 3. pont, Brand varázsló, új chatben** (a prompt a 2026-10-02-i
+   chat végén; a munka első lépése a Zoltan próbájának napló-összefoglalója).
 3. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
    betűk és a szótár (DECISIONS 68).
 4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
@@ -163,10 +168,12 @@ betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseré
 
 ## Zoltan döntésére vár
 
-0. A mintázó üzlet: a válaszok a DECISIONS 71-ben (2026-10-01). Zoltan
-   megerősítésére vár: a minta-típusok sorrendje (előbb módszer-, utána
-   niche-minta) és az átmeneti ügynökségi szakasz keretei (3 hónap, 3-5
-   ügyfél, ugyanaz a minta, záró dátum).
+Stratégia (nem az IdeaToVideo kódja, de a suite iránya): a Drive
+`21_Strategy_Update_2026-10-02 (READ FIRST)` doksi, DECISIONS 71.
+
+0. A mintázó üzlet: megerősítve (2026-10-02, DECISIONS 71 és a Drive 21-es
+   doksi). Nyitva csak: az affiliate létra (97 vagy 297 USD-s GHL szint),
+   "amelyik előbb jön".
 
 1. A kulcsszavas komment-CTA és a CTA varázsló részletei: Zoltan később adja.
 2. A `docs/motion-wizard.md` 2. változata (a D út szerint átírandó,

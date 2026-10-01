@@ -496,6 +496,16 @@
         online marketer ("From Freelancer To Owner"), kezdő online marketer
         (97 USD-s GHL affiliate), nem marketer szakértő. A niche-minta:
         **Local biz** (Google Reviews, local SEO, local ads, Merchynt).
+      - **Második kör** (Zoltan, 2026-10-02): két ICP, a havi díj vagy-vagy,
+        **setup díj nincs**: vagy Local biz szolgáltatás (reviews kezelés,
+        local SEO), vagy course creator csomag (vidrev, PDT). A 90 nap
+        mércéje **csak a bevétel**, az email lista nem. Zoltannak is GHL
+        Agency csomag kell (API, sub-account minden ötlethez és demóhoz),
+        így az ügyfélnek továbbadott GHL díj 100 százalékban az övé, nem a
+        szokásos 40 százalékos jutalék. Az első 3-4 ügyfél akár GHL
+        Certification nélkül. Számlázás az elején magánszemélyként.
+        **vidrev** = a C2C önálló SaaS neve. A lead magnet ötletek gyűjtője:
+        Drive `22_Lead_Magnet_Ideas`.
       - **A korábbi stratégiai doksik feltételesek** (Zoltan, 2026-10-02): a
         Drive Strategic_Overview mappa 00-20 doksija és a Strategy Overview
         v2 vázlat, bármi felülírható; az érvényes összefoglaló a
