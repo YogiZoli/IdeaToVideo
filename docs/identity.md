@@ -1,6 +1,7 @@
 # Identity: terv (2. fázis, "Sorrend innen" 2. pont)
 
-Állapot: **terv, Zoltan jóváhagyására vár** (2026-10-01). Kód csak utána.
+Állapot: **jóváhagyva** (Zoltan, 2026-10-01). Nyitva csak a felületi szó
+(Identity vagy Solo), az egy helyen él (6. pont), a kódot nem érinti.
 Alapja: DECISIONS 67 (Identity), 66 (mentés), 68 (szótár), 69-71 (suite,
 árazás). Modell: Opus 5.5, High.
 
@@ -113,8 +114,9 @@ Egyszer, az app indulásakor, csendben (ahogy a Studio névről átköltözés i
 1. Ha a `config.json` schema 1, az App részei (`ui`, `llm`, `projectsDir`,
    `onboarded`, `defaults.autopilot`) maradnak benne, a többi átkerül az első
    Identity `identity.json`-jába.
-2. Az első Identity neve: a YouTube channel URL `@handle` része, ha van,
-   különben "My Identity". A Settingsben átnevezhető.
+2. Az első Identity neve: "My Identity" (Zoltan, 2026-10-01). A YouTube
+   `@handle`-t nem követjük, mert változhat. A név bármikor átírható a
+   Settings Identity oldalán.
 3. A logó a `<app data>/brand/` mappából az Identity `brand/` mappájába
    másolódik, az útvonal átíródik.
 4. A projektek gyökerében lévő ONE Video mappák (amiben `project.json` van)
@@ -155,7 +157,11 @@ Utána a két fül: **ONE Videos** (a mai Projects) és **Settings**. Egy futó
 munka (hang, render) közben a váltás engedélyezett, a munka a saját
 Identity-jével fut tovább (4. pont), és a haladásjelző mutatja, kié.
 
-**Settings, két csoport** (a mai hat aloldal szétosztva):
+**Settings, két csoport** (a mai hat aloldal szétosztva). A bal oldali
+menüben két fejléc látszik: **App** (ami minden Identity-re érvényes) és az
+aktív Identity **neve** (például "Zoltan Gero"; ami csak rá érvényes). A user
+tehát látja az "App" szót, fejlécként, alatta egy sor magyarázattal: "For
+all Identities on this computer".
 
 | Csoport | Aloldal | Tartalom |
 |---|---|---|
@@ -180,8 +186,12 @@ lépéseknél (ElevenLabs, HeyGen, vidIQ) a szöveg: "Using the App key", mellet
 recommended, Skip, use default.
 
 **Duplicate:** egy meglévőből indul: másolja az `identity.json`-t és a
-`brand/` mappát (és később a varázslók eredményeit), új névvel és id-vel; a
-saját kulcsokat a Rust belül átmásolja (a felület nem látja őket). A ONE
+`brand/` mappát (és később a varázslók eredményeit), új névvel és id-vel. A
+saját kulcsokat a Rust belül átmásolja (a felület nem látja őket), de ez
+felülírható (Zoltan, 2026-10-01): a Duplicate ablakban "Copy this Identity's
+own keys" jelölő, az alapértéke az `edition` modulból jön (Agency: be).
+Ha később a kulcsok öröklése megszűnik vagy szintenként más lesz, ott
+egy helyen változik. A ONE
 Videók nem másolódnak. Utána a Settings Identity oldala nyílik, hogy a user
 átírja, ami más (tipikusan: név, YouTube channel, nyelv).
 
@@ -216,13 +226,35 @@ marad.
   javaslat) importja és exportja Identity-szintű lesz, ugyanígy az Offer Card
   importja (Audience, landing, CTA). Ma egyik sem épül, csak a hely.
 
-## 9. Ami ebben a körben nem épül
+## 9. Párhuzamos munka
+
+Zoltan (2026-10-01): váltani lehet futó munka közben, és több munka mehet
+egyszerre, ha nem ugyanazt az erőforrást terheli. A munkák két fajtája:
+
+- **Helyi, nehéz** (build, check, kontakt lap, render): a gép CPU-ját,
+  memóriáját és a render Chrome-ot terheli. Egy közös sorba kerülnek, egy
+  korláttal: "Renders at the same time". Ebben a körben a korlát 1, egy
+  helyen a kódban. Ha a sor tele, a munka vár, és kiírja: "Waiting: the
+  render of <ONE Video> runs first".
+- **Hálózati** (script, hang, zene, avatar, kulcsszó): a szolgáltató
+  dolgozik, a gép alig. Ezek szabadon futnak a render mellett.
+  Szolgáltatónként legfeljebb 2 egyszerre, hogy az ingyenes kvóta (Gemini
+  429) ne fogyjon el egy pillanat alatt.
+- **Felső sáv**: egy "Jobs" jelző mutatja az összes futó és várakozó munkát,
+  Identity-vel és ONE Videóval, kattintásra oda visz.
+- **Később** (külön kör, mérés után): a korlát a Settings App részében
+  állítható (1-3), és a javasolt érték a gépből jön (magok, memória). Előtte
+  mérés: két render egyszerre gyorsabb-e összesen, mint egymás után, mert
+  egy render maga is több szálon fut. Erős gépen (Máté) várhatóan 2-3 is
+  elmegy; gyenge gépen 1.
+
+## 10. Ami ebben a körben nem épül
 
 Licenc és aktiválás (4. fázis); affiliate; white label; mentés (DECISIONS 66,
 külön kör); szótár (Brand varázsló köre); Offer Card és Brand Card import;
 Identity-k közötti ONE Video áthelyezés.
 
-## 10. Tesztek és munkamenet
+## 11. Tesztek és munkamenet
 
 - **Rust** (`cargo test`): kulcs-feloldás (Identity, utána App), az Identity
   megállapítása a projektmappából, az átállás egy schema 1 config mintán
@@ -237,11 +269,10 @@ Identity-k közötti ONE Video áthelyezés.
 - **Becsült idő** a jóváhagyás után: kód és tesztek kb. 3-4 óra, a telepítő
   build kb. 15 perc. Közben nem pollozok, a végén jelzek.
 
-## 11. Zoltan döntésére vár
+## 12. Döntések (Zoltan, 2026-10-01)
 
-1. A terv egésze (2-8. pont).
-2. Az első Identity neve az átálláskor: `@handle` vagy "My Identity" (a
-   javaslat a fenti; átnevezhető).
-3. Duplicate viszi-e a saját kulcsokat (javaslat: igen, a Rust belül másolja).
-4. Futó munka közben engedjük-e az Identity váltást (javaslat: igen, a munka
-   a saját Identity-jével fut tovább).
+1. A terv: jóváhagyva.
+2. Első Identity neve: "My Identity", átírható, a `@handle` nem követve.
+3. Duplicate viszi a saját kulcsokat, felülírhatóan (7. pont).
+4. Váltás futó munka közben: igen, párhuzamos munka a 9. pont szerint.
+5. Nyitott: a felületi szó, Identity vagy Solo.
