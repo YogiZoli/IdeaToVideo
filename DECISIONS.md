@@ -303,3 +303,28 @@
       új gépen "Import settings", így a 12 lépéses beállítást nem kell újra
       végigcsinálni. A kulcsok soha nem kerülnek bele, azokat újra be kell írni.
     - A törlés a mentésből soha nem automatikus.
+67. **Csatornák: egy meta szint a videók fölött** (Zoltan ötlete, 2026-10-01;
+    javaslat, a név és a sorrend Zoltan jóváhagyására vár, kód még nincs).
+    Cél: egy ember több csatornát, brandet vagy írói álnevet futtathasson
+    párhuzamosan, mindegyik a saját hangjával, kinézetével és CTA-jával.
+    - **Egy szint, nem kettő.** Szerző > projekt > videó kavarodás lenne. Egy
+      egység van: a csatorna (egy brand, egy álnév, egy YouTube csatorna). Ha
+      egy szerzőnek két csatornája van, az két csatorna. A mai "project"
+      neve a felületen **Video** lesz, mert az egy videó.
+    - **Csatornánként:** Channel Profile, Audience, Brand Voice, YouTube cím,
+      landing és CTA, tartalom nyelve, brand preset és logó, Narrator Voice,
+      alap avatar és elhelyezése, vidIQ be/ki, és a három varázsló (Brand,
+      Mozgás, CTA) minden eredménye. A videók a csatorna alá tartoznak.
+    - **Az appban egyszer, közösen:** API kulcsok (a fiókok a user sajátjai),
+      AI szolgáltató és modell, a projektek gyökérmappája, a mentési mappa.
+    - **Felület:** csatornaválasztó a felső sávban; a Settings két részre
+      oszlik (App és az aktuális csatorna); "New channel" a beállító
+      varázsló csatorna-részét futtatja (a részenkénti újrafuttatás már
+      megvan), "Duplicate channel" egy meglévőből indul.
+    - **Mappák:** `<projektek>/<Csatorna>/<videó>`; mentés:
+      `IdeaToVideo_Backup/<Csatorna>/<Cím_dátum>/` (a 66. pont kiegészül).
+    - **Átállás:** a mai beállításokból lesz az első csatorna, a meglévő
+      videók hozzá kerülnek, semmi nem vész el.
+    - **Sorrend (javaslat): a varázslók előtt**, külön chatben. A varázslók
+      eredményének legyen már helye a csatornán belül; utólag mindhárom
+      varázsló adatát át kellene költöztetni.
