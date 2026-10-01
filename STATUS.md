@@ -104,6 +104,12 @@ Kész (2026-09-30):
   az app felülete sima böngészőben, ál-Tauri maggal, ami minden hívást naplóz.
   Így került elő a Settings összeomlás. UI hibánál ezzel kezdd.
 
+- **Hibátlanítás, 1. kör (2026-10-01, commit 833dbeb):** Settings hat
+  aloldalra bontva, aloldalanként a beállító varázsló újrafuttatható;
+  haladásjelző: nem áll meg 95%-on, óra, részlépés szavakban, mi fogy és mi
+  nem, ne altasd el a gépet; app bezárásakor megszakadt lépés "failed" lesz.
+  Állapot: `feedback/2026-10-01/NOTES.md`. Tesztek: 111 Node, 17 Rust, e2e 11/11.
+
 ## Sorrend innen (Zoltan, 2026-10-01): négy külön chat
 
 1. **Hibátlanítás** (Opus 5.5, High). Zoltan a telepített appot használja, a
