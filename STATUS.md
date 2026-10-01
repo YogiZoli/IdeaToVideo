@@ -163,9 +163,10 @@ betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseré
 
 ## Zoltan döntésére vár
 
-0. A mintázó üzlet iránya (a 2026-10-01-i chat négy kérdése: kié az 1000
-   kisüzlet, niche- vagy módszer-minta, ki fizet és miért, a doc 3
-   sorrend-kérdése). A válasz után DECISIONS 69 és 71.
+0. A mintázó üzlet: a válaszok a DECISIONS 71-ben (2026-10-01). Zoltan
+   megerősítésére vár: a minta-típusok sorrendje (előbb módszer-, utána
+   niche-minta) és az átmeneti ügynökségi szakasz keretei (3 hónap, 3-5
+   ügyfél, ugyanaz a minta, záró dátum).
 
 1. A kulcsszavas komment-CTA és a CTA varázsló részletei: Zoltan később adja.
 2. A `docs/motion-wizard.md` 2. változata (a D út szerint átírandó,

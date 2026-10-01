@@ -427,6 +427,24 @@
       alapján (így készült a VoxFlow YouTube channel). Különbséget tesz a
       **Personal** és a **Brand** YouTube channel között. Önálló lead
       magnetnek is alkalmas.
+      - **Alapja** (Zoltan, 2026-10-01): a VoxFlow YouTube channel öt
+        fázisa, amin Claude végigvezette (forrás:
+        `freedomOS/channels/voxflow/STATUS.md` és DECISIONS, Drive tükör
+        `VoxFlow_YT_Channel_HANDOVER`): fiók és profil; Brand Channel,
+        handle és ellenőrzés; azonossági dokumentumok és kulcsszókutatás;
+        a csatorna testreszabása; YouTube Studio alapbeállítások és
+        közösségi moderálás. Mellette a `yt-flywheel-team`
+        `agent-00-channel-foundation` skill (Brand vagy Personal döntés,
+        jogi lista, beállítás, EEAT, Hero story, Avatar).
+      - **Kötelező első lépés: a tulajdonjog** (Zoltan tapasztalata,
+        2026-10-01). A Zoltan Gero channel Personal channelként indult egy
+        Google Workspace címmel (zoltan@zoltangero.com); az előfizetés
+        lejárta után az inbox elérhetetlen lett, és a Primary Owner átadása
+        egy másik fiókra hosszú, kínkeserves harc volt. A varázsló ezért az
+        elején megkérdezi, kinek a fiókja lesz a Primary Owner, és olyan
+        címet ajánl, ami a user kezében marad akkor is, ha egy előfizetés
+        lejár; Brand channelt hoz létre az elejétől; és második tulajdonost
+        vagy menedzsert kér. Ez a lead magnet egyik legerősebb része.
 
 70. **0. lépés: ajánlat-kérdőív** (Zoltan ötlete, 2026-10-01; később, nem az
     IdeaToVideo része). Egy kb. 12 kérdéses kérdőív, aminek a végén kijön:
@@ -452,3 +470,29 @@
       kapja meg, importálja, és a saját kisüzletét abból indítja. Árazásban:
       a minta maga is termék lehet (Solo vevő egy kész mintából indul). Az
       export és import a 2. fázisban épül (67).
+    - **Zoltan válaszai** (2026-10-01):
+      - **Kié a kisüzlet:** a cél, hogy 100 százalékban Zoltané legyen. Az
+        elején valószínűleg 2-12 ügyfél is kell, ügynökség-szerűen, hogy
+        legyen aktív bevétel, és rajtuk kísérletezhet.
+      - **Az átmeneti ügynökségi szakasz:** csak rövid, Zoltan szerint 3
+        hónap reális, ha nekifekszik (a 90 napos fókusz). Claude javaslata:
+        a feltétele, hogy minden ügyfél ugyanazt a mintát kapja (egy
+        Identity és ugyanaz a GHL snapshot), rögzített tartalommal, árral és
+        záró dátummal; 3-5 ügyfél, nem 12, mert közben a minta is épül.
+        Így az ügyfélmunka a mintát érleli, nem egyedi ügynökségi munka.
+      - **Bevétel:** AdSense, hamarosan főleg GHL affiliate, az elején az
+        ügyfelek.
+      - **Mintából egy, legfeljebb kettő.** A fókusz-csapda ellen: elején
+        csak 1-2 saját egység. A platformfüggés átmenetileg rendben, ha nem
+        csak YouTube (GHL is); a szerelés nem kerülhető el.
+      - **Minta-típusok sorrendje** (Claude javaslata, Zoltan még
+        megerősíti): előbb a **módszer-minta** (szakértői kisüzlet, a
+        Zoltan Gero channel maga), utána a **niche-minta** (például helyi
+        kisvállalkozás), ami a módszer-minta egy kitöltött változata.
+      - **YouTube channelek szerepe:** **Zoltan Gero** (régi, emberi,
+        kb. 1100 feliratkozó, nem monetizált): minden YouTube marketing,
+        GHL és a minta-üzlet, ez a fő Living Proof. **Privi** (régen vett,
+        már nem monetizált, átnevezhető): kísérleti terep, például a
+        kambodzsai (KH) videók; ha a YouTube bezárja, nem fáj. **VoxFlow**:
+        Mátéé, a különválás után kimarad; a felépítése a YouTube Brand
+        Channel varázsló alapja (69).
