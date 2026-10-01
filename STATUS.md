@@ -110,18 +110,22 @@ Kész (2026-09-30):
   nem, ne altasd el a gépet; app bezárásakor megszakadt lépés "failed" lesz.
   Állapot: `feedback/2026-10-01/NOTES.md`. Tesztek: 111 Node, 17 Rust, e2e 11/11.
 
-## Sorrend innen (Zoltan, 2026-10-01): négy külön chat
+## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
 1. **Hibátlanítás** (Opus 5.5, High). Zoltan a telepített appot használja, a
    hibákat a `feedback/ÉÉÉÉ-HH-NN/` mappába teszi. A chat addig javít, amíg
    nincs új hiba. Új funkció nem kerül bele, csak javítás.
-2. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
-   betűk.
-3. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
+2. **Meta szint** (Opus 5.5, High): DECISIONS 67. Egy egység = egy brand,
+   álnév vagy ügyfél; a mai project neve ONE Video; kulcsok öröklése. Első
+   kérdés Zoltannak: a szint neve (javaslat: Workspace).
+3. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
+   betűk és a szótár (DECISIONS 68).
+4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
    feladat a `docs/motion-wizard.md` átírása a D útra, Zoltan jóváhagyása,
    csak utána kód.
-4. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltantól kell a
+5. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltantól kell a
    15 alap kulcsszó és a komment-CTA működése.
+6. **Mentés (Backup)** és beállítások mentése: DECISIONS 66.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
 jóváhagyott változaton), STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR

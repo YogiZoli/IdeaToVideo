@@ -303,28 +303,71 @@
       új gépen "Import settings", így a 12 lépéses beállítást nem kell újra
       végigcsinálni. A kulcsok soha nem kerülnek bele, azokat újra be kell írni.
     - A törlés a mentésből soha nem automatikus.
-67. **Csatornák: egy meta szint a videók fölött** (Zoltan ötlete, 2026-10-01;
-    javaslat, a név és a sorrend Zoltan jóváhagyására vár, kód még nincs).
-    Cél: egy ember több csatornát, brandet vagy írói álnevet futtathasson
+67. **Meta szint a videók fölött** (Zoltan ötlete, 2026-10-01). Eldöntve:
+    egy szint, nem kettő; a varázslók előtt készül, külön chatben. Nyitott: a
+    szint neve (nem Channel, Brand, Author, Project; javaslat: Workspace).
+    Cél: egy ember több brandet, írói álnevet vagy ügyfelet futtathasson
     párhuzamosan, mindegyik a saját hangjával, kinézetével és CTA-jával.
-    - **Egy szint, nem kettő.** Szerző > projekt > videó kavarodás lenne. Egy
-      egység van: a csatorna (egy brand, egy álnév, egy YouTube csatorna). Ha
-      egy szerzőnek két csatornája van, az két csatorna. A mai "project"
-      neve a felületen **Video** lesz, mert az egy videó.
-    - **Csatornánként:** Channel Profile, Audience, Brand Voice, YouTube cím,
-      landing és CTA, tartalom nyelve, brand preset és logó, Narrator Voice,
-      alap avatar és elhelyezése, vidIQ be/ki, és a három varázsló (Brand,
-      Mozgás, CTA) minden eredménye. A videók a csatorna alá tartoznak.
-    - **Az appban egyszer, közösen:** API kulcsok (a fiókok a user sajátjai),
-      AI szolgáltató és modell, a projektek gyökérmappája, a mentési mappa.
-    - **Felület:** csatornaválasztó a felső sávban; a Settings két részre
-      oszlik (App és az aktuális csatorna); "New channel" a beállító
-      varázsló csatorna-részét futtatja (a részenkénti újrafuttatás már
-      megvan), "Duplicate channel" egy meglévőből indul.
-    - **Mappák:** `<projektek>/<Csatorna>/<videó>`; mentés:
-      `IdeaToVideo_Backup/<Csatorna>/<Cím_dátum>/` (a 66. pont kiegészül).
-    - **Átállás:** a mai beállításokból lesz az első csatorna, a meglévő
-      videók hozzá kerülnek, semmi nem vész el.
-    - **Sorrend (javaslat): a varázslók előtt**, külön chatben. A varázslók
-      eredményének legyen már helye a csatornán belül; utólag mindhárom
-      varázsló adatát át kellene költöztetni.
+    - **Egy szint.** Szerző > projekt > videó kavarodás lenne. A meta egység
+      egy brand, álnév vagy ügyfél; legfeljebb egy YouTube csatornája van
+      (lehet nulla is). Két YouTube csatorna két egység ("Duplicate").
+    - **Szavak a felületen** (Zoltan): a mai "project" neve **ONE Video**,
+      mert egyetlen videó, nem playlist, nem stratégia. Ahol YouTube
+      csatornáról van szó, mindig "YouTube channel" áll, soha nem csak
+      "channel".
+    - **Egységenként:** Channel Profile, Audience, Brand Voice, YouTube
+      channel, landing és CTA, tartalom nyelve, brand preset és logó,
+      Narrator Voice, alap avatar és elhelyezése, vidIQ be/ki, a szótár
+      (68.), és a három varázsló (Brand, Mozgás, CTA) minden eredménye. A
+      ONE Videók az egység alá tartoznak.
+    - **Kulcsok: öröklés.** Az App szinten megadott kulcsok minden egységnek
+      szólnak; egy egység felülírhatja a sajátjával (ügynökségi eset: az
+      ügyfél HeyGen, ElevenLabs vagy AI kulcsa, hogy a költség nála
+      jelentkezzen). Ugyanígy az AI szolgáltató és a modell. Kulcstárban az
+      egység azonosítójával.
+    - **Felület:** választó a felső sávban; a Settings két része: App (az
+      ügynökségi szint: alap kulcsok, mappák) és az aktuális egység. "New"
+      a beállító varázsló egység-részét futtatja, "Duplicate" egy meglévőből
+      indul.
+    - **Mappák:** `<projektek>/<Egység>/<ONE Video>`; mentés:
+      `IdeaToVideo_Backup/<Egység>/<Cím_dátum>/` (a 66. pont kiegészül).
+    - **Átállás:** a mai beállításokból lesz az első egység. Zoltan szerint a
+      tesztadat elveszhet; a legegyszerűbb megoldás így is az átvétel.
+
+68. **Szótár az egységben** (Zoltan ötlete, 2026-10-01; a Brand varázsló
+    chatjében készül). Listák, amiket a script kapu betart és ellenőriz:
+    - kedvelt szavak és írásmódjuk (például "Owner", nagy O-val);
+    - tiltott szavak (például "blasting email");
+    - fogalompárok, amiket nem szabad összemosni (például YouTube Subscriber
+      és Email Subscriber; Avatar mint AI avatar és mint ügyfélkép);
+    - ellenfél-fogalmak és pozicionáló álláspontok, amikkel a csatorna
+      vonzza, akit akar, és kiszűri, akit nem.
+    A prompt megkapja; a kész scriptben a tiltott szavakat egy gépi
+    ellenőrzés jelzi (nem az AI ítéli meg). Valódi személyek nevénél a
+    script véleményként fogalmaz, tényállítást nem tesz róluk.
+
+69. **Az app a suite-ban: ONE Video** (Zoltan, 2026-10-01; irány, nem kód).
+    A sorrend: 0. ajánlat és célcsoport; 1. tervezés (playlist, kulcsszavak,
+    cím és thumbnail-koncepció a gyártás ELŐTT); 2. IdeaToVideo (ONE Video);
+    3. publikálás (cím, leírás, tagek, thumbnail, YouTube); 4. kommentek és
+    mérés. A határ egy fájl: a **Video Brief Card** (már létezik:
+    `validate-brief`, "Import from Planner"). A tervezés ezt adja át, az
+    IdeaToVideo ebből indul; a stratégia nem az IdeaToVideo dolga. A vidIQ
+    az 1. kapuban marad könnyű kulcsszó-ellenőrzésnek annak, akinek nincs
+    tervező eszköze; a valódi kulcsszókutatás a tervezésbe tartozik. A
+    publikálás logikája két helyen kell: a csomagolás (cím, thumbnail) a
+    tervezésben, a végleges adatok a kész videó után.
+
+70. **0. lépés: ajánlat-kérdőív** (Zoltan ötlete, 2026-10-01; később, nem az
+    IdeaToVideo része). Egy kb. 12 kérdéses kérdőív, aminek a végén kijön:
+    kinek, mit, mennyiért, egyszeri vagy havi, upsell, headline, GYIK. Két
+    külön termék: (a) az ajánlat ("Offer Card" fájl), (b) a landing oldal
+    szekciói ebből. Az Offer Card tölti ki az egység Audience, landing és CTA
+    mezőit. Saját kérdőív, harmadik fél módszer-neve nem szerepel benne.
+
+71. **Árazás: nyitott** (2026-10-01). Először Zoltan használja, saját
+    álneveivel, utána más szerzőknek, csak utána eladás. A lehetőségek és
+    érveik a 2026-10-01-i chatben: GHL affiliate bónusz; egyszeri licenc;
+    egységenkénti ár; Creator és Agency szint; white label; affiliate
+    program. Javaslat: bónusszal indul, utána egyszeri Creator és Agency
+    licenc, white label a legvégén. Döntés később.
