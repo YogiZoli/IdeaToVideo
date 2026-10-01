@@ -202,7 +202,8 @@ törölhető.
 (App), az Identity neve, utána a többi (Identity). A végén "You can add more
 Identities later" sor, Solo szinten nélküle.
 
-**Szavak:** "ONE Video" (egy videó), "ONE Videos" (a lista), "Identity",
+**Szavak:** "ONE Video", mindig egyes számban (Zoltan, 2026-10-01; a lista
+és a fül címe is), többes számú mondatban "videos"; "Identity",
 "YouTube channel" (soha nem csak "channel"; a mai "Channel" aloldal címe
 ezért "Channel" helyett "YouTube channel and audience"). A felület angol
 marad.

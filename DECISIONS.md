@@ -319,7 +319,10 @@
       tartozik hozzá (Zoltan: több kavarodás lenne). Két YouTube channel két
       Identity ("Duplicate").
     - **Szavak a felületen** (Zoltan): a mai "project" neve **ONE Video**,
-      mert egyetlen videó, nem playlist, nem stratégia. Ahol YouTube
+      mert egyetlen videó, nem playlist, nem stratégia. **Mindig egyes
+      számban** (Zoltan, 2026-10-01: a "ONE Videos" nem angolos): a fül és a
+      lista címe is "ONE Video"; ahol a mondat többes számot kíván, ott
+      "videos". Ahol YouTube
       csatornáról van szó, mindig "YouTube channel" áll, soha nem csak
       "channel".
     - **Egységenként:** Channel Profile, Audience, Brand Voice, YouTube

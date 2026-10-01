@@ -114,6 +114,12 @@
     </div>
     {#if busy && current}{#key current}<Progress command={current} label={step} />{/key}{/if}
     {#if error}<ErrorBox message={error} context={llmContext} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={llmContext} />{/if}
+    {#if (error || gate?.state === "failed") && !stale && table.rows.length && gate?.state !== "approved"}
+      <div class="keep">
+        <p>Your earlier scene table is still here, and it fits the voice. You can approve it now, with no new AI call, or plan again later.</p>
+        <button type="button" class="primary" disabled={busy} onclick={approve}>Approve this scene table</button>
+      </div>
+    {/if}
 
     {#if stale}
       <p class="warn">This scene table was made for an earlier voice, so it no longer fits. Click Plan again.</p>
@@ -174,6 +180,8 @@
   td.time { white-space: nowrap; }
   td.said { max-width: 320px; }
   td select, td input { width: 100%; }
+  .keep { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--success-surface); border-radius: 8px; padding: 10px 14px; }
+  .keep p { margin: 0; }
   .warn { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
   .warn p { margin: 2px 0; }
   .hint { color: var(--muted-foreground); font-size: 13px; }

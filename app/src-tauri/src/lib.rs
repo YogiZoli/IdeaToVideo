@@ -7,11 +7,13 @@
 // Identities (identities/<id>/identity.json). The UI merges the two into the
 // effective settings the gates read (app/src/lib/identity.ts).
 
+mod backup;
 mod config;
 mod edition;
 mod identity;
 mod jobs;
 mod keys;
+mod log;
 mod runner;
 
 use std::path::{Path, PathBuf};
@@ -20,13 +22,25 @@ use std::sync::Mutex;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
-/// App-wide state: the job registry and a one-time notice for the UI (what
-/// the move to Identities could not do).
+/// App-wide state: the job registry, the local log, and a one-time notice for
+/// the UI (what the move to Identities could not do).
 #[derive(Default)]
 struct Core {
     jobs: jobs::Jobs,
+    log: log::Log,
     notice: Mutex<Option<String>>,
 }
+
+/// One line in the local log from the core (log.rs).
+fn note(app: &AppHandle, level: &str, event: &str, data: Value) {
+    app.state::<Core>().log.write("core", level, event, data, &[]);
+}
+
+/// Runner commands that finish a piece of work worth a backup right away.
+const AUTO_BACKUP_AFTER: &[&str] = &["approve-gate", "render-video", "make-avatar", "avatar-layout", "remove-avatar"];
+/// Runner commands that read or write backups: the core adds the backup
+/// folder, the projects folder and the Identity folders from the App settings.
+const BACKUP_COMMANDS: &[&str] = &["backup-project", "backup-all", "backup-estimate", "list-backups", "restore-project"];
 
 fn config_dir(app: &AppHandle) -> Result<PathBuf, String> {
     app.path().app_config_dir().map_err(|e| format!("No config folder: {e}"))
@@ -84,7 +98,35 @@ async fn run_command(
     let paths = runner_paths(&app)?;
     tauri::async_runtime::spawn_blocking(move || {
         let core = app.state::<Core>();
+        // the key a job uses is masked by value in every log line
+        let secret = api_key.clone().unwrap_or_default();
+        let secrets = [secret.as_str()];
+        let started = std::time::Instant::now();
+        let who = job.as_ref().map(|(i, c)| {
+            json!({ "identity": i.identity, "identityName": i.identity_name, "class": format!("{c:?}"), "project": i.project })
+        });
+        core.log.write(
+            "runner",
+            "info",
+            "run_start",
+            json!({ "command": command, "request": log::safe(&request), "job": who, "key": api_key.is_some() }),
+            &secrets,
+        );
+        // every step change, every retry, model switch, repair or wait, and the
+        // render percent in tens
+        let (mut last_step, mut last_bucket) = (String::new(), -1i64);
         let mut on_progress = |v: Value| {
+            let step = v.get("step").and_then(Value::as_str).unwrap_or("").to_string();
+            let bucket = v.get("percent").and_then(Value::as_f64).map(|p| (p / 10.0) as i64);
+            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "repairing" | "estimate");
+            if always || step != last_step || bucket.is_some_and(|b| b != last_bucket) {
+                let level = if matches!(step.as_str(), "retry" | "fallback" | "repairing") { "warn" } else { "info" };
+                core.log.write("runner", level, "run_progress", json!({ "command": command, "progress": log::safe(&v) }), &secrets);
+                last_step = step;
+                if let Some(b) = bucket {
+                    last_bucket = b;
+                }
+            }
             let _ = app.emit("runner-progress", runner::progress_payload(&command, v));
         };
         let ticket = job.map(|(info, class)| {
@@ -108,6 +150,11 @@ async fn run_command(
             .create()
             .ok();
         let result = runner::run(&paths, &command, &request, api_key, &mut on_progress);
+        let ms = started.elapsed().as_millis() as u64;
+        match &result {
+            Ok(v) => core.log.write("runner", "info", "run_end", json!({ "command": command, "ms": ms, "result": log::safe(v) }), &secrets),
+            Err(e) => core.log.write("runner", "error", "run_failed", json!({ "command": command, "ms": ms, "message": e }), &secrets),
+        }
         if ticket.is_some() {
             drop(ticket);
             let _ = app.emit("jobs-changed", core.jobs.list());
@@ -167,6 +214,7 @@ fn app_state(app: AppHandle) -> Result<Value, String> {
     let id = current.map(|i| identity::str_of(i, "id"));
     let sources = keys::sources(id);
     let notice = app.state::<Core>().notice.lock().ok().and_then(|mut n| n.take());
+    let backup_root = backup::root(cfg.as_ref());
     Ok(json!({
         "app": cfg,
         "identity": current,
@@ -182,6 +230,8 @@ fn app_state(app: AppHandle) -> Result<Value, String> {
         "keySources": sources,
         "version": app.package_info().version.to_string(),
         "notice": notice,
+        "backupRoot": backup_root,
+        "log": app.state::<Core>().log.status(),
     }))
 }
 
@@ -244,7 +294,104 @@ async fn save_settings(app: AppHandle, config: Option<Value>, identity: Option<V
 
     std::fs::create_dir_all(&root).map_err(|e| format!("Could not create the projects folder {}: {e}", root.display()))?;
     write_app_config(&app, &cfg)?;
+    note(&app, "info", "settings_saved", json!({ "active": cfg.get("activeIdentity"), "backup": cfg.get("backup"), "llm": cfg.get("llm"), "notice": notice }));
+    settings_backup(&app);
     Ok(with_notice(app_state(app)?, notice))
+}
+
+/// The App settings and every Identity into the backup folder, when backups
+/// are on. A failure is logged and never stops the caller.
+fn settings_backup(app: &AppHandle) {
+    let Ok(Some(cfg)) = load_app_config(app) else { return };
+    if !backup::auto(Some(&cfg)) {
+        return;
+    }
+    let (Some(root), Ok(dir)) = (backup::root(Some(&cfg)), config_dir(app)) else { return };
+    match backup::save_settings(&root, &dir, &cfg) {
+        Ok(n) => note(app, "info", "settings_backup", json!({ "dir": root.join(backup::SETTINGS_DIR), "identities": n })),
+        Err(e) => note(app, "warn", "settings_backup_failed", json!({ "message": e })),
+    }
+}
+
+/// Settings, App, Backup, "Back up now": the settings part.
+#[tauri::command]
+fn backup_settings_now(app: AppHandle) -> Result<usize, String> {
+    let cfg = load_app_config(&app)?.ok_or("Finish the setup first.")?;
+    let root = backup::root(Some(&cfg)).ok_or("No backup folder set. Choose one in Settings, App, Backup.")?;
+    let n = backup::save_settings(&root, &config_dir(&app)?, &cfg)?;
+    note(&app, "info", "settings_backup", json!({ "dir": root.join(backup::SETTINGS_DIR), "identities": n, "manual": true }));
+    Ok(n)
+}
+
+/// A new computer: the App settings and every Identity from a backup folder
+/// (first run only). The keys are not in a backup: they are added again.
+#[tauri::command]
+async fn restore_settings(app: AppHandle, path: String) -> Result<Value, String> {
+    let dir = config_dir(&app)?;
+    if load_app_config(&app)?.is_some_and(|c| c["onboarded"] == true) && !identity::list(&dir).is_empty() {
+        return Err("This computer already has settings. A restore is offered only at the first start.".into());
+    }
+    note(&app, "info", "restore_settings_start", json!({ "path": path }));
+    let root = backup::find_root(Path::new(&path))
+        .ok_or_else(|| format!("No backup found in that folder. Pick the folder that holds {}.", backup::root_name()))?;
+    let (mut cfg, files, active) = backup::read_settings(&root)?;
+    validate(&app, Some(&cfg), None).await?;
+    let mut made: Vec<Value> = Vec::new();
+    let mut skipped = Vec::new();
+    for f in files {
+        let all = identity::list(&dir);
+        let result = async {
+            let (ident, assets) = identity::read_export(&f)?;
+            let probe = identity::complete_new(ident.clone(), &all)?;
+            validate(&app, None, Some(&probe)).await?;
+            let new = identity::import(&dir, ident, assets, &all)?;
+            identity::save(&dir, &new)?;
+            Ok::<Value, String>(new)
+        }
+        .await;
+        match result {
+            Ok(v) => made.push(v),
+            Err(e) => skipped.push(format!("{}: {e}", f.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())),
+        }
+    }
+    let pick = made.iter().find(|v| Some(identity::str_of(v, "name")) == active.as_deref()).or(made.first());
+    let pick = pick.ok_or("The backup has no Identity the app could import.")?;
+    cfg["activeIdentity"] = pick["id"].clone();
+    let projects = projects_dir(&app, Some(&cfg))?;
+    for v in &made {
+        let _ = std::fs::create_dir_all(projects.join(identity::str_of(v, "folder")));
+    }
+    write_app_config(&app, &cfg)?;
+    let notice = (!skipped.is_empty()).then(|| format!("Not restored: {}", skipped.join("; ")));
+    note(&app, "info", "restore_settings_done", json!({ "identities": made.len(), "skipped": skipped }));
+    Ok(with_notice(app_state(app)?, notice))
+}
+
+/// Folders of Google Drive, OneDrive and Dropbox on this computer.
+#[tauri::command]
+fn cloud_folders() -> Vec<Value> {
+    backup::cloud_folders()
+}
+
+/// One event from the UI into the local log (logger.ts).
+#[tauri::command]
+fn log_event(app: AppHandle, level: String, event: String, data: Value) {
+    let level = if matches!(level.as_str(), "info" | "warn" | "error") { level } else { "info".into() };
+    app.state::<Core>().log.write("ui", &level, &event, data, &[]);
+}
+
+#[tauri::command]
+fn log_status(app: AppHandle) -> Value {
+    app.state::<Core>().log.status()
+}
+
+/// Settings, App, General, "Delete logs": the only way logs go away.
+#[tauri::command]
+fn delete_logs(app: AppHandle) -> Result<Value, String> {
+    let core = app.state::<Core>();
+    let n = core.log.delete_all()?;
+    core.log.info("logs_deleted", json!({ "files": n }));
+    Ok(core.log.status())
 }
 
 fn set_active(app: &AppHandle, id: &str) -> Result<(), String> {
@@ -257,6 +404,7 @@ fn set_active(app: &AppHandle, id: &str) -> Result<(), String> {
 fn set_active_identity(app: AppHandle, id: String) -> Result<Value, String> {
     identity::load(&config_dir(&app)?, &id)?;
     set_active(&app, &id)?;
+    note(&app, "info", "identity_switched", json!({ "identity": id }));
     app_state(app)
 }
 
@@ -278,6 +426,8 @@ fn duplicate_identity(app: AppHandle, id: String, name: String, copy_keys: bool)
     let videos = projects_dir(&app, cfg.as_ref())?.join(identity::str_of(&copy, "folder"));
     std::fs::create_dir_all(&videos).map_err(|e| e.to_string())?;
     set_active(&app, &new_id)?;
+    note(&app, "info", "identity_duplicated", json!({ "from": id, "to": new_id, "name": copy["name"], "copyKeys": copy_keys }));
+    settings_backup(&app);
     app_state(app)
 }
 
@@ -295,6 +445,7 @@ fn delete_identity(app: AppHandle, id: String) -> Result<Value, String> {
     identity::load(&dir, &id)?;
     keys::delete_identity(&id)?;
     identity::remove(&dir, &id)?;
+    note(&app, "info", "identity_deleted", json!({ "identity": id }));
     let cfg = load_app_config(&app)?;
     if cfg.as_ref().and_then(|c| c.get("activeIdentity")).and_then(Value::as_str) == Some(id.as_str()) {
         let next = identity::list(&dir).first().map(|v| identity::str_of(v, "id").to_string());
@@ -315,6 +466,7 @@ fn export_identity(app: AppHandle, id: String, path: String) -> Result<String, S
         out.set_extension("zip");
     }
     identity::export(&dir, &ident, edition::PRODUCT_NAME, &out)?;
+    note(&app, "info", "identity_exported", json!({ "identity": id, "file": out }));
     Ok(out.to_string_lossy().to_string())
 }
 
@@ -335,6 +487,8 @@ async fn import_identity(app: AppHandle, path: String) -> Result<Value, String> 
     let videos = projects_dir(&app, cfg.as_ref())?.join(identity::str_of(&new, "folder"));
     std::fs::create_dir_all(&videos).map_err(|e| e.to_string())?;
     set_active(&app, identity::str_of(&new, "id"))?;
+    note(&app, "info", "identity_imported", json!({ "identity": new["id"], "name": new["name"], "file": path }));
+    settings_backup(&app);
     app_state(app)
 }
 
@@ -357,17 +511,23 @@ fn key_scope<'a>(scope: &str, id: &'a Option<String>) -> Result<keys::Scope<'a>,
 #[tauri::command]
 fn set_key(app: AppHandle, name: String, value: String, scope: String) -> Result<(), String> {
     let id = active_id(&app)?;
-    keys::set(&name, &value, key_scope(&scope, &id)?)
+    let r = keys::set(&name, &value, key_scope(&scope, &id)?);
+    // the name and the level only, never the value
+    let level = if r.is_ok() { "info" } else { "warn" };
+    note(&app, level, "key_saved", json!({ "name": name, "scope": scope, "identity": id, "error": r.as_ref().err() }));
+    r
 }
 
 #[tauri::command]
 fn delete_key(app: AppHandle, name: String, scope: String) -> Result<(), String> {
     let id = active_id(&app)?;
+    note(&app, "info", "key_deleted", json!({ "name": name, "scope": scope, "identity": id }));
     keys::delete(&name, key_scope(&scope, &id)?)
 }
 
 #[tauri::command]
 fn delete_all_keys(app: AppHandle) -> Result<(), String> {
+    note(&app, "info", "keys_deleted_all", json!({}));
     keys::delete_all(&identity::ids(&identity::list(&config_dir(&app)?)))
 }
 
@@ -388,7 +548,7 @@ fn job_list(app: AppHandle) -> Value {
 /// The one door to the runner: whitelisted command, paths checked, the key
 /// of the right Identity added, the job queued by its class.
 #[tauri::command]
-async fn run_runner(app: AppHandle, command: String, request: Value) -> Result<Value, String> {
+async fn run_runner(app: AppHandle, command: String, mut request: Value) -> Result<Value, String> {
     let key_name = runner::key_name_for(&command, &request)?;
     let cfg = load_app_config(&app)?;
     let all = identity::list(&config_dir(&app)?);
@@ -411,6 +571,21 @@ async fn run_runner(app: AppHandle, command: String, request: Value) -> Result<V
         .or(videos.as_deref())
         .and_then(|p| identity::owner_of(p, &root, &all))
         .or_else(|| active(cfg.as_ref(), &all).map(|v| identity::str_of(v, "id").to_string()));
+    let owner_folder = owner
+        .as_deref()
+        .and_then(|o| all.iter().find(|v| identity::str_of(v, "id") == o))
+        .map(|v| identity::str_of(v, "folder").to_string());
+    if BACKUP_COMMANDS.contains(&command.as_str()) {
+        request["projectsRoot"] = json!(root);
+        request["folders"] = json!(folders);
+        request["level"] = json!(backup::level(cfg.as_ref()));
+        request["identityFolder"] = json!(owner_folder);
+        if command != "backup-estimate" {
+            let r = backup::root(cfg.as_ref()).ok_or("No backup folder set. Choose one in Settings, App, Backup.")?;
+            std::fs::create_dir_all(&r).map_err(|e| format!("Could not create the backup folder {}: {e}", r.display()))?;
+            request["backupRoot"] = json!(r);
+        }
+    }
     let app_only = request.get("keyScope").and_then(Value::as_str) == Some("app");
     let resolved = match &key_name {
         Some(n) => keys::resolve(n, owner.as_deref(), app_only)?,
@@ -427,9 +602,33 @@ async fn run_runner(app: AppHandle, command: String, request: Value) -> Result<V
             .and_then(|o| all.iter().find(|v| identity::str_of(v, "id") == o))
             .map(|v| identity::str_of(v, "name").to_string()),
         identity: owner,
-        project: project.map(|p| p.to_string_lossy().to_string()),
+        project: project.as_ref().map(|p| p.to_string_lossy().to_string()),
     };
-    run_command(app, command, request, resolved.map(|(k, _)| k), Some((info, class))).await
+    let auto = AUTO_BACKUP_AFTER.contains(&command.as_str()) && backup::auto(cfg.as_ref());
+    let later = info.clone();
+    let result = run_command(app.clone(), command, request, resolved.map(|(k, _)| k), Some((info, class))).await;
+    if let (true, Some(dir), Ok(_)) = (auto, project, &result) {
+        tauri::async_runtime::spawn(auto_backup(app, dir, owner_folder, later));
+    }
+    result
+}
+
+/// A ONE Video backup after an approval or a render, in the background. The
+/// UI hears "backup-done" and shows the time.
+async fn auto_backup(app: AppHandle, dir: PathBuf, folder: Option<String>, info: jobs::Info) {
+    let cfg = load_app_config(&app).ok().flatten();
+    let Some(root) = backup::root(cfg.as_ref()) else { return };
+    let _ = std::fs::create_dir_all(&root);
+    let req = json!({
+        "projectDir": dir, "backupRoot": root, "identityFolder": folder, "level": backup::level(cfg.as_ref()),
+    });
+    let job = jobs::Info { command: "backup-project".into(), ..info };
+    let r = run_command(app.clone(), "backup-project".into(), req, None, Some((job, jobs::Class::Free))).await;
+    let payload = match &r {
+        Ok(v) => json!({ "projectDir": dir, "ok": true, "result": v }),
+        Err(e) => json!({ "projectDir": dir, "ok": false, "error": e }),
+    };
+    let _ = app.emit("backup-done", payload);
 }
 
 /// Copies the chosen logo into the active Identity's folder (or, during setup
@@ -507,12 +706,14 @@ fn migrate_from_studio(app: &AppHandle) {
 /// The one-file settings (schema 1) become the App settings and the first
 /// Identity, "My Identity" (docs/identity.md 5).
 fn migrate_to_identities(app: &AppHandle) {
+    note(app, "info", "migration_check", json!({}));
     let (Ok(dir), Ok(data)) = (app.path().app_config_dir(), app.path().app_data_dir()) else { return };
     let result = identity::migrate_v1(&dir, &data.join("brand"), |cfg| projects_dir(app, Some(cfg)).ok());
     let notice = match result {
         Ok(n) => n,
         Err(e) => Some(e),
     };
+    note(app, if notice.is_some() { "warn" } else { "info" }, "migration_done", json!({ "notice": notice }));
     if let Ok(mut n) = app.state::<Core>().notice.lock() {
         *n = notice;
     }
@@ -525,8 +726,30 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(Core::default())
         .setup(|app| {
-            migrate_from_studio(app.handle());
-            migrate_to_identities(app.handle());
+            let h = app.handle();
+            if let Ok(d) = h.path().app_local_data_dir() {
+                h.state::<Core>().log.open(d.join("logs"));
+            }
+            note(h, "info", "app_start", json!({
+                "version": h.package_info().version.to_string(),
+                "os": std::env::consts::OS,
+                "arch": std::env::consts::ARCH,
+                "product": edition::PRODUCT_NAME,
+                "tier": edition::tier().name(),
+            }));
+            migrate_from_studio(h);
+            migrate_to_identities(h);
+            if let Ok(dir) = h.path().app_config_dir() {
+                let cfg = config::load(&dir.join(config::FILE_NAME)).ok().flatten();
+                let get = |f: &str| cfg.as_ref().and_then(|c| c.get(f)).cloned();
+                note(h, "info", "app_ready", json!({
+                    "identities": identity::list(&dir).len(),
+                    "active": get("activeIdentity"),
+                    "projectsDir": get("projectsDir"),
+                    "backup": get("backup"),
+                    "llm": get("llm"),
+                }));
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -544,7 +767,13 @@ pub fn run() {
             job_list,
             run_runner,
             import_logo,
-            import_music
+            import_music,
+            backup_settings_now,
+            restore_settings,
+            cloud_folders,
+            log_event,
+            log_status,
+            delete_logs
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

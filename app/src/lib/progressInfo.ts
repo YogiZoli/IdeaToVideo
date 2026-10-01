@@ -25,6 +25,9 @@ export function phaseText(command: string, step: string | undefined): string | n
     heygen: "HeyGen is making the avatar clips",
     upload: "Sending the narration to HeyGen",
     previews: "Loading avatar pictures",
+    backup: "Copying files into the backup folder",
+    retry: "The AI service did not answer, trying again",
+    fallback: "The AI model is busy, switching to the other model",
   };
   if (table[s]) return table[s];
   if (command === "render-video") return "Recording the video frame by frame";

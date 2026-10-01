@@ -6,7 +6,8 @@
   import type { AppState, ProjectSummary } from "./api";
   import { runner, errorText } from "./api";
   import { LANGUAGES } from "./catalog";
-  import { ONE_VIDEO, ONE_VIDEOS } from "./edition";
+  import { ONE_VIDEO } from "./edition";
+  import { setScreen } from "./logger";
   import ErrorBox from "./ErrorBox.svelte";
   import EngineBanner from "./EngineBanner.svelte";
 
@@ -25,6 +26,40 @@
   let briefName = $state("");
   let briefError = $state("");
   let creating = $state(false);
+
+  setScreen("videos", { identity: untrack(() => app.identity?.id) });
+
+  // "Restore from backup": this Identity's backed-up ONE Videos that are
+  // not on this computer (docs/backup.md 5).
+  type Backup = { path: string; title: string | null; projectId: string; at: string; level: number; here: boolean };
+  let showRestore = $state(false);
+  let backups = $state<Backup[] | null>(null);
+  let restoring = $state("");
+  async function openRestore() {
+    showRestore = !showRestore;
+    if (!showRestore) return;
+    backups = null;
+    error = "";
+    try {
+      backups = (await runner<{ backups: Backup[] }>("list-backups", { projectsDir: app.projectsDir })).backups;
+    } catch (e) {
+      error = errorText(e);
+      showRestore = false;
+    }
+  }
+  async function restore(b: Backup) {
+    restoring = b.path;
+    error = "";
+    try {
+      const r = await runner<{ dir: string; reset: boolean }>("restore-project", { projectsDir: app.projectsDir, path: b.path });
+      showRestore = false;
+      openProject(r.dir);
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      restoring = "";
+    }
+  }
 
   async function load() {
     loading = true;
@@ -90,10 +125,35 @@
   <header>
     <div>
       <p class="for">{app.identity?.name}</p>
-      <h1>{ONE_VIDEOS}</h1>
+      <h1>{ONE_VIDEO}</h1>
     </div>
-    <button type="button" class="primary" onclick={() => (showNew = !showNew)}>{showNew ? "Cancel" : `New ${ONE_VIDEO}`}</button>
+    <span class="actions-top">
+      {#if app.backupRoot}<button type="button" onclick={openRestore}>{showRestore ? "Close" : "Restore from backup"}</button>{/if}
+      <button type="button" class="primary" onclick={() => (showNew = !showNew)}>{showNew ? "Cancel" : `New ${ONE_VIDEO}`}</button>
+    </span>
   </header>
+
+  {#if showRestore}
+    <section class="card">
+      <h2>Restore from backup</h2>
+      {#if backups === null}
+        <p class="hint">Reading the backup folder...</p>
+      {:else if backups.filter((b) => !b.here).length === 0}
+        <p class="hint">Every backed-up {ONE_VIDEO} of {app.identity?.name} is already on this computer.</p>
+      {:else}
+        <p class="hint">Backed up, but not on this computer. Parts that were not in the backup (a lower level) can be made again at their step.</p>
+        <ul class="list">
+          {#each backups.filter((b) => !b.here) as b (b.path)}
+            <li class="restore">
+              <span class="title">{b.title ?? b.projectId}</span>
+              <span class="date">level {b.level}, {new Date(b.at).toLocaleDateString()}</span>
+              <button type="button" disabled={!!restoring} onclick={() => restore(b)}>{restoring === b.path ? "Restoring..." : "Restore"}</button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+  {/if}
 
   {#if showNew}
     <section class="card new">
@@ -129,7 +189,7 @@
     <p class="hint">Loading...</p>
   {:else if projects.length === 0}
     <section class="card empty">
-      <p>No {ONE_VIDEOS} for {app.identity?.name} yet. Click <strong>New {ONE_VIDEO}</strong> to start with a topic.</p>
+      <p>No {ONE_VIDEO} for {app.identity?.name} yet. Click <strong>New {ONE_VIDEO}</strong> to start with a topic.</p>
       <p class="hint">They are saved in {app.projectsDir}</p>
     </section>
   {:else}
@@ -166,4 +226,6 @@
   .good { color: var(--success); margin: 0; font-size: 13px; }
   .bad { color: var(--danger-text); margin: 0; font-size: 13px; }
   .empty p { margin: 4px 0; }
+  .actions-top { display: flex; gap: 8px; }
+  .restore { display: grid; grid-template-columns: 1fr 160px auto; gap: 12px; align-items: center; padding: 6px 0; }
 </style>

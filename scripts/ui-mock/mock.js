@@ -2,13 +2,15 @@
 // Logs every call in window.__calls and keeps a small in-memory core: App
 // settings, Identities, a keychain with App and Identity keys (docs/identity.md).
 // URL switches: ?fresh=1 first run (no settings), ?tier=solo the Solo plan,
-// ?one=1 a single Identity.
+// ?one=1 a single Identity, ?nobackup=1 no backup folder. window.__log holds
+// what the UI sent to the local log (log_event).
 window.__calls = [];
+window.__log = [];
 const q = new URLSearchParams(location.search);
 const project = { id: "p", title: "Test", status: "Scened", language: "en", gates: { script: { state: "approved" }, voice: { state: "approved" }, scenes: { state: "approved" }, review: { state: "todo" }, avatar: { state: "todo" } } };
 const fields = (over = {}) => ({ llm: null, channel: { contentLanguage: "en", audience: "founders", youtubeUrl: null }, narrator: { provider: "elevenlabs", voice: "Zoltan BD" }, brand: { preset: "blue-professional", logo: null }, avatar: { enabled: true }, research: { vidiq: true }, defaults: { scriptTemplate: "ownership", targetLengthMin: 8 }, ...over });
 const core = {
-  app: q.get("fresh") ? null : { schema: 2, onboarded: true, llm: { provider: "gemini", model: "gemini-3.5-flash" }, projectsDir: null, activeIdentity: "my-identity", defaults: { autopilot: false } },
+  app: q.get("fresh") ? null : { schema: 2, onboarded: true, llm: { provider: "gemini", model: "gemini-3.5-flash" }, projectsDir: null, activeIdentity: "my-identity", defaults: { autopilot: false }, backup: q.get("nobackup") ? {} : { dir: "G:/My Drive", level: 4, auto: true } },
   identities: q.get("fresh") ? [] : [
     { schema: 1, id: "my-identity", name: "My Identity", folder: "My Identity", ...fields({ channel: { contentLanguage: "en", audience: "founders", youtubeUrl: "https://www.youtube.com/@zoltangero" } }) },
     ...(q.get("one") ? [] : [{ schema: 1, id: "voxflow", name: "VoxFlow", folder: "VoxFlow", ...fields({ llm: { provider: "claude", model: "claude-sonnet-5" }, channel: { contentLanguage: "hu", audience: "coaches", youtubeUrl: null } }) }]),
@@ -33,6 +35,8 @@ function state(notice = null) {
     identities: core.identities.map((i) => ({ id: i.id, name: i.name, folder: i.folder, youtubeUrl: i.channel?.youtubeUrl ?? null })),
     projectsRoot: "C:/P", projectsDir: a ? `C:/P/${a.folder}` : "C:/P", defaultProjectsDir: "C:/P",
     keys: Object.fromEntries(Object.entries(src).map(([n, s]) => [n, s.app || s.identity])), keySources: src, version: "0.1.0",
+    backupRoot: core.app?.backup?.dir ? `${core.app.backup.dir}/IdeaToVideo_Backup` : null,
+    log: { dir: "C:/Users/me/AppData/Local/app.ideatovideo.desktop/logs", files: 2, bytes: 48000, session: "s1", errors: 0, warnings: 1 },
   };
 }
 function room() {
@@ -59,6 +63,13 @@ const replies = {
   "validate-config": { errors: [] },
   "test-llm": { ok: true, message: "The key works." },
   "test-service": { ok: true, message: "The key works." },
+  "backup-estimate": { projects: 6, levels: { 1: 60000, 2: 9000000, 3: 9100000, 4: 75000000 } },
+  "backup-all": { projects: 6, copied: 40, bytes: 70000000, failed: [] },
+  "backup-status": { path: "My Identity/Test_2026-10-01", at: "2026-10-01T14:02:00Z", lastLevel: 4, level: null },
+  "set-backup-level": { level: 2 },
+  "backup-project": { path: "My Identity/Test_2026-10-01", copied: 3, at: "2026-10-01T15:00:00Z" },
+  "list-backups": { backups: [{ path: "My Identity/Old_one_2026-09-20", title: "Old one", projectId: "2026-09-20_old-one", at: "2026-09-20T10:00:00Z", level: 4, here: false }, { path: "My Identity/Test_2026-10-01", title: "Test", projectId: "p", at: "2026-10-01T14:02:00Z", level: 4, here: true }] },
+  "restore-project": { dir: "C:/P/My Identity/2026-09-20_old-one", id: "2026-09-20_old-one", reset: false },
 };
 window.__TAURI_INTERNALS__ = {
   transformCallback: (cb) => { const id = Math.random(); window["_" + id] = cb; return id; },
@@ -98,6 +109,16 @@ window.__TAURI_INTERNALS__ = {
       case "delete_all_keys": core.keys.clear(); return null;
       case "key_status": { const s = state(); return { keys: s.keys, keySources: s.keySources }; }
       case "job_list": return jobs;
+      case "log_event": window.__log.push({ level: args.level, event: args.event, ...args.data }); return null;
+      case "log_status": return state().log;
+      case "delete_logs": return { ...state().log, files: 0, bytes: 0 };
+      case "cloud_folders": return [{ label: "Google Drive", path: "G:/My Drive" }, { label: "OneDrive", path: "C:/Users/me/OneDrive" }];
+      case "backup_settings_now": return core.identities.length;
+      case "restore_settings":
+        core.app = { schema: 2, onboarded: true, llm: { provider: "gemini", model: "gemini-3.5-flash" }, activeIdentity: "restored", backup: { dir: args.path, level: 4, auto: true } };
+        core.identities = [{ schema: 1, id: "restored", name: "Restored", folder: "Restored", ...fields() }];
+        return state();
+      case "plugin:opener|reveal_item_in_dir": return null;
       case "import_logo": return `C:/cfg/identities/${args.forNew ? ".new" : active().id}/brand/logo.png`;
       case "plugin:event|listen": return 1;
       case "plugin:dialog|open": return "C:/Downloads/VoxFlow.identity.zip";

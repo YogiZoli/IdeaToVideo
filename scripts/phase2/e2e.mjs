@@ -143,4 +143,19 @@ check("render: length matches the voice", Math.abs(rendered.data.seconds - TOTAL
 check("captions (.srt) next to the video", fs.existsSync(rendered.data.srt ?? "") && fs.readFileSync(rendered.data.srt, "utf8").includes("Start your first video today."));
 check("YouTube chapters next to the video", rendered.data.chapters?.startsWith("0:00 Intro") === true, (rendered.data.chapters ?? "").replace(/\n/g, " / "));
 check("the project remembers the video", runner("load-project", { projectDir: dir }).data?.latestVideo?.file === rendered.data.file);
+
+// Backup at level 4 and a restore after the ONE Video is gone (docs/backup.md).
+{
+  const backupRoot = path.join(work, "My Drive", "IdeaToVideo_Backup");
+  const b = runner("backup-project", { projectDir: dir, backupRoot, identityFolder: "My Identity", level: 4 });
+  check("backup: every file at level 4", b.event === "result" && fs.readdirSync(b.data.dir).some((n) => n.endsWith("_video.mp4")), b.event === "result" ? `${b.data.copied} files in ${b.data.path}` : b.message);
+  const again = runner("backup-project", { projectDir: dir, backupRoot, identityFolder: "My Identity", level: 4 });
+  check("backup: a second run copies nothing", again.data?.copied === 0, `${again.data?.copied} files`);
+  const original = fs.readFileSync(rendered.data.file);
+  fs.renameSync(dir, `${dir}-gone`);
+  const listed = runner("list-backups", { backupRoot, identityFolder: "My Identity", projectsDir: mine }).data?.backups ?? [];
+  const restored = runner("restore-project", { backupRoot, path: listed[0]?.path, projectsDir: mine });
+  const video = restored.event === "result" ? runner("load-project", { projectDir: restored.data.dir }).data?.latestVideo?.file : null;
+  check("restore: the ONE Video comes back with the same video", !!video && Buffer.compare(fs.readFileSync(video), original) === 0, restored.event === "result" ? restored.data.dir : restored.message);
+}
 finish();

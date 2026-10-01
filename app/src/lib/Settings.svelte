@@ -19,6 +19,9 @@
   import KeyField from "./KeyField.svelte";
   import Onboarding from "./Onboarding.svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import BackupSettings from "./BackupSettings.svelte";
+  import LogCard from "./LogCard.svelte";
+  import { log, setScreen, changedPaths } from "./logger";
 
 
   let { app, saved, startPage = "identity" }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId } = $props();
@@ -26,7 +29,8 @@
   // working copies: edits stay local until "Save settings". $state.snapshot,
   // not structuredClone: a reactive proxy cannot be cloned (DataCloneError).
   const snap = <T,>(v: T): T => $state.snapshot(v) as T;
-  let appCfg = $state<AppConfig>(untrack(() => snap(app.app!)));
+  const withBackup = (a: AppConfig): AppConfig => ({ ...a, backup: a.backup ?? {} });
+  let appCfg = $state<AppConfig>(untrack(() => withBackup(snap(app.app!))));
   let config = $state<Config>(untrack(() => snap(app.config!)));
   let ownLlm = $state(untrack(() => !!app.identity?.llm));
   let identLlm = $state<Llm>(untrack(() => snap(app.identity?.llm ?? app.app!.llm)));
@@ -45,7 +49,7 @@
   const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
 
   function reset(s: AppState) {
-    appCfg = snap(s.app!);
+    appCfg = withBackup(snap(s.app!));
     config = snap(s.config!);
     ownLlm = !!s.identity?.llm;
     identLlm = snap(s.identity?.llm ?? s.app!.llm);
@@ -63,8 +67,15 @@
     const clean = cleanConfig({ ...c, llm: ownLlm ? identLlm : appCfg.llm });
     const identity = identityFromConfig(clean, app.identity, ownLlm ? snap(identLlm) : null);
     const projectsDir = appCfg.projectsDir?.trim() ? appCfg.projectsDir.trim() : null;
-    return saveSettings({ ...snap(appCfg), projectsDir }, identity);
+    const nextApp = { ...snap(appCfg), projectsDir };
+    // which fields changed (values only for choices, never the user's texts)
+    log("settings_save", { page: pageId, app: changedPaths(app.app, nextApp), identity: changedPaths(app.identity, identity) });
+    return saveSettings(nextApp, identity);
   }
+
+  $effect(() => {
+    setScreen(`settings/${pageId}${wizard ? "/wizard" : ""}`, { identity: app.identity?.id });
+  });
 
   async function run(work: () => Promise<void>) {
     busy = true;
@@ -133,10 +144,10 @@
 
   async function remove() {
     const name = app.identity!.name;
-    if (!(await ask(`Delete the Identity "${name}"? Its settings and its own keys are removed. Its ONE Videos stay on your disk, in the folder "${app.identity!.folder}".`, { title: "Delete Identity", kind: "warning" }))) return;
+    if (!(await ask(`Delete the Identity "${name}"? Its settings and its own keys are removed. Its videos stay on your disk, in the folder "${app.identity!.folder}".`, { title: "Delete Identity", kind: "warning" }))) return;
     await run(async () => {
       const s = await deleteIdentity(app.identity!.id);
-      after(s, `"${name}" deleted. Its ONE Videos are still in their folder.`);
+      after(s, `"${name}" deleted. Its videos are still in their folder.`);
     });
   }
 </script>
@@ -207,7 +218,7 @@
       <section class="card">
         <h2>Projects folder</h2>
         <p class="hint">Now: {appCfg.projectsDir || app.defaultProjectsDir}</p>
-        <p class="hint">Every Identity has its own folder in it. This Identity's ONE Videos: {app.projectsDir}</p>
+        <p class="hint">Every Identity has its own folder in it. This Identity's videos: {app.projectsDir}</p>
         <div class="row">
           <button type="button" onclick={chooseFolder}>Choose folder</button>
           {#if appCfg.projectsDir}
@@ -215,6 +226,8 @@
           {/if}
         </div>
       </section>
+    {:else if pageId === "backup"}
+      <BackupSettings {app} bind:backup={appCfg.backup!} />
     {:else if pageId === "plan"}
       <section class="card">
         <h2>{app.edition.tier}</h2>
@@ -229,6 +242,7 @@
         <p>{PRODUCT} {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
         <p>No support, no installation help.</p>
       </section>
+      <LogCard initial={app.log} />
     {:else if pageId === "identity-ai"}
       <section class="card">
         <h2>AI for this Identity</h2>
@@ -264,7 +278,7 @@
     {#if pageId === "identity"}
       <section class="card">
         <h2>Duplicate</h2>
-        <p class="hint">A new Identity with the same settings, for example a second YouTube channel. The ONE Videos are not copied.</p>
+        <p class="hint">A new Identity with the same settings, for example a second YouTube channel. The videos are not copied.</p>
         {#if room}
           <div class="row">
             <input bind:value={dupName} maxlength="80" aria-label="Name of the copy" />
@@ -283,7 +297,7 @@
       <section class="card">
         <h2>Delete</h2>
         {#if app.identities.length > 1}
-          <p class="hint">Removes this Identity's settings and own keys. Its ONE Videos stay on your disk.</p>
+          <p class="hint">Removes this Identity's settings and own keys. Its videos stay on your disk.</p>
           <div class="row"><button type="button" class="ghost" disabled={busy} onclick={remove}>Delete this Identity</button></div>
         {:else}
           <p class="hint">This is the only Identity, so it cannot be deleted.</p>

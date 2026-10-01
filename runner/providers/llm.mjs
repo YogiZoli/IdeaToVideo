@@ -46,6 +46,20 @@ export function friendlyError(label, status, body) {
   return `${label} answered with HTTP ${status}.`;
 }
 
+// Retries and model switches are reported to whoever listens (main.mjs turns
+// them into progress lines, so the app's log shows them; docs/backup.md B).
+let listener = null;
+export function onLlmEvent(fn) {
+  listener = fn;
+}
+const report = (e) => {
+  try {
+    listener?.(e);
+  } catch {
+    // a listener must never break a call
+  }
+};
+
 // One chat completion. Retries 429 and 5xx (and network errors) with
 // exponential backoff, 3 attempts in total (SPEC 5). Returns the text content.
 export async function chat(opts) {
@@ -56,6 +70,7 @@ export async function chat(opts) {
     const used = opts.model || p?.model;
     const next = e instanceof LlmError && e.status >= 500 && !opts.noFallback ? p?.fallbackModels?.find((m) => m !== used) : null;
     if (!next) throw e;
+    report({ step: "fallback", provider: opts.provider, from: used, to: next, status: e.status });
     opts.onFallback?.(next);
     return chatOnce({ ...opts, model: next });
   }
@@ -85,6 +100,7 @@ async function chatOnce({ provider, apiKey, model, messages, json = false, maxTo
       });
     } catch (e) {
       lastError = new LlmError(`Could not reach ${p.label}: ${redact(e.message, apiKey)}`, { retryable: true });
+      report({ step: "retry", provider, model: useModel, attempt: i + 1, of: attempts, status: "network" });
       if (i < attempts - 1) await sleep(backoffMs(i));
       continue;
     }
@@ -97,6 +113,7 @@ async function chatOnce({ provider, apiKey, model, messages, json = false, maxTo
     const text = redact(await res.text().catch(() => ""), apiKey);
     const retryable = res.status === 429 || res.status >= 500;
     lastError = new LlmError(friendlyError(p.label, res.status, text), { status: res.status, retryable });
+    report({ step: "retry", provider, model: useModel, attempt: i + 1, of: attempts, status: res.status });
     if (!retryable) throw lastError;
     if (i < attempts - 1) await sleep(retryAfterMs(res) ?? backoffMs(i));
   }

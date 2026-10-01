@@ -8,8 +8,9 @@ import type { Edition } from "./api";
 export const PRODUCT = "IdeaToVideo";
 export const IDENTITY = "Identity";
 export const IDENTITIES = "Identities";
+// Always singular (Zoltan, 2026-10-01): "ONE Videos" is not English. Where
+// a sentence needs a plural, it says "videos".
 export const ONE_VIDEO = "ONE Video";
-export const ONE_VIDEOS = "ONE Videos";
 
 /** The plan line in Settings, App, Plan. */
 export function planText(e: Edition, count: number): string {

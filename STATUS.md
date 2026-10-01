@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-01 (Identity kész)
+Frissítve: 2026-10-01 (Identity, Mentés és Napló kész)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -122,14 +122,27 @@ Kész (2026-09-30):
   beállításból: "My Identity". Tesztek: 116 Node, 34 Rust, e2e 13/13; UI
   próba a `scripts/ui-mock`-ban (`?fresh=1`, `?tier=solo`, `?one=1`).
 
+- **Mentés (Backup) és Napló kész (2026-10-01)**, terv: `docs/backup.md`,
+  DECISIONS 66. Mentés: Settings, App, Backup (mappa, felhő-mappa
+  javaslat, szint 1-4 méretbecsléssel, automatikus mentés jóváhagyás és
+  render után, "Back up now"); ONE Videónként saját szint és állapot;
+  "Restore from backup" a listában; első indításkor "Restore from a backup"
+  (App beállítás és minden Identity, kulcs nélkül). Fájlnevek Zoltan
+  szabálya szerint. Napló: `AppData/Local/app.ideatovideo.desktop/logs/*.jsonl`,
+  minden kattintás, nézet, választás, hívás, runner lépés (újrapróbálás,
+  modellváltás), hiba; kulcs és tartalom nélkül; soha nem törlődik magától.
+  Összefoglaló: `node scripts/log-summary.mjs`. Javítva még: a jelenet-tábla
+  sikertelen újratervezése után a korábbi, illő tábla jóváhagyható; "ONE
+  Video" mindig egyes számban. Tesztek: 124 Node, 39 Rust, e2e 16/16.
+
 ## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
 1. **Hibátlanítás: kész** (2026-10-01).
-2. **Identity: kész** (2026-10-01, fent). Zoltan próbája az új telepítővel
-   következik: az átállás a saját beállításaiból, váltás, Duplicate, export.
-   **Javaslat (Claude, Zoltan dönt):** a Backup (6. pont) jöjjön most, a
-   varázslók előtt: ugyanarra a mappaszerkezetre épül, és Zoltan valódi
-   videói ma csak a gépén vannak.
+2. **Identity: kész** (2026-10-01). Zoltan kipróbálta: átnevezés, Export,
+   Import, Duplicate, Delete rendben. A saját kulcs és a futó render melletti
+   váltás próbája egy barátnál.
+2b. **Mentés és Napló: kész** (2026-10-01, Zoltan döntése szerint a
+   varázslók előtt). Zoltan próbája az új telepítővel következik.
 3. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
    betűk és a szótár (DECISIONS 68).
 4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
@@ -137,7 +150,7 @@ Kész (2026-09-30):
    csak utána kód.
 5. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltantól kell a
    15 alap kulcsszó és a komment-CTA működése.
-6. **Mentés (Backup)** és beállítások mentése: DECISIONS 66.
+6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
 jóváhagyott változaton), STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR

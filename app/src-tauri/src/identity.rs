@@ -212,7 +212,7 @@ pub fn now_iso() -> String {
     iso_from_unix(secs)
 }
 
-fn iso_from_unix(secs: i64) -> String {
+pub fn iso_from_unix(secs: i64) -> String {
     let (days, rem) = (secs.div_euclid(86_400), secs.rem_euclid(86_400));
     // civil_from_days (H. Hinnant)
     let z = days + 719_468;
@@ -324,7 +324,7 @@ pub fn rename_folder(projects_root: &Path, old: &str, new_name: &str, all: &[Val
         return (new, None);
     }
     if to.exists() && !new.eq_ignore_ascii_case(old) {
-        return (old.to_string(), Some(format!("A folder named \"{new}\" already exists, so the ONE Videos stay in \"{old}\".")));
+        return (old.to_string(), Some(format!("A folder named \"{new}\" already exists, so the videos stay in \"{old}\".")));
     }
     match fs::rename(&from, &to) {
         Ok(()) => (new, None),
@@ -402,7 +402,7 @@ pub fn migrate_v1(config_dir: &Path, legacy_brand: &Path, projects_root: impl Fn
         let left = move_projects(&root, &root.join(&folder));
         if !left.is_empty() {
             notice = Some(format!(
-                "{} ONE Video folder(s) could not be moved into \"{folder}\" and stay in {}: {}",
+                "{} video folder(s) could not be moved into \"{folder}\" and stay in {}: {}",
                 left.len(),
                 root.display(),
                 left.join(", ")

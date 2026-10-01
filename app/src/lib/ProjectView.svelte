@@ -13,7 +13,8 @@
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { narratorProvider } from "./catalog";
-  import { ONE_VIDEOS } from "./edition";
+  import { setScreen, log } from "./logger";
+  import ProjectBackup from "./ProjectBackup.svelte";
 
   let { app, dir: dirProp, back }: { app: AppState; dir: string; back: () => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
@@ -56,6 +57,9 @@
     try {
       data = await runner<Loaded>("load-project", { projectDir: dir });
       draft = data.scriptMarkdown ?? "";
+      const name = dir.split(/[\\/]/).pop();
+      setScreen(`video/${name}`);
+      log("video_state", { video: name, status: data.project.status, gates: Object.fromEntries(Object.entries(data.project.gates).map(([k, g]) => [k, g.state])), autopilot: !!data.project.autopilot, hasVideo: !!data.latestVideo });
       if (data.brief?.targetLengthMin) length = data.brief.targetLengthMin;
     } catch (e) {
       error = errorText(e);
@@ -233,7 +237,7 @@
 
 <div class="page">
   <header>
-    <button type="button" class="ghost" onclick={back}>All {ONE_VIDEOS}</button>
+    <button type="button" class="ghost" onclick={back}>Back to the list</button>
     <span class="spacer"></span>
     <button type="button" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
   </header>
@@ -325,6 +329,7 @@
     <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} />
     <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
     <ReviewGate {dir} gate={data.project.gates.review} scenesApproved={data.project.gates.scenes?.state === "approved"} latest={data.latestVideo} stills={data.stills} look={app.config?.brand?.preset ?? "blue-professional"} changed={load} />
+    <ProjectBackup {app} {dir} />
   {/if}
 </div>
 

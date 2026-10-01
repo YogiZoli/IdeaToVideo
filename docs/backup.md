@@ -1,6 +1,10 @@
 # Mentés (Backup) és Napló (Log): terv
 
-Állapot: **jóváhagyva** (Zoltan, 2026-10-01), döntések a 10. pontban.
+Állapot: **jóváhagyva és megépült** (2026-10-01), döntések a 10. pontban.
+Kód: `runner/backup.mjs` (ONE Video mentés és visszatöltés),
+`app/src-tauri/src/backup.rs` (mentési mappa, beállítások mentése és
+visszatöltése, felhő-mappák), `app/src-tauri/src/log.rs` és
+`app/src/lib/logger.ts` (napló), `scripts/log-summary.mjs` (összefoglaló).
 Alapja: DECISIONS 66 (mentés), 67 (Identity), `docs/identity.md`. Zoltan
 (2026-10-01): a Backup most jön, a varázslók előtt; és ugyanebben a körben az
 app legyen átlátható: Claude lássa, mit csinált az app, és mit látott Zoltan,

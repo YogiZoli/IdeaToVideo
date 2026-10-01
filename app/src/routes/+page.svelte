@@ -3,12 +3,13 @@
   // Jobs list, ONE Videos and Settings. "New Identity" runs the setup's
   // Identity steps (docs/identity.md 7).
   import { open } from "@tauri-apps/plugin-dialog";
-  import { appState, saveSettings, setActiveIdentity, importIdentity, errorText, type AppState, type Config, type Job } from "$lib/api";
+  import { appState, saveSettings, setActiveIdentity, importIdentity, restoreSettings, errorText, type AppState, type Config, type Job } from "$lib/api";
+  import { installLogger, log, setScreen, setIdentity } from "$lib/logger";
   import { defaultConfig, cleanConfig } from "$lib/catalog";
   import { appFromConfig, identityFromConfig } from "$lib/identity";
   import { IDENTITY_STEPS } from "$lib/steps";
   import { setKeySources, refreshKeySources } from "$lib/keystate.svelte";
-  import { PRODUCT, ONE_VIDEOS } from "$lib/edition";
+  import { PRODUCT, ONE_VIDEO } from "$lib/edition";
   import type { PageId } from "$lib/pages";
   import Onboarding from "$lib/Onboarding.svelte";
   import Projects from "$lib/Projects.svelte";
@@ -35,17 +36,54 @@
     app = s;
     keys = { ...s.keys };
     setKeySources(s.keySources);
-    if (s.notice) notice = s.notice;
+    setIdentity(s.identity?.id ?? null);
+    if (s.notice) {
+      notice = s.notice;
+      log("notice_shown", { message: s.notice }, "warn");
+    }
   }
 
+  installLogger();
   async function init() {
     try {
-      take(await appState());
+      const s = await appState();
+      take(s);
+      log("app_state", {
+        onboarded: !!s.app?.onboarded,
+        identities: s.identities.length,
+        identity: s.identity?.id ?? null,
+        tier: s.edition.tier,
+        keys: s.keySources,
+        backup: s.backupRoot ? { root: s.backupRoot, level: s.app?.backup?.level ?? 4, auto: s.app?.backup?.auto ?? true } : null,
+        projectsDir: s.projectsDir,
+        version: s.version,
+      });
+      if (!s.app?.onboarded || !s.identity) setScreen("setup");
     } catch (e) {
       fatal = errorText(e);
+      log("fatal", { message: fatal }, "error");
     }
   }
   init();
+
+  // A new computer: settings and Identities from a backup folder.
+  let restoring = $state(false);
+  let restoreError = $state("");
+  async function restoreFromBackup() {
+    const dir = await open({ directory: true, multiple: false });
+    if (typeof dir !== "string") return;
+    restoring = true;
+    restoreError = "";
+    try {
+      take(await restoreSettings(dir));
+      notice = `Restored from the backup. Add your API keys again in Settings: they are never in a backup.${notice ? " " + notice : ""}`;
+      view = "projects";
+    } catch (e) {
+      restoreError = errorText(e);
+    } finally {
+      restoring = false;
+    }
+  }
 
   // Keys saved or removed in Settings count at once everywhere else (they
   // live in the system keychain, not in the settings file).
@@ -83,6 +121,7 @@
 
   function newIdentity() {
     draft = { ...defaultConfig(), name: "", llm: { ...app!.app!.llm } };
+    setScreen("new-identity");
     view = "new-identity";
     projectDir = null;
   }
@@ -118,6 +157,11 @@
 {:else if !app.app?.onboarded || !app.identity}
   <main>
     <div class="brandbar"><span class="name"><img src="/icon.png" alt="" />{PRODUCT}</span><span class="muted">Setup</span></div>
+    <div class="restorebar">
+      <span>New computer, with a backup from the old one?</span>
+      <button type="button" disabled={restoring} onclick={restoreFromBackup}>{restoring ? "Restoring..." : "Restore from a backup"}</button>
+      {#if restoreError}<span class="bad">{restoreError}</span>{/if}
+    </div>
     <Onboarding bind:config={draft} bind:keys save={saveFirst} done={take} newIdentity />
   </main>
 {:else}
@@ -132,7 +176,7 @@
         importIdentity={importOne}
         settings={() => show("settings", "identity")}
       />
-      <button type="button" class:active={view === "projects"} onclick={() => show("projects")}>{ONE_VIDEOS}</button>
+      <button type="button" class:active={view === "projects"} onclick={() => show("projects")}>{ONE_VIDEO}</button>
       <button type="button" class:active={view === "settings"} onclick={() => show("settings", "identity")}>Settings</button>
       <Jobs {openJob} />
     </nav>
@@ -175,6 +219,7 @@
   .name img { width: 26px; height: 26px; }
   .brandbar > button { border: none; background: none; padding: 6px 12px; }
   .brandbar > button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
+  .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
   .muted { color: var(--muted-foreground); }
   .bad { color: var(--danger-text); }

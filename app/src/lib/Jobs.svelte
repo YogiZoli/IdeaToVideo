@@ -33,6 +33,9 @@
     "build-video": "Video check",
     "check-video": "Video check",
     "render-video": "Render",
+    "backup-project": "Backup",
+    "backup-all": "Backup",
+    "restore-project": "Restore",
   };
   const label = (c: string) => LABELS[c] ?? c;
   const video = (p: string | null) => (p ? p.split(/[\\/]/).pop() : "");

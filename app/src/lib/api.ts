@@ -6,6 +6,21 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { effectiveConfig } from "./identity";
+import { log } from "./logger";
+
+// Every call into the core, timed, into the local log (logger.ts).
+async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  const t0 = performance.now();
+  const what = cmd === "run_runner" ? { command: args?.command } : {};
+  try {
+    const r = await invoke<T>(cmd, args);
+    log("call", { cmd, ...what, ms: Math.round(performance.now() - t0), ok: true });
+    return r;
+  } catch (e) {
+    log("call", { cmd, ...what, ms: Math.round(performance.now() - t0), ok: false, error: errorText(e) }, "warn");
+    throw e;
+  }
+}
 
 export type Llm = { provider: string; model: string };
 
@@ -34,8 +49,12 @@ export type Config = {
 };
 
 /** config.json, schema 2: what is the same for every Identity. */
+export type BackupSettings = { dir?: string | null; level?: 1 | 2 | 3 | 4; auto?: boolean };
+export type LogStatus = { dir: string | null; files: number; bytes: number; session: string; errors: number; warnings: number };
+
 export type AppConfig = {
   schema: 2;
+  backup?: BackupSettings;
   onboarded?: boolean;
   ui?: { language: "en" };
   llm: Llm;
@@ -90,6 +109,9 @@ export type AppState = {
   version: string;
   /** A one-time sentence from the core (a folder that could not be moved...). */
   notice?: string | null;
+  /** <backup folder>/IdeaToVideo_Backup, null when backups are off. */
+  backupRoot: string | null;
+  log: LogStatus;
 };
 
 type RawState = Omit<AppState, "config">;
@@ -100,30 +122,39 @@ export type ProjectSummary = { id: string; title: string; status: string; dir: s
 
 export type KeyScope = "app" | "identity";
 
-export const appState = () => invoke<RawState>("app_state").then(withConfig);
+export const appState = () => call<RawState>("app_state").then(withConfig);
 /** Saves the App settings and/or one Identity; an Identity without id is new. */
 export const saveSettings = (config: AppConfig | null, identity: Identity | NewIdentity | null) =>
-  invoke<RawState>("save_settings", { config, identity }).then(withConfig);
-export const setActiveIdentity = (id: string) => invoke<RawState>("set_active_identity", { id }).then(withConfig);
+  call<RawState>("save_settings", { config, identity }).then(withConfig);
+export const setActiveIdentity = (id: string) => call<RawState>("set_active_identity", { id }).then(withConfig);
 export const duplicateIdentity = (id: string, name: string, copyKeys: boolean) =>
-  invoke<RawState>("duplicate_identity", { id, name, copyKeys }).then(withConfig);
-export const deleteIdentity = (id: string) => invoke<RawState>("delete_identity", { id }).then(withConfig);
-export const exportIdentity = (id: string, path: string) => invoke<string>("export_identity", { id, path });
-export const importIdentity = (path: string) => invoke<RawState>("import_identity", { path }).then(withConfig);
-export const setKey = (name: string, value: string, scope: KeyScope = "app") => invoke<void>("set_key", { name, value, scope });
-export const deleteKey = (name: string, scope: KeyScope = "app") => invoke<void>("delete_key", { name, scope });
-export const keyStatus = () => invoke<{ keys: Record<string, boolean>; keySources: Record<string, KeySource> }>("key_status");
-export const deleteAllKeys = () => invoke<void>("delete_all_keys");
+  call<RawState>("duplicate_identity", { id, name, copyKeys }).then(withConfig);
+export const deleteIdentity = (id: string) => call<RawState>("delete_identity", { id }).then(withConfig);
+export const exportIdentity = (id: string, path: string) => call<string>("export_identity", { id, path });
+export const importIdentity = (path: string) => call<RawState>("import_identity", { path }).then(withConfig);
+export const setKey = (name: string, value: string, scope: KeyScope = "app") => call<void>("set_key", { name, value, scope });
+export const deleteKey = (name: string, scope: KeyScope = "app") => call<void>("delete_key", { name, scope });
+export const keyStatus = () => call<{ keys: Record<string, boolean>; keySources: Record<string, KeySource> }>("key_status");
+export const deleteAllKeys = () => call<void>("delete_all_keys");
 /** forNew: the logo of an Identity that does not exist yet (setup, New Identity). */
-export const importLogo = (path: string, forNew = false) => invoke<string>("import_logo", { path, forNew });
-export const jobList = () => invoke<Job[]>("job_list");
+export const importLogo = (path: string, forNew = false) => call<string>("import_logo", { path, forNew });
+export const jobList = () => call<Job[]>("job_list");
+export const backupSettingsNow = () => call<number>("backup_settings_now");
+export const restoreSettings = (path: string) => call<RawState>("restore_settings", { path }).then(withConfig);
+export const cloudFolders = () => call<{ label: string; path: string }[]>("cloud_folders");
+export const logStatus = () => call<LogStatus>("log_status");
+export const deleteLogs = () => call<LogStatus>("delete_logs");
+export type BackupDone = { projectDir: string; ok: boolean; result?: { at: string; path: string; copied: number }; error?: string };
+export function onBackupDone(fn: (b: BackupDone) => void): Promise<UnlistenFn> {
+  return listen<BackupDone>("backup-done", (e) => fn(e.payload));
+}
 export function onJobsChanged(fn: (jobs: Job[]) => void): Promise<UnlistenFn> {
   return listen<Job[]>("jobs-changed", (e) => fn(e.payload));
 }
-export const importMusic = (projectDir: string, path: string) => invoke<string>("import_music", { projectDir, path });
+export const importMusic = (projectDir: string, path: string) => call<string>("import_music", { projectDir, path });
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {
-  return invoke<T>("run_runner", { command, request });
+  return call<T>("run_runner", { command, request });
 }
 
 export type Progress = { command: string; progress: Record<string, unknown> };

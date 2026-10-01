@@ -2,7 +2,8 @@
   // An error the user can act on, plus a grey diagnostic line (code, version,
   // step, provider, time) and "Copy details" for bug reports.
   import { getVersion } from "@tauri-apps/api/app";
-  import { detailLine, type ErrorContext } from "./errors";
+  import { detailLine, errorCode, type ErrorContext } from "./errors";
+  import { log } from "./logger";
 
   let { message, context = {} }: { message: string; context?: ErrorContext } = $props();
 
@@ -11,6 +12,10 @@
   const at = new Date();
   const detail = $derived(detailLine(message, version, context, at));
   let copied = $state(false);
+  // every error the user saw goes into the local log, with its code
+  $effect(() => {
+    log("error_shown", { message, code: errorCode(message), context }, "error");
+  });
 
   async function copy() {
     try {

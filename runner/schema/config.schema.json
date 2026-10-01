@@ -18,6 +18,15 @@
     },
     "projectsDir": {"type": ["string", "null"], "maxLength": 1000},
     "activeIdentity": {"type": ["string", "null"], "pattern": "^[a-z0-9][a-z0-9-]{0,59}$"},
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dir": {"type": ["string", "null"], "maxLength": 1000},
+        "level": {"enum": [1, 2, 3, 4]},
+        "auto": {"type": "boolean"}
+      }
+    },
     "defaults": {"type": "object", "additionalProperties": false, "properties": {"autopilot": {"type": "boolean"}}}
   }
 }

@@ -27,7 +27,14 @@ KEZDÉS (kötelező, minden session elején)
 4. Mondd vissza röviden: end goal, hol tartunk, melyik fázis és melyik lépés
    következik, mi a fázis kimenete. Ne találgass: ha a STATUS.md és a git állapot
    (branch, PR, commitok) nem egyezik, ezt mondd ki, és kérdezz.
-5. Utána kezdd a következő lépést, amit a STATUS.md megnevez.
+5. A NAPLÓ: ha Zoltan az app egy telepítőjével tesztelt, vagy hibáról ír
+   ("nézd meg a naplót"), futtasd: node scripts/log-summary.mjs (több
+   indításra: --sessions 3, egy naptól: --since 2026-10-01). Ez az app helyi
+   naplója (C:/Users/gdp/AppData/Local/app.ideatovideo.desktop/logs): minden
+   kattintás, nézet, runner lépés és hiba, kulcs és tartalom nélkül. Előbb
+   ezt olvasd, képernyőképet ne kérj. A videónkénti log.txt a projektmappában
+   van.
+6. Utána kezdd a következő lépést, amit a STATUS.md megnevez.
 
 SZABÁLYOK
 - Egyszerre egy fázis. A fázis végén: tesztek zöldek, STATUS.md frissítve, DECISIONS.md

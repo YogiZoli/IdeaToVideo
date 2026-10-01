@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { testKey, PROVIDERS } from "./providers/llm.mjs";
+import { testKey, PROVIDERS, onLlmEvent } from "./providers/llm.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
 import { createProject, loadProject, saveProject, recoverInterrupted, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
@@ -31,6 +31,7 @@ import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
 import { isLightLook } from "./gates/build/assemble.mjs";
 import { timed } from "./timings.mjs";
+import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
 function sentenceCount(projectDir) {
@@ -57,6 +58,8 @@ const jsonCount = (projectDir, f, key) => {
 };
 
 const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
+// LLM retries and model switches become progress lines (the app logs them).
+onLlmEvent((e) => emit({ event: "progress", ...e }));
 const key = () => process.env.STUDIO_API_KEY || "";
 
 // A Custom edit changes the gate's output, so every later gate starts again
@@ -112,6 +115,18 @@ const commands = {
   }),
 
   "validate-brief": async ({ brief }) => ({ errors: validate(brief, loadSchema("brief-card")) }),
+
+  // Backups (backup.mjs). The core puts backupRoot, projectsRoot and folders
+  // into the request from the App settings; the UI cannot choose them.
+  "backup-project": async ({ projectDir, backupRoot, identityFolder, level }) =>
+    backupProject({ projectDir, backupRoot, identityFolder, level, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "backup-all": async ({ backupRoot, projectsRoot, folders, level }) =>
+    backupAll({ backupRoot, projectsRoot, folders, level, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "backup-estimate": async ({ projectsRoot, folders }) => backupEstimate({ projectsRoot, folders }),
+  "list-backups": async ({ backupRoot, identityFolder, projectsDir }) => ({ backups: listBackups({ backupRoot, identityFolder, projectsDir }) }),
+  "restore-project": async ({ backupRoot, path: rel, projectsDir }) => restoreProject({ backupRoot, path: rel, projectsDir }),
+  "backup-status": async ({ projectDir }) => backupRecord(projectDir),
+  "set-backup-level": async ({ projectDir, level }) => setBackupLevel(projectDir, level ?? null),
 
   "test-llm": async ({ provider, model }) => testKey({ provider, model, apiKey: key() }),
 

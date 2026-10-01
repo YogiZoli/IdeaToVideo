@@ -48,6 +48,13 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("build-video", None),
     ("check-video", None),
     ("render-video", None),
+    ("backup-project", None),
+    ("backup-all", None),
+    ("backup-estimate", None),
+    ("list-backups", None),
+    ("restore-project", None),
+    ("backup-status", None),
+    ("set-backup-level", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

@@ -5,7 +5,7 @@
 
 import type { StepId } from "./steps";
 
-export type PageId = "app-ai" | "folders" | "plan" | "general" | "identity" | "channel" | "look" | "voice" | "research" | "identity-ai";
+export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "voice" | "research" | "identity-ai";
 export type Group = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; group: Group; steps: StepId[] };
@@ -13,6 +13,7 @@ export type SettingsPage = { id: PageId; title: string; group: Group; steps: Ste
 export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "app-ai", title: "AI and keys", group: "app", steps: ["ai"] },
   { id: "folders", title: "Folders", group: "app", steps: [] },
+  { id: "backup", title: "Backup", group: "app", steps: [] },
   { id: "plan", title: "Plan", group: "app", steps: [] },
   { id: "general", title: "General", group: "app", steps: [] },
   { id: "identity", title: "Identity", group: "identity", steps: ["name"] },
