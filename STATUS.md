@@ -115,9 +115,11 @@ Kész (2026-09-30):
 1. **Hibátlanítás** (Opus 5.5, High). Zoltan a telepített appot használja, a
    hibákat a `feedback/ÉÉÉÉ-HH-NN/` mappába teszi. A chat addig javít, amíg
    nincs új hiba. Új funkció nem kerül bele, csak javítás.
-2. **Meta szint** (Opus 5.5, High): DECISIONS 67. Egy egység = egy brand,
-   álnév vagy ügyfél; a mai project neve ONE Video; kulcsok öröklése. Első
-   kérdés Zoltannak: a szint neve (javaslat: Workspace).
+2. **Identity, a meta szint** (Opus 5.5, High): DECISIONS 67. Egy Identity =
+   egy brand, álnév vagy ügyfél, 0 vagy 1 YouTube channel; a mai project neve
+   ONE Video; kulcsok öröklése (App, utána Identity); licencszint helye
+   (Agency korlátlan, Solo egy), licenc még nélkül. Előbb terv
+   (`docs/identity.md`), Zoltan jóváhagyása, utána kód.
 3. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
    betűk és a szótár (DECISIONS 68).
 4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első

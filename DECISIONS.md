@@ -303,14 +303,16 @@
       új gépen "Import settings", így a 12 lépéses beállítást nem kell újra
       végigcsinálni. A kulcsok soha nem kerülnek bele, azokat újra be kell írni.
     - A törlés a mentésből soha nem automatikus.
-67. **Meta szint a videók fölött** (Zoltan ötlete, 2026-10-01). Eldöntve:
-    egy szint, nem kettő; a varázslók előtt készül, külön chatben. Nyitott: a
-    szint neve (nem Channel, Brand, Author, Project; javaslat: Workspace).
+67. **Identity: meta szint a videók fölött** (Zoltan, 2026-10-01). Eldöntve:
+    egy szint, nem kettő, a neve **Identity** (szerzőnek, álnévnek, SMB-nek és
+    ügyfélnek is érthető); a varázslók előtt készül, külön chatben. A
+    lenti szövegben "egység" = Identity.
     Cél: egy ember több brandet, írói álnevet vagy ügyfelet futtathasson
     párhuzamosan, mindegyik a saját hangjával, kinézetével és CTA-jával.
     - **Egy szint.** Szerző > projekt > videó kavarodás lenne. A meta egység
-      egy brand, álnév vagy ügyfél; legfeljebb egy YouTube csatornája van
-      (lehet nulla is). Két YouTube csatorna két egység ("Duplicate").
+      egy brand, álnév vagy ügyfél; pontosan 0 vagy 1 YouTube channel
+      tartozik hozzá (Zoltan: több kavarodás lenne). Két YouTube channel két
+      Identity ("Duplicate").
     - **Szavak a felületen** (Zoltan): a mai "project" neve **ONE Video**,
       mert egyetlen videó, nem playlist, nem stratégia. Ahol YouTube
       csatornáról van szó, mindig "YouTube channel" áll, soha nem csak
@@ -320,7 +322,14 @@
       Narrator Voice, alap avatar és elhelyezése, vidIQ be/ki, a szótár
       (68.), és a három varázsló (Brand, Mozgás, CTA) minden eredménye. A
       ONE Videók az egység alá tartoznak.
-    - **Kulcsok: öröklés.** Az App szinten megadott kulcsok minden egységnek
+    - **Licencszintek az app felépítésében** (Zoltan, 2026-10-01): két szint
+      már most megkülönböztetendő: **Agency** (korlátlan Identity) és az egy
+      Identity-s szint (név nyitott; javaslat: **Solo**). A kód egy helyen
+      tartja a szintet és az Identity-korlátot (most: korlátlan, licenc még
+      nincs, az a 4. fázisban jön). Nyitva hagyandó, nem építendő: affiliate
+      és white label. Ehhez: a termék neve és a felületi szövegek egy helyen,
+      hogy később cserélhetők legyenek.
+    - **Kulcsok: öröklés** (Zoltan: ez az irány). Az App szinten megadott kulcsok minden egységnek
       szólnak; egy egység felülírhatja a sajátjával (ügynökségi eset: az
       ügyfél HeyGen, ElevenLabs vagy AI kulcsa, hogy a költség nála
       jelentkezzen). Ugyanígy az AI szolgáltató és a modell. Kulcstárban az
@@ -344,7 +353,9 @@
       vonzza, akit akar, és kiszűri, akit nem.
     A prompt megkapja; a kész scriptben a tiltott szavakat egy gépi
     ellenőrzés jelzi (nem az AI ítéli meg). Valódi személyek nevénél a
-    script véleményként fogalmaz, tényállítást nem tesz róluk.
+    script véleményként fogalmaz, tényállítást nem tesz róluk. A varázsló
+    ehhez segítő példákat ad: személy helyett jelenség vagy típus is
+    lehet ellenfél (például "hustle culture", "hustle bro").
 
 69. **Az app a suite-ban: ONE Video** (Zoltan, 2026-10-01; irány, nem kód).
     A sorrend: 0. ajánlat és célcsoport; 1. tervezés (playlist, kulcsszavak,
@@ -356,16 +367,37 @@
     az 1. kapuban marad könnyű kulcsszó-ellenőrzésnek annak, akinek nincs
     tervező eszköze; a valódi kulcsszókutatás a tervezésbe tartozik. A
     publikálás logikája két helyen kell: a csomagolás (cím, thumbnail) a
-    tervezésben, a végleges adatok a kész videó után.
+    tervezésben, a végleges adatok a kész videó után. A Brief Card a két app
+    közötti szerződés, mint egy API: verziózott séma, mindkét oldal
+    validálja.
+    - A Publishing Dream Team ingyenes lead magnet marad azoknak, akik még
+      csak a videó után gondolnak a publikálásra; a tervező a tudatosaknak
+      szóló "előre tervező" változat.
+    - A 0. és 1. lépés (ajánlat, tervezés) egy termék két modullal,
+      valószínűleg SaaS (lead magnetként weben könnyebb elérni, és könnyű
+      munka: LLM és vidIQ hívás). Kimenete: egy Offer Card Identity-nként és
+      egy Brief Card videónként. Döntés később.
+    - **3x AI Agent In A Box:** külön, önálló SaaS (Zoltan, 2026-10-01; nem
+      az IdeaToVideo része, Notionban vezetve).
+    - **YouTube Brand Channel varázsló** (később, valószínűleg SaaS, a
+      tervezés fázisba): egy YouTube channel teljes felállítása end-to-end
+      (channel art, logó, leírás, kulcsszókutatás), Zoltan meglévő menete
+      alapján (így készült a VoxFlow YouTube channel). Különbséget tesz a
+      **Personal** és a **Brand** YouTube channel között. Önálló lead
+      magnetnek is alkalmas.
 
 70. **0. lépés: ajánlat-kérdőív** (Zoltan ötlete, 2026-10-01; később, nem az
     IdeaToVideo része). Egy kb. 12 kérdéses kérdőív, aminek a végén kijön:
-    kinek, mit, mennyiért, egyszeri vagy havi, upsell, headline, GYIK. Két
-    külön termék: (a) az ajánlat ("Offer Card" fájl), (b) a landing oldal
-    szekciói ebből. Az Offer Card tölti ki az egység Audience, landing és CTA
+    kinek, mit, mennyiért, egyszeri vagy havi, upsell, headline, GYIK.
+    Külön részek: (a) az ajánlat ("Offer Card" fájl), (b) a landing oldal
+    szekciói ebből, (c) a Lead Magnet külön folyamat (Zoltan később
+    kifejti). Opcionálisan GHL implementáció is: a landing és a GHL Custom
+    Value-k azonnal létrejönnek (Zoltan referenciája egy korábbi
+    tanácsadásból; nem egy különálló chatbot, hanem a folyamat része). Az Offer Card tölti ki az egység Audience, landing és CTA
     mezőit. Saját kérdőív, harmadik fél módszer-neve nem szerepel benne.
 
-71. **Árazás: nyitott** (2026-10-01). Először Zoltan használja, saját
+71. **Árazás: nyitott** (2026-10-01). A GHL affiliate bónuszt Zoltan szerint
+    a GHL engedi. A licencszintek felépítése a 67. pontban. Először Zoltan használja, saját
     álneveivel, utána más szerzőknek, csak utána eladás. A lehetőségek és
     érveik a 2026-10-01-i chatben: GHL affiliate bónusz; egyszeri licenc;
     egységenkénti ár; Creator és Agency szint; white label; affiliate
