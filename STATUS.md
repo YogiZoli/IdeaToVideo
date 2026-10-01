@@ -112,9 +112,10 @@ Kész (2026-09-30):
 
 ## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
-1. **Hibátlanítás** (Opus 5.5, High). Zoltan a telepített appot használja, a
-   hibákat a `feedback/ÉÉÉÉ-HH-NN/` mappába teszi. A chat addig javít, amíg
-   nincs új hiba. Új funkció nem kerül bele, csak javítás.
+1. **Hibátlanítás: kész** (2026-10-01). Zoltan az új telepítővel (commit
+   833dbeb) végigtesztelte, új hiba nem jött. A stratégiai döntések a chatből:
+   DECISIONS 66-71 (mentés, Identity, szótár, suite, ajánlat, árazás).
+   **Következő: 2. pont, új chatben.**
 2. **Identity, a meta szint** (Opus 5.5, High): DECISIONS 67. Egy Identity =
    egy brand, álnév vagy ügyfél, 0 vagy 1 YouTube channel; a mai project neve
    ONE Video; kulcsok öröklése (App, utána Identity); licencszint helye
