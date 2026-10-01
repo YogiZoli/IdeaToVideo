@@ -270,8 +270,13 @@
     vált, és kiírja. Hely, méret és forma HeyGen-költség nélkül váltható, csak
     a kivágotthoz kell átlátszó klip. Mért: a render megtartja a WebM alfa
     csatornáját (próba 2026-10-01).
-66. **Mentés (Backup) aloldal a Settingsben: javaslat, a varázslók után**
-    (Zoltan ötlete, 2026-10-01; még nem döntés, nincs kód). Kiderült: a
+66. **Mentés (Backup) aloldal a Settingsben** (Zoltan ötlete, 2026-10-01;
+    **eldöntve és most épül**, az Identity után, a varázslók előtt; terv:
+    `docs/backup.md`). Zoltan döntései (2026-10-01): a mentési szintet a user
+    választja (alap a Settingsben, ONE Videónként felülírható, alapérték 4);
+    ugyanebben a körben **helyi napló** (Log), nagyon részletes, hogy Claude
+    képernyőkép nélkül lássa, mit csinált az app és mit látott a user; a napló
+    nem törlődik magától, csak ha a user törli. Az eredeti javaslat: Kiderült: a
     projektek (hang, avatar klipek, MP4) és a beállítások csak helyben vannak,
     géphalálnál elvesznek. Javaslat:
     - **1. változat, saját felhő-kapcsolat nélkül:** a user kiválaszt egy

@@ -1,6 +1,6 @@
 # Mentés (Backup) és Napló (Log): terv
 
-Állapot: **terv, Zoltan jóváhagyására vár** (2026-10-01). Kód csak utána.
+Állapot: **jóváhagyva** (Zoltan, 2026-10-01), döntések a 10. pontban.
 Alapja: DECISIONS 66 (mentés), 67 (Identity), `docs/identity.md`. Zoltan
 (2026-10-01): a Backup most jön, a varázslók előtt; és ugyanebben a körben az
 app legyen átlátható: Claude lássa, mit csinált az app, és mit látott Zoltan,
@@ -30,12 +30,14 @@ IdeaToVideo_Backup/
       Freelancer_to_Owner_script.md
       Freelancer_to_Owner_voice.mp3
       Freelancer_to_Owner_voice_music.mp3
-      Freelancer_to_Owner_timing.json  mondat- és szóidőzítés
+      Freelancer_to_Owner_sentences.json   mondat-időzítés
       Freelancer_to_Owner_scenes.json
-      Freelancer_to_Owner_video.mp4
+      Freelancer_to_Owner_video.mp4        a legutolsó render
       Freelancer_to_Owner_captions.srt
       Freelancer_to_Owner_chapters.txt
-      Freelancer_to_Owner_project.json visszatöltéshez: kapuk, választások
+      Freelancer_to_Owner_avatar_open.webm
+      Freelancer_to_Owner_project.json     kapuk, választások
+      Freelancer_to_Owner_backup.json      melyik fájl honnan jött (visszatöltéshez)
 ```
 
 - A cím teljes hosszában, a szavak között `_`, ékezet nélkül, a Windows
@@ -50,16 +52,18 @@ IdeaToVideo_Backup/
 
 | Szint | Mi kerül bele | Méret (kb.) |
 |---|---|---|
-| 1. Script | script, project, brief | néhány KB |
-| 2. + hang | + hang, zenés hang, időzítés | 1-2 MB videópercenként |
-| 3. + jelenetek | + jelenet-tábla | + néhány KB |
-| 4. + videó | + kész MP4, felirat, fejezetek, avatar klipek | 10-40 MB videópercenként |
+| 1. Script | `project.json`, `script.md`, `script.json`, `brief.json`, `log.txt` | néhány KB |
+| 2. + hang | + `audio/vo.mp3`, `vo_bgm.mp3`, `music.*`, `stt.json`, `voice.json`, `sentences.json`, `words.json` | 1-2 MB videópercenként |
+| 3. + jelenetek | + `scenes.json` | + néhány KB |
+| 4. + videó | + a legutolsó `out/video-*.mp4`, a felirata és fejezetlistája, `avatar/` (klipek, hangok, `avatar.json`) | 10-40 MB videópercenként |
 
-- Az alap szint az App beállítása; projektenként felülírható.
-- A választó mellett méret-becslés a meglévő ONE Videókból.
-- **Javaslat: alapból a 4.** (minden), mert a hang és a render pénzbe és
-  időbe került; a Google Drive ingyenes 15 GB-ja kb. 5-10 óra kész videót
-  bír. Ha kevés a hely, a 2. a takarékos választás.
+Ami kimarad, mert újragenerálható: `build/`, `review/`, `audio/blocks/` (a
+`vo.mp3` ugyanazt a hangot tartalmazza), a régebbi renderek.
+
+- **A user választja** (Zoltan, 2026-10-01): az alap szint a Settings, App,
+  Backup oldalon; és ONE Videónként felülírható a videó oldalán.
+- Alapérték a választás előtt: 4 (minden). A választó mellett méret-becslés
+  a meglévő ONE Videókból.
 
 ### 4. Mikor
 
@@ -98,9 +102,18 @@ Claude ugyanazon a gépen fut, mint az app, ezért a naplófájlt közvetlenül
 el tudja olvasni. Zoltannak csak ennyit kell írnia: **"nézd meg a naplót"**.
 
 - **Hely:** `C:/Users/<user>/AppData/Local/app.ideatovideo.desktop/logs/`,
-  naponta egy fájl (`2026-10-01.jsonl`, soronként egy esemény), 30 napig
-  marad, utána törlődik. Csak helyben: nem megy sehova (SPEC 9, nincs
-  telemetria).
+  naponta egy fájl (`2026-10-01.jsonl`, soronként egy esemény). **Soha nem
+  törlődik magától** (Zoltan, 2026-10-01): csak ha a user törli (Settings,
+  App, General, "Delete logs"), mellette a méret. Csak helyben: nem megy
+  sehova (SPEC 9, nincs telemetria).
+- **Inkább több, mint kevesebb** (Zoltan, 2026-10-01: nem mindig Opus
+  fejleszt, ezért a napló legyen bőséges): minden kattintás (a gomb
+  felirata és hogy hol volt), minden választó és jelölő változása (az
+  értékkel, ha nem tartalom), szövegmezőnél csak a mező és a hossz, minden
+  nézet- és oldalváltás, varázsló lépés, az ablak előtérbe és háttérbe
+  kerülése, minden Tauri hívás a felületről (név, időtartam, siker), minden
+  runner parancs a biztonságos paramétereivel, a beállítás-mentések
+  változott mezői, a jobok sora és várakozása, a mentések fájlonként.
 - **Mi kerül bele:**
   - az app indulása (verzió, rendszer), az átállások és figyelmeztetéseik;
   - minden runner parancs: indulás, várakozás és mire, a részlépések
@@ -145,10 +158,11 @@ el tudja olvasni. Zoltannak csak ennyit kell írnia: **"nézd meg a naplót"**.
 **Becsült idő a jóváhagyás után:** Mentés kb. 3-4 óra, Napló kb. 2 óra,
 telepítő kb. 15 perc.
 
-## 10. Zoltan döntésére vár
+## 10. Döntések (Zoltan, 2026-10-01)
 
-1. A terv egésze.
-2. Az alap szint: 4 (minden) vagy 2 (script és hang)? Javaslat: 4.
-3. A napló rögzítse-e a nézeteket és a fő gombnyomásokat (tartalom nélkül)?
-   Javaslat: igen, ettől látja Claude, "mit látott Zoltan".
-4. 30 nap megőrzés elég? Javaslat: igen.
+1. A terv: jóváhagyva.
+2. A mentési szint a user választása: alap a Settingsben, ONE Videónként
+   felülírható; az alapérték 4 (minden).
+3. A napló nagyon alapos és bőséges: inkább több információ, mint kevesebb;
+   ami később jól jöhet, az is bekerül (tartalom és kulcs nélkül).
+4. A napló nem törlődik magától, csak ha a user törli.
