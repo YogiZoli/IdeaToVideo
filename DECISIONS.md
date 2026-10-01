@@ -293,7 +293,9 @@
       up now" gomb; állapot projektenként ("backed up 14:02").
     - **Visszatöltés:** "Restore from backup" a Projects oldalon, ami a
       mentésből visszahozza a projektet (a hiányzó részek újragenerálhatók).
-    - **Beállítások mentése:** a Settings fájl (kulcsok nélkül) is a mentési
-      mappába kerül, új gépen "Import settings". A kulcsok soha nem kerülnek
-      bele, azokat újra be kell írni.
+    - **Beállítások mentése** (Zoltan jóváhagyta, 2026-10-01; ugyanabban a
+      sessionben készül, mint a projektmentés): a Settings fájl kulcsok nélkül
+      a mentési mappába kerül (`IdeaToVideo_Backup/IdeaToVideo_settings.json`),
+      új gépen "Import settings", így a 12 lépéses beállítást nem kell újra
+      végigcsinálni. A kulcsok soha nem kerülnek bele, azokat újra be kell írni.
     - A törlés a mentésből soha nem automatikus.
