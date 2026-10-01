@@ -13,7 +13,7 @@ import path from "node:path";
 import { testKey, PROVIDERS } from "./providers/llm.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
-import { createProject, loadProject, saveProject, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
+import { createProject, loadProject, saveProject, recoverInterrupted, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
 import { writeScript } from "./gates/script/index.mjs";
 import { suggestChannel } from "./gates/channel/index.mjs";
 import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
@@ -67,6 +67,17 @@ function edited(projectDir, gate) {
   return project;
 }
 
+// The project, with gates left "running" by a closed app marked failed (saved).
+function recovered(projectDir) {
+  const project = loadProject(projectDir);
+  const next = recoverInterrupted(project);
+  if (next !== project) {
+    saveProject(projectDir, next);
+    appendLog(projectDir, "a step was interrupted (the app was closed), marked failed");
+  }
+  return next;
+}
+
 function readVoiceInfo(projectDir) {
   try {
     return JSON.parse(fs.readFileSync(path.join(projectDir, "audio", "voice.json"), "utf8"));
@@ -114,7 +125,7 @@ const commands = {
     for (const name of fs.readdirSync(projectsDir)) {
       const dir = path.join(projectsDir, name);
       try {
-        const p = loadProject(dir);
+        const p = recovered(dir);
         projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates });
       } catch {
         // not a project folder, or a broken one: skip it
@@ -125,7 +136,7 @@ const commands = {
   },
 
   "load-project": async ({ projectDir }) => {
-    const project = loadProject(projectDir);
+    const project = recovered(projectDir);
     const md = path.join(projectDir, "script.md");
     return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir) };
   },

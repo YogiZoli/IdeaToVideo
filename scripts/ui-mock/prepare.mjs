@@ -28,5 +28,5 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.cpSync(build, out, { recursive: true });
 fs.copyFileSync(path.join(here, "mock.js"), path.join(out, "mock.js"));
 const index = path.join(out, "index.html");
-fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("<head>", '<head><script src="/mock.js"></script>'));
+fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("<head>", `<head><script src="/mock.js?v=${Date.now()}"></script>`));
 console.log(`ui-mock ready in ${out}`);

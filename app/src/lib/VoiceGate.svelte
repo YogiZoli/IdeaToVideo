@@ -216,7 +216,7 @@
     <div class="actions">
       <button type="button" class="primary" disabled={busy || !voiceId} onclick={make}>{made ? "Make the voice again" : "Make voice (Recommended)"}</button>
     </div>
-    {#if busy}{#key musicCommand}<Progress command={musicCommand || "make-voice"} label={step || "Making the voice"} />{/key}{/if}
+    {#if busy}{#key musicCommand}<Progress command={musicCommand || "make-voice"} label={step || "Making the voice"} {provider} />{/key}{/if}
     {#if error}<ErrorBox message={error} context={{ step: "voice", provider }} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={{ step: "voice", provider }} />{/if}
 
     {#if made}

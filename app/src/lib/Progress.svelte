@@ -11,8 +11,11 @@
   // claims 100% before the result is there.
   import { onDestroy } from "svelte";
   import { onProgress } from "./api";
+  import { phaseText, costText, adviceText, percentByTime, clock } from "./progressInfo";
 
-  let { command, label = "" }: { command: string; label?: string } = $props();
+  // provider: the narrator provider, for what make-voice costs
+  let { command, label = "", provider }: { command: string; label?: string; provider?: string } = $props();
+  let phase = $state<string | null>(null);
 
   let expect = $state<number | null>(null);
   let started = $state(Date.now());
@@ -26,6 +29,8 @@
   const unlisten = onProgress((p) => {
     if (p.command !== command) return;
     const s = p.progress as Record<string, unknown>;
+    const said = phaseText(command, typeof s.step === "string" ? s.step : undefined);
+    if (said) phase = said;
     if (s.step === "estimate" && typeof s.expectSeconds === "number") {
       expect = s.expectSeconds;
       started = Date.now();
@@ -53,7 +58,7 @@
   });
 
   const elapsed = $derived((now - started) / 1000);
-  const byTime = $derived(expect ? Math.min(95, (elapsed / expect) * 100) : 0);
+  const byTime = $derived(percentByTime(elapsed, expect));
   const percent = $derived(Math.round(Math.min(99, real ?? Math.max(floor, byTime))));
   // time left: from the real rate once there is enough of it, else the estimate
   const left = $derived(
@@ -66,7 +71,7 @@
     expect === null && real === null
       ? "Starting..."
       : late && real === null
-        ? "Taking longer than usual. Still working..."
+        ? "Taking longer than usual this time. It is still working: the clock above keeps running."
         : left !== null && left < 4
           ? "Finishing now..."
           : left !== null
@@ -82,16 +87,18 @@
   </div>
   <progress max="100" value={percent}></progress>
   <div class="line">
-    <span class="hint">{status}</span>
+    <span class="hint">{phase ? `Now: ${phase}.` : "Working."} {status}</span>
+    <span class="hint clock">Running for {clock(elapsed)}</span>
   </div>
-  <p class="hint">Keep the app open. It keeps your computer awake until this is done, and you can use other programs meanwhile.</p>
+  <p class="hint">{costText(command, provider)}</p>
+  <p class="hint">{adviceText(command)}</p>
 </div>
 
 <style>
   .progress { display: grid; gap: 6px; margin-top: 10px; }
   .line { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
   .label { font-weight: 600; }
-  .pct { font-variant-numeric: tabular-nums; }
+  .pct, .clock { font-variant-numeric: tabular-nums; white-space: nowrap; }
   progress { width: 100%; height: 10px; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
 </style>

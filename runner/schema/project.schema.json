@@ -32,6 +32,7 @@
         "state": { "enum": ["todo", "running", "pending", "approved", "skipped", "failed"] },
         "mode": { "enum": ["recommended", "default", "custom"] },
         "at": { "type": "string" },
+        "pid": { "type": "integer", "$comment": "the runner process of a running gate, to spot one interrupted by a closed app" },
         "reason": { "type": "string", "maxLength": 500 },
         "error": { "type": "string", "maxLength": 2000 }
       }

@@ -337,3 +337,22 @@ test("Gemini overloaded after the retries: the same request once on the other Ge
   const quota = fakeFetch([{ status: 429, text: "" }]);
   await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: quota, sleep: noSleep }), /quota/, "a quota error is not an overload: no other model");
 });
+
+// 2026-10-01: a gate left "running" by a closed app showed "Running" forever.
+test("a gate interrupted by a closed app becomes failed on load", async () => {
+  const { recoverInterrupted, setGate, INTERRUPTED } = await import("./project.mjs");
+  const base = { schema: 1, id: "2026-10-01_x", status: "Idea", language: "en", gates: { script: { state: "approved" }, voice: { state: "todo" }, scenes: { state: "todo" }, review: { state: "todo" }, avatar: { state: "todo" } } };
+  const running = setGate(base, "voice", { state: "running", mode: "recommended" });
+  assert.equal(running.gates.voice.pid, process.pid);
+  // the runner that set it is alive: untouched
+  assert.equal(recoverInterrupted(running, () => true), running);
+  // gone: failed, with a clear message, the other gates kept
+  const r = recoverInterrupted(running, () => false);
+  assert.equal(r.gates.voice.state, "failed");
+  assert.equal(r.gates.voice.error, INTERRUPTED);
+  assert.equal(r.gates.script.state, "approved");
+  // an old project without a pid counts as interrupted
+  const old = structuredClone(base);
+  old.gates.scenes = { state: "running" };
+  assert.equal(recoverInterrupted(old).gates.scenes.state, "failed");
+});

@@ -18,6 +18,8 @@ window.__TAURI_INTERNALS__ = {
   invoke: async (cmd, args) => {
     window.__calls.push({ cmd, args: JSON.parse(JSON.stringify(args ?? {})) });
     if (cmd === "app_state") return { config, projectsDir: "C:/P", defaultProjectsDir: "C:/P", keys: { heygen: true, elevenlabs: true, vidiq: true, gemini: true }, version: "0.1.0" };
+    // the real core answers save_config with the fresh app state (lib.rs)
+    if (cmd === "save_config") { Object.assign(config, args.config); return { config, projectsDir: "C:/P", defaultProjectsDir: "C:/P", keys: { heygen: true, elevenlabs: true, vidiq: true, gemini: true }, version: "0.1.0" }; }
     if (cmd === "key_status") return { heygen: true, elevenlabs: true, vidiq: true, gemini: true };
     if (cmd === "plugin:event|listen") return 1;
     if (cmd === "run_runner") {

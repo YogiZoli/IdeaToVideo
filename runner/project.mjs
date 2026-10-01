@@ -68,11 +68,37 @@ export function setGate(project, gate, patch, now = new Date()) {
   if (!GATES.includes(gate)) throw new Error(`Unknown gate: ${gate}`);
   const next = structuredClone(project);
   next.gates[gate] = { ...stripUndefined(patch), at: now.toISOString() };
+  if (patch.state === "running") next.gates[gate].pid = process.pid;
   if (patch.state === "running") {
     for (const later of GATES.slice(GATES.indexOf(gate) + 1)) next.gates[later] = { state: "todo" };
   }
   next.status = statusFor(next);
   return next;
+}
+
+// A gate left "running" by a runner that no longer exists (the app was closed
+// or crashed mid-step) would show "Running" forever. It becomes failed, so the
+// UI offers to run it again. A gate with no pid (older projects) counts as
+// interrupted too: a step that is really running always has one.
+export const INTERRUPTED = "Interrupted: the app was closed while this step was running. Run it again.";
+export function recoverInterrupted(project, alive = pidAlive) {
+  let next = project;
+  for (const g of GATES) {
+    const gate = next.gates[g];
+    if (gate?.state === "running" && !(gate.pid && alive(gate.pid))) {
+      next = structuredClone(next);
+      next.gates[g] = { state: "failed", ...(gate.mode ? { mode: gate.mode } : {}), at: gate.at ?? new Date().toISOString(), error: INTERRUPTED };
+    }
+  }
+  return next;
+}
+function pidAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM";
+  }
 }
 
 export function statusFor(project) {

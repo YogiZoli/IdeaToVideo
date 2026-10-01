@@ -246,7 +246,7 @@
       <span class="spacer"></span>
       <button type="button" disabled={busy} onclick={autopilot} title="Every remaining step with the recommended settings, then the render">Finish on Autopilot</button>
     </div>
-    {#if pilot}{#key pilotCommand}<Progress command={pilotCommand} label={`Autopilot: ${pilot}`} />{/key}{/if}
+    {#if pilot}{#key pilotCommand}<Progress command={pilotCommand} label={`Autopilot: ${pilot}`} provider={app.config?.narrator.provider} />{/key}{/if}
     {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
 
     <ol class="gates">
