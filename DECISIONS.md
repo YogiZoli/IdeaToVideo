@@ -323,8 +323,8 @@
       (68.), és a három varázsló (Brand, Mozgás, CTA) minden eredménye. A
       ONE Videók az egység alá tartoznak.
     - **Licencszintek az app felépítésében** (Zoltan, 2026-10-01): két szint
-      már most megkülönböztetendő: **Agency** (korlátlan Identity) és az egy
-      Identity-s szint (név nyitott; javaslat: **Solo**). A kód egy helyen
+      már most megkülönböztetendő: **Agency** (korlátlan Identity) és
+      **Solo** (egy Identity; a nevet Zoltan elfogadta, 2026-10-01). A kód egy helyen
       tartja a szintet és az Identity-korlátot (most: korlátlan, licenc még
       nincs, az a 4. fázisban jön). Nyitva hagyandó, nem építendő: affiliate
       és white label. Ehhez: a termék neve és a felületi szövegek egy helyen,
@@ -373,10 +373,30 @@
     - A Publishing Dream Team ingyenes lead magnet marad azoknak, akik még
       csak a videó után gondolnak a publikálásra; a tervező a tudatosaknak
       szóló "előre tervező" változat.
-    - A 0. és 1. lépés (ajánlat, tervezés) egy termék két modullal,
-      valószínűleg SaaS (lead magnetként weben könnyebb elérni, és könnyű
-      munka: LLM és vidIQ hívás). Kimenete: egy Offer Card Identity-nként és
-      egy Brief Card videónként. Döntés később.
+    - **Két külön SaaS, nem egy termék két modullal** (Zoltan, 2026-10-01;
+      irány, most nem épül). Más a céljuk és a felépítésük (kérdőív, utána
+      annak GHL-ben egy kattintásos megvalósítása), ezért külön app, akár
+      ugyanazon a domainen, két külön subdomainen. Web, mert lead magnetként
+      így könnyebb elérni, és a munka könnyű (LLM és vidIQ hívás).
+      - **Ajánlat és tervezés app**, kimenete: (1) **Offer Card**, Identity-nként,
+        ez tölti ki az Identity Audience, landing és CTA mezőit; (2) **Video
+        Brief Card**, videónként, ez az IdeaToVideo bemenete; (3) **Landing
+        implementation** (a landing oldal megvalósítása).
+      - **Lead Magnet app**, kimenete: (1) **Lead Magnet Card**; (2) **Lead
+        Magnet implementation**.
+      - Nyitott: hogyan jön ebbe a GHL megvalósítás (például PDF lead
+        magnet), és honnan jön hozzá a design. Gond: a design külön lépés
+        lenne, és duplikáció, mert az IdeaToVideo Brand varázslója már
+        tartalmazza, és kell a Lead Magnethez és a YouTube Brand Channel
+        varázslóhoz is. **Javaslat** (Claude, 2026-10-01, döntés később): egy
+        közös, verziózott **Brand Card** Identity-nként (színek, betűk, logó
+        világos és sötét, sarkok), ugyanúgy szerződés, mint a Brief Card. Az
+        a varázsló készíti, amelyikkel a user először találkozik, a többi
+        importálja, egyik sem kérdezi újra. GHL-ben Custom Value-kra képeződik
+        (szín, betű, logó URL), így a landing és a PDF sablonok egy
+        kattintással a user kinézetét kapják; a PDF lead magnet kész
+        sablonokból választ, nem külön design lépés. Az IdeaToVideo Brand
+        varázslója a Brand Cardot írja és olvassa.
     - **3x AI Agent In A Box:** külön, önálló SaaS (Zoltan, 2026-10-01; nem
       az IdeaToVideo része, Notionban vezetve).
     - **YouTube Brand Channel varázsló** (később, valószínűleg SaaS, a
