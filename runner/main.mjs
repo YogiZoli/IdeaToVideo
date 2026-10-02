@@ -328,7 +328,14 @@ const commands = {
 
   "refill-scene": async ({ projectDir, llm, index, component, look }) => {
     const project = loadProject(projectDir);
-    await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, themeIsLight: isLightLook(look) }));
+    appendLog(projectDir, `scenes: swapping scene ${index + 1} to ${component} with ${llm.provider}/${llm.model || "default model"}`);
+    try {
+      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, themeIsLight: isLightLook(look) }));
+    } catch (e) {
+      // The table stays as it was; only the log learns about the failed swap.
+      appendLog(projectDir, `scenes: swap of scene ${index + 1} failed, ${e.message}`);
+      throw e;
+    }
     const next = edited(projectDir, "scenes");
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);

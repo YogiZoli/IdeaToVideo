@@ -334,6 +334,19 @@ test("main.mjs speaks JSON lines: create, list, save, approve", () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+// 2026-10-02, Zoltan's log: a failed scene swap (Gemini 429) was in the app log
+// but not in the ONE Video's own log.txt.
+test("a failed scene swap is written to the ONE Video's log.txt", () => {
+  const dir = tmp();
+  const { dir: pdir } = run("create-project", { projectsDir: dir, title: "Swap log" }).events.at(-1).data;
+  const r = run("refill-scene", { projectDir: pdir, llm: { provider: "gemini" }, index: 0, component: "count-up" }, { STUDIO_API_KEY: "" });
+  assert.equal(r.status, 1);
+  const log = fs.readFileSync(path.join(pdir, "log.txt"), "utf8");
+  assert.match(log, /scenes: swapping scene 1 to count-up with gemini/);
+  assert.match(log, /scenes: swap of scene 1 failed, There is no scene table yet/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 // ---- repo hygiene ------------------------------------------------------------------
 
 // Zoltan's rule (2026-09-24): these third-party names must not appear anywhere in
