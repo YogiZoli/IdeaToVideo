@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-02 (Identity, Mentés és Napló kész; következik a Brand varázsló)
+Frissítve: 2026-10-02 (Brand varázsló és szótár kész; következik a Mozgás varázsló)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -135,6 +135,19 @@ Kész (2026-09-30):
   sikertelen újratervezése után a korábbi, illő tábla jóváhagyható; "ONE
   Video" mindig egyes számban. Tesztek: 124 Node, 39 Rust, e2e 16/16.
 
+- **Brand varázsló és szótár kész (2026-10-02)**, leírás: `docs/wizards/brand.md`,
+  DECISIONS 72. Brand Identity Card Identity-nként (`brand/brand-identity-card.json`,
+  generált `FRAME.md`); varázsló 7 képernyővel (Settings, Identity, Brand):
+  galéria (11 HyperFrames preset és a Warm paper), logó világos és sötét
+  (videóba nem kerül), színek olvashatóság-ellenőrzéssel és Fix gombbal,
+  betűk, formák, név a képernyőn, valódi előnézet (mintavideó, 8-15 mp).
+  18 helyi OFL betű (1,7 MB), mind a 10 tartalomnyelv betűivel; a render
+  nem tölt le betűt (mérve). Szótár: Settings, Identity, Dictionary; a
+  script prompt kapja, a gépi ellenőrzés az 1. és 3. kapuban jelez.
+  Gemini 429-nél egyszer a másik Gemini modell. Közös varázsló-keret a
+  Mozgás és a CTA varázslónak. Javítva még: a sikertelen jelenet-csere a
+  videó `log.txt`-jébe is bekerül. Tesztek: 142 Node, 40 Rust, e2e 20/20.
+
 ## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
 1. **Hibátlanítás: kész** (2026-10-01).
@@ -148,8 +161,14 @@ Kész (2026-09-30):
    `G:/My Drive`-ba, napló, és a "Zoltan Gero" Identity első videója.
    **Következő: 3. pont, Brand varázsló, új chatben** (a prompt a 2026-10-02-i
    chat végén; a munka első lépése a Zoltan próbájának napló-összefoglalója).
-3. **Brand varázsló** (Opus 5.5, High): `docs/wizards/brand.md`, benne a helyi
-   betűk és a szótár (DECISIONS 68).
+3. **Brand varázsló: kész** (2026-10-02), a szótárral és a helyi betűkkel
+   (DECISIONS 72). Zoltan próbája az új telepítővel: Settings, Brand, Open
+   Brand wizard végig, mentés, egy ONE Video újra a 4. kapuig; Settings,
+   Dictionary; és a 2b-ből elmaradt mentés a `G:/My Drive`-ba (a naplóban
+   nem volt nyoma, a config.json-ban nincs mentési mappa).
+   **Következő: 4. pont, Mozgás varázsló, új chatben.** Nyitva hozzá
+   (Zoltan döntésére): az open-design semleges rendszerei a galériába és
+   "Import tokens.css" (`docs/wizards/brand.md` 12b).
 4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
    feladat a `docs/motion-wizard.md` átírása a D útra, Zoltan jóváhagyása,
    csak utána kód.
@@ -161,7 +180,7 @@ Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`,
 jóváhagyott változaton), STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR
 `phase-2` a main felé, Zoltan jóváhagyása, merge.
 
-**Nyitott, a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
+**Megoldva (2026-10-02, DECISIONS 72), a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
 betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseréli),
 és a komponensek tartalékként `Inter`-t írnak. Megoldás: helyi OFL betűfájlok
 `@font-face`-szel a buildben, így nincs hálózati hívás és idegen betű.

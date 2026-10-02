@@ -57,7 +57,15 @@ test("theme: every token is always set, bad values are refused", () => {
   assert.throws(() => themeCss({ colour: "#fff" }), /Unknown theme value/);
   assert.match(themeCss({}, BLUE_PROFESSIONAL), /--itv-bg: #fdfae7;/, "the default look");
   assert.match(themeCss({ bg: "#000" }, BLUE_PROFESSIONAL), /--itv-bg: #000;[\s\S]*--itv-fg: #111111;/, "a project theme wins over the look");
-  assert.equal(baseTheme(undefined), BLUE_PROFESSIONAL);
+  // the default look is now the Blue Professional preset's card: the same
+  // colours, cards and display font as the hand-made mapping it replaced
+  const base = baseTheme(undefined);
+  const unq = (v) => v.replace(/'/g, "");
+  for (const k of ["bg", "fg", "muted", "surface", "border", "brand", "accent", "accent-2", "radius"]) assert.equal(base[k], BLUE_PROFESSIONAL[k], k);
+  for (const k of ["font-display", "font-body"]) assert.equal(unq(base[k]).split(",")[0], unq(BLUE_PROFESSIONAL[k]).split(",")[0], k);
+  // only generic fallbacks: a named one (Georgia) would be fetched by HyperFrames
+  for (const k of ["font-display", "font-body", "font-mono"]) assert.match(base[k], /^'[^']+', (Inter, )?(sans-serif|serif|monospace)$/, k);
+  assert.match(base["font-mono"], /^'JetBrains Mono'/, "a shipped mono font, not the system one");
   assert.equal(isLightLook("dark"), false);
 });
 

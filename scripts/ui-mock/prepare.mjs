@@ -12,6 +12,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { presetCards, contrastReport, cardForPreset } from "../../runner/brand/card.mjs";
+import { fontsIndex } from "../../runner/brand/fonts.mjs";
+import { libraryDir } from "../../runner/gates/build/assemble.mjs";
+import { previewDir } from "../../runner/brand/preview.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = process.argv[2];
@@ -29,4 +33,14 @@ fs.cpSync(build, out, { recursive: true });
 fs.copyFileSync(path.join(here, "mock.js"), path.join(out, "mock.js"));
 const index = path.join(out, "index.html");
 fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("<head>", `<head><script src="/mock.js?v=${Date.now()}"></script>`));
+// The Brand wizard's data, as the runner gives it, with the fonts served
+// from /fonts (mock.js answers brand-state with this file). Stills of the
+// last real preview, if there is one, as /preview/<n>.png.
+const card = cardForPreset("blue-professional");
+const fonts = fontsIndex().families.map((f) => ({ id: f.id, family: f.family, category: f.category, files: f.files.map((x) => ({ file: `${f.id}/${x.file}`, weight: x.weight, unicodeRange: x.unicodeRange })) }));
+fs.cpSync(path.join(libraryDir(), "fonts"), path.join(out, "fonts"), { recursive: true });
+fs.writeFileSync(path.join(out, "brand-state.json"), JSON.stringify({ card, own: false, presets: presetCards(), fonts, contrast: contrastReport(card), fontsDir: "/fonts", brandDir: null }));
+const shots = path.join(previewDir({ ...process.env, ITV_DATA_DIR: process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop") }), "review", "snapshots");
+fs.mkdirSync(path.join(out, "preview"), { recursive: true });
+if (fs.existsSync(shots)) fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort().forEach((f, i) => fs.copyFileSync(path.join(shots, f), path.join(out, "preview", `${i + 1}.png`)));
 console.log(`ui-mock ready in ${out}`);

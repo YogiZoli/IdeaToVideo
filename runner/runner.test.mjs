@@ -127,7 +127,7 @@ test("chat retries 429 and 5xx three times in total, then gives a plain message"
   const f = fakeFetch([{ status: 429, text: "slow down" }, { status: 503, text: "" }, { status: 429, text: "" }]);
   const slept = [];
   await assert.rejects(
-    chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) }),
+    chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms), noFallback: true }),
     (e) => e instanceof LlmError && /quota ran out/.test(e.message),
   );
   assert.equal(f.calls.length, 3);
@@ -375,8 +375,14 @@ test("Gemini overloaded after the retries: the same request once on the other Ge
   assert.equal(text, "from the other model");
   assert.deepEqual(used, ["gemini-3.8-flash"]);
   assert.equal(f.calls.at(-1).body.model, "gemini-3.8-flash");
-  const quota = fakeFetch([{ status: 429, text: "" }]);
-  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: quota, sleep: noSleep }), /quota/, "a quota error is not an overload: no other model");
+  // 2026-10-02 (K5): out of quota on one Gemini model, the other one is tried
+  // once; when both are out, the plain quota message.
+  const quota = fakeFetch([{ status: 429 }, { status: 429 }, { status: 429 }, answer("from the other model's quota")]);
+  assert.equal(await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: quota, sleep: noSleep }), "from the other model's quota");
+  assert.equal(quota.calls.at(-1).body.model, "gemini-3.8-flash");
+  const both = fakeFetch(Array(6).fill({ status: 429 }));
+  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: both, sleep: noSleep }), /quota/);
+  assert.equal(both.calls.length, 6);
 });
 
 // 2026-10-01: a gate left "running" by a closed app showed "Running" forever.

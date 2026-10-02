@@ -37,6 +37,23 @@ export const LANGUAGES: { code: string; label: string; voice: string }[] = [
 
 export const DEFAULT_PRESET = "blue-professional";
 
+// The looks to start from (library/presets.map.json and Warm paper, the app's
+// own). Setup offers them; Settings, Brand opens the wizard for the rest.
+export const PRESETS: { id: string; label: string }[] = [
+  { id: "blue-professional", label: "Blue Professional" },
+  { id: "biennale-yellow", label: "Biennale Yellow" },
+  { id: "blockframe", label: "Blockframe" },
+  { id: "broadside", label: "Broadside" },
+  { id: "capsule", label: "Capsule" },
+  { id: "cartesian", label: "Cartesian" },
+  { id: "cobalt-grid", label: "Cobalt Grid" },
+  { id: "code-editorial", label: "Code Editorial" },
+  { id: "coral", label: "Coral" },
+  { id: "creative-mode", label: "Creative Mode" },
+  { id: "editorial-forest", label: "Editorial Forest" },
+  { id: "warm-paper", label: "Warm paper" },
+];
+
 // The free Narrator Voice: Gemini TTS with the user's Gemini key (phase 2).
 // "edge-tts" (phase 1 test configs) is treated as Gemini.
 export const GEMINI_DEFAULT_VOICE = "Kore";

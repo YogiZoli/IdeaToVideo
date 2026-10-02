@@ -198,6 +198,15 @@ fn allow_media(app: &AppHandle, projects: &Path) {
     if let Ok(d) = app.path().app_local_data_dir() {
         let _ = scope.allow_directory(d.join("voice-previews"), true);
         let _ = scope.allow_directory(d.join("avatar-previews"), true);
+        // the Brand wizard's real preview (runner/brand/preview.mjs)
+        let _ = scope.allow_directory(d.join("brand-preview"), true);
+    }
+    // the Identities' logos, and the shipped fonts for the wizard's own preview
+    if let Ok(c) = config_dir(app) {
+        let _ = scope.allow_directory(identity::root(&c), true);
+    }
+    if let Ok(r) = app.path().resource_dir() {
+        let _ = scope.allow_directory(runner::plain_path(r.join("library").join("fonts")), true);
     }
 }
 
@@ -586,6 +595,14 @@ async fn run_runner(app: AppHandle, command: String, mut request: Value) -> Resu
             request["backupRoot"] = json!(r);
         }
     }
+    // The Identity's folder (Brand Identity Card, dictionary), always set
+    // here from the job's owner, never taken from the UI.
+    if let Some(obj) = request.as_object_mut() {
+        obj.remove("identityDir");
+    }
+    if let Some(id) = owner.as_deref() {
+        request["identityDir"] = json!(runner::plain_path(identity::dir_of(&config_dir(&app)?, id)?));
+    }
     let app_only = request.get("keyScope").and_then(Value::as_str) == Some("app");
     let resolved = match &key_name {
         Some(n) => keys::resolve(n, owner.as_deref(), app_only)?,
@@ -635,7 +652,13 @@ async fn auto_backup(app: AppHandle, dir: PathBuf, folder: Option<String>, info:
 /// of a new Identity, into a waiting folder it adopts on save). Returns the
 /// stored path.
 #[tauri::command]
-fn import_logo(app: AppHandle, path: String, for_new: bool) -> Result<String, String> {
+fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<String>) -> Result<String, String> {
+    // "dark": the version for dark backgrounds (Brand Identity Card logo.dark)
+    let stem = match variant.as_deref() {
+        None | Some("light") => "logo",
+        Some("dark") => "logo-dark",
+        Some(v) => return Err(format!("Unknown logo variant: {v}")),
+    };
     let src = PathBuf::from(&path);
     let ext = src
         .extension()
@@ -658,7 +681,11 @@ fn import_logo(app: AppHandle, path: String, for_new: bool) -> Result<String, St
     };
     let dir = base.join("brand");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let dest = dir.join(format!("logo.{ext}"));
+    // one file per variant: the same logo in another format replaces it
+    for old in ["png", "jpg", "jpeg", "svg", "webp"] {
+        let _ = std::fs::remove_file(dir.join(format!("{stem}.{old}")));
+    }
+    let dest = dir.join(format!("{stem}.{ext}"));
     std::fs::copy(&src, &dest).map_err(|e| format!("Could not copy the logo: {e}"))?;
     Ok(dest.to_string_lossy().to_string())
 }

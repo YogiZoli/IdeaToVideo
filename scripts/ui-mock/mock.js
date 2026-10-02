@@ -51,6 +51,13 @@ function addIdentity(i) {
   core.app.activeIdentity = id;
   return made;
 }
+// The Brand wizard (brand-state.json from prepare.mjs) and the dictionary.
+let brandCard = null;
+let dictionary = { schema: "dictionary/1", preferred: [{ term: "Owner", note: "capital O" }], banned: [{ term: "blasting email", instead: "sending to your list" }], distinct: [], positions: [{ against: "hustle culture", kind: "phenomenon" }] };
+async function brandState() {
+  const s = await (await fetch("/brand-state.json")).json();
+  return brandCard ? { ...s, card: brandCard, own: true } : s;
+}
 const jobs = [{ id: 1, command: "render-video", identity: "voxflow", identityName: "VoxFlow", project: "C:/P/VoxFlow/2026-10-01_first", state: "running" }];
 const replies = {
   "load-project": { project, brief: null, scriptMarkdown: "# T\n", latestVideo: null, stills: [], voiceInfo: null },
@@ -119,7 +126,7 @@ window.__TAURI_INTERNALS__ = {
         core.identities = [{ schema: 1, id: "restored", name: "Restored", folder: "Restored", ...fields() }];
         return state();
       case "plugin:opener|reveal_item_in_dir": return null;
-      case "import_logo": return `C:/cfg/identities/${args.forNew ? ".new" : active().id}/brand/logo.png`;
+      case "import_logo": return `C:/cfg/identities/${args.forNew ? ".new" : active().id}/brand/${args.variant === "dark" ? "logo-dark" : "logo"}.png`;
       case "plugin:event|listen": return 1;
       case "plugin:dialog|open": return "C:/Downloads/VoxFlow.identity.zip";
       case "plugin:dialog|save": return args?.options?.defaultPath ? `C:/Downloads/${args.options.defaultPath}` : "C:/Downloads/x.identity.zip";
@@ -128,6 +135,12 @@ window.__TAURI_INTERNALS__ = {
         if (typeof args.request.projectDir !== "undefined" && typeof args.request.projectDir !== "string") throw "projectDir must be a string";
         if (args.command === "list-projects") return { projects: [{ id: "p", title: `Test of ${active()?.name}`, status: "Scened", dir: `${args.request.projectsDir}/test`, createdAt: "2026", gates: project.gates }] };
         if (args.command === "create-project") return { id: "n", dir: `${args.request.projectsDir}/2026-10-01_new` };
+        if (args.command === "brand-state") return brandState();
+        if (args.command === "brand-save") { brandCard = { ...args.request.card, updatedAt: new Date().toISOString() }; return { card: brandCard, own: true, contrast: [] }; }
+        if (args.command === "brand-preview") { await new Promise((r) => setTimeout(r, 600)); return { stills: [1, 2, 3, 4, 5].map((n) => ({ scene: n, at: n * 4 - 0.2, file: `/preview/${n}.png` })) }; }
+        if (args.command === "dictionary-load") return { dictionary };
+        if (args.command === "dictionary-save") { dictionary = args.request.dictionary; return { dictionary }; }
+        if (args.command === "dictionary-check") return { findings: dictionary.banned.length ? [{ kind: "banned", term: dictionary.banned[0].term, found: dictionary.banned[0].term, instead: dictionary.banned[0].instead, where: "script open.problem" }, { kind: "spelling", term: "Owner", found: "owner", where: "scene 2 text" }] : [] };
         return replies[args.command] ?? {};
     }
     return null;

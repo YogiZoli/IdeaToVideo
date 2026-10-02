@@ -29,7 +29,12 @@ import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/mus
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
-import { isLightLook } from "./gates/build/assemble.mjs";
+import { isLightLook, libraryDir } from "./gates/build/assemble.mjs";
+import { loadCard, saveCard, presetCards, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
+import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
+import { brandPreview, previewDir } from "./brand/preview.mjs";
+import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gates/script/dictionary.mjs";
+import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
@@ -61,6 +66,31 @@ const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
 // LLM retries and model switches become progress lines (the app logs them).
 onLlmEvent((e) => emit({ event: "progress", ...e }));
 const key = () => process.env.STUDIO_API_KEY || "";
+
+// The look of a build, from the Identity's Brand Identity Card. The Rust core
+// sets identityDir (the ONE Video's own Identity) on every request; without
+// it (tests, pilots) a preset name in `look` still works.
+function lookOf({ identityDir, look }) {
+  if (!identityDir) return look;
+  const { card } = loadCard(identityDir);
+  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null };
+}
+
+// Dictionary findings for a ONE Video: the script's spoken text and every
+// text of the scene table (DECISIONS 68). Never blocks, the gates show them.
+function dictionaryFindings(projectDir, identityDir) {
+  const dict = loadDictionary(identityDir);
+  const pieces = [];
+  const sj = path.join(projectDir, "script.json");
+  if (fs.existsSync(sj)) pieces.push(...spokenFields(JSON.parse(fs.readFileSync(sj, "utf8"))).map(([where, text]) => [`script ${where}`, text]));
+  const sc = path.join(projectDir, "scenes.json");
+  if (fs.existsSync(sc)) {
+    (JSON.parse(fs.readFileSync(sc, "utf8")).scenes ?? []).forEach((scene, i) => {
+      for (const [k, v] of Object.entries(scene.vars ?? {})) if (typeof v === "string") pieces.push([`scene ${i + 1} ${k}`, v]);
+    });
+  }
+  return checkAll(dict, pieces);
+}
 
 // A Custom edit changes the gate's output, so every later gate starts again
 // (SPEC 6: running a gate again invalidates the later ones).
@@ -157,6 +187,42 @@ const commands = {
     return { projects };
   },
 
+  // ---- Brand wizard (docs/wizards/brand.md) ----------------------------------------
+  // Everything the wizard shows: the Identity's card (own or from its preset),
+  // the gallery, the fonts, the contrast check.
+  "brand-state": async ({ identityDir, preset }) => {
+    const { card, own } = loadCard(identityDir, { preset });
+    const fonts = fontsIndex().families.map((f) => ({ id: f.id, family: f.family, category: f.category, files: f.files.map((x) => ({ file: `${f.id}/${x.file}`, weight: x.weight, unicodeRange: x.unicodeRange })) }));
+    return { card, own, presets: presetCards(), fonts, contrast: contrastReport(card), fontsDir: path.join(libraryDir(), "fonts"), brandDir: identityDir ? path.join(identityDir, "brand") : null };
+  },
+
+  // The contrast check of a card the wizard is still editing (nothing saved).
+  "brand-check": async ({ card }) => {
+    const clean = normalizeCard(card, { families: familyNames() });
+    return { card: clean, contrast: contrastReport(clean) };
+  },
+
+  "brand-save": async ({ identityDir, card }) => {
+    if (!identityDir) throw new Error("No Identity to save the look in.");
+    const saved = saveCard(identityDir, card, { families: familyNames() });
+    return { card: saved, own: true, contrast: contrastReport(saved) };
+  },
+
+  // The real preview: the built-in sample video with this card, five stills.
+  "brand-preview": async ({ card, language = "en" }) => {
+    const r = await timed("brand-preview", 5, emit, () => brandPreview({ card, language, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    return { ...r, dir: previewDir() };
+  },
+
+  "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
+
+  "dictionary-save": async ({ identityDir, dictionary }) => {
+    if (!identityDir) throw new Error("No Identity to save the dictionary in.");
+    return { dictionary: saveDictionary(identityDir, dictionary) };
+  },
+
+  "dictionary-check": async ({ projectDir, identityDir }) => ({ findings: dictionaryFindings(projectDir, identityDir) }),
+
   "load-project": async ({ projectDir }) => {
     const project = recovered(projectDir);
     const md = path.join(projectDir, "script.md");
@@ -165,7 +231,8 @@ const commands = {
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
   // approved in autopilot).
-  "write-script": async ({ projectDir, llm, input = {}, channel = {} }) => {
+  "write-script": async ({ projectDir, identityDir, llm, input = {}, channel = {} }) => {
+    const dict = loadDictionary(identityDir);
     let project = setGate(loadProject(projectDir), "script", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
@@ -173,7 +240,7 @@ const commands = {
       const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
         writeScript({
           llm: { provider: llm.provider, model: llm.model, apiKey: key() },
-          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language },
+          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict) },
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );
@@ -182,8 +249,9 @@ const commands = {
       project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       if (res.script.title && !project.title) project.title = res.script.title;
       saveProject(projectDir, project);
-      appendLog(projectDir, `script: done, ${res.words} words`);
-      return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status };
+      const findings = checkAll(dict, spokenFields(res.script).map(([where, text]) => [`script ${where}`, text]));
+      appendLog(projectDir, `script: done, ${res.words} words${findings.length ? `, ${findings.length} dictionary findings` : ""}`);
+      return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status, dictionary: findings };
     } catch (e) {
       const failed = setGate(loadProject(projectDir), "script", { state: "failed", error: String(e.message).slice(0, 2000) });
       saveProject(projectDir, failed);
@@ -292,6 +360,7 @@ const commands = {
   // Gate 3: the scene table. The AI plans it from the sentence table and the
   // library; the user swaps rows (refill-scene) or edits text (save-scenes).
   "make-scenes": async ({ projectDir, llm, look }) => {
+    const name = typeof look === "object" ? look?.name ?? null : null;
     let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `scenes: planning with ${llm.provider}/${llm.model || "default model"}`);
@@ -301,6 +370,7 @@ const commands = {
           llm: { provider: llm.provider, model: llm.model, apiKey: key() },
           projectDir,
           language: project.language,
+          name,
           themeIsLight: isLightLook(look),
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
@@ -330,7 +400,7 @@ const commands = {
     const project = loadProject(projectDir);
     appendLog(projectDir, `scenes: swapping scene ${index + 1} to ${component} with ${llm.provider}/${llm.model || "default model"}`);
     try {
-      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, themeIsLight: isLightLook(look) }));
+      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look) }));
     } catch (e) {
       // The table stays as it was; only the log learns about the failed swap.
       appendLog(projectDir, `scenes: swap of scene ${index + 1} failed, ${e.message}`);
@@ -493,6 +563,9 @@ const commands = {
   },
 };
 
+// The commands that theme something: they get the Identity's card as `look`.
+const LOOK_COMMANDS = new Set(["make-scenes", "refill-scene", "make-avatar", "build-video"]);
+
 async function readStdin() {
   if (process.stdin.isTTY) return "";
   const chunks = [];
@@ -518,6 +591,7 @@ async function main() {
     }
   }
   try {
+    if (req.identityDir && LOOK_COMMANDS.has(name)) req.look = lookOf(req);
     emit({ event: "result", data: await cmd(req) });
     return 0;
   } catch (e) {

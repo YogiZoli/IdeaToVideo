@@ -10,5 +10,10 @@
     "grid-card-assemble", "constellation-hub",
     "whiteboard-ink",
     "cta-close", "logo-brand-close"
+  ],
+  "$presets": "The Brand wizard's gallery (docs/wizards/brand.md 8): the FRAME.md of each HyperFrames frame preset, same commit, same lock.",
+  "presets": [
+    "blue-professional", "biennale-yellow", "blockframe", "broadside", "capsule", "cartesian",
+    "cobalt-grid", "code-editorial", "coral", "creative-mode", "editorial-forest"
   ]
 }

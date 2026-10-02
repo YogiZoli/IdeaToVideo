@@ -517,3 +517,43 @@
         kambodzsai (KH) videók; ha a YouTube bezárja, nem fáj. **VoxFlow**:
         Mátéé, a különválás után kimarad; a felépítése a YouTube Brand
         Channel varázsló alapja (69).
+
+## 2026-10-02 (Brand varázsló)
+
+72. **Brand varázsló és szótár** (Zoltan jóváhagyta a tervet, 2026-10-02;
+    leírás: `docs/wizards/brand.md`). Eldöntve:
+    - **Egy design-forrás Identity-nként:** a Brand Identity Card
+      (`brand/brand-identity-card.json`, séma `brand-identity-card/1`, csak
+      hex szín, ismert név, fájlnév). A `FRAME.md` generált nézet belőle,
+      minden mentéskor újraíródik (K1). Kártya nélkül a `brand.preset` adja.
+    - **Logó a videóban nincs**, vízjel sincs (K2). A logó (világos és
+      sötét) a kártyán van a többi eszköznek.
+    - **Csak az app betűi**, saját feltöltés nincs, amíg nincs rá kérés
+      (K3). 18 OFL család a fontsource 5.3.0-ból, rögzítve, SHA256-tal,
+      build közben letöltve (1,7 MB). **Hiányos ékezetű betű kimarad** a
+      presetjével együtt (Fredoka One és Daisy Days, Shrikhand és Bold
+      Poster): a build elbukik, ha egy betűből a 10 tartalomnyelv bármelyik
+      betűje hiányzik, így felületi figyelmeztetés nem kell. 11 preset
+      marad, plusz a Warm paper (a Georgia helyett EB Garamonddal, amivé a
+      render amúgy is cserélte).
+    - **Mérés:** a HyperFrames a komponenseket egy dokumentumba fűzi, és
+      csak a `@font-face` nélküli családokat tölti le. A gyökérbe írt
+      helyi `@font-face` és a csak általános tartalék (`serif`,
+      `sans-serif`, `monospace`) mellett üres gyorsítótárral sem jött létre
+      a betű-gyorsítótár mappája. Az e2e ezt minden futáskor ellenőrzi.
+    - **A presetek a csomagban**, nem első használatkor (a 24. pontot
+      pontosítja): a `FRAME.md`-k a library rögzített commitjáról; a
+      szerepkiosztás (`library/presets.map.json`) csak neveket tartalmaz.
+    - **Szótár** (K4): Settings, Identity, "Dictionary", négy szekció. A
+      prompt adatként kapja; gépi ellenőrzés (szóhatár, kis- és nagybetű,
+      ékezet) a scriptben és a jelenet-tábla szövegeiben; nem blokkol.
+    - **Gemini 429** (K5): egyszer a másik Gemini modell, ugyanazzal a
+      kulccsal (az ingyenes kvóta modellenként számol). A korábbi "kvóta
+      nem túlterhelés" szabály ezzel megváltozik.
+    - **Közös varázsló-keret** (`WizardShell.svelte`) és mintavideós valódi
+      előnézet (`brand-preview`, mérve 8-15 mp): a Mozgás és a CTA varázsló
+      ezt kapja.
+    - **Nyitva, Zoltan döntésére:** az open-design semleges design
+      rendszerei a galéria második forrásaként, és egy "Import tokens.css"
+      gomb (híd a Claude Design és az open-design felé). Canvának nincs
+      paletta API-ja (`docs/wizards/brand.md` 12b).

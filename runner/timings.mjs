@@ -22,6 +22,7 @@ export const DEFAULTS = {
   remix: { perUnit: 6, min: 5 }, // per music change (a new mix)
   avatar: { perUnit: 15, min: 90 }, // per second of avatar clips (HeyGen renders)
   render: { perUnit: 1.5, min: 20 }, // per second of video (71 s: 102 s)
+  "brand-preview": { perUnit: 3, min: 12 }, // per scene of the sample (5 scenes: 15 s, measured 2026-10-02)
 };
 const KEEP = 5;
 

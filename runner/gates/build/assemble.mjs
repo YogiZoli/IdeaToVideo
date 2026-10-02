@@ -37,6 +37,8 @@ import { fileURLToPath } from "node:url";
 import { prepareBuild, buildDir } from "./index.mjs";
 import { duration } from "../../audio.mjs";
 import { avatarClips } from "../avatar/index.mjs";
+import { cardForPreset, cardTheme, cardFamilies } from "../../brand/card.mjs";
+import { fontFaces, categories } from "../../brand/fonts.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -209,12 +211,21 @@ export const WARM_PAPER = {
   "font-display": "Georgia, 'Times New Roman', serif",
 };
 
-// Other preset names fall back to blue-professional until the Brand wizard
-// brings the gallery. "dark" is the pilot's theme, kept for tests and pilots.
+// A look is what the build is themed with. Since the Brand wizard it comes
+// resolved from the Identity's Brand Identity Card (main.mjs lookOf):
+// { theme, families, light }. A plain name still works: a preset id (its
+// card, runner/brand/card.mjs) or "dark", the pilot's theme kept for tests.
 export const LOOKS = { "blue-professional": BLUE_PROFESSIONAL, "warm-paper": WARM_PAPER, dark: DEFAULT_THEME };
 export const DEFAULT_LOOK = "blue-professional";
-export const baseTheme = (look) => LOOKS[look] ?? LOOKS[DEFAULT_LOOK];
-export const isLightLook = (look) => baseTheme(look) !== DEFAULT_THEME;
+
+export function resolveLook(look = DEFAULT_LOOK) {
+  if (look && typeof look === "object") return look;
+  if (look === "dark") return { theme: DEFAULT_THEME, families: ["Inter"], light: false };
+  const card = cardForPreset(look);
+  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light" };
+}
+export const baseTheme = (look) => resolveLook(look).theme;
+export const isLightLook = (look) => resolveLook(look).light;
 
 // The runtime writes every variable of a mounted component as a CSS property
 // on the mount (id "accent" -> --accent): the per-instance value always, and
@@ -293,7 +304,7 @@ export function avatarStyle(layout = {}, width = 1920, height = 1080) {
 export const avatarVideo = (a, width = 1920, height = 1080) =>
   `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="${avatarStyle(a.layout, width, height)}"></video>`;
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video" }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video", fontCss = "" }) {
   const hosts = mounts
     .map(
       (m) =>
@@ -309,7 +320,9 @@ export function indexHtml({ width, height, total, theme, look, mounts, avatars =
     <meta name="viewport" content="width=${width}, height=${height}" />
     <title>${text(title)}</title>
     <style>
-${themeCss(theme, baseTheme(look))
+${[fontCss, themeCss(theme, baseTheme(look))]
+  .filter(Boolean)
+  .join("\n")
   .split("\n")
   .map((l) => "      " + l)
   .join("\n")}
@@ -350,7 +363,8 @@ ${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}
 
 // Reads scenes.json + sentences.json, checks everything, then writes build/.
 // `total` (seconds) is the audio length; measured from the mix when not given.
-export async function assemble(projectDir, { env = process.env, total, language, title, look = DEFAULT_LOOK } = {}) {
+export async function assemble(projectDir, { env = process.env, total, language, title, look: wanted = DEFAULT_LOOK } = {}) {
+  const look = resolveLook(wanted);
   const read = (f, what) => {
     const p = path.join(projectDir, f);
     if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet (${f}).`);
@@ -400,11 +414,17 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.writeFileSync(path.join(out, src), fitted[n]);
     return { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
   });
+  // The look's fonts, local: no font is fetched while rendering.
+  const fonts = fontFaces(look.families ?? [], { dir: libraryDir(env) });
+  for (const f of fonts.files) {
+    fs.mkdirSync(path.dirname(path.join(out, f.to)), { recursive: true });
+    fs.copyFileSync(f.from, path.join(out, f.to));
+  }
   for (const a of avatars) {
     fs.mkdirSync(path.join(out, "avatar"), { recursive: true });
     fs.copyFileSync(path.join(projectDir, a.file), path.join(out, a.file));
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, language, title }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, language, title, fontCss: fonts.css }));
   return { out, scenes: mounts.length, seconds: total };
 }
 

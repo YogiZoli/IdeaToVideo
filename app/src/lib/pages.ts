@@ -5,7 +5,7 @@
 
 import type { StepId } from "./steps";
 
-export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "voice" | "research" | "identity-ai";
+export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "dictionary" | "voice" | "research" | "identity-ai";
 export type Group = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; group: Group; steps: StepId[] };
@@ -18,7 +18,10 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "general", title: "General", group: "app", steps: [] },
   { id: "identity", title: "Identity", group: "identity", steps: ["name"] },
   { id: "channel", title: "YouTube channel and audience", group: "identity", steps: ["audience", "brandVoice", "profile", "youtube", "landing", "language"] },
-  { id: "look", title: "Look", group: "identity", steps: ["brand"] },
+  // the setup's Brand step lives here, but the page shows the Brand wizard
+  // instead of its fields (docs/wizards/brand.md 5)
+  { id: "look", title: "Brand", group: "identity", steps: ["brand"] },
+  { id: "dictionary", title: "Dictionary", group: "identity", steps: [] },
   { id: "voice", title: "Voice and avatar", group: "identity", steps: ["narrator", "heygen"] },
   { id: "research", title: "Research", group: "identity", steps: ["vidiq"] },
   { id: "identity-ai", title: "AI and keys", group: "identity", steps: [] },

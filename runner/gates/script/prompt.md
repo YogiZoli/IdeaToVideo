@@ -59,6 +59,18 @@ the data has no keyword, ignore this.
 - Follow the brand voice from the data. Write for the audience from the data.
 - Write everything in the content language from the data. The field names stay English.
 
+## Dictionary
+
+When the data has a "dictionary", follow it everywhere in the script:
+
+- preferredSpellings: write these words exactly as given, same capitals.
+- bannedWords: never use them, in any form. Say "insteadSay" when it is given.
+- neverMixUp: these pairs are different things. Never use one for the other,
+  and say which one you mean when both could fit.
+- standsAgainst: the YouTube channel's opponents and its stance. You may take
+  that stance where it fits the topic. When the kind is "person", speak about
+  them only as opinion ("I think", "in my view"), never state facts about them.
+
 ## Length
 
 Aim for about {{targetWords}} spoken words in total (about {{targetMinutes}}

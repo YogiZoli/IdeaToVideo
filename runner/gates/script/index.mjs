@@ -13,7 +13,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const WORDS_PER_MINUTE = 150;
 
 // The data block the model sees. Brief fields win over channel defaults.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword }) {
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null }) {
   const cta = brief.cta?.text || brief.cta?.landingUrl || channel.ctaText || channel.landingUrl
     ? { text: brief.cta?.text || channel.ctaText || null, landingUrl: brief.cta?.landingUrl || channel.landingUrl || null }
     : null;
@@ -32,6 +32,8 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     contentLanguage: language || brief.language || channel.contentLanguage || "en",
     targetLengthMin: targetLengthMin || brief.targetLengthMin || 8,
   };
+  // The Identity's dictionary (dictionary.mjs dictionaryData), only when it has entries.
+  if (dictionary) data.dictionary = dictionary;
   if (!data.topic) throw new Error("A topic or a brief title is needed to write a script.");
   return data;
 }

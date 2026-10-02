@@ -7,6 +7,7 @@
   import { onDestroy } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
+  import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
 
@@ -161,6 +162,7 @@
           {/each}
         </tbody>
       </table>
+      <DictionaryFindings {dir} version={table} only="scene" />
 
       {#if table.warnings.length}
         <div class="warn">

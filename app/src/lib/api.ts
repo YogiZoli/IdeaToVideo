@@ -137,7 +137,7 @@ export const deleteKey = (name: string, scope: KeyScope = "app") => call<void>("
 export const keyStatus = () => call<{ keys: Record<string, boolean>; keySources: Record<string, KeySource> }>("key_status");
 export const deleteAllKeys = () => call<void>("delete_all_keys");
 /** forNew: the logo of an Identity that does not exist yet (setup, New Identity). */
-export const importLogo = (path: string, forNew = false) => call<string>("import_logo", { path, forNew });
+export const importLogo = (path: string, forNew = false, variant: "light" | "dark" = "light") => call<string>("import_logo", { path, forNew, variant });
 export const jobList = () => call<Job[]>("job_list");
 export const backupSettingsNow = () => call<number>("backup_settings_now");
 export const restoreSettings = (path: string) => call<RawState>("restore_settings", { path }).then(withConfig);
@@ -152,6 +152,36 @@ export function onJobsChanged(fn: (jobs: Job[]) => void): Promise<UnlistenFn> {
   return listen<Job[]>("jobs-changed", (e) => fn(e.payload));
 }
 export const importMusic = (projectDir: string, path: string) => call<string>("import_music", { projectDir, path });
+
+// ---- Brand Identity Card and dictionary (docs/wizards/brand.md) ----------------------
+
+export type CardColors = { background: string; text: string; muted: string; surface: string; border: string; primary: string; secondary: string; tertiary: string };
+export type CardFont = { family: string; weight?: number; source?: "bundled" };
+export type BrandCard = {
+  schema: "brand-identity-card/1";
+  name?: string;
+  updatedAt?: string;
+  source?: { kind: "preset" | "logo" | "scratch" | "import"; preset?: string };
+  appearance?: "light" | "dark";
+  colors: CardColors;
+  fonts: { display: CardFont; body: CardFont; mono?: CardFont };
+  shape: { corners: "none" | "small" | "medium" | "large"; radiusPx?: number; cards: "flat" | "border" | "shadow" };
+  logo?: { light?: string | null; dark?: string | null };
+  nameplate?: { name?: string; title?: string; url?: string };
+};
+export type ContrastRow = { id: string; label: string; fg: keyof CardColors; bg: keyof CardColors; min: number; ratio: number; ok: boolean; fix: string | null };
+export type ShippedFont = { id: string; family: string; category: string; files: { file: string; weight: string; unicodeRange: string }[] };
+export type BrandState = { card: BrandCard; own: boolean; presets: { id: string; label: string; card: BrandCard }[]; fonts: ShippedFont[]; contrast: ContrastRow[]; fontsDir: string; brandDir: string | null };
+export type Still = { scene: number; at: number; file: string };
+
+export type Dictionary = {
+  schema: "dictionary/1";
+  preferred: { term: string; note?: string }[];
+  banned: { term: string; instead?: string }[];
+  distinct: { a: string; b: string; note?: string }[];
+  positions: { against: string; kind?: "phenomenon" | "type" | "person"; stance?: string }[];
+};
+export type DictFinding = { kind: "banned" | "spelling"; term: string; found: string; instead?: string; where: string };
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {
   return call<T>("run_runner", { command, request });

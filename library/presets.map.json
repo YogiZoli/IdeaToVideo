@@ -1,0 +1,236 @@
+{
+  "$comment": "Which named colour of each HyperFrames frame preset plays which role on the Brand Identity Card (docs/wizards/brand.md 8). Names only: the values come from the FRAME.md downloaded at the pinned commit. null = derived (runner/brand/card.mjs: surface 4% and border 20% of the primary over the background, muted 60% of the text over the background). Fonts are family names; mono defaults to JetBrains Mono. Daisy Days and Bold Poster are left out: their display fonts (Fredoka One, Shrikhand) lack letters of the content languages (Zoltan, 2026-10-02).",
+  "blue-professional": {
+    "label": "Blue Professional",
+    "colors": {
+      "background": "bg",
+      "text": "text",
+      "muted": "text-muted",
+      "surface": null,
+      "border": null,
+      "primary": "primary",
+      "secondary": "primary",
+      "tertiary": "primary"
+    },
+    "fonts": {
+      "display": "Space Grotesk",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    }
+  },
+  "biennale-yellow": {
+    "label": "Biennale Yellow",
+    "colors": {
+      "background": "paper",
+      "text": "ink",
+      "muted": null,
+      "surface": "paper-deep",
+      "border": null,
+      "primary": "ember",
+      "secondary": "sun",
+      "tertiary": "ink"
+    },
+    "fonts": {
+      "display": "Instrument Serif",
+      "body": "Archivo"
+    },
+    "shape": {
+      "corners": "small",
+      "cards": "flat"
+    }
+  },
+  "blockframe": {
+    "label": "Blockframe",
+    "colors": {
+      "background": "offwhite",
+      "text": "black",
+      "muted": null,
+      "surface": "white",
+      "border": "black",
+      "primary": "pink",
+      "secondary": "yellow",
+      "tertiary": "blue"
+    },
+    "fonts": {
+      "display": "Inter",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "none",
+      "cards": "shadow"
+    }
+  },
+  "broadside": {
+    "label": "Broadside",
+    "colors": {
+      "background": "ink-black",
+      "text": "cream",
+      "muted": "cream-muted",
+      "surface": "ink-black-alt",
+      "border": "border-dark",
+      "primary": "fire-orange",
+      "secondary": "fire-orange",
+      "tertiary": "cream"
+    },
+    "fonts": {
+      "display": "Barlow",
+      "body": "Barlow",
+      "mono": "IBM Plex Mono"
+    },
+    "shape": {
+      "corners": "none",
+      "cards": "flat"
+    }
+  },
+  "capsule": {
+    "label": "Capsule",
+    "colors": {
+      "background": "cream",
+      "text": "ink",
+      "muted": null,
+      "surface": "white",
+      "border": "outline",
+      "primary": "coral",
+      "secondary": "lime",
+      "tertiary": "violet"
+    },
+    "fonts": {
+      "display": "Bodoni Moda",
+      "body": "Space Grotesk"
+    },
+    "shape": {
+      "corners": "large",
+      "cards": "border"
+    }
+  },
+  "cartesian": {
+    "label": "Cartesian",
+    "colors": {
+      "background": "bg-primary",
+      "text": "text-primary",
+      "muted": "text-secondary",
+      "surface": "bg-secondary",
+      "border": "line",
+      "primary": "accent",
+      "secondary": "accent",
+      "tertiary": "text-primary"
+    },
+    "fonts": {
+      "display": "Playfair Display",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "none",
+      "cards": "border"
+    }
+  },
+  "cobalt-grid": {
+    "label": "Cobalt Grid",
+    "colors": {
+      "background": "paper",
+      "text": "ink",
+      "muted": "ink-soft",
+      "surface": "paper-2",
+      "border": null,
+      "primary": "ink",
+      "secondary": "ink-soft",
+      "tertiary": "ink"
+    },
+    "fonts": {
+      "display": "Newsreader",
+      "body": "Hanken Grotesk",
+      "mono": "DM Mono"
+    },
+    "shape": {
+      "corners": "none",
+      "cards": "border"
+    }
+  },
+  "code-editorial": {
+    "label": "Code Editorial",
+    "colors": {
+      "background": "cream",
+      "text": "ink",
+      "muted": null,
+      "surface": "tile",
+      "border": null,
+      "primary": "coral",
+      "secondary": "coral",
+      "tertiary": "navy"
+    },
+    "fonts": {
+      "display": "EB Garamond",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "shadow"
+    }
+  },
+  "coral": {
+    "label": "Coral",
+    "colors": {
+      "background": "cream",
+      "text": "black",
+      "muted": "gray",
+      "surface": "white",
+      "border": "cream-dark",
+      "primary": "coral",
+      "secondary": "coral-dark",
+      "tertiary": "black"
+    },
+    "fonts": {
+      "display": "Bebas Neue",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "small",
+      "cards": "flat"
+    }
+  },
+  "creative-mode": {
+    "label": "Creative Mode",
+    "colors": {
+      "background": "cream",
+      "text": "ink",
+      "muted": "ink-2",
+      "surface": "cream-2",
+      "border": null,
+      "primary": "green",
+      "secondary": "pink",
+      "tertiary": "orange"
+    },
+    "fonts": {
+      "display": "Archivo Black",
+      "body": "Space Grotesk"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    }
+  },
+  "editorial-forest": {
+    "label": "Editorial Forest",
+    "colors": {
+      "background": "green",
+      "text": "cream",
+      "muted": null,
+      "surface": "green-lite",
+      "border": null,
+      "primary": "pink",
+      "secondary": "pink-deep",
+      "tertiary": "cream"
+    },
+    "fonts": {
+      "display": "Source Serif 4",
+      "body": "Source Serif 4"
+    },
+    "shape": {
+      "corners": "small",
+      "cards": "flat"
+    }
+  }
+}

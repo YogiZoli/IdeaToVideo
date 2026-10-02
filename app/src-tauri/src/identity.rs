@@ -741,6 +741,33 @@ mod tests {
         fs::remove_dir_all(&base).unwrap();
     }
 
+    // The Brand wizard's results travel with the Identity (docs/wizards/brand.md 3).
+    #[test]
+    fn export_carries_the_brand_card_frame_dark_logo_and_dictionary() {
+        let base = tmpdir("brandexport");
+        let src = complete_new(json!({"name": "Anna", "channel": {}, "narrator": {"provider": "gemini"}}), &[]).unwrap();
+        let d = dir_of(&base, "anna").unwrap();
+        fs::create_dir_all(d.join("brand")).unwrap();
+        for f in ["brand-identity-card.json", "FRAME.md", "logo-dark.svg"] {
+            fs::write(d.join("brand").join(f), b"x").unwrap();
+        }
+        fs::write(d.join("dictionary.json"), b"{}").unwrap();
+        save(&base, &src).unwrap();
+        let out = base.join("Anna.identity.zip");
+        export(&base, &src, "IdeaToVideo", &out).unwrap();
+        let (ident, files) = read_export(&out).unwrap();
+        let mut names: Vec<String> = files.iter().map(|(p, _)| p.to_string_lossy().replace('\\', "/")).collect();
+        names.sort();
+        assert_eq!(names, ["brand/FRAME.md", "brand/brand-identity-card.json", "brand/logo-dark.svg", "dictionary.json"]);
+        let new = import(&base, ident, files, &list(&base)).unwrap();
+        let nd = dir_of(&base, new["id"].as_str().unwrap()).unwrap();
+        assert!(nd.join("brand").join("brand-identity-card.json").exists() && nd.join("dictionary.json").exists());
+        let copy = duplicate(&base, &src, "Anna Copy", &list(&base)).unwrap();
+        let cd = dir_of(&base, copy["id"].as_str().unwrap()).unwrap();
+        assert!(cd.join("brand").join("FRAME.md").exists() && cd.join("dictionary.json").exists());
+        fs::remove_dir_all(&base).unwrap();
+    }
+
     #[test]
     fn import_refuses_unsafe_or_foreign_files() {
         let base = tmpdir("import");

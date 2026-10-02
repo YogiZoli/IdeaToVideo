@@ -68,7 +68,11 @@ export async function chat(opts) {
   } catch (e) {
     const p = PROVIDERS[opts.provider];
     const used = opts.model || p?.model;
-    const next = e instanceof LlmError && e.status >= 500 && !opts.noFallback ? p?.fallbackModels?.find((m) => m !== used) : null;
+    // Overloaded (5xx) or out of quota (429): the same request once on the
+    // provider's other model. Gemini counts the free quota per model, so the
+    // other one often still has room (DECISIONS 72, K5).
+    const switchable = e instanceof LlmError && (e.status >= 500 || e.status === 429);
+    const next = switchable && !opts.noFallback ? p?.fallbackModels?.find((m) => m !== used) : null;
     if (!next) throw e;
     report({ step: "fallback", provider: opts.provider, from: used, to: next, status: e.status });
     opts.onFallback?.(next);

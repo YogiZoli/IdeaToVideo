@@ -21,6 +21,12 @@
   import ErrorBox from "./ErrorBox.svelte";
   import BackupSettings from "./BackupSettings.svelte";
   import LogCard from "./LogCard.svelte";
+  import BrandWizard from "./brand/BrandWizard.svelte";
+  import BrandMini from "./brand/BrandMini.svelte";
+  import DictionaryPage from "./brand/DictionaryPage.svelte";
+  import { ensureFonts } from "./brand/fontsDom";
+  import { runner } from "./api";
+  import type { BrandState, BrandCard } from "./api";
   import { log, setScreen, changedPaths } from "./logger";
 
 
@@ -40,6 +46,33 @@
   let error = $state("");
   let pageId = $state<PageId>(untrack(() => startPage));
   let wizard = $state(false);
+  let brandWizard = $state(false);
+  let brand = $state<BrandState | null>(null);
+
+  // The Brand page: the Identity's card as it is now (docs/wizards/brand.md 5).
+  async function loadBrand() {
+    try {
+      brand = await runner<BrandState>("brand-state", {});
+      ensureFonts(brand);
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
+  $effect(() => {
+    if (pageId === "look" && !brandWizard) untrack(() => loadBrand());
+  });
+
+  async function brandSaved(card: BrandCard, lightLogo: string | null) {
+    brandWizard = false;
+    await run(async () => {
+      // the light logo also stays where setup keeps it (identity.json brand.logo)
+      if (lightLogo && lightLogo !== config.brand?.logo) {
+        config.brand = { ...config.brand, logo: lightLogo };
+        after(await persist(), "Your look is saved. New videos of this Identity use it.");
+      } else message = "Your look is saved. New videos of this Identity use it.";
+      await loadBrand();
+    });
+  }
   const page = $derived(SETTINGS_PAGES.find((p) => p.id === pageId)!);
   const GROUPS = ["app", "identity"] as const;
   const appProvider = $derived(LLM_PROVIDERS.find((p) => p.id === appCfg.llm.provider) ?? LLM_PROVIDERS[0]);
@@ -152,7 +185,9 @@
   }
 </script>
 
-{#if wizard}
+{#if brandWizard}
+  <BrandWizard {app} onclose={() => (brandWizard = false)} onsaved={brandSaved} />
+{:else if wizard}
   <Onboarding
     bind:config
     bind:keys
@@ -182,12 +217,14 @@
         <p class="for">{page.group === "app" ? "Settings for all Identities" : `Settings for: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
+      {#if pageId !== "look" && pageId !== "dictionary"}
+        <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
+      {/if}
     </header>
     {#if message}<p class="good">{message}</p>{/if}
     {#if error}<ErrorBox message={error} context={{ step: "settings", provider: config.llm.provider, model: config.llm.model }} />{/if}
 
-    {#if page.steps.length}
+    {#if page.steps.length && pageId !== "look"}
       <div class="rerun">
         <p class="hint">Want to rethink this part? The setup wizard walks you through it again, step by step.</p>
         <button type="button" disabled={busy} onclick={() => { message = ""; wizard = true; }}>Run setup for this part again</button>
@@ -243,6 +280,25 @@
         <p>No support, no installation help.</p>
       </section>
       <LogCard initial={app.log} />
+    {:else if pageId === "look"}
+      <section class="card brand">
+        <h2>Your videos' look</h2>
+        {#if brand}
+          <div class="brandrow">
+            <div class="mini"><BrandMini card={brand.card} language={config.channel.contentLanguage ?? "en"} /></div>
+            <div class="brandtext">
+              <p>{brand.own ? `Your own look${brand.card.updatedAt ? `, saved ${new Date(brand.card.updatedAt).toLocaleDateString()}` : ""}.` : `The ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? "default"} preset. You have not set your own look yet.`}</p>
+              <p class="hint">Fonts: {brand.card.fonts.display.family} for titles, {brand.card.fonts.body.family} for text.</p>
+              <p class="hint">Saved as this Identity's Brand Identity Card, the design source your other tools can read too.</p>
+              <div class="row"><button type="button" class="primary" disabled={busy} onclick={() => { message = ""; brandWizard = true; }}>Open Brand wizard</button></div>
+            </div>
+          </div>
+        {:else}
+          <p class="hint">Loading...</p>
+        {/if}
+      </section>
+    {:else if pageId === "dictionary"}
+      <DictionaryPage />
     {:else if pageId === "identity-ai"}
       <section class="card">
         <h2>AI for this Identity</h2>
@@ -263,7 +319,7 @@
       </section>
     {/if}
 
-    {#each STEPS.filter((s) => page.group === "identity" && page.steps.includes(s.id)) as s (s.id)}
+    {#each STEPS.filter((s) => page.group === "identity" && page.steps.includes(s.id) && s.id !== "brand") as s (s.id)}
       <section class="card">
         <div class="head">
           <h2>{s.id === "name" ? "Name" : s.title}</h2>
@@ -309,7 +365,7 @@
 {/if}
 
 <style>
-  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; padding: 24px; max-width: 1060px; margin: 0 auto; }
+  .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; padding: 24px; max-width: 1060px; margin: 0 auto; }
   .pages { display: grid; gap: 2px; align-content: start; }
   .pages button { width: 100%; justify-content: flex-start; text-align: left; border: none; background: none; padding: 6px 10px; border-radius: 6px; }
   .pages .current { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
@@ -335,4 +391,6 @@
   .hint { font-size: 13px; color: var(--muted-foreground); word-break: break-word; }
   .good { color: var(--success); margin: 0; }
   .about p { margin: 4px 0; color: var(--muted-foreground); }
+  .brandrow { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 20px; align-items: start; }
+  .brandtext p { margin: 0 0 8px; }
 </style>

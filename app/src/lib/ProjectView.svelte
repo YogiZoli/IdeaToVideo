@@ -8,6 +8,7 @@
   import Progress from "./Progress.svelte";
   import VoiceGate from "./VoiceGate.svelte";
   import SceneGate from "./SceneGate.svelte";
+  import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import ReviewGate from "./ReviewGate.svelte";
   import AvatarGate from "./AvatarGate.svelte";
   import type { AppState, Gate } from "./api";
@@ -314,6 +315,7 @@
       {#if data.scriptMarkdown !== null || script?.state === "failed"}
         <label for="script" class="label">Script (you can edit it: Custom)</label>
         <textarea id="script" rows="22" bind:value={draft} disabled={busy} spellcheck="true"></textarea>
+        <DictionaryFindings {dir} version={data.scriptMarkdown} only="script" />
         <div class="actions">
           <button type="button" disabled={busy || !dirty} onclick={saveCustom}>Save my edits</button>
           <button type="button" class="primary" disabled={busy || !draft.trim() || script?.state === "approved"} onclick={approve}>

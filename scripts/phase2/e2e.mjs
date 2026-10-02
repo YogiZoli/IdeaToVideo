@@ -18,7 +18,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createProject, loadProject, saveProject, setGate } from "../../runner/project.mjs";
 import { makeScenes } from "../../runner/gates/scenes/index.mjs";
-import { resolveBrowser } from "../../runner/tools.mjs";
+import { resolveBrowser, hfHome } from "../../runner/tools.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const { values: args } = parseArgs({ options: { work: { type: "string" } } });
@@ -131,7 +131,26 @@ check("gate 3: scene table planned, one repair", planned.scenes === 5 && llmCall
 check("gate 3: approved", runner("approve-gate", { projectDir: dir, gate: "scenes" }).event === "result");
 
 // Gate 4: build, lint + check, stills.
-const built = runner("build-video", { projectDir: dir, look: "blue-professional" });
+// The Identity's own look (docs/wizards/brand.md): a Brand Identity Card in
+// its folder, a font that is not Inter, and no font fetched from the web
+// (HyperFrames caches every font it downloads; the cache must not grow).
+const identityDir = path.join(work, "identities", "my-identity");
+fs.mkdirSync(identityDir, { recursive: true });
+{
+  const state = runner("brand-state", { identityDir }).data;
+  const card = { ...state.presets.find((p) => p.id === "coral").card, nameplate: { name: "Kovács Ödön", title: "Üzletépítő", url: "odon.example" } };
+  check("brand: the card is saved in the Identity's folder", runner("brand-save", { identityDir, card }).event === "result" && fs.existsSync(path.join(identityDir, "brand", "brand-identity-card.json")) && fs.existsSync(path.join(identityDir, "brand", "FRAME.md")));
+  const preview = runner("brand-preview", { card, language: "hu" });
+  check("brand: the real preview, five stills", preview.event === "result" && preview.data.stills.length === 5 && preview.data.stills.every((s) => fs.existsSync(s.file)), preview.event === "result" ? `${preview.seconds} s` : preview.message);
+}
+const fontCache = path.join(hfHome(env), ".cache", "hyperframes", "fonts");
+const cached = () => (fs.existsSync(fontCache) ? fs.readdirSync(fontCache, { recursive: true }).sort().join("|") : "");
+const cacheBefore = cached();
+const built = runner("build-video", { projectDir: dir, identityDir, look: "blue-professional" });
+{
+  const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
+  check("brand: the build uses the card (Bebas Neue, local file)", /@font-face \{ font-family: 'Bebas Neue'/.test(html) && /--itv-bg: #f5f0e8/.test(html) && fs.existsSync(path.join(dir, "build", "fonts", "bebas-neue")));
+}
 check("gate 4: build, lint and check", built.event === "result", built.event === "result" ? `${built.data.scenes} scenes in ${built.seconds} s` : built.message);
 check("gate 4: one still per scene", built.data.stills?.length === 5 && built.data.stills.every((s) => fs.existsSync(s.file)), `${built.data.stills?.length} stills`);
 check("gate 4: approved", runner("approve-gate", { projectDir: dir, gate: "review" }).event === "result");
@@ -141,6 +160,7 @@ const rendered = runner("render-video", { projectDir: dir, quality: "draft" });
 check("render", rendered.event === "result" && fs.existsSync(rendered.data?.file ?? ""), rendered.event === "result" ? `${rendered.data.seconds} s of video in ${rendered.seconds} s` : rendered.message);
 check("render: length matches the voice", Math.abs(rendered.data.seconds - TOTAL) < 0.25, `${rendered.data.seconds} s vs ${TOTAL} s`);
 check("captions (.srt) next to the video", fs.existsSync(rendered.data.srt ?? "") && fs.readFileSync(rendered.data.srt, "utf8").includes("Start your first video today."));
+check("brand: no font was downloaded for the build, the stills or the render", cached() === cacheBefore);
 check("YouTube chapters next to the video", rendered.data.chapters?.startsWith("0:00 Intro") === true, (rendered.data.chapters ?? "").replace(/\n/g, " / "));
 check("the project remembers the video", runner("load-project", { projectDir: dir }).data?.latestVideo?.file === rendered.data.file);
 

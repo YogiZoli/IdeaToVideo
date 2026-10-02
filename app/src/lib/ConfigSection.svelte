@@ -7,7 +7,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import type { Config, KeyScope } from "./api";
   import { importLogo, errorText } from "./api";
-  import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider } from "./catalog";
+  import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider, PRESETS } from "./catalog";
   import type { StepId } from "./steps";
   import KeyField from "./KeyField.svelte";
   import AiSection from "./AiSection.svelte";
@@ -55,10 +55,9 @@
   <div class="field">
     <label for="preset">Video look</label>
     <select id="preset" bind:value={config.brand!.preset}>
-      <option value="blue-professional">Blue Professional: cream and cobalt (HyperFrames preset)</option>
-      <option value="warm-paper">Warm paper: beige, green and blue, serif titles</option>
+      {#each PRESETS as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
     </select>
-    <p class="hint">More presets, and your own colors and fonts, come with the Brand wizard. To change a finished video, build it again at 4. Review and render.</p>
+    <p class="hint">A starting point. Your own colors, fonts and shapes: Settings, Brand, after the setup.</p>
   </div>
   <div class="field">
     <span class="label">Logo</span>

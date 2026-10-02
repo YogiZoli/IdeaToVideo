@@ -28,6 +28,17 @@
     "cta-close/registry-item.json": "2e11f1cbf53c4cf8a8bf79f645ba1d3b6dd32fe1cb14ff21b37e686fd2c20c70",
     "cta-close/cta-close.html": "1aff42f1ddfaebcd961b64987e59ed8a3bd1961b4d40d44d24e117093801c46f",
     "logo-brand-close/registry-item.json": "ebf50e9d69d7ad2f16630fc7a96fad10419efdc490dfe335a07a5ff3b47e8c7f",
-    "logo-brand-close/logo-brand-close.html": "afd249a6bf34702f71a9bf4464adbe8f2dd3a768f9729701ee4a57f205991089"
+    "logo-brand-close/logo-brand-close.html": "afd249a6bf34702f71a9bf4464adbe8f2dd3a768f9729701ee4a57f205991089",
+    "presets/blue-professional/FRAME.md": "62e9a445885f6057084493de385a8ce20c3b4a299ae36a553ef54884f06bad68",
+    "presets/biennale-yellow/FRAME.md": "76d22cced9c152b0edb520543cf34c4ce772a312caa7211c40d4315b53c053cf",
+    "presets/blockframe/FRAME.md": "ef8d9d47a209bed4ccc2d928c14a81cdaecb5129f5dc0cdc0dc40afc7ef92931",
+    "presets/broadside/FRAME.md": "3af0a1e5e61bece19841671672d7732082f03d5699b713475e90323a21dbcc89",
+    "presets/capsule/FRAME.md": "f06dba67a3859f7c732b5177f7bcc58c94592caa5d6bbbcc6730a7876f5baa7a",
+    "presets/cartesian/FRAME.md": "3dc6a31813a333b2a7a1509ddbd3b4dabbbd7e12e6479b6cff10d69c185fec95",
+    "presets/cobalt-grid/FRAME.md": "62a6c9e6e5188cc29b9c0098e9bb8e72c23f152d9a99dd92c58139d26b69b19f",
+    "presets/code-editorial/FRAME.md": "b1c123526634e31a3e36cff9856e3b4322f2f778d2c7f573aa35a9ee1e90deb7",
+    "presets/coral/FRAME.md": "8530ecb36d1bb2d53392d88d972df35beeba19a5bcb3260fc9b18a58de7cdfe8",
+    "presets/creative-mode/FRAME.md": "c1a1359502d9fc79ef267305291fe0f651219c72d88088cee32327dd933dead8",
+    "presets/editorial-forest/FRAME.md": "ceeb2ab768367da1e1f3e1eca36ab9feeb3de3e4d15493319b0044c3d869329c"
   }
 }
