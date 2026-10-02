@@ -171,7 +171,12 @@ export type BrandCard = {
 };
 export type ContrastRow = { id: string; label: string; fg: keyof CardColors; bg: keyof CardColors; min: number; ratio: number; ok: boolean; fix: string | null };
 export type ShippedFont = { id: string; family: string; category: string; files: { file: string; weight: string; unicodeRange: string }[] };
-export type BrandState = { card: BrandCard; own: boolean; presets: { id: string; label: string; card: BrandCard }[]; fonts: ShippedFont[]; contrast: ContrastRow[]; fontsDir: string; brandDir: string | null };
+export type GalleryLook = { id: string; label: string; group: string; card: BrandCard };
+export type BrandState = { card: BrandCard; own: boolean; presets: GalleryLook[]; styleNote: string; fonts: ShippedFont[]; contrast: ContrastRow[]; fontsDir: string; brandDir: string | null };
+export const HYPERFRAMES_GROUP = "HyperFrames presets";
+export const exportBrand = (path: string) => call<string>("export_brand", { path });
+export const importBrand = (path: string) => call<BrandCard>("import_brand", { path });
+export const readTokensFile = (path: string) => call<string>("read_tokens_file", { path });
 export type Still = { scene: number; at: number; file: string };
 
 export type Dictionary = {

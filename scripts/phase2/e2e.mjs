@@ -142,6 +142,10 @@ fs.mkdirSync(identityDir, { recursive: true });
   check("brand: the card is saved in the Identity's folder", runner("brand-save", { identityDir, card }).event === "result" && fs.existsSync(path.join(identityDir, "brand", "brand-identity-card.json")) && fs.existsSync(path.join(identityDir, "brand", "FRAME.md")));
   const preview = runner("brand-preview", { card, language: "hu" });
   check("brand: the real preview, five stills", preview.event === "result" && preview.data.stills.length === 5 && preview.data.stills.every((s) => fs.existsSync(s.file)), preview.event === "result" ? `${preview.seconds} s` : preview.message);
+  // an open-design style through the same chain (its brand font replaced by a free one)
+  const od = state.presets.find((p) => p.id === "od-stripe");
+  const odPreview = od ? runner("brand-preview", { card: od.card, language: "en" }) : { event: "error", message: "no od-stripe in the gallery" };
+  check("brand: an open-design style (Stripe style) previews", state.presets.length === 163 && odPreview.event === "result" && odPreview.data.stills.length === 5, odPreview.event === "result" ? `${odPreview.seconds} s, ${od.card.fonts.display.family}` : odPreview.message);
 }
 const fontCache = path.join(hfHome(env), ".cache", "hyperframes", "fonts");
 const cached = () => (fs.existsSync(fontCache) ? fs.readdirSync(fontCache, { recursive: true }).sort().join("|") : "");

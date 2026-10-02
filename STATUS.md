@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-02 (Brand varázsló és szótár kész; következik a Mozgás varázsló)
+Frissítve: 2026-10-02 (Brand varázsló két körben kész; következik a Mozgás varázsló)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -147,6 +147,13 @@ Kész (2026-09-30):
   Gemini 429-nél egyszer a másik Gemini modell. Közös varázsló-keret a
   Mozgás és a CTA varázslónak. Javítva még: a sikertelen jelenet-csere a
   videó `log.txt`-jébe is bekerül. Tesztek: 142 Node, 40 Rust, e2e 20/20.
+- **Brand varázsló, második kör (2026-10-02)**, DECISIONS 73: Warm paper
+  törölve; a galéria 163 kinézet (11 HyperFrames preset és mind a 152
+  open-design stílus, "<márka> style" névvel, jogtisztán: csak tények,
+  márkabetű helyett szabad betű); 35 helyi betű (2,8 MB); "Import
+  tokens.css"; Export és Import Brand Identity Card. Zoltan előző próbája
+  (a 6df985d telepítővel): a napló 0 hiba. Tesztek: 144 Node, 43 Rust, e2e
+  21/21.
 
 ## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
@@ -166,9 +173,9 @@ Kész (2026-09-30):
    Brand wizard végig, mentés, egy ONE Video újra a 4. kapuig; Settings,
    Dictionary; és a 2b-ből elmaradt mentés a `G:/My Drive`-ba (a naplóban
    nem volt nyoma, a config.json-ban nincs mentési mappa).
-   **Következő: 4. pont, Mozgás varázsló, új chatben.** Nyitva hozzá
-   (Zoltan döntésére): az open-design semleges rendszerei a galériába és
-   "Import tokens.css" (`docs/wizards/brand.md` 12b).
+   **Következő: 4. pont, Mozgás varázsló, új chatben.** A Brand körből
+   nyitott kérdés nem maradt (open-design, tokens import, kártya export és
+   import: kész, DECISIONS 73).
 4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
    feladat a `docs/motion-wizard.md` átírása a D útra, Zoltan jóváhagyása,
    csak utána kód.

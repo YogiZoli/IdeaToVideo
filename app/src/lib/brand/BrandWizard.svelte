@@ -8,7 +8,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { convertFileSrc } from "@tauri-apps/api/core";
   import type { AppState, BrandCard, BrandState, CardColors, Still } from "../api";
-  import { runner, importLogo, errorText } from "../api";
+  import { runner, importLogo, errorText, readTokensFile, HYPERFRAMES_GROUP } from "../api";
   import { ensureFonts } from "./fontsDom";
   import { contrastReport, deriveFrom, fontPairs, previewFamily, paletteFromPixels, normHex, SAMPLE_LINE, COLOR_ROLES, fileName } from "../brand";
   import { log } from "../logger";
@@ -40,9 +40,21 @@
   let stills = $state<Still[]>([]);
   let stamp = $state(Date.now());
   let advanced = $state(false);
+  let group = $state(HYPERFRAMES_GROUP);
+  let search = $state("");
+  let notice = $state("");
 
   const report = $derived(card ? contrastReport(card) : []);
-  const pairs = $derived(st ? fontPairs(st.presets) : []);
+  // pairs and ready palettes come from the HyperFrames presets (a short list);
+  // the gallery offers every look, by group and by name
+  const hyperframes = $derived(st?.presets.filter((p) => p.group === HYPERFRAMES_GROUP) ?? []);
+  const pairs = $derived(fontPairs(hyperframes));
+  const groups = $derived(st ? [...new Set(st.presets.map((p) => p.group))] : []);
+  const shown = $derived.by(() => {
+    if (!st) return [];
+    const q = search.trim().toLowerCase();
+    return q ? st.presets.filter((p) => p.label.toLowerCase().includes(q) || p.group.toLowerCase().includes(q)) : st.presets.filter((p) => p.group === group);
+  });
   const families = $derived(st?.fonts.map((f) => f.family) ?? []);
   const url = (p: string | null) => (p ? `${convertFileSrc(p)}?v=${stamp}` : null);
   const join = (dir: string, name: string) => `${dir}${dir.includes("\\") ? "\\" : "/"}${name}`;
@@ -62,6 +74,25 @@
       error = errorText(e);
     }
   });
+
+  // "Import tokens.css": a design system's tokens (Claude Design,
+  // open-design, shadcn...) become the card to edit; nothing is saved yet.
+  async function importTokens() {
+    error = "";
+    notice = "";
+    const path = await open({ multiple: false, directory: false, filters: [{ name: "Design tokens", extensions: ["css"] }] });
+    if (typeof path !== "string") return;
+    try {
+      const text = await readTokensFile(path);
+      const r = await runner<{ card: BrandCard; fonts: string[] }>("brand-import", { text, fileName: fileName(path) });
+      const keep = { logo: card!.logo, nameplate: card!.nameplate };
+      card = { ...r.card, ...keep };
+      log("brand_tokens_imported", { fonts: r.fonts.length });
+      notice = `Imported from ${fileName(path)}.${r.fonts.length ? ` Fonts the app does not ship were replaced by free look-alikes: ${[...new Set(r.fonts)].join(", ")}.` : ""} Check it on the next screens, then Save.`;
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
 
   function usePreset(id: string) {
     const p = st!.presets.find((x) => x.id === id)!;
@@ -185,23 +216,32 @@
     {/snippet}
 
     {#if error}<ErrorBox message={error} context={{ step: "brand" }} />{/if}
+    {#if notice}<p class="good">{notice}</p>{/if}
 
     {#if step === 0}
       <p class="lead">Your videos get this look: colors, fonts and shapes. Start from a preset, from your logo's colors, or from what you have now.</p>
       <div class="starts">
         <button type="button" class="start" onclick={() => (step = 1)}><b>From my logo</b><span>Upload your logo, then pick colors from it.</span></button>
         <button type="button" class="start" onclick={() => { card!.source = { kind: "scratch" }; step = 2; }}><b>From scratch</b><span>Start from your current look and change it.</span></button>
+        <button type="button" class="start" onclick={importTokens}><b>Import tokens.css</b><span>From Claude Design, open-design or any design system's tokens file.</span></button>
       </div>
-      <h2>Or pick a preset</h2>
+      <h2>Or pick a look</h2>
+      <div class="filter">
+        <select bind:value={group} aria-label="Group" disabled={!!search.trim()}>
+          {#each groups as g (g)}<option value={g}>{g} ({st.presets.filter((p) => p.group === g).length})</option>{/each}
+        </select>
+        <input bind:value={search} placeholder="Search all {st.presets.length} looks" aria-label="Search looks" />
+      </div>
       <div class="gallery">
-        {#each st.presets as p (p.id)}
+        {#each shown as p (p.id)}
           <button type="button" class="preset" class:chosen={card.source?.preset === p.id} onclick={() => usePreset(p.id)}>
-            <BrandMini card={{ ...p.card, nameplate: { name: p.label, title: "Preset" } }} {language} small />
+            <BrandMini card={{ ...p.card, nameplate: { name: p.label, title: p.group } }} {language} small />
             <span>{p.label}</span>
           </button>
         {/each}
       </div>
-      <p class="hint">The presets are HyperFrames presets by HeyGen. Warm paper is the app's own.</p>
+      {#if !shown.length}<p class="hint">No look matches "{search}".</p>{/if}
+      <p class="hint">HyperFrames presets by HeyGen (Apache-2.0). The styles come from open-design (Apache-2.0): colors, corners and shapes only; brand fonts are replaced by free look-alikes. {st.styleNote}</p>
     {:else if step === 1}
       <p class="lead">Your logo is not shown in your videos. It is kept on your Brand Identity Card for your other tools, for example a landing page, and the Colors screen suggests colors from it.</p>
       <div class="logos">
@@ -246,7 +286,7 @@
       {/if}
       <h2>Ready combinations</h2>
       <div class="palettes">
-        {#each st.presets as p (p.id)}
+        {#each hyperframes as p (p.id)}
           <button type="button" class="palette" onclick={() => usePalette(p.card.colors)} title={p.label}>
             <span class="chip" style="background:{p.card.colors.background}"></span>
             <span class="chip" style="background:{p.card.colors.primary}"></span>
@@ -352,7 +392,10 @@
   .hint { font-size: 13px; color: var(--muted-foreground); margin: 0; }
   .bad { color: var(--destructive, #b42318); }
   .row { display: flex; gap: 8px; align-items: center; }
-  .starts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .starts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .filter { display: flex; gap: 8px; }
+  .filter input { flex: 1; min-width: 0; }
+  .good { color: var(--success); margin: 0; }
   .start { display: grid; gap: 4px; text-align: left; padding: 14px; justify-items: start; }
   .start span { font-size: 13px; color: var(--muted-foreground); }
   .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }

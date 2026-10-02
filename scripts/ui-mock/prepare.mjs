@@ -12,7 +12,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { presetCards, contrastReport, cardForPreset } from "../../runner/brand/card.mjs";
+import { contrastReport, cardForPreset } from "../../runner/brand/card.mjs";
+import { galleryCards, STYLE_NOTE } from "../../runner/brand/gallery.mjs";
+import { cardFromTokens } from "../../runner/brand/tokens.mjs";
+import { familyNames } from "../../runner/brand/fonts.mjs";
 import { fontsIndex } from "../../runner/brand/fonts.mjs";
 import { libraryDir } from "../../runner/gates/build/assemble.mjs";
 import { previewDir } from "../../runner/brand/preview.mjs";
@@ -39,7 +42,11 @@ fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("<head>", `<head>
 const card = cardForPreset("blue-professional");
 const fonts = fontsIndex().families.map((f) => ({ id: f.id, family: f.family, category: f.category, files: f.files.map((x) => ({ file: `${f.id}/${x.file}`, weight: x.weight, unicodeRange: x.unicodeRange })) }));
 fs.cpSync(path.join(libraryDir(), "fonts"), path.join(out, "fonts"), { recursive: true });
-fs.writeFileSync(path.join(out, "brand-state.json"), JSON.stringify({ card, own: false, presets: presetCards(), fonts, contrast: contrastReport(card), fontsDir: "/fonts", brandDir: null }));
+const presets = galleryCards().map(({ id, label, group, card: c }) => ({ id, label, group, card: c }));
+fs.writeFileSync(path.join(out, "brand-state.json"), JSON.stringify({ card, own: false, presets, styleNote: STYLE_NOTE, fonts, contrast: contrastReport(card), fontsDir: "/fonts", brandDir: null }));
+// "Import tokens.css" answers with this card (a shadcn-style dark tokens file)
+const imported = cardFromTokens(":root { --background: 240 10% 3.9%; --foreground: 0 0% 98%; --card: 240 10% 6%; --muted-foreground: 240 5% 64.9%; --primary: 263 70% 60%; --radius: 0.75rem; --font-display: 'Söhne', sans-serif; }", { families: familyNames(), name: "tokens", source: { kind: "import" } });
+fs.writeFileSync(path.join(out, "brand-import.json"), JSON.stringify({ card: imported.card, fonts: imported.notes, contrast: contrastReport(imported.card) }));
 const shots = path.join(previewDir({ ...process.env, ITV_DATA_DIR: process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop") }), "review", "snapshots");
 fs.mkdirSync(path.join(out, "preview"), { recursive: true });
 if (fs.existsSync(shots)) fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort().forEach((f, i) => fs.copyFileSync(path.join(shots, f), path.join(out, "preview", `${i + 1}.png`)));

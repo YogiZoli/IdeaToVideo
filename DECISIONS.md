@@ -557,3 +557,26 @@
       rendszerei a galéria második forrásaként, és egy "Import tokens.css"
       gomb (híd a Claude Design és az open-design felé). Canvának nincs
       paletta API-ja (`docs/wizards/brand.md` 12b).
+
+73. **Brand varázsló, második kör** (Zoltan, 2026-10-02, a próbája után: a
+    napló 0 hibát mutatott; leírás: `docs/wizards/brand.md` 12 és 12b).
+    - **Warm paper törölve** (nem HyperFrames preset, csak karbantartás és
+      ügyfélszolgálati kockázat). 11 HyperFrames preset marad.
+    - **open-design: mind a 152 design rendszer** a galériában, a márkákat
+      idézők is (Zoltan: ezek a kipróbált, jól konvertáló minták), rögzített
+      commitról (`53231d4`), SHA256-tal. Jogtiszta átvétel: csak tények
+      (színek, sarok, árnyék vagy keret, a megnevezett betű); a `tokens.css`
+      megjegyzései és a manifest leírása letöltés után kimarad; logó,
+      márkaszöveg, `DESIGN.md` soha; márkabetű soha, helyette a
+      legközelebbi szabad OFL betű (az open-design sem csomagolja őket, csak
+      megnevezi). Név: **"<márka> style"**, kiírással: "Style names describe
+      a look only. Not affiliated with or endorsed by the brands named."
+      (Zoltan választása a három lehetőség közül.)
+    - **35 betű** (2,8 MB): a presetek, az open-design által megnevezett
+      szabad betűk és a márkabetűk helyettesei. A Press Start 2P kimaradt
+      (hiányzik a román ș), helyette Space Mono.
+    - **Import tokens.css** a varázsló Start képernyőjén (Claude Design,
+      open-design, shadcn és a gyakori nevek), és **Export / Import Brand
+      Identity Card** (`.brand.zip` vagy `.json`) a Brand oldalon.
+    - Javítva: a Settings menü kattintásainál a napló a helyes csoportot
+      írja (korábban mindig "App"-ot).

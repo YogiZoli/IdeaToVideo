@@ -22,13 +22,13 @@ test("the App group holds only the App's AI step", () => {
   assert.ok(SETTINGS_PAGES.some((p) => p.group === "identity" && p.steps.includes("name")));
 });
 
-test("setup's preset list is the shipped one (library/presets.map.json and Warm paper)", async () => {
+test("setup's preset list is the shipped one (library/presets.map.json)", async () => {
   // catalog.ts imports without extensions (Vite style), so read its text
   const src = fs.readFileSync(new URL("../../app/src/lib/catalog.ts", import.meta.url), "utf8");
   const block = src.slice(src.indexOf("export const PRESETS"), src.indexOf("];", src.indexOf("export const PRESETS")));
   const PRESETS = [...block.matchAll(/\{ id: "([a-z-]+)", label: "([^"]+)" \}/g)].map((m) => ({ id: m[1], label: m[2] }));
   const map = JSON.parse(fs.readFileSync(new URL("../../library/presets.map.json", import.meta.url), "utf8"));
   const shipped = Object.keys(map).filter((k) => !k.startsWith("$"));
-  assert.deepEqual(PRESETS.map((p) => p.id), [...shipped, "warm-paper"]);
-  for (const p of PRESETS.slice(0, -1)) assert.equal(p.label, map[p.id].label);
+  assert.deepEqual(PRESETS.map((p) => p.id), shipped);
+  for (const p of PRESETS) assert.equal(p.label, map[p.id].label);
 });

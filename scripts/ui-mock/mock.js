@@ -127,6 +127,9 @@ window.__TAURI_INTERNALS__ = {
         return state();
       case "plugin:opener|reveal_item_in_dir": return null;
       case "import_logo": return `C:/cfg/identities/${args.forNew ? ".new" : active().id}/brand/${args.variant === "dark" ? "logo-dark" : "logo"}.png`;
+      case "export_brand": return args.path;
+      case "import_brand": return (await brandState()).presets.find((p) => p.id === "od-stripe").card;
+      case "read_tokens_file": return ":root { --background: 0 0% 4%; }";
       case "plugin:event|listen": return 1;
       case "plugin:dialog|open": return "C:/Downloads/VoxFlow.identity.zip";
       case "plugin:dialog|save": return args?.options?.defaultPath ? `C:/Downloads/${args.options.defaultPath}` : "C:/Downloads/x.identity.zip";
@@ -137,6 +140,7 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "create-project") return { id: "n", dir: `${args.request.projectsDir}/2026-10-01_new` };
         if (args.command === "brand-state") return brandState();
         if (args.command === "brand-save") { brandCard = { ...args.request.card, updatedAt: new Date().toISOString() }; return { card: brandCard, own: true, contrast: [] }; }
+        if (args.command === "brand-import") return (await fetch("/brand-import.json")).json();
         if (args.command === "brand-preview") { await new Promise((r) => setTimeout(r, 600)); return { stills: [1, 2, 3, 4, 5].map((n) => ({ scene: n, at: n * 4 - 0.2, file: `/preview/${n}.png` })) }; }
         if (args.command === "dictionary-load") return { dictionary };
         if (args.command === "dictionary-save") { dictionary = args.request.dictionary; return { dictionary }; }

@@ -99,6 +99,52 @@ export async function fetchFonts({ update = false, fetchImpl = fetch, log = cons
   return families;
 }
 
+export const OD_LIST = path.join(ROOT, "library", "opendesign.json");
+export const OD_LOCK = path.join(ROOT, "library", "opendesign.lock.json");
+
+export function openDesignUrl(commit, file) {
+  if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error(`Not a pinned commit: ${commit}`);
+  if (!/^(LICENSE|design-systems\/[a-z0-9-]+\/(manifest\.json|tokens\.css))$/.test(file)) throw new Error(`Not an open-design file we take: ${file}`);
+  return `https://raw.githubusercontent.com/nexu-io/open-design/${commit}/${file}`;
+}
+
+// open-design's design systems (the gallery's second source): only each
+// system's manifest.json and tokens.css, and the repo's LICENSE.
+export async function fetchOpenDesign({ update = false, fetchImpl = fetch, log = console.log, out } = {}) {
+  const list = JSON.parse(fs.readFileSync(OD_LIST, "utf8"));
+  const lock = update || !fs.existsSync(OD_LOCK) ? { commit: list.commit, files: {} } : JSON.parse(fs.readFileSync(OD_LOCK, "utf8"));
+  if (!update && lock.commit !== list.commit) throw new Error("opendesign.lock.json is for another commit. Run with --update.");
+  const files = ["LICENSE", ...list.systems.flatMap((id) => [`design-systems/${id}/manifest.json`, `design-systems/${id}/tokens.css`])];
+  // a few at a time: 300 small files
+  for (let i = 0; i < files.length; i += 12) {
+    await Promise.all(
+      files.slice(i, i + 12).map(async (file) => {
+        const buf = await get(openDesignUrl(list.commit, file), fetchImpl);
+        const got = sha256(buf);
+        if (update) lock.files[file] = got;
+        else if (lock.files[file] !== got) throw new Error(`SHA256 mismatch for open-design ${file}: expected ${lock.files[file]}, got ${got}`);
+        const dst = path.join(out, file.replace(/^design-systems\//, ""));
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+        // Checked as downloaded, shipped reduced to facts: tokens.css without
+        // its comments (they describe the brands), manifest.json with only the
+        // name and the category. No brand prose goes into the app.
+        if (file.endsWith("tokens.css")) fs.writeFileSync(dst, buf.toString("utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\n\s*\n+/g, "\n"));
+        else if (file.endsWith("manifest.json")) {
+          const m = JSON.parse(buf.toString("utf8"));
+          fs.writeFileSync(dst, JSON.stringify({ id: m.id, name: m.name, category: m.category }, null, 2) + "\n");
+        } else fs.writeFileSync(dst, buf);
+      }),
+    );
+  }
+  fs.writeFileSync(path.join(out, "SOURCE.json"), JSON.stringify({ source: list.source, commit: list.commit, license: list.license, systems: list.systems }, null, 2) + "\n");
+  if (update) {
+    lock.files = Object.fromEntries(Object.entries(lock.files).sort(([a], [b]) => a.localeCompare(b)));
+    fs.writeFileSync(OD_LOCK, JSON.stringify(lock, null, 2) + "\n");
+  }
+  log(`library: ${list.systems.length} open-design systems`);
+  return list.systems;
+}
+
 // The CDN GSAP inside a component becomes the local copy beside index.html.
 export function localizeGsap(html) {
   return html.replace(/<script\s+src="https:\/\/cdn\.jsdelivr\.net\/npm\/gsap@[\d.]+\/dist\/gsap\.min\.js"><\/script>/g, '<script src="gsap.min.js"></script>');
@@ -148,6 +194,7 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   fs.copyFileSync(path.join(ROOT, "library", "presets.map.json"), path.join(stage, "presets", "MAP.json"));
   log(`library: ${list.presets?.length ?? 0} presets`);
   await fetchFonts({ update, fetchImpl, log, out: path.join(stage, "fonts") });
+  await fetchOpenDesign({ update, fetchImpl, log, out: path.join(stage, "opendesign") });
   fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); fonts OFL-1.1 (see fonts/<id>/LICENSE)" }, null, 2) + "\n");
   if (update) fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + "\n");
   fs.rmSync(out, { recursive: true, force: true });

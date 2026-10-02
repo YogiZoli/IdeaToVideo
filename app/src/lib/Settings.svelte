@@ -25,7 +25,7 @@
   import BrandMini from "./brand/BrandMini.svelte";
   import DictionaryPage from "./brand/DictionaryPage.svelte";
   import { ensureFonts } from "./brand/fontsDom";
-  import { runner } from "./api";
+  import { runner, exportBrand, importBrand } from "./api";
   import type { BrandState, BrandCard } from "./api";
   import { log, setScreen, changedPaths } from "./logger";
 
@@ -61,6 +61,35 @@
   $effect(() => {
     if (pageId === "look" && !brandWizard) untrack(() => loadBrand());
   });
+
+  // The card as a file of its own (docs/wizards/brand.md 12): for another
+  // Identity, another computer, or the user's other tools.
+  async function exportCard() {
+    const path = await saveDialog({ defaultPath: `${app.identity!.name}.brand.zip`, filters: [{ name: "Brand Identity Card", extensions: ["zip"] }] });
+    if (typeof path !== "string") return;
+    await run(async () => {
+      if (!brand?.own) await runner("brand-save", { card: $state.snapshot(brand!.card) });
+      const out = await exportBrand(path);
+      message = `Exported to ${out}: the Brand Identity Card, its FRAME.md and the logos.`;
+      await loadBrand();
+    });
+  }
+
+  async function importCard() {
+    const path = await open({ multiple: false, directory: false, filters: [{ name: "Brand Identity Card", extensions: ["zip", "json"] }] });
+    if (typeof path !== "string") return;
+    await run(async () => {
+      const card = await importBrand(path);
+      await runner("brand-save", { card: { ...card, name: app.identity?.name ?? card.name } });
+      await loadBrand();
+      // the light logo also stays where setup keeps it (identity.json brand.logo)
+      const light = brand?.card.logo?.light;
+      if (light && brand?.brandDir) {
+        config.brand = { ...config.brand, logo: `${brand.brandDir}${brand.brandDir.includes("\\") ? "\\" : "/"}${light}` };
+        after(await persist(), "Brand Identity Card imported. New videos of this Identity use it.");
+      } else message = "Brand Identity Card imported. New videos of this Identity use it.";
+    });
+  }
 
   async function brandSaved(card: BrandCard, lightLogo: string | null) {
     brandWizard = false;
@@ -277,6 +306,7 @@
       <section class="card about">
         <h2>About</h2>
         <p>{PRODUCT} {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
+        <p>Design styles from open-design (Apache-2.0): colors, corners and shapes only. Style names describe a look only; not affiliated with or endorsed by the brands named. Fonts: SIL Open Font License (OFL-1.1), via fontsource.</p>
         <p>No support, no installation help.</p>
       </section>
       <LogCard initial={app.log} />
@@ -287,7 +317,7 @@
           <div class="brandrow">
             <div class="mini"><BrandMini card={brand.card} language={config.channel.contentLanguage ?? "en"} /></div>
             <div class="brandtext">
-              <p>{brand.own ? `Your own look${brand.card.updatedAt ? `, saved ${new Date(brand.card.updatedAt).toLocaleDateString()}` : ""}.` : `The ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? "default"} preset. You have not set your own look yet.`}</p>
+              <p>{brand.own ? `Your own look${brand.card.updatedAt ? `, saved ${new Date(brand.card.updatedAt).toLocaleDateString()}` : ""}${brand.card.source?.preset ? `, from ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? brand.card.source.preset}` : ""}.` : `The ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? "default"} preset. You have not set your own look yet.`}</p>
               <p class="hint">Fonts: {brand.card.fonts.display.family} for titles, {brand.card.fonts.body.family} for text.</p>
               <p class="hint">Saved as this Identity's Brand Identity Card, the design source your other tools can read too.</p>
               <div class="row"><button type="button" class="primary" disabled={busy} onclick={() => { message = ""; brandWizard = true; }}>Open Brand wizard</button></div>
@@ -296,6 +326,14 @@
         {:else}
           <p class="hint">Loading...</p>
         {/if}
+      </section>
+      <section class="card">
+        <h2>Brand Identity Card file</h2>
+        <p class="hint">One file with this look (colors, fonts, shapes, name on screen) and the logos, for another Identity, another computer or your other tools. Import replaces this Identity's look.</p>
+        <div class="row">
+          <button type="button" disabled={busy || !brand} onclick={exportCard}>Export Brand Identity Card</button>
+          <button type="button" disabled={busy} onclick={importCard}>Import Brand Identity Card</button>
+        </div>
       </section>
     {:else if pageId === "dictionary"}
       <DictionaryPage />

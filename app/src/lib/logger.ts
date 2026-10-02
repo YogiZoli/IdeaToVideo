@@ -42,7 +42,13 @@ const short = (s: string | null | undefined, n = 80) => {
 /** The heading of the card or page an element sits in. */
 function whereOf(el: Element): string {
   const card = el.closest("section, .card, .pop, nav, header, .wizard, .progress");
-  const h = card?.querySelector("h1, h2, h3, .gname, legend")?.textContent;
+  let h = card?.querySelector("h1, h2, h3, .gname, legend")?.textContent;
+  // a grouped menu (Settings): the group the item is listed under, not the first one
+  if (card?.tagName === "NAV") {
+    let s = el.closest("nav > *")?.previousElementSibling ?? null;
+    while (s && !s.querySelector(".gname") && !s.classList.contains("gname")) s = s.previousElementSibling;
+    h = s ? (s.querySelector(".gname") ?? s).textContent : h;
+  }
   const page = document.querySelector(".page h1, .wizard h1, main h1")?.textContent;
   return [short(page, 40), short(h, 40)].filter(Boolean).join(" > ");
 }

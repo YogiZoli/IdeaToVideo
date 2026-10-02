@@ -30,9 +30,11 @@ import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/i
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
 import { isLightLook, libraryDir } from "./gates/build/assemble.mjs";
-import { loadCard, saveCard, presetCards, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
+import { loadCard, saveCard, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
 import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
 import { brandPreview, previewDir } from "./brand/preview.mjs";
+import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
+import { cardFromTokens } from "./brand/tokens.mjs";
 import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gates/script/dictionary.mjs";
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
@@ -193,7 +195,16 @@ const commands = {
   "brand-state": async ({ identityDir, preset }) => {
     const { card, own } = loadCard(identityDir, { preset });
     const fonts = fontsIndex().families.map((f) => ({ id: f.id, family: f.family, category: f.category, files: f.files.map((x) => ({ file: `${f.id}/${x.file}`, weight: x.weight, unicodeRange: x.unicodeRange })) }));
-    return { card, own, presets: presetCards(), fonts, contrast: contrastReport(card), fontsDir: path.join(libraryDir(), "fonts"), brandDir: identityDir ? path.join(identityDir, "brand") : null };
+    const presets = galleryCards().map(({ id, label, group, card: c }) => ({ id, label, group, card: c }));
+    return { card, own, presets, styleNote: STYLE_NOTE, fonts, contrast: contrastReport(card), fontsDir: path.join(libraryDir(), "fonts"), brandDir: identityDir ? path.join(identityDir, "brand") : null };
+  },
+
+  // "Import tokens.css" (the wizard's Start screen): a design system's
+  // tokens (Claude Design, open-design, shadcn...) as a card to edit, not
+  // saved yet. The text comes from the Rust core (read_design_file).
+  "brand-import": async ({ text, fileName = "tokens.css" }) => {
+    const { card, notes } = cardFromTokens(text, { families: familyNames(), name: String(fileName).replace(/\.[a-z]+$/i, "").slice(0, 60) || "Imported", source: { kind: "import" } });
+    return { card: normalizeCard(card, { families: familyNames() }), fonts: notes, contrast: contrastReport(card) };
   },
 
   // The contrast check of a card the wizard is still editing (nothing saved).

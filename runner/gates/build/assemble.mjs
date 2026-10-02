@@ -196,26 +196,11 @@ export const BLUE_PROFESSIONAL = {
   "font-mono": "ui-monospace, Consolas, monospace",
 };
 
-// "Warm paper": the look of the first pilot video, which Zoltan liked
-// (2026-09-30): paper background, green and blue accents, serif display.
-export const WARM_PAPER = {
-  ...DEFAULT_THEME,
-  bg: "#f6f3ec",
-  fg: "#1b1d22",
-  muted: "#5d6470",
-  surface: "#ffffff",
-  border: "#d9d3c7",
-  brand: "#0a7d55",
-  accent: "#1f5fbf",
-  "accent-2": "#7a3fb8",
-  "font-display": "Georgia, 'Times New Roman', serif",
-};
-
 // A look is what the build is themed with. Since the Brand wizard it comes
 // resolved from the Identity's Brand Identity Card (main.mjs lookOf):
 // { theme, families, light }. A plain name still works: a preset id (its
 // card, runner/brand/card.mjs) or "dark", the pilot's theme kept for tests.
-export const LOOKS = { "blue-professional": BLUE_PROFESSIONAL, "warm-paper": WARM_PAPER, dark: DEFAULT_THEME };
+export const LOOKS = { "blue-professional": BLUE_PROFESSIONAL, dark: DEFAULT_THEME };
 export const DEFAULT_LOOK = "blue-professional";
 
 export function resolveLook(look = DEFAULT_LOOK) {

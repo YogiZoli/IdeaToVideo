@@ -8,7 +8,7 @@ import { effectiveConfig, identityFromConfig, appFromConfig, youtubeHandle, room
 const app = { schema: 2, onboarded: true, ui: { language: "en" }, llm: { provider: "gemini", model: "gemini-3.5-flash" }, projectsDir: null, activeIdentity: "vox", defaults: { autopilot: true } };
 const ident = {
   schema: 1, id: "vox", name: "VoxFlow", folder: "VoxFlow", llm: null,
-  brand: { preset: "warm-paper", logo: null },
+  brand: { preset: "coral", logo: null },
   channel: { audience: "founders", contentLanguage: "hu" },
   narrator: { provider: "elevenlabs", voice: "abc" },
   defaults: { scriptTemplate: "ownership", targetLengthMin: 6 },

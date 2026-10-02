@@ -8,6 +8,7 @@
 // effective settings the gates read (app/src/lib/identity.ts).
 
 mod backup;
+mod brand;
 mod config;
 mod edition;
 mod identity;
@@ -648,6 +649,41 @@ async fn auto_backup(app: AppHandle, dir: PathBuf, folder: Option<String>, info:
     let _ = app.emit("backup-done", payload);
 }
 
+/// The active Identity's brand folder (Brand Identity Card, FRAME.md, logos).
+fn brand_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let id = active_id(app)?.ok_or("No Identity yet.")?;
+    Ok(identity::dir_of(&config_dir(app)?, &id)?.join("brand"))
+}
+
+/// "Export Brand Identity Card": <path>.zip with the card, FRAME.md and logos.
+#[tauri::command]
+fn export_brand(app: AppHandle, path: String) -> Result<String, String> {
+    let mut out = PathBuf::from(path);
+    if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("zip".into()) {
+        out.set_extension("zip");
+    }
+    brand::export(&brand_dir(&app)?, edition::PRODUCT_NAME, &out)?;
+    note(&app, "info", "brand_exported", json!({ "file": out }));
+    Ok(out.to_string_lossy().to_string())
+}
+
+/// "Import Brand Identity Card": from a .brand.zip (its logos go into the
+/// active Identity's brand folder) or a .json. Returns the card; the UI saves
+/// it through the runner (brand-save), which checks it against the schema.
+#[tauri::command]
+fn import_brand(app: AppHandle, path: String) -> Result<Value, String> {
+    let (card, logos) = brand::read(&PathBuf::from(&path))?;
+    brand::write_logos(&brand_dir(&app)?, &logos)?;
+    note(&app, "info", "brand_imported", json!({ "logos": logos.len() }));
+    Ok(card)
+}
+
+/// "Import tokens.css": the text of the tokens file the user picked.
+#[tauri::command]
+fn read_tokens_file(path: String) -> Result<String, String> {
+    brand::read_tokens(&PathBuf::from(path))
+}
+
 /// Copies the chosen logo into the active Identity's folder (or, during setup
 /// of a new Identity, into a waiting folder it adopts on save). Returns the
 /// stored path.
@@ -794,6 +830,9 @@ pub fn run() {
             job_list,
             run_runner,
             import_logo,
+            export_brand,
+            import_brand,
+            read_tokens_file,
             import_music,
             backup_settings_now,
             restore_settings,

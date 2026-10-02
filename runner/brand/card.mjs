@@ -133,21 +133,9 @@ export function presetCard(id, md, entry) {
   });
 }
 
-// "Warm paper": the first pilot video's look (DECISIONS 59), the app's own,
-// not a HyperFrames preset. Its serif is EB Garamond (shipped), which is what
-// a Georgia request became in the render anyway.
-export const WARM_PAPER_CARD = {
-  schema: CARD_SCHEMA,
-  name: "Warm paper",
-  source: { kind: "preset", preset: "warm-paper" },
-  colors: { background: "#f6f3ec", text: "#1b1d22", muted: "#5d6470", surface: "#ffffff", border: "#d9d3c7", primary: "#0a7d55", secondary: "#1f5fbf", tertiary: "#7a3fb8" },
-  fonts: { display: { family: "EB Garamond", source: "bundled" }, body: { family: "Inter", source: "bundled" }, mono: { family: DEFAULT_MONO, source: "bundled" } },
-  shape: { corners: "medium", cards: "border" },
-};
-
 let presetCache = null;
-// Every preset as a card, Blue Professional first (the default), Warm paper
-// after the HyperFrames ones. Built from the shipped FRAME.md files.
+// Every HyperFrames preset as a card, Blue Professional first (the default).
+// Built from the shipped FRAME.md files.
 export function presetCards({ dir = libraryDir(), fresh = false } = {}) {
   if (presetCache && !fresh && presetCache.dir === dir) return presetCache.list;
   const map = JSON.parse(fs.readFileSync(path.join(dir, "presets", "MAP.json"), "utf8"));
@@ -158,7 +146,6 @@ export function presetCards({ dir = libraryDir(), fresh = false } = {}) {
     if (!fs.existsSync(file)) continue;
     list.push({ id, label: entry.label, card: presetCard(id, fs.readFileSync(file, "utf8"), entry) });
   }
-  list.push({ id: "warm-paper", label: "Warm paper", card: finishCard(structuredClone(WARM_PAPER_CARD)) });
   presetCache = { dir, list };
   return list;
 }

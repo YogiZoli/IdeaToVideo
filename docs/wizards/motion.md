@@ -34,6 +34,22 @@ Zoltan jóváhagyása, a kód csak utána.
 A kamera kikapcsolható, a lüktetés 0 is lehet. Bezáruló gyűrű és haladásjelző
 nincs. Fejezetek igen (kész: a render mellé kerül a fejezetlista).
 
+## A Brand varázslóból kész (2026-10-02, DECISIONS 72, 73)
+
+- Közös varázsló-keret: `app/src/lib/wizard/WizardShell.svelte` (lépések,
+  Back, Next, Save, a "Not sure?" sor, naplózott lépésváltás). A Brand
+  varázsló (`app/src/lib/brand/BrandWizard.svelte`) a minta.
+- Valódi előnézet: `runner/brand/preview.mjs` (mintavideó, 5 jelenet, a 4.
+  kapu láncával, 8-15 mp), runner parancs `brand-preview`. A Mozgás
+  varázsló ugyanezt futtatja átmenetekkel és háttér-mozgással.
+- Mentés az Identity mappájába: a runner az `identityDir`-t a Rust magtól
+  kapja (`app/src-tauri/src/lib.rs` run_runner); a `motion.json` ide megy,
+  az Identity export és a Duplicate viszi.
+- Ötlet a tervhez: az open-design `tokens.css` fájljaiban mozgás-értékek is
+  vannak (`--motion-fast`, `--motion-base`, `--ease-standard`), a galéria
+  stílusainak saját tempója. A csomagban megvannak
+  (`app/src-tauri/library/opendesign/<id>/tokens.css`).
+
 ## Zoltantól kell
 
 - A 3. specifikáció jóváhagyása a fenti keretben.

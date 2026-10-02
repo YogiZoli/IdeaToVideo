@@ -645,7 +645,7 @@ mod tests {
         let v1 = json!({
             "schema": 1, "onboarded": true, "ui": {"language": "en"},
             "llm": {"provider": "gemini", "model": "gemini-3.5-flash"},
-            "brand": {"preset": "warm-paper", "logo": brand.join("logo.png").to_string_lossy()},
+            "brand": {"preset": "coral", "logo": brand.join("logo.png").to_string_lossy()},
             "channel": {"audience": "founders", "youtubeUrl": "https://youtube.com/@x"},
             "narrator": {"provider": "gemini", "voice": "Kore"},
             "avatar": {"enabled": false}, "research": {"vidiq": true},

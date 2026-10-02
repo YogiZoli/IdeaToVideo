@@ -18,7 +18,7 @@ YouTube Brand Channel varázsló is ebből olvas. Mellette a **szótár**
 ## 2. Kiindulás (2026-10-02 reggel)
 
 - A build a `look` nevét kapta (`identity.brand.preset`), két kézzel
-  leképezett kinézettel (Blue Professional, Warm paper).
+  leképezett kinézettel (Blue Professional és egy saját, a Warm paper).
 - A logót semmi nem használta a videóban.
 - Betűk: a HyperFrames minden `@font-face` nélküli családot render közben a
   Google Fonts-ról töltött le (mérve: a gyorsítótárban Inter, EB Garamond,
@@ -26,8 +26,9 @@ YouTube Brand Channel varázsló is ebből olvas. Mellette a **szótár**
 - A 13 preset összesen 20 betűcsaládot használ, mind Google Fonts és OFL.
   Kettőből hiányoznak a tartalom nyelveinek betűi (Fredoka One: ő ű,
   lengyel, román; Shrikhand: román ț). Ezek és a presetjeik (Daisy Days,
-  Bold Poster) **kimaradtak** (Zoltan). Marad **18 betű és 11 preset**,
-  plusz a Warm paper.
+  Bold Poster) **kimaradtak** (Zoltan). Marad **11 preset**. A Warm paper
+  (az app saját kinézete, nem preset) szintén kimaradt (Zoltan, 2026-10-02:
+  csak karbantartás és ügyfélszolgálati kockázat).
 
 ## 3. Fájlok az Identity mappájában
 
@@ -85,7 +86,7 @@ név és fájlnév, semmi CSS kifejezés, hogy más app is gond nélkül olvassa
 - `source.kind`: `preset`, `logo`, `scratch` vagy `import`; csak tájékoztat.
 - `name`: mindig az Identity neve; hogy melyik presetből indult, a `source`
   mondja.
-- `fonts.*.source`: mindig `bundled`: csak az app 18 betűje választható (K3).
+- `fonts.*.source`: mindig `bundled`: csak az app 35 betűje választható (K3).
 - `shape.corners`: `none`, `small`, `medium`, `large` (0, 6, 14, 24 px).
 
 **Leképezés a videóra** (`runner/brand/card.mjs`, `cardTheme`):
@@ -112,8 +113,12 @@ Back és Next, Save minden képernyőn, alul: "Not sure? Skip or use the
 default. You can change this any time in Settings." Jobb oldalon az élő
 mini-kép és az olvashatóság.
 
-1. **Start.** "From my logo", "From scratch", alatta a galéria: 11 preset
-   és a Warm paper, mindegyik a saját élő képével.
+1. **Start.** "From my logo", "From scratch", "Import tokens.css" (12b),
+   alatta a galéria: **163 kinézet**, a 11 HyperFrames preset és 152
+   open-design stílus, csoportonként (a HyperFrames presetek elöl, utána az
+   open-design kategóriái) és kereséssel, mindegyik a saját élő képével.
+   Alul a licencek és a kiírás: "Style names describe a look only. Not
+   affiliated with or endorsed by the brands named."
 2. **Logo.** Világos és sötét változat, mindkettő opcionális. **A logó nem
    kerül a videóba** (K2): a kártyán van a többi eszköznek, és a Colors
    képernyő színt javasol belőle (a webview-ban, hálózat nélkül).
@@ -142,13 +147,15 @@ varázsló utána, a Settingsben.
 
 ### 6.1 Forrás és csomagolás
 
-- `library/fonts.json`: a 18 család. Forrás: fontsource (OFL, WOFF2,
+- `library/fonts.json`: **35 család**: a presetek betűi, az open-design
+  rendszerek által megnevezett szabad betűk, és a márkabetűk helyettesei
+  (12b). Forrás: fontsource (OFL, WOFF2,
   nyelvi részhalmazonként), **rögzített verzió** (5.3.0), SHA256 lock
   (`library/fonts.lock.json`).
 - `scripts/fetch-library.mjs` **build közben** tölti le a `latin` és
   `latin-ext` részhalmazt (változó betűnél egy fájl, különben a használt
   vastagságok) és családonként a licencet. **Futás közben semmi nem megy a
-  hálózatra.** Mért méret: 1,7 MB.
+  hálózatra.** Mért méret: 2,8 MB.
 
 ### 6.2 A buildben
 
@@ -264,28 +271,46 @@ Igen, minden varázsló ugyanarra a sablonra épül:
 - **Mentés az Identity mappájába**, ugyanígy: a runner az `identityDir`-t a
   Rust magtól kapja; az export és a Duplicate viszi.
 
-## 12. Ami ebben a körben nem épült
+## 12. A kártya mint fájl, és ami nem épült
 
-GHL Custom Value írás; a Brand Identity Card külön exportja és importja
-(ma az Identity zip viszi); webes olvasók; saját betű; logó a videóban.
+- **Export és Import Brand Identity Card** (Settings, Brand oldal):
+  `<Név>.brand.zip` (manifest, a kártya, a `FRAME.md`, a logók). Az import
+  zipet vagy egy puszta kártya `.json`-t fogad el, minden fájlnevet
+  ellenőriz (csak `logo.*` és `logo-dark.*` mehet be), a kártyát a runner a
+  sémával validálja mentés előtt (`app/src-tauri/src/brand.rs`).
+- Nem épült: GHL Custom Value írás; webes olvasók; saját betű; logó a
+  videóban.
 
-## 12b. Külső design-források (Zoltan kérdése, 2026-10-02)
+## 12b. Külső design-források (kész, 2026-10-02)
 
-- **open-design** (`github.com/nexu-io/open-design`, Apache-2.0, kb. 99
-  ezer csillag, napi commitok): 154 design rendszer, mindegyikben
-  `tokens.css`, szinte a mi neveinkkel (`--bg`, `--fg`, `--surface`,
-  `--muted`, `--border`, `--accent`, `--font-display`, `--font-body`,
-  `--font-mono`). Kb. a fele valódi márka utánzata (Stripe, Nike,
-  Ferrari, Canva), ezeket nem vennénk át; a semlegesek (default, minimal,
-  editorial, paper és társaik) a galéria második forrásai lehetnek,
-  rögzített commitról, SHA256-tal. A betűiket a mi 18 betűnkre kell
-  képezni (sok rendszerbetűt vagy nem szabad betűt nevez).
-  **Javaslat, Zoltan döntésére vár:** a következő körben.
-- **Canva:** nincs nyilvános paletta API. A Brand Kit színei csak a Canván
-  belül futó appoknak érhetők el, egy asztali appnak nem.
-- **Claude Design:** zárt termék, nincs letölthető katalógusa. Híd lehet
-  egy "Import tokens.css" gomb: a Claude Design és az open-design kinézete
-  is kártyává alakítható. Javaslat a következő körre.
+- **open-design** (`github.com/nexu-io/open-design`, Apache-2.0,
+  rögzített commit `53231d4`, SHA256 lock): **mind a 152 design rendszer**
+  a galériában, a márkákat idézők is (Zoltan: ezek a kipróbált,
+  jól konvertáló minták). `library/opendesign.json` a lista,
+  `scripts/fetch-library.mjs` build közben tölti le.
+- **Jogtiszta átvétel** (Zoltan döntése, 2026-10-02):
+  - Csak tények jönnek át: színek, sarok, árnyék vagy keret, és hogy milyen
+    betűt nevez a rendszer. A `tokens.css` megjegyzései (a márkák leírása)
+    és a manifest leíró szövege letöltés után kimarad; a csomagban csak a
+    tokenek, a név és a kategória van, mellette az open-design LICENSE.
+  - Logó, márkaszöveg, `DESIGN.md` próza soha.
+  - **Márkabetű soha:** az open-design sem csomagolja őket, csak megnevezi
+    (a böngésző a gépen lévő tartalékra esik vissza). Mi kiszámíthatóan
+    helyettesítjük: `runner/brand/tokens.mjs` `FONT_STAND_INS` (például
+    Söhne, Helvetica, SF Pro: Inter; SF Mono: JetBrains Mono; Georgia:
+    Source Serif 4; Futura: Jost; Circular, Airbnb Cereal: DM Sans).
+  - A név **"<márka> style"**, a galériában és a Névjegyben a kiírás:
+    "Style names describe a look only. Not affiliated with or endorsed by
+    the brands named."
+- **Import tokens.css** (a varázsló Start képernyője): bármelyik design
+  rendszer tokenjeiből kártya lesz, mentés előtt szerkeszthető. Olvassa az
+  open-design, a shadcn és a gyakori neveket (`--bg`, `--background`,
+  `--primary`, `--accent`, `--radius`, `--font-*`), a hex, rgb, hsl,
+  oklch, `var()` és `color-mix()` színeket; az áttetsző színt a háttérre
+  keveri. A nem szabad betűt ugyanúgy helyettesíti, és kiírja, mit mire.
+  Ez a híd a Claude Design felé is.
+- **Canva:** nincs nyilvános paletta API (a Brand Kit színei csak a Canván
+  belül futó appoknak érhetők el), ezért nincs közvetlen import.
 
 ## 13. Tesztek
 
@@ -293,11 +318,15 @@ GHL Custom Value írás; a Brand Identity Card külön exportja és importja
   mentés és átállás, betű-lefedettség a fájlokból, cmap olvasó, `@font-face`,
   "nincs webes betű" a buildben, szótár, protokoll), `scripts/app/brand.test.mjs`
   (a felület és a runner színszámítása azonos), `pages.test.mjs` (a setup
-  presetlistája egyezik a csomagolttal), 429 modellváltás.
+  presetlistája egyezik a csomagolttal), 429 modellváltás, tokens.css olvasó
+  (minden színforma, shadcn, betű-helyettesítés), a 152 open-design stílus
+  mind érvényes kártya, a csomagban csak tokenek és manifestek.
 - **Rust**: az export, import és Duplicate viszi a kártyát, a `FRAME.md`-t,
-  a sötét logót és a szótárt; a `brand-preview` a helyi nehéz munkák sorába
+  a sötét logót és a szótárt; a kártya zip export és import (idegen és
+  veszélyes fájlnév elutasítva), a tokens.css olvasás korlátai; a
+  `brand-preview` a helyi nehéz munkák sorába
   kerül.
-- **E2E**: kártya mentése, valódi előnézet, build a kártyával (Bebas Neue,
+- **E2E**: kártya mentése, valódi előnézet (egy preset és a Stripe style), build a kártyával (Bebas Neue,
   helyi fájl), render, és a betű-gyorsítótár nem nő.
 - **UI próba** a `scripts/ui-mock`-ban: Brand oldal, mind a 7 képernyő,
   Fix, mentés, Dictionary oldal, találat az 1. kapuban.
@@ -311,4 +340,7 @@ GHL Custom Value írás; a Brand Identity Card külön exportja és importja
 | K3 | Saját betű | nem, amíg nincs rá kérés; a meglévőkből dolgozunk |
 | K4 | A szótár helye | Settings, Identity, "Dictionary", négy szekció |
 | K5 | Gemini 429 | igen, egyszer a másik Gemini modell, ugyanazzal a kulccsal |
-| | Hiányos ékezetű betűk | kimaradnak, a presetjeikkel együtt |
+| | Hiányos ékezetű betűk | kimaradnak, a presetjeikkel együtt (a Press Start 2P is) |
+| | Warm paper | törölve |
+| | open-design | mind a 152 stílus, "<márka> style" névvel és kiírással |
+| | Import tokens.css, kártya export és import | megépült |

@@ -16,7 +16,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { assemble, BLUE_PROFESSIONAL, WARM_PAPER } from "../../runner/gates/build/assemble.mjs";
+import { assemble, BLUE_PROFESSIONAL } from "../../runner/gates/build/assemble.mjs";
 import { lintAndCheck } from "../../runner/gates/build/index.mjs";
 import { renderVideo } from "../../runner/gates/render/index.mjs";
 import { resolveBrowser, ffmpegPaths } from "../../runner/tools.mjs";
@@ -74,7 +74,6 @@ const TOTAL = Math.round((t + 0.6) * 1000) / 1000;
 
 const THEMES = {
   blue: BLUE_PROFESSIONAL,
-  warm: WARM_PAPER,
   dark: { bg: "#0f1115", fg: "#f4f5f7", muted: "#9aa3b2", surface: "#171b23", border: "#343b48", brand: "#5ee6a8", accent: "#6aa9ff", "accent-2": "#c7a6ff", "font-display": "'Segoe UI', Inter, system-ui, sans-serif" },
   light: { bg: "#f6f3ec", fg: "#1b1d22", muted: "#5d6470", surface: "#ffffff", border: "#d9d3c7", brand: "#0a7d55", accent: "#1f5fbf", "accent-2": "#7a3fb8", "font-display": "Georgia, 'Times New Roman', serif" },
 };

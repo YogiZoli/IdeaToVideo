@@ -27,8 +27,8 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "itv-brand-"));
 test("every shipped preset becomes a valid card; Blue Professional first, as before", () => {
   const all = presetCards({ fresh: true });
   assert.equal(all[0].id, "blue-professional");
-  assert.equal(all.at(-1).id, "warm-paper");
-  assert.equal(all.length, 12, "11 HyperFrames presets and Warm paper");
+  assert.equal(all.length, 11, "11 HyperFrames presets");
+  assert.ok(!all.some((p) => p.id === "warm-paper"), "Warm paper is gone (Zoltan, 2026-10-02)");
   const families = familyNames();
   for (const p of all) {
     assert.doesNotThrow(() => normalizeCard(p.card, { families }), p.id);
@@ -77,10 +77,10 @@ test("a card is checked: hex only, shipped fonts only, logos only by their own n
 
 test("an Identity without a card uses its preset; saving writes the card and a generated FRAME.md", () => {
   const dir = tmp();
-  fs.writeFileSync(path.join(dir, "identity.json"), JSON.stringify({ brand: { preset: "warm-paper" } }));
+  fs.writeFileSync(path.join(dir, "identity.json"), JSON.stringify({ brand: { preset: "coral" } }));
   const before = loadCard(dir);
   assert.equal(before.own, false);
-  assert.equal(before.card.source.preset, "warm-paper");
+  assert.equal(before.card.source.preset, "coral");
   const card = { ...cardForPreset("cobalt-grid"), nameplate: { name: "Anna", title: "Coach", url: "anna.example" } };
   const saved = saveCard(dir, card, { families: familyNames(), now: new Date("2026-10-02T10:00:00Z") });
   assert.equal(saved.updatedAt, "2026-10-02T10:00:00.000Z");
@@ -94,6 +94,60 @@ test("an Identity without a card uses its preset; saving writes the card and a g
   assert.equal(frameMd(saved), md);
   assert.ok(fs.existsSync(path.join(dir, "brand", CARD_FILE)));
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ---- tokens.css and the open-design gallery ---------------------------------------
+
+test("tokens.css: every colour form, var() and color-mix, translucent colours over the background", async () => {
+  const { parseColor, cssVars, cardFromTokens, pickFont } = await import("./brand/tokens.mjs");
+  assert.deepEqual(parseColor("#ABC"), { hex: "#aabbcc", alpha: 1 });
+  assert.equal(parseColor("rgba(255, 255, 255, 0.08)").alpha, 0.08);
+  assert.equal(parseColor("rgb(0 0 0 / 50%)").alpha, 0.5);
+  assert.equal(parseColor("hsl(0, 100%, 50%)").hex, "#ff0000");
+  assert.equal(parseColor("222.2 84% 4.9%").hex, "#020817", "shadcn's bare HSL");
+  assert.equal(parseColor("oklch(1 0 0)").hex, "#ffffff");
+  assert.equal(parseColor("var(--x)", { "--x": "#123456" }).hex, "#123456");
+  assert.equal(parseColor("color-mix(in oklab, #000000 50%, #ffffff)").hex, "#808080");
+  assert.equal(parseColor("nonsense"), null);
+  const vars = cssVars("/* :root { --bg: red } */ :root { --bg: #fff; --fg: #111; }\n.dark { --bg: #000; }");
+  assert.deepEqual(vars, { "--bg": "#fff", "--fg": "#111" }, "only :root, comments ignored");
+  const { card } = cardFromTokens(":root { --bg: #08090a; --fg: #f7f8f8; --surface: #191a1b; --border: rgba(255,255,255,0.08); --accent: #5e6ad2; --radius-md: 8px; --elev-ring: 0 0 0 1px var(--border); }", { families: familyNames() });
+  assert.equal(card.colors.border, "#1c1d1e", "8% white over the near-black background");
+  assert.equal(card.appearance, "dark");
+  assert.equal(card.shape.corners, "small");
+  assert.equal(card.shape.cards, "border");
+  const shad = cardFromTokens(":root { --background: 0 0% 100%; --foreground: 222.2 84% 4.9%; --card: 0 0% 100%; --muted: 210 40% 96.1%; --muted-foreground: 215.4 16.3% 46.9%; --primary: 222.2 47.4% 11.2%; --accent: 210 40% 96.1%; --radius: 0.5rem; }", { families: familyNames() }).card;
+  assert.equal(shad.colors.muted, "#64748b", "shadcn: muted text is --muted-foreground, not the --muted fill");
+  assert.equal(shad.colors.primary, "#0f172a", "shadcn: --primary, not the --accent fill");
+  // fonts: in stack order, the brand font to its free stand-in
+  assert.equal(pickFont('"sohne-var", "Söhne", "SF Pro Display", system-ui, sans-serif', familyNames()).family, "Inter");
+  assert.equal(pickFont('"GeistMono", "Roboto Mono", monospace', familyNames(), "monospace").family, "Geist Mono");
+  assert.equal(pickFont('"Nike Futura ND", Helvetica, sans-serif', familyNames()).family, "Jost");
+  assert.equal(pickFont("Georgia, serif", familyNames(), "serif").family, "Source Serif 4");
+  assert.equal(pickFont('"Playfair Display", serif', familyNames()).family, "Playfair Display");
+});
+
+test("the open-design gallery: 152 styles, all valid cards with shipped fonts, named as styles", async () => {
+  const { openDesignCards, galleryCards, cardForLook } = await import("./brand/gallery.mjs");
+  const od = openDesignCards({ fresh: true });
+  assert.equal(od.length, 152);
+  const families = familyNames();
+  for (const s of od) {
+    assert.match(s.id, /^od-[a-z0-9-]+$/);
+    assert.match(s.label, / style$/);
+    assert.doesNotThrow(() => normalizeCard(s.card, { families }), s.id);
+  }
+  const stripe = od.find((s) => s.id === "od-stripe");
+  assert.equal(stripe.label, "Stripe style");
+  assert.equal(stripe.card.colors.primary, "#533afd");
+  assert.equal(stripe.group, "Fintech & Crypto");
+  assert.equal(galleryCards().length, 163);
+  assert.equal(cardForLook("od-stripe").colors.primary, "#533afd");
+  assert.equal(cardForLook("nope").source.preset, "blue-professional");
+  // only tokens and manifests are shipped, never brand prose, logos or fonts
+  const root = path.join(libraryDir(), "opendesign");
+  const shipped = fs.readdirSync(root, { recursive: true }).filter((f) => fs.statSync(path.join(root, f)).isFile()).map((f) => path.basename(f));
+  assert.deepEqual([...new Set(shipped)].sort(), ["LICENSE", "SOURCE.json", "manifest.json", "tokens.css"]);
 });
 
 // ---- fonts ------------------------------------------------------------------------
@@ -226,9 +280,16 @@ test("main.mjs: brand-state, brand-save, dictionary-save and -check through the 
   const state = run("brand-state", { identityDir: dir }).last.data;
   assert.equal(state.own, false);
   assert.equal(state.card.source.preset, "blue-professional");
-  assert.equal(state.presets.length, 12);
+  assert.equal(state.presets.length, 163, "11 HyperFrames presets and 152 open-design styles");
+  assert.equal(state.presets[0].id, "blue-professional");
+  assert.match(state.styleNote, /Not affiliated with or endorsed by the brands named/);
   assert.ok(state.fonts.find((f) => f.family === "Inter").files.length >= 2);
   const card = { ...state.presets.find((p) => p.id === "capsule").card, nameplate: { name: "Anna" } };
+  const imported = run("brand-import", { text: ":root { --bg: #0b0b0c; --fg: #f2f2f2; --accent: oklch(0.7 0.15 250); --font-display: 'Söhne', sans-serif; }", fileName: "my-tokens.css" }).last.data;
+  assert.equal(imported.card.colors.background, "#0b0b0c");
+  assert.equal(imported.card.source.kind, "import");
+  assert.equal(imported.card.fonts.display.family, "Inter");
+  assert.match(run("brand-import", { text: "body { color: red }" }).last.message, /No background colour/);
   const saved = run("brand-save", { identityDir: dir, card }).last.data;
   assert.equal(saved.own, true);
   assert.equal(run("brand-state", { identityDir: dir }).last.data.card.nameplate.name, "Anna");
