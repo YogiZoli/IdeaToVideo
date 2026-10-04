@@ -303,3 +303,13 @@ test("main.mjs: brand-state, brand-save, dictionary-save and -check through the 
   assert.deepEqual(findings.map((f) => `${f.kind} ${f.where}`), ["banned script open.problem", "spelling script sections[0].narration", "banned scene 1 text"]);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("cardTheme: a main colour that fails 3:1 is darkened for the video only", () => {
+  const card = { ...cardForPreset(presetCards()[0].id) };
+  card.colors = { ...card.colors, background: "#fffdf5", primary: "#fe90e8" };
+  const t = cardTheme(card);
+  assert.ok(contrast(t.brand, "#fffdf5") >= 3, `brand ${t.brand} is readable`);
+  assert.equal(card.colors.primary, "#fe90e8", "the card keeps its colour");
+  card.colors.primary = "#1d4f9c";
+  assert.equal(cardTheme(card).brand, "#1d4f9c", "a passing colour is unchanged");
+});

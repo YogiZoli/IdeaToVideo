@@ -5,7 +5,7 @@
 
 import type { StepId } from "./steps";
 
-export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "motion" | "dictionary" | "voice" | "research" | "identity-ai";
+export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "motion" | "cta" | "dictionary" | "voice" | "research" | "identity-ai";
 export type Group = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; group: Group; steps: StepId[] };
@@ -23,6 +23,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "look", title: "Brand", group: "identity", steps: ["brand"] },
   // the Motion wizard's profile (docs/wizards/motion.md 6)
   { id: "motion", title: "Motion", group: "identity", steps: [] },
+  // the CTA wizard's comment calls (docs/wizards/cta.md)
+  { id: "cta", title: "CTA", group: "identity", steps: [] },
   { id: "dictionary", title: "Dictionary", group: "identity", steps: [] },
   { id: "voice", title: "Voice and avatar", group: "identity", steps: ["narrator", "heygen"] },
   { id: "research", title: "Research", group: "identity", steps: ["vidiq"] },

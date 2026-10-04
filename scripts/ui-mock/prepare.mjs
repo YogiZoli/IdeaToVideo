@@ -20,6 +20,10 @@ import { fontsIndex } from "../../runner/brand/fonts.mjs";
 import { libraryDir } from "../../runner/gates/build/assemble.mjs";
 import { previewDir } from "../../runner/brand/preview.mjs";
 import { recommendMood, profileFromMood, wizardOptions } from "../../runner/motion/profile.mjs";
+import { defaultProfile as ctaDefault, catalogForUi } from "../../runner/cta/profile.mjs";
+import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "../../runner/cta/catalog.mjs";
+import { callColor } from "../../runner/gates/build/assemble.mjs";
+import { cardTheme } from "../../runner/brand/card.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = process.argv[2];
@@ -53,6 +57,12 @@ fs.mkdirSync(path.join(out, "preview"), { recursive: true });
 if (fs.existsSync(shots)) fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort().forEach((f, i) => fs.copyFileSync(path.join(shots, f), path.join(out, "preview", `${i + 1}.png`)));
 // The Motion wizard's data, and the last real Motion preview video, if any.
 const recommended = recommendMood(card);
+{
+  // The CTA wizard's data (runner/main.mjs cta-state), on the mock's card.
+  const theme = cardTheme(card);
+  const look = { bg: theme.bg, fg: theme.fg, font: theme["font-display"], buttons: Object.fromEntries(Object.keys(TEMPERATURES).map((t) => [t, callColor({ temperature: t }, theme)])) };
+  fs.writeFileSync(path.join(out, "cta-state.json"), JSON.stringify({ profile: null, start: ctaDefault(), options: { keywords: catalogForUi(), temperatures: TEMPERATURES, slots: SLOTS, placesForCount: PLACES_FOR_COUNT }, look }));
+}
 fs.writeFileSync(path.join(out, "motion-state.json"), JSON.stringify({ profile: null, recommended, start: profileFromMood(recommended.mood), light: card.appearance === "light", options: wizardOptions() }));
 const dataDir = process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop");
 const motionOut = path.join(dataDir, "motion-preview", "out");

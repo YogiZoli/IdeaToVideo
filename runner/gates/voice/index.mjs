@@ -13,7 +13,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { narrationFromMarkdown, wordCount } from "./narration.mjs";
+import { narrationFromMarkdown, wordCount, speakable } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
 import { joinBlocks, mix, duration } from "../../audio.mjs";
@@ -52,9 +52,9 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
       apiKey,
       fetchImpl,
       voiceId: narrator.voice,
-      text: blocks[i].text,
-      previousText: blocks[i - 1]?.text,
-      nextText: blocks[i + 1]?.text,
+      text: speakable(blocks[i].text),
+      previousText: blocks[i - 1] && speakable(blocks[i - 1].text),
+      nextText: blocks[i + 1] && speakable(blocks[i + 1].text),
       languageCode: language,
       onSentence: (n, of) => onProgress({ step: "voice", block: i + 1, of: blocks.length, sentence: n, sentences: of }),
     });

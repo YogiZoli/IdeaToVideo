@@ -154,6 +154,54 @@ Elvétel:
   videóban, `logo-brand-close`, minden CRM és GoHighLevel kötés, landing URL a
   komment-módban.
 
-### Zoltan válaszai
+### Zoltan válaszai (2026-10-05, ugyanebben a chatben)
 
-(az új chatben ide kerülnek)
+- K1: igen, a teszt rögzíti a 15 kulcsszót a "mit kap" szövegekkel.
+- K2: igen, angol marad; fordítás csak akkor, ha a vidrevben is lesz.
+- K3: félreértettem. Az alap: 1 videó = 3 különböző kulcsszó, GUIDE eleje
+  (cold), COURSE közepe (warm), TRIGGER vége (hot). Kevesebb is lehet (0, 1,
+  2), a szám 0-3. Kevesebbnél előbb a közepe esik ki; egynél a user választ.
+- K4: igen, az ígéret után.
+- K5: nincs megkötés: bármelyik helyen bármelyik kulcsszó, ugyanaz többször.
+- K6: igen, saját "mit kap" szöveg kulcsszavanként.
+- K7: igen.
+- K8: saját jelenet (B), a sáv nem kell. A gomb színe a hőmérsékleté.
+- K9: a vidrev neve nem kerül az appba (független brand).
+- K10: a link csak a leírásba; a narráció nem mondja ki, a képen sincs.
+- K11: a visszatérő szegmensek külön prompttal jönnek (Zoltan).
+- K12: igen, a logo-brand-close kikerül.
+- K13: nincs előválasztás az első nyitáskor, a kulcsszavak lüktetnek; az
+  alap GUIDE, COURSE, TRIGGER (Zoltan megerősítette).
+- K14: nincs saját kulcsszó.
+- A pinned comment és a `comment-keywords.txt`: Zoltan külön promptot ad.
+
+## Megvalósítás (2026-10-05, DECISIONS 75)
+
+Runner:
+- `runner/cta/catalog.mjs`: a 15 kulcsszó, a három hőmérséklet színekkel,
+  a helyek, az alap (GUIDE, COURSE, TRIGGER), helyek a szám szerint.
+- `runner/cta/profile.mjs` és `runner/schema/cta-profile.schema.json`:
+  `<identity>/cta.json` (`slots`, `offers`), `ctaPlan`, `videoPlan`.
+- `runner/main.mjs`: `cta-state` (a profil, az alap, a lehetőségek és a
+  look a still előnézethez), `cta-check`, `cta-save`; a `write-script`
+  `input.cta`-ban kapja a videó saját választását; a `load-project`
+  visszaadja a script `commentCalls`-ját.
+- Script kapu: `buildData` `commentCalls`, a landing CTA mindig null;
+  `open.cta` új mező; `commentCallIssues` ellenőrzés; a `script.json`
+  `commentCalls` mezőt kap.
+- Hang kapu: `speakable` (a kulcsszó sima szóként a hangnak).
+- Jelenet kapu: `callSentences` (a CTA-mondat a felvett szövegben),
+  `checkScenes` saját `cta-close` jelenetet kér, a gomb a kulcsszó; a
+  jelenet `call` mezőt kap.
+- Build: `callColor` (a hőmérséklet színe 4,5:1-re igazítva), a jelenet
+  `--brand`-je.
+- Tesztek: `runner/cta.test.mjs` (7), az e2e-ben egy CTA-jelenet buildje.
+
+App:
+- `app/src/lib/cta/`: `KeywordPicker` (3 színes sor, lüktetés,
+  lélegzés), `CallsEditor` (szám 0-3, helyek, választó), `CallsPreview`
+  (idővonal, mondatok, still), `CtaWizard` (3 lépés), `CtaPage`
+  (Settings, Identity, CTA), `VideoCalls` (1. kapu, "Change for this
+  video").
+- `SceneGate`: a CTA-jelenet jelölése, csere nélkül.
+- UI próba: `scripts/ui-mock` (`cta-state.json`).

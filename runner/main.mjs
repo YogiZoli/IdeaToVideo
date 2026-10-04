@@ -29,12 +29,14 @@ import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/mus
 import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
-import { isLightLook, libraryDir } from "./gates/build/assemble.mjs";
+import { isLightLook, libraryDir, baseTheme, callColor } from "./gates/build/assemble.mjs";
 import { loadCard, saveCard, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
 import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
 import { brandPreview, previewDir } from "./brand/preview.mjs";
 import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendMood, wizardOptions } from "./motion/profile.mjs";
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
+import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi } from "./cta/profile.mjs";
+import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "./cta/catalog.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
 import { cardFromTokens } from "./brand/tokens.mjs";
 import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gates/script/dictionary.mjs";
@@ -89,6 +91,24 @@ function motionOf(identityDir) {
     throw new Error(`The Motion profile cannot be used: ${e.message} Open Settings, Identity, Motion to fix it.`);
   }
 }
+// The comment calls of a ONE Video: its own choice at gate 1 (`own`), else
+// the Identity's CTA profile, else the method's default (cta/profile.mjs).
+function ctaOf(identityDir, own) {
+  if (own) return videoPlan({ own });
+  loadCtaChecked(identityDir);
+  return videoPlan({ identityDir });
+}
+function ctaLook(identityDir) {
+  const theme = identityDir ? cardTheme(loadCard(identityDir).card, categories()) : baseTheme("blue-professional");
+  return { bg: theme.bg, fg: theme.fg, font: theme["font-display"], buttons: Object.fromEntries(Object.keys(TEMPERATURES).map((t) => [t, callColor({ temperature: t }, theme)])) };
+}
+function loadCtaChecked(identityDir) {
+  try {
+    return identityDir ? loadCta(identityDir) : null;
+  } catch (e) {
+    throw new Error(`The CTA profile cannot be used: ${e.message} Open Settings, Identity, CTA to fix it.`);
+  }
+}
 const offOf = (look) => (typeof look === "object" ? look?.motion?.scenes?.off ?? [] : []);
 
 // Dictionary findings for a ONE Video: the script's spoken text and every
@@ -124,6 +144,16 @@ function recovered(projectDir) {
     appendLog(projectDir, "a step was interrupted (the app was closed), marked failed");
   }
   return next;
+}
+
+// The comment calls the current script was written with (null: no script,
+// or one written before the CTA wizard).
+function scriptCalls(projectDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(projectDir, "script.json"), "utf8")).commentCalls ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function readVoiceInfo(projectDir) {
@@ -263,6 +293,22 @@ const commands = {
     return { ...r, dir: motionPreviewDir() };
   },
 
+  // The CTA wizard (docs/wizards/cta.md): the saved profile (or null, then
+  // `start` is the method's default), the 15 keywords and the places.
+  // `look`: the Identity's video colours and the call buttons on them, for
+  // the wizard's still preview (no render).
+  "cta-state": async ({ identityDir }) => ({
+    profile: loadCtaChecked(identityDir),
+    start: defaultCta(),
+    options: { keywords: catalogForUi(), temperatures: TEMPERATURES, slots: SLOTS, placesForCount: PLACES_FOR_COUNT },
+    look: ctaLook(identityDir),
+  }),
+  "cta-save": async ({ identityDir, profile }) => {
+    if (!identityDir) throw new Error("No Identity to save the CTA profile for.");
+    return { profile: saveCta(identityDir, profile) };
+  },
+  "cta-check": async ({ profile }) => ({ profile: normalizeCta(profile) }),
+
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
 
   "dictionary-save": async ({ identityDir, dictionary }) => {
@@ -275,7 +321,7 @@ const commands = {
   "load-project": async ({ projectDir }) => {
     const project = recovered(projectDir);
     const md = path.join(projectDir, "script.md");
-    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir) };
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, calls: scriptCalls(projectDir), latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir) };
   },
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
@@ -289,7 +335,7 @@ const commands = {
       const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
         writeScript({
           llm: { provider: llm.provider, model: llm.model, apiKey: key() },
-          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict) },
+          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: ctaOf(identityDir, input.cta) },
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );

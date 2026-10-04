@@ -33,7 +33,9 @@ export const COMPONENTS = {
   "constellation-hub": { role: "list", label: "Ideas around a center", mainVar: "nodes" },
   "whiteboard-ink": { role: "sketch", label: "Whiteboard sketch", mainVar: "caption" },
   "cta-close": { role: "closing", label: "Call to action", mainVar: "action_line", words: { button_label: 3 } },
-  "logo-brand-close": { role: "closing", label: "Name at the end", mainVar: "wordmark" },
+  // Retired (Zoltan, 2026-10-05, CTA K12): no longer planned or offered, old
+  // scene tables that use it still build.
+  "logo-brand-close": { role: "closing", label: "Name at the end", mainVar: "wordmark", retired: true },
 };
 
 export const roleOf = (component) => COMPONENTS[component]?.role ?? null;

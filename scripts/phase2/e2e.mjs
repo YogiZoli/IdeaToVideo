@@ -18,6 +18,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createProject, loadProject, saveProject, setGate } from "../../runner/project.mjs";
 import { makeScenes } from "../../runner/gates/scenes/index.mjs";
+import { callColor } from "../../runner/gates/build/assemble.mjs";
+import { cardForPreset, cardTheme } from "../../runner/brand/card.mjs";
 import { resolveBrowser, hfHome } from "../../runner/tools.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -106,6 +108,9 @@ for (const f of ["vo.mp3", "vo_bgm.mp3"]) {
   const r = spawnSync(env.HYPERFRAMES_FFMPEG_PATH, ["-y", "-v", "error", "-f", "lavfi", "-i", `sine=frequency=220:duration=${TOTAL}`, "-af", "volume=0.05", "-ar", "44100", "-ac", "2", "-b:a", "128k", path.join(dir, "audio", f)]);
   if (r.status !== 0) check("audio fixture", false, String(r.stderr));
 }
+// The script's comment call (docs/wizards/cta.md): the last sentence asks for
+// START, a cold keyword at the end (any keyword may sit in any place).
+fs.writeFileSync(path.join(dir, "script.json"), JSON.stringify({ title: "End to end", open: { problem: TEXT[0], promise: TEXT[1], cta: null }, sections: [], ownershipCta: null, own: { recap: TEXT[4], cta: TEXT[5] }, commentCalls: [{ slot: "end", keyword: "START", temperature: "cold" }] }));
 let p = loadProject(dir);
 for (const g of ["script", "voice"]) p = setGate(p, g, { state: "approved", mode: "recommended" });
 saveProject(dir, p);
@@ -120,7 +125,7 @@ const good = {
     { from: "S3", component: "per-word-rise", vars: { text: "Three steps" } },
     { from: "S4", component: "grid-card-assemble", vars: { items: "Write,Record,Publish" } },
     { from: "S5", component: "marker-highlight", vars: { text: "One idea at a time", emphasis_word: "One" } },
-    { from: "S6", component: "cta-close", vars: { action_line: "Start your first video", button_label: "Start now" } },
+    { from: "S6", component: "cta-close", vars: { action_line: "START your first video", button_label: "Start now" } },
   ],
   gaps: [],
 };
@@ -128,6 +133,10 @@ let llmCalls = 0;
 const fetchImpl = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ choices: [{ message: { content: JSON.stringify(llmCalls++ === 0 ? bad : good) } }] }) });
 const planned = await makeScenes({ llm: { provider: "gemini", apiKey: "stand-in", fetchImpl, sleep: async () => {} }, projectDir: dir, env });
 check("gate 3: scene table planned, one repair", planned.scenes === 5 && llmCalls === 2, `${planned.scenes} scenes, ${llmCalls} LLM calls`);
+{
+  const last = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8")).scenes.at(-1);
+  check("CTA: the comment call scene shows its keyword", last.call?.keyword === "START" && last.vars.button_label === "START", JSON.stringify(last.call));
+}
 check("gate 3: approved", runner("approve-gate", { projectDir: dir, gate: "scenes" }).event === "result");
 
 // Gate 4: build, lint + check, stills.
@@ -154,6 +163,11 @@ const built = runner("build-video", { projectDir: dir, identityDir, look: "blue-
 {
   const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
   check("brand: the build uses the card (Bebas Neue, local file)", /@font-face \{ font-family: 'Bebas Neue'/.test(html) && /--itv-bg: #f5f0e8/.test(html) && fs.existsSync(path.join(dir, "build", "fonts", "bebas-neue")));
+}
+{
+  const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
+  const cold = callColor({ temperature: "cold" }, cardTheme(cardForPreset("coral")));
+  check("CTA: the call button wears its temperature (cold)", html.includes(`--brand: ${cold}`), cold);
 }
 check("gate 4: build, lint and check", built.event === "result", built.event === "result" ? `${built.data.scenes} scenes in ${built.seconds} s` : built.message);
 check("gate 4: one still per scene", built.data.stills?.length === 5 && built.data.stills.every((s) => fs.existsSync(s.file)), `${built.data.stills?.length} stills`);

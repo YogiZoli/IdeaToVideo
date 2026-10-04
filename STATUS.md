@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-05 (CTA varázsló: megbeszélés, 1. kör)
+Frissítve: 2026-10-05 (CTA varázsló kész: Comment Routing)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -192,10 +192,19 @@ Kész (2026-09-30):
    Brand második köre (163 kinézet, Import tokens.css, kártya export és
    import). **Következő: 5. pont, CTA varázsló, új chatben** (a prompt a
    2026-10-04-i chat végén; Zoltan ott adja a pontos leírást).
-5. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltan leírta az
-   elvet (Comment Routing, 2026-10-05); a 15 kulcsszó a vidrev katalógusa. A
-   tisztázó kérdések (K1-K14) a `cta.md` "Megbeszélés, 1. kör" részében;
-   **következő: Zoltan válaszai, utána a terv véglegesítése, utána kód.**
+5. **CTA varázsló: kész, első kör** (2026-10-05, DECISIONS 75, leírás és
+   Zoltan K1-K14 válaszai: `docs/wizards/cta.md`). Comment Routing: a vidrev
+   15 kulcsszava, alap GUIDE, COURSE, TRIGGER, 0-3 hely (eleje az ígéret
+   után, közepe a legértékesebb szakasz után, vége a végképernyő előtt),
+   bármelyik kulcsszó bárhol, saját "mit kap" szöveg, Identity-szintű
+   `cta.json`, videónként az 1. kapuban. A CTA mondata saját `cta-close`
+   jelenet, a gomb a hőmérséklet színében. A landing link csak a leírásba
+   (K10). logo-brand-close kivezetve. Javítva még: a videó fő színe mindig
+   olvasható (DECISIONS 76, Zoltan halvány rózsaszín jelenete). Tesztek: 171
+   Node, e2e (a CTA-jelenettel).
+   **Következő, Zoltan két kész promptja:** (a) visszatérő szegmensek,
+   (b) pinned comment és `comment-keywords.txt`. Plusz a nyitott kérdés: a
+   publikálási átadás a PDT-nek (Claude javaslata a 2026-10-05-i chat végén).
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
@@ -216,13 +225,17 @@ Stratégia (nem az IdeaToVideo kódja, de a suite iránya): a Drive
    doksi). Nyitva csak: az affiliate létra (97 vagy 297 USD-s GHL szint),
    "amelyik előbb jön".
 
-1. A kulcsszavas komment-CTA és a CTA varázsló részletei: Zoltan később adja.
+1. ~~A kulcsszavas komment-CTA~~: kész (DECISIONS 75).
 2. ~~A `docs/motion-wizard.md`~~: jóváhagyva és kész (DECISIONS 74).
 3. A v1 videótípusa: explainer? Zoltan még nem döntött, a DECISIONS-be még nem
    kerül.
 4. A teljes registry (234 komponens): érvek a DECISIONS 56-ban, Zoltan később
    átnézi. Javaslat a katalógus csoportjai szerint: DECISIONS 74 utolsó pont.
-5. A logo-brand-close kell-e (Zoltan: szinte biztosan nem): a CTA chatben.
+5. ~~A logo-brand-close~~: kivezetve (DECISIONS 75). Nyitott: a Brand
+   varázsló "név a képernyőn" lépése eddig ezt mutatta a videó végén; most
+   a név a videóban nem jelenik meg. Kell-e helyette valami?
+6. A publikálási adatok átadása a PDT-nek (fejezetek, átirat, CTA-k,
+   végképernyő): Claude javaslata a 2026-10-05-i chatben, Zoltan dönt.
 
 ## Hogyan indul egy új session
 

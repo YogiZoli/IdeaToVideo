@@ -199,11 +199,11 @@ test("service keys: ElevenLabs and HeyGen checks", async () => {
 
 // ---- script gate ---------------------------------------------------------------------
 
-test("buildData: brief wins over channel, CTA only when there is one", () => {
+test("buildData: brief wins over channel, the landing link never goes into the narration", () => {
   const d = buildData({ topic: "t", brief: { title: "B", cta: { text: "Get it" } }, channel: { audience: "A", ctaText: "Other" } });
   assert.equal(d.topic, "t");
   assert.equal(d.audience, "A");
-  assert.deepEqual(d.cta, { text: "Get it", landingUrl: null });
+  assert.equal(d.cta, null, "the link is in the description only (CTA K10, 2026-10-05)");
   assert.equal(buildData({ topic: "t" }).cta, null);
   assert.throws(() => buildData({}), /topic or a brief title/);
 });
@@ -246,9 +246,10 @@ test("renderMarkdown places the ownership CTA after the highest-value section", 
 });
 
 test("writeScript: one repair call fixes a bad first answer", async () => {
-  const bad = structuredClone(goodScript);
+  const plain = { ...structuredClone(goodScript), ownershipCta: null, own: { ...goodScript.own, cta: null } };
+  const bad = structuredClone(plain);
   bad.open.problem = "Problem: too hard.";
-  const f = fakeFetch([answer(JSON.stringify(bad)), answer("```json\n" + JSON.stringify(goodScript) + "\n```")]);
+  const f = fakeFetch([answer(JSON.stringify(bad)), answer("```json\n" + JSON.stringify(plain) + "\n```")]);
   const steps = [];
   const r = await writeScript({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, input: { topic: "t", channel: { ctaText: "Checklist" } }, onProgress: (p) => steps.push(p.step) });
   assert.equal(f.calls.length, 2);

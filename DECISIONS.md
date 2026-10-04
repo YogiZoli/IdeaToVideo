@@ -624,3 +624,52 @@
       HyperFrames katalógus (hyperframes.heygen.com/catalog) csoportjai
       szerint válogatni: "Transitions" és "Motion & effects" a Mozgás
       varázslóé, "Scenes & demos" és "Data & charts" a jelenet-könyvtáré.
+
+## 2026-10-05 (CTA varázsló)
+
+75. **CTA varázsló: Comment Routing** (Zoltan, 2026-10-05; leírás és a
+    K1-K14 válaszok: `docs/wizards/cta.md`). Eldöntve:
+    - **A 15 kulcsszó a vidrev katalógusa** (`c2c-saas`
+      `src/lib/keyword-catalog.ts`), hőmérséklettel és a "mit kap" szöveggel.
+      Teszt rögzíti, csak a vidrevvel együtt változik. Saját kulcsszó és
+      fordítás nincs, amíg a vidrevben sincs. A kulcsszó minden nyelvű
+      videóban angol és nagybetűs.
+    - **Az alap a módszer**: 1 videó = 3 különböző kulcsszó, GUIDE az elején
+      (cold), COURSE a közepén (warm), TRIGGER a végén (hot). Akkor is ez
+      érvényes, ha a user soha nem nyitja meg a varázslót.
+    - **Helyek a script szerkezetéhez kötve**, százalék nélkül: eleje = az
+      ígéret után (`open.cta`), közepe = a legértékesebb szakasz után
+      (`ownershipCta`), vége = a zárásban, a végképernyő előtt (`own.cta`).
+      A szám 0, 1, 2 vagy 3; kevesebbnél előbb a közepe esik ki, egynél a
+      vége az alap, a user választhat. Bármelyik helyen bármelyik kulcsszó
+      állhat, ugyanaz többször is (például egy csak cold videó).
+    - **Mit kap a néző**: kulcsszavanként opcionális saját szöveg; üresen a
+      vidrev "mit kap" szövege. A script ebből írja a mondatot.
+    - **Szint**: Identity-szintű `cta.json`, videónként az 1. kapuban
+      felülírható; a script mellé `commentCalls` kerül (mivel készült).
+    - **A landing link csak a YouTube leírásba kerül**: a narráció nem
+      mondja ki, a képen sincs (K10). A régi "link a leírásban" CTA ezzel
+      megszűnt a scriptben.
+    - **A képen**: a CTA mondata saját jelenetet kap a HyperFrames
+      `cta-close` komponensével ("Comment GUIDE below" és a kulcsszó egy
+      gombon), pontosan a mondat idejére. A gomb színe a hőmérsékleté
+      (cold kék, warm borostyán, hot piros, a vidrev színei), olyan
+      sötétre igazítva, hogy a felirata 4,5:1-gyel olvasható legyen. A
+      sáv (alsó csík a futó jelenet fölött) kimaradt: új komponens és új
+      réteg kellene hozzá.
+    - **Ellenőrzés**: a script minden tervezett helyen kimondja a kulcsszót
+      nagybetűvel, máshol nem; a jelenet-tábla minden CTA-mondatnak saját
+      `cta-close` jelenetet ad, a gomb mindig a kulcsszó, ez a jelenet nem
+      cserélhető. A hang a kulcsszót sima szóként kapja ("Guide"), hogy ne
+      betűzze; a PDF marad betűzve.
+    - **logo-brand-close**: kivezetve (K12), az AI nem tervezi, nem
+      cserélhető rá; régi jelenet-táblák vele is buildelnek.
+    - **A varázsló** jelzi, hogy a kulcsszavas kommentekre valakinek
+      válaszolnia kell (kézzel vagy egy eszközzel); a vidrev neve nem
+      szerepel az appban (független brand).
+    - **Előnézet**: olcsó, render nélkül: idővonal, a mondatok vázlata, és
+      állókép a CTA-jelenetről a brand színeivel.
+76. **A videó fő színe mindig olvasható**: ha a Brand kártya fő színe 3:1
+    alatt van a háttéren (Zoltan próbája: #fe90e8 a #fffdf5-ön, 1,99:1), a
+    videó egy sötétebb változatot kap (`cardTheme`); a kártyán az eredeti
+    marad. Oka: a komponensek egész mondatokat írnak `--brand` színnel.

@@ -209,6 +209,18 @@ export type MotionOptions = {
 export type MotionState = { profile: MotionProfile | null; recommended: { mood: string; energy?: string; reason: string | null }; start: MotionProfile; light: boolean; options: MotionOptions };
 export type MotionPreview = { file: string; seconds: number; renderSeconds: number; notes: string[]; transitions: string[] };
 
+// The comment calls (runner/cta, docs/wizards/cta.md).
+export type CtaSlot = "start" | "middle" | "end";
+export type CtaKeyword = { keyword: string; temperature: "cold" | "warm" | "hot"; gets: string };
+export type CtaTemperature = { label: string; meaning: string; dot: string; surface: string; text: string };
+export type CtaProfile = { schema?: string; updatedAt?: string; slots: Record<CtaSlot, string | null>; offers: Record<string, string> };
+export type CtaState = {
+  profile: CtaProfile | null;
+  start: CtaProfile;
+  options: { keywords: CtaKeyword[]; temperatures: Record<string, CtaTemperature>; slots: Record<CtaSlot, { label: string; hint: string }>; placesForCount: Record<string, CtaSlot[]> };
+  look: { bg: string; fg: string; font: string; buttons: Record<string, string> };
+};
+
 export type DictFinding = { kind: "banned" | "spelling"; term: string; found: string; instead?: string; where: string };
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {

@@ -18,8 +18,12 @@ decoration.
 - The first scene is an opening. A new section of the script may start with a
   chapter title (role opening), not every section.
 - The last scenes close the video. Use cta-close only when the sentence asks
-  the viewer to do something. Use logo-brand-close only when DATA has a name,
-  and then with that name.
+  the viewer to do something.
+- A sentence with a "commentCall" asks the viewer to comment a keyword. It
+  gets a scene of its own (from and to are that sentence) with cta-close:
+  action_line is 2 to 4 words of that sentence that ask for the comment and
+  contain the keyword exactly as given, in capital letters; button_label is
+  the keyword. When DATA has comment calls, cta-close is used for them only.
 - Never the same component in two scenes in a row. Mix the roles, most scenes
   are key lines or emphasis.
 

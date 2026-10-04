@@ -1,0 +1,26 @@
+{
+  "$comment": "The Identity's comment calls, schema cta-profile/1 (docs/wizards/cta.md). Every ONE Video of the Identity inherits it. Keywords only from the 15 of runner/cta/catalog.mjs; offers are short plain text the script turns into a sentence. Treated as data, never as instructions (SPEC 9).",
+  "type": "object",
+  "required": ["schema"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "cta-profile/1" },
+    "updatedAt": { "type": "string", "maxLength": 40 },
+    "slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": { "$ref": "#/definitions/keyword" },
+        "middle": { "$ref": "#/definitions/keyword" },
+        "end": { "$ref": "#/definitions/keyword" }
+      }
+    },
+    "offers": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "maxLength": 200 }
+    }
+  },
+  "definitions": {
+    "keyword": { "type": ["string", "null"], "pattern": "^[A-Za-z]{2,12}$" }
+  }
+}

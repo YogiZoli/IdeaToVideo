@@ -16,6 +16,8 @@
   import { narratorProvider } from "./catalog";
   import { setScreen, log } from "./logger";
   import ProjectBackup from "./ProjectBackup.svelte";
+  import VideoCalls from "./cta/VideoCalls.svelte";
+  import type { CtaProfile, CtaSlot } from "./api";
 
   let { app, dir: dirProp, back }: { app: AppState; dir: string; back: () => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
@@ -27,6 +29,7 @@
     project: { id: string; title: string; status: string; language: string; autopilot?: boolean; gates: Record<string, Gate> };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
+    calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
     latestVideo: { file: string; chapters: string | null; srt: string | null } | null;
     stills: { scene: number; at: number; file: string }[];
     voiceInfo: { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number } | null;
@@ -98,6 +101,9 @@
     }
   }
 
+  // This video's own comment calls (gate 1), null = the Identity's.
+  let ownCalls = $state<CtaProfile | null>(null);
+
   async function writeRecommended() {
     if (data?.scriptMarkdown && !(await ask("Write a new script? The current one and every later gate will be replaced.", { title: "Write again", kind: "warning" }))) return;
     busy = true;
@@ -108,7 +114,7 @@
       const r = await runner<{ words: number }>("write-script", {
         projectDir: dir,
         llm: app.config!.llm,
-        input: { topic: data!.project.title, targetLengthMin: length, ...(keyword ? { keyword } : {}) },
+        input: { topic: data!.project.title, targetLengthMin: length, ...(keyword ? { keyword } : {}), ...(ownCalls ? { cta: $state.snapshot(ownCalls) } : {}) },
         channel: app.config!.channel,
       });
       notice = `Script ready, ${r.words} words.`;
@@ -280,6 +286,8 @@
         </button>
       </div>
 
+      <VideoCalls bind:own={ownCalls} used={data.calls ?? null} disabled={busy} />
+
       {#if canVidiq}
         <div class="controls">
           <span class="hint">{keyword ? `Keyword for the script: "${keyword}"` : "Optional: pick a search keyword for the script."}</span>
@@ -323,7 +331,7 @@
           </button>
         </div>
       {:else}
-        <p class="hint">Click Write script. The AI uses your Audience, Brand Voice and landing page from Settings{data.brief ? ", and the Video Brief Card" : ""}.</p>
+        <p class="hint">Click Write script. The AI uses your Audience and Brand Voice from Settings, the comment calls above{data.brief ? ", and the Video Brief Card" : ""}. Your landing page link goes into the YouTube description, never into the narration.</p>
       {/if}
     </section>
 

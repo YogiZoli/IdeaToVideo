@@ -13,10 +13,13 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const WORDS_PER_MINUTE = 150;
 
 // The data block the model sees. Brief fields win over channel defaults.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null }) {
-  const cta = brief.cta?.text || brief.cta?.landingUrl || channel.ctaText || channel.landingUrl
-    ? { text: brief.cta?.text || channel.ctaText || null, landingUrl: brief.cta?.landingUrl || channel.landingUrl || null }
-    : null;
+// commentCalls: the video's comment calls (cta/profile.mjs ctaPlan), the
+// only calls the narration makes. The landing page link goes into the YouTube
+// description, never into the narration or on screen (Zoltan, 2026-10-05,
+// CTA K10), so `cta` is always null now; the field stays for old scripts.
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [] }) {
+  const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
+  const cta = null;
   const data = {
     topic: topic || brief.title,
     title: brief.title || null,
@@ -32,6 +35,7 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     contentLanguage: language || brief.language || channel.contentLanguage || "en",
     targetLengthMin: targetLengthMin || brief.targetLengthMin || 8,
   };
+  if (calls.length) data.commentCalls = calls;
   // The Identity's dictionary (dictionary.mjs dictionaryData), only when it has entries.
   if (dictionary) data.dictionary = dictionary;
   if (!data.topic) throw new Error("A topic or a brief title is needed to write a script.");
@@ -56,6 +60,7 @@ export function spokenFields(script) {
   const out = [
     ["open.problem", script.open?.problem],
     ["open.promise", script.open?.promise],
+    ["open.cta", script.open?.cta],
     ["open.credibility", script.open?.credibility],
     ["ownershipCta", script.ownershipCta],
     ["own.recap", script.own?.recap],
@@ -95,8 +100,35 @@ export function checkScript(script, data) {
   const problems = validate(script, loadSchema("script"));
   if (problems.length) return problems;
   const issues = styleIssues(script);
+  if (data.commentCalls) return [...issues, ...commentCallIssues(script, data.commentCalls)];
   if (data.cta && !script.own.cta) issues.push("own.cta is missing although the data has a CTA");
   if (!data.cta && (script.ownershipCta || script.own.cta)) issues.push("the data has no CTA, ownershipCta and own.cta must be null");
+  if (script.open.cta) issues.push("the data has no comment calls, open.cta must be null");
+  return issues;
+}
+
+// The field each place of a comment call is spoken in.
+export const CALL_FIELDS = { start: "open.cta", middle: "ownershipCta", end: "own.cta" };
+const fieldValue = (script, field) => field.split(".").reduce((o, k) => o?.[k], script);
+const said = (text, keyword) => new RegExp(`(^|[^\p{L}])${keyword}([^\p{L}]|$)`, "u").test(String(text ?? ""));
+
+// Every planned call is spoken in its own field with the keyword in capitals;
+// unplanned places stay empty, and no keyword turns up anywhere else.
+export function commentCallIssues(script, calls) {
+  const issues = [];
+  const planned = new Map(calls.map((c) => [CALL_FIELDS[c.place], c.keyword]));
+  for (const field of Object.values(CALL_FIELDS)) {
+    const text = fieldValue(script, field);
+    const keyword = planned.get(field);
+    if (!keyword && text) issues.push(`${field} must be null, the data has no comment call there`);
+    if (keyword && !text) issues.push(`${field} is missing: the comment call with ${keyword}`);
+    if (keyword && text && !said(text, keyword)) issues.push(`${field} must contain the keyword ${keyword} exactly, in capital letters`);
+  }
+  const keywords = [...new Set(calls.map((c) => c.keyword))];
+  for (const [where, text] of spokenFields(script)) {
+    if (Object.values(CALL_FIELDS).includes(where)) continue;
+    for (const k of keywords) if (said(text, k)) issues.push(`${where}: the keyword ${k} belongs only in its comment call`);
+  }
   return issues;
 }
 
@@ -106,6 +138,7 @@ export function wordCount(script) {
 
 export function renderMarkdown(script) {
   const lines = [`# ${script.title}`, "", "## OPEN", "", script.open.problem, "", script.open.promise, ""];
+  if (script.open.cta) lines.push(script.open.cta, "");
   if (script.open.credibility) lines.push(script.open.credibility, "");
   script.sections.forEach((s, i) => {
     lines.push(`## ${i + 1}. ${s.name}`, "", s.narration, "");
@@ -150,5 +183,6 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
       throw err;
     }
   }
+  if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature }));
   return { script, markdown: renderMarkdown(script), words: wordCount(script), data };
 }

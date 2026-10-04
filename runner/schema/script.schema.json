@@ -12,6 +12,7 @@
       "properties": {
         "problem": { "type": "string", "minLength": 1 },
         "promise": { "type": "string", "minLength": 1 },
+        "cta": { "type": ["string", "null"] },
         "credibility": { "type": ["string", "null"] }
       }
     },
@@ -32,6 +33,21 @@
       }
     },
     "ownershipCta": { "type": ["string", "null"] },
+    "commentCalls": {
+      "$comment": "Written by the runner, not the LLM: the comment calls this script was written for (runner/cta), so the scene gate can find them.",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["slot", "keyword", "temperature"],
+        "additionalProperties": false,
+        "properties": {
+          "slot": { "enum": ["start", "middle", "end"] },
+          "keyword": { "type": "string", "pattern": "^[A-Z]{2,12}$" },
+          "temperature": { "enum": ["cold", "warm", "hot"] }
+        }
+      }
+    },
     "own": {
       "type": "object",
       "required": ["recap"],

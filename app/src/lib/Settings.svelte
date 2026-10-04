@@ -26,6 +26,8 @@
   import DictionaryPage from "./brand/DictionaryPage.svelte";
   import MotionWizard from "./motion/MotionWizard.svelte";
   import MotionPage from "./motion/MotionPage.svelte";
+  import CtaWizard from "./cta/CtaWizard.svelte";
+  import CtaPage from "./cta/CtaPage.svelte";
   import { ensureFonts } from "./brand/fontsDom";
   import { runner, exportBrand, importBrand } from "./api";
   import type { BrandState, BrandCard } from "./api";
@@ -51,6 +53,8 @@
   let brandWizard = $state(false);
   let motionWizard = $state(false);
   let motionSaved = $state(0);
+  let ctaWizard = $state(false);
+  let ctaSaved = $state(0);
   let brand = $state<BrandState | null>(null);
 
   // The Brand page: the Identity's card as it is now (docs/wizards/brand.md 5).
@@ -222,6 +226,8 @@
   <BrandWizard {app} onclose={() => (brandWizard = false)} onsaved={brandSaved} />
 {:else if motionWizard}
   <MotionWizard {app} onclose={() => (motionWizard = false)} onsaved={() => { motionWizard = false; motionSaved += 1; message = "Your motion is saved. Every ONE Video of this Identity uses it from its next build."; }} />
+{:else if ctaWizard}
+  <CtaWizard {app} onclose={() => (ctaWizard = false)} onsaved={() => { ctaWizard = false; ctaSaved += 1; message = "Your comment calls are saved. Every new script of this Identity uses them."; }} />
 {:else if wizard}
   <Onboarding
     bind:config
@@ -252,7 +258,7 @@
         <p class="for">{page.group === "app" ? "Settings for all Identities" : `Settings for: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      {#if pageId !== "look" && pageId !== "dictionary" && pageId !== "motion"}
+      {#if pageId !== "look" && pageId !== "dictionary" && pageId !== "motion" && pageId !== "cta"}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
@@ -343,6 +349,8 @@
       </section>
     {:else if pageId === "motion"}
       <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
+    {:else if pageId === "cta"}
+      <CtaPage refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
     {:else if pageId === "identity-ai"}

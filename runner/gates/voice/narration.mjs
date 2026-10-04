@@ -6,6 +6,8 @@
 // the viewer can follow a process. Not spoken: the "# " title line,
 // headings, and [CALLOUT: ...] notes (those are on-screen text, not narration).
 
+import { KEYWORDS } from "../../cta/catalog.mjs";
+
 export function narrationFromMarkdown(md) {
   const blocks = [];
   let cur = null;
@@ -27,5 +29,12 @@ export function narrationFromMarkdown(md) {
   }
   return blocks.filter((b) => b.paragraphs.length).map((b) => ({ heading: b.heading, text: b.paragraphs.join(" ") }));
 }
+
+// The comment keywords stand in capitals in the script and on screen, but a
+// voice may spell a word in capitals letter by letter. It gets them as plain
+// words ("GUIDE" -> "Guide"); PDF is said as letters anyway.
+const SPOKEN_AS_WORD = KEYWORDS.map((k) => k.keyword).filter((k) => k !== "PDF");
+const CAPS = new RegExp(`(?<!\\p{L})(${SPOKEN_AS_WORD.join("|")})(?!\\p{L})`, "gu");
+export const speakable = (text) => String(text).replace(CAPS, (w) => w[0] + w.slice(1).toLowerCase());
 
 export const wordCount = (blocks) => blocks.reduce((n, b) => n + b.text.split(/\s+/).filter(Boolean).length, 0);

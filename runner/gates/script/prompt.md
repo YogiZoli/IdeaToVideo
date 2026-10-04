@@ -12,6 +12,7 @@ OPEN (30 to 45 seconds)
   concrete, with a number where natural ("three steps", "one framework").
 - credibility: one sentence only if a first-time viewer would honestly ask "why
   listen to you on this topic". Otherwise null. Never list clients, revenue or awards.
+- cta: only for a comment call at the start (see Comment calls), otherwise null.
 
 TEACH (the body, 2 to 12 named sections)
 - Each section: name the problem or gap it addresses in one or two sentences,
@@ -27,17 +28,40 @@ TEACH (the body, 2 to 12 named sections)
 - callout: optional, 2 to 6 words, the most memorable phrase of the section. At
   most 3 callouts in the whole script, null elsewhere.
 
-ownershipCta: when the data has a CTA, one natural sentence placed right after
-the highestValue section, offering the CTA as the extension of the value just
-delivered ("If you want this as a ready-to-use guide, get it at the link in the
-description."). One sentence only. When the data has no CTA, null.
+ownershipCta: only for a comment call in the middle (see Comment calls),
+otherwise null.
 
 OWN (30 to 45 seconds)
 - recap: the main point in one sentence ("So the whole thing comes down to X.").
-- cta: when the data has a CTA, a direct final call with an active verb first,
-  otherwise null.
+- cta: only for a comment call at the end (see Comment calls), otherwise null.
 - nextVideo: when the data names the next video, one sentence pointing to it,
   otherwise null.
+
+## Comment calls
+
+When the data has "commentCalls", the viewer is asked to comment one keyword
+under the video, and someone answers that comment with what the viewer gets.
+Each call has a place, a keyword and what the viewer gets ("offer" in the
+user's words, else "gets").
+
+- The place says the field: start is open.cta (spoken right after the
+  promise), middle is ownershipCta (right after the highestValue section), end
+  is own.cta. A place with no call stays null.
+- One sentence per call: ask the viewer to comment the keyword below the video,
+  and say what they get ("Comment GUIDE below and I'll send you the free
+  checklist."). Write the keyword exactly as given, in capital letters, never
+  translated, never inside quotation marks, even when the rest of the sentence
+  is in another language.
+- The start call is light and short, the viewer has only just arrived. The
+  middle call offers the next step after the value just given. The end call is
+  a direct final call.
+- Never write a keyword anywhere else in the script, in capitals or not as a
+  call. Never mention a link, a description, a landing page or a tool in a
+  comment call.
+
+Never mention a link, the description or a landing page anywhere in the
+script: the link is in the video description, the narration does not point
+to it.
 
 ## Search keyword
 
@@ -87,7 +111,7 @@ script.
 
 Answer with one JSON object and nothing else, exactly in this shape:
 
-{"title": "...", "open": {"problem": "...", "promise": "...", "credibility": null},
+{"title": "...", "open": {"problem": "...", "promise": "...", "cta": null, "credibility": null},
  "sections": [{"name": "...", "narration": "...", "callout": null, "highestValue": false}],
  "ownershipCta": null,
  "own": {"recap": "...", "cta": null, "nextVideo": null}}

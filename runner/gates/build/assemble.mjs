@@ -38,7 +38,8 @@ import { prepareBuild, buildDir, TRANSITIONS_FILE } from "./index.mjs";
 import { engineDir } from "../../tools.mjs";
 import { duration } from "../../audio.mjs";
 import { avatarClips } from "../avatar/index.mjs";
-import { cardForPreset, cardTheme, cardFamilies } from "../../brand/card.mjs";
+import { cardForPreset, cardTheme, cardFamilies, fixContrast } from "../../brand/card.mjs";
+import { TEMPERATURES } from "../../cta/catalog.mjs";
 import { fontFaces, categories } from "../../brand/fonts.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
 import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE } from "../../motion/transitions.mjs";
@@ -256,6 +257,15 @@ export function mountTheme(vars = {}) {
   if (accent !== undefined && !(accent in ACCENT_TOKEN)) throw new Error(`Unknown accent: ${accent}.`);
   const style = THEME_KEYS.map((k) => `--${k}: var(--itv-${k === "brand" && accent ? ACCENT_TOKEN[accent] : k})`).join("; ");
   return { vars: rest, style };
+}
+
+// A comment call's button wears its lead temperature (cta/catalog.mjs), made
+// dark or light enough that the button's text (the background colour) reads
+// at 4.5:1. The rest of the scene keeps the brand.
+export function callColor(call, theme) {
+  const t = TEMPERATURES[call?.temperature];
+  if (!t) throw new Error(`Unknown lead temperature: ${call?.temperature}.`);
+  return fixContrast(t.dot, theme.bg, 4.5);
 }
 
 // The theme as CSS variables. Values are CSS values (colours, lengths, font
@@ -515,6 +525,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     const src = `compositions/components/scene-${n + 1}-${sc.component}.html`;
     fs.writeFileSync(path.join(out, src), fitted[n]);
     const m = { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
+    if (sc.call) m.style += `; --brand: ${callColor(sc.call, { ...baseTheme(look), ...(table.theme ?? {}) })}`;
     if (mp) {
       m.duration = r3(times[n].duration + ext(n));
       if (overlap) m.track = n % 2 === 0 ? 1 : 4;

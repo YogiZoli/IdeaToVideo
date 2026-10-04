@@ -17,6 +17,7 @@ import { loadComponent, checkVars, sceneTimes, mountTheme } from "../build/assem
 import { narrationFromMarkdown } from "../voice/narration.mjs";
 import { duration } from "../../audio.mjs";
 import { ROLES, COMPONENTS, roleOf } from "./roles.mjs";
+import { CALL_FIELDS } from "../script/index.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,7 +31,7 @@ const r3 = (x) => Math.round(x * 1000) / 1000;
 // registry-item.json. exit and cues stay at their defaults.
 // `off`: components the Identity's Motion profile turned off (motion/profile.mjs).
 export function libraryCatalog({ env = process.env, off = [] } = {}) {
-  return Object.entries(COMPONENTS).filter(([name]) => !off.includes(name)).map(([name, meta]) => {
+  return Object.entries(COMPONENTS).filter(([name, meta]) => !off.includes(name) && !meta.retired).map(([name, meta]) => {
     const { item } = loadComponent(name, { env });
     return {
       name,
@@ -69,13 +70,41 @@ export function sentenceSections(markdown, sentences) {
   });
 }
 
-export function buildData({ sentences, sections = [], name = null, themeIsLight = false, language = "en" }) {
+export function buildData({ sentences, sections = [], name = null, themeIsLight = false, language = "en", calls = new Map() }) {
   return {
     language,
     name,
     theme: themeIsLight ? "light" : "dark",
-    sentences: sentences.map((s, i) => ({ id: s.id, seconds: s.dur ?? r3(s.end - s.start), section: sections[i] || null, text: s.text })),
+    sentences: sentences.map((s, i) => ({ id: s.id, seconds: s.dur ?? r3(s.end - s.start), section: sections[i] || null, text: s.text, ...(calls.has(s.id) ? { commentCall: calls.get(s.id).keyword } : {}) })),
   };
+}
+
+// The sentences that carry the script's comment calls (script.json
+// commentCalls, gates/script CALL_FIELDS): the one that says the keyword and
+// shares the most words with the call. The recording may write the keyword
+// in any case. Returns Map(sentence id -> { slot, keyword, temperature }).
+const tokens = (t) => new Set(String(t).toLowerCase().match(/\p{L}+/gu) ?? []);
+export function callSentences(script, sentences) {
+  const out = new Map();
+  for (const call of script?.commentCalls ?? []) {
+    const field = CALL_FIELDS[call.slot].split(".").reduce((o, k) => o?.[k], script);
+    const want = tokens(field ?? "");
+    const rx = new RegExp(`(^|[^\\p{L}])${call.keyword}([^\\p{L}]|$)`, "iu");
+    let best = null;
+    for (const s of sentences) {
+      if (out.has(s.id) || !rx.test(s.text)) continue;
+      const have = tokens(s.text);
+      const score = [...want].filter((w) => have.has(w)).length / Math.max(1, have.size);
+      if (!best || score > best.score) best = { id: s.id, score };
+    }
+    if (best) out.set(best.id, { slot: call.slot, keyword: call.keyword, temperature: call.temperature });
+  }
+  return out;
+}
+
+function readScript(projectDir) {
+  const p = path.join(projectDir, "script.json");
+  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
 export function buildMessages(data, catalog) {
@@ -104,11 +133,26 @@ function onScreen(component, vars = {}) {
 
 // Every problem with a planned table, as sentences the repair call can act on.
 // `warnings` do not fail the gate; the UI shows them.
-export function checkScenes(answer, { sentences, total, env = process.env, off = [] }) {
+export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map() }) {
   const issues = [];
   const warnings = [];
   const scenes = answer?.scenes;
   if (!Array.isArray(scenes) || !scenes.length) return { issues: ["scenes must be a non-empty array"], warnings };
+  // A comment call's button is its keyword, whatever the answer said.
+  for (const sc of scenes) {
+    const call = sc && calls.get(sc.from);
+    if (call && sc.component === "cta-close" && (sc.to ?? sc.from) === sc.from) sc.vars = { ...(sc.vars ?? {}), button_label: call.keyword };
+  }
+  for (const [id, call] of calls) {
+    const sc = scenes.find((x) => x?.from === id);
+    if (!sc || (sc.to ?? sc.from) !== id || sc.component !== "cta-close") issues.push(`${id} is a comment call (${call.keyword}): give it a scene of its own, from ${id} to ${id}, with cta-close`);
+    else if (!new RegExp(`(^|[^\\p{L}])${call.keyword}([^\\p{L}]|$)`, "u").test(String(sc.vars?.action_line ?? ""))) issues.push(`${id}: action_line must contain ${call.keyword} exactly, in capital letters`);
+  }
+  if (calls.size) {
+    scenes.forEach((sc, i) => {
+      if (sc?.component === "cta-close" && !calls.has(sc.from)) issues.push(`scene ${i + 1}: cta-close is only for the comment calls`);
+    });
+  }
   scenes.forEach((sc, i) => {
     const at = `scene ${i + 1}`;
     if (!sc || typeof sc !== "object") return issues.push(`${at}: not an object`);
@@ -145,7 +189,7 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
     const from = index.get(sc.from);
     const to = index.get(sc.to ?? sc.from);
     const d = times[i].duration;
-    if (d < MIN_SECONDS && scenes.length > 1) issues.push(`scene ${i + 1} (${sc.from}) lasts ${d} s, under ${MIN_SECONDS} s: join it with a neighbour`);
+    if (d < MIN_SECONDS && scenes.length > 1 && !calls.has(sc.from)) issues.push(`scene ${i + 1} (${sc.from}) lasts ${d} s, under ${MIN_SECONDS} s: join it with a neighbour`);
     if (d > MAX_SECONDS && to > from) issues.push(`scene ${i + 1} (${sc.from} to ${sc.to}) lasts ${d} s, over ${MAX_SECONDS} s: split it`);
     // Numbers on screen should be numbers the voice says. Written-out numbers
     // ("eight") are not recognised, so this only warns.
@@ -201,7 +245,14 @@ async function ask(llm, messages, check) {
   return { answer, result };
 }
 
-const clean = (sc) => ({ component: sc.component, from: sc.from, ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}), vars: sc.vars ?? {} });
+const clean = (sc) => ({ component: sc.component, from: sc.from, ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}), vars: sc.vars ?? {}, ...(sc.call ? { call: sc.call } : {}) });
+// The comment call a scene shows (assemble colours its button by temperature).
+const withCalls = (scenes, calls) =>
+  scenes.map((sc) => {
+    const call = calls.get(sc.from);
+    const { call: _old, ...rest } = sc;
+    return call && sc.component === "cta-close" ? { ...rest, call } : rest;
+  });
 
 export function writeTable(projectDir, table) {
   fs.writeFileSync(path.join(projectDir, "scenes.json"), JSON.stringify(table, null, 2) + "\n");
@@ -213,12 +264,13 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
   const catalog = libraryCatalog({ env, off });
-  const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language });
+  const calls = callSentences(readScript(projectDir), sentences);
+  const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language, calls });
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env, off }));
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env, off, calls }));
   const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
   const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
-  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: answer.scenes.map(clean), gaps, warnings: result.warnings });
+  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(answer.scenes.map(clean), calls), gaps, warnings: result.warnings });
   return { scenes: answer.scenes.length, gaps, warnings: result.warnings };
 }
 
@@ -226,10 +278,11 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
 export async function saveScenes({ projectDir, scenes, env = process.env }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
   const total = await audioLength(projectDir, sentences, env);
-  const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env });
+  const calls = callSentences(readScript(projectDir), sentences);
+  const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env, calls });
   if (issues.length) throw new Error(`The scene table has problems: ${issues.slice(0, 5).join("; ")}`);
   const current = readJson(projectDir, "scenes.json", "scene table");
-  writeTable(projectDir, { ...current, scenes: scenes.map(clean), warnings });
+  writeTable(projectDir, { ...current, scenes: withCalls(scenes.map(clean), calls), warnings });
   return { scenes: scenes.length, warnings };
 }
 
@@ -242,6 +295,7 @@ export async function refillScene({ llm, projectDir, index, component, env = pro
   if (!sc) throw new Error(`There is no scene ${index + 1}.`);
   if (!COMPONENTS[component]) throw new Error(`Unknown component: ${component}`);
   if (roleOf(component) !== roleOf(sc.component)) throw new Error("Swap only within the same role.");
+  if (sc.call) throw new Error(`This scene is the comment call ${sc.call.keyword}: it always shows the keyword.`);
   if (off.includes(component)) throw new Error("That scene type is turned off in the Motion profile.");
   const ids = sentences.map((s) => s.id);
   const covered = sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1);
@@ -256,7 +310,7 @@ export async function refillScene({ llm, projectDir, index, component, env = pro
     return r;
   };
   const { answer } = await ask(llm, messages, check);
-  const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...answer.scenes[0], from: sc.from, to: sc.to }) : s));
+  const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...answer.scenes[0], from: sc.from, to: sc.to, call: sc.call }) : s));
   if (index > 0 && scenes[index - 1].component === component) throw new Error("The scene before uses the same component. Pick another one.");
   if (scenes[index + 1]?.component === component) throw new Error("The scene after uses the same component. Pick another one.");
   writeTable(projectDir, { ...table, scenes });
@@ -293,8 +347,9 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
       mainVar: meta.mainVar,
       mainText: meta.mainVar ? (sc.vars?.[meta.mainVar] ?? null) : null,
       shows: onScreen(sc.component, sc.vars).map((l) => l.text).join(" / "),
+      call: sc.call ?? null,
       alternatives: Object.entries(COMPONENTS)
-        .filter(([c, m]) => m.role === meta.role && c !== sc.component && !off.includes(c))
+        .filter(([c, m]) => !sc.call && m.role === meta.role && c !== sc.component && !off.includes(c) && !m.retired)
         .map(([c, m]) => ({ component: c, label: m.label })),
     };
   });

@@ -226,6 +226,9 @@ const stack = (family, category) => `'${family}', ${family === "Inter" ? "" : "I
 
 // THEME_KEYS (assemble.mjs) from the card. `categories`: family -> category,
 // from FONTS.json, for a sensible fallback.
+// The components set whole headlines in --brand, so the video always gets a
+// main colour that passes the 3:1 rule on the background, even when the card
+// was saved without pressing Fix. The card itself keeps the user's colour.
 export function cardTheme(card, categories = {}) {
   const c = card.colors;
   const f = card.fonts;
@@ -235,7 +238,7 @@ export function cardTheme(card, categories = {}) {
     muted: c.muted,
     surface: c.surface,
     border: c.border,
-    brand: c.primary,
+    brand: fixContrast(c.primary, c.background, 3),
     accent: c.secondary,
     "accent-2": c.tertiary,
     radius: `${card.shape.radiusPx ?? CORNERS[card.shape.corners] ?? 14}px`,

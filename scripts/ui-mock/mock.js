@@ -53,6 +53,7 @@ function addIdentity(i) {
 }
 // The Brand wizard (brand-state.json from prepare.mjs) and the dictionary.
 let motionProfile = null;
+let ctaProfile = null;
 let brandCard = null;
 let dictionary = { schema: "dictionary/1", preferred: [{ term: "Owner", note: "capital O" }], banned: [{ term: "blasting email", instead: "sending to your list" }], distinct: [], positions: [{ against: "hustle culture", kind: "phenomenon" }] };
 async function brandState() {
@@ -135,6 +136,8 @@ window.__TAURI_INTERNALS__ = {
       case "plugin:dialog|open": return "C:/Downloads/VoxFlow.identity.zip";
       case "plugin:dialog|save": return args?.options?.defaultPath ? `C:/Downloads/${args.options.defaultPath}` : "C:/Downloads/x.identity.zip";
       case "plugin:dialog|ask": return true;
+      // ask() goes through "message" in the dialog plugin 2.x: confirm it.
+      case "plugin:dialog|message": return "Yes";
       case "run_runner":
         if (typeof args.request.projectDir !== "undefined" && typeof args.request.projectDir !== "string") throw "projectDir must be a string";
         if (args.command === "list-projects") return { projects: [{ id: "p", title: `Test of ${active()?.name}`, status: "Scened", dir: `${args.request.projectsDir}/test`, createdAt: "2026", gates: project.gates }] };
@@ -146,6 +149,9 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "dictionary-load") return { dictionary };
         // The Motion wizard (motion-state.json from prepare.mjs; the preview
         // video is the last real one, if prepare.mjs found it).
+        // The CTA wizard (cta-state.json from prepare.mjs).
+        if (args.command === "cta-state") { const c = await (await fetch("/cta-state.json")).json(); return { ...c, profile: ctaProfile }; }
+        if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }
         if (args.command === "motion-state") { const m = await (await fetch("/motion-state.json")).json(); return { ...m, profile: motionProfile }; }
         if (args.command === "motion-save") { motionProfile = { ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: motionProfile }; }
         if (args.command === "motion-check") return { profile: args.request.profile };
