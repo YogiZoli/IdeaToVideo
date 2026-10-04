@@ -1,142 +1,96 @@
-# Mozgás varázsló: specifikáció (2. változat)
+# Mozgás varázsló: specifikáció (3. változat, D út)
 
-Állapot: javaslat, Zoltan jóváhagyására vár. 2026-09-30.
-Helye: a 2. fázisban, a Brand varázsló mellett (Zoltan, 2026-09-30).
+Állapot: javaslat, Zoltan jóváhagyására vár. 2026-10-04.
+Előzmény: a 2. változat (2026-09-30) a kánon `motion.js` gombjaira épült. A D út
+(DECISIONS 48) óta az app nem használja a kánont, ezért az a változat elavult;
+a git történetben megvan. A megvalósítás terve: `docs/wizards/motion.md`.
 
 ## Mit csinál
 
-A user egyszer végigmegy rajta, a kimenet egy **Mozgás profil**, amit minden
-videója örököl. Így a playlist egy kaptafára megy, de a videók tartalma
-(melyik archetípus melyik mondatra) videónként más.
+A user egyszer végigmegy rajta, a kimenet az Identity **Mozgás profilja**
+(`identities/<id>/motion.json`). Minden ONE Video ezt örökli, így a playlist
+egy kaptafára mozog, a tartalom videónként más. Profil nélkül a kimenet
+pontosan a mai: éles vágás, sima háttér, nincs kamera, mind a 14 komponens.
 
-A profil a kánon `motion.js` gombjait állítja (easingek, időtartam és
-távolság szorzó, túllövés, stagger, lüktetés, kamera), és egy válogatott
-HyperFrames komponens-készletből választ (jelenetváltás, háttér, kiemelés,
-számok, zárás). Profil nélkül a kimenet bájtra azonos a mai kánonnal.
+## A keret: mi állítható a D úton
 
-## Korlát: csak a MOTION szabályokon belül
+A jelenetek a HyperFrames registry komponensei, mindegyik a saját, beégetett
+mozgásával. Közös tempó-, távolság- vagy rugózás-gombjuk nincs, és nem írjuk át
+őket. Ami állítható, az mind a HyperFrames-ből jön, kész és karbantartott
+formában:
 
-A varázsló a "mennyit, milyen gyorsan, milyen stílusban" kérdéseket nyitja
-meg. Ami nem választható, mert a kánon tiltja:
+1. **Jelenetváltás.** A HyperFrames saját, gépi átmenet-jegyzéke
+   (`skills/faceless-explainer/scripts/lib/transitions.json`, ugyanaz a
+   rögzített commit, mint a komponenseké). Öt átmenet: crossfade,
+   blur-crossfade, push-slide (négy irány), squeeze, zoom-through. Mindegyik
+   kész GSAP recept a két jelenet keretére; a HyperFrames a saját
+   explainer- és termékvideó-menetében ugyanígy illeszti be (a kimenő jelenet
+   kitart, a bejövő a mondatánál kezd, így a hang szinkronja nem mozdul).
+2. **Háttér-mozgás.** A registry háttér-komponensei egy alsó sávon a teljes
+   videó alatt: grain-field (pontmező), aurora-drift (fényfátyol, csak sötét
+   kinézethez), és felül egy filmszemcse (grain-overlay).
+3. **Kamera.** A HyperFrames kamera-szabálya (`multi-phase-camera`,
+   `viewport-change`): jelenetenként egy lassú ráközelítés a jelenet keretén,
+   vagy csak egy alig látható lebegés. Kikapcsolható (DECISIONS 52).
+4. **Komponensek szerepenként.** Melyik komponens jöhet szóba a 3. kapuban
+   (szerepenként legalább egy marad), és a komponensek saját,
+   a kinézetet és a mozgást érintő változói: a kiemelés módja (filc, kör, aláhúzás,
+   firka), a rajzoló toll látszik-e, a szám kap-e fényt, a cím kap-e vonalat.
 
-- teljes mozdulatlanság (5. szabály: semmi nem áll meg teljesen): a lüktetés
-  legkisebb értéke 1%, a kamera mindig mozog, legalább 4%
-- blur (kétszeres renderidő)
-- túllövő számok (csak a formák lőhetnek túl)
-- dísz-mozgás (1. törvény: minden mozgásnak oka van)
-- két elem ugyanazzal a kezdő- vagy végidővel
+Ami nem állítható: globális tempó, távolság, rugózás, a komponensek belső
+időzítése. Ezt a varázsló nem is ígéri.
 
-## Menet
+## Eldőlt, és így marad (DECISIONS 52)
 
-1. **Kiinduló stílus** (egy választás, kártyákkal): Nyugodt oktató (ajánlott,
-   a mai kánon), Magabiztos üzleti, Energikus közösségi, Podcast klip. Ez
-   kitölti az összes választ.
-2. **Kilenc képernyő, csoportonként egy.** Minden válasz előre ki van töltve a
-   kiinduló stílusból, és mindegyik mellett ott: "Later you can change this in
-   Settings." A user végigkattint, így látja, mit fogad el. Minden képernyőn
-   "Accept this section" és "Skip".
-3. **Előnézet és mentés**: kb. 20 mp-es mintavideó 6-8 archetípussal, a user
-   színeivel és mozgásával, helyben renderelve (kb. 1 perc).
+- A kamera kikapcsolható.
+- Lüktetés: a D úton nincs külön, közös lüktetés (a komponensek saját
+  kitartása marad). A "0 is lehet" ezzel teljesül; a helyén a kamera
+  "lebegés" fokozata áll, ami szintén kikapcsolható. Lásd a kérdéseket.
+- Bezáruló gyűrű és haladásjelző nincs.
+- Fejezetek igen (kész, a render mellé kerül a fejezetlista).
 
-Kérdéstípus-sorrend: igen/nem, egy választás, ritkán több választás. A
-finomhangoló csúszka közvetlenül a hozzá tartozó kérdés után jön, "haladó"
-jelöléssel, és átugorható. Minden kérdés egyszer szerepel.
+## Menet (a Brand varázsló keretében, WizardShell)
 
-## A kérdések
+1. **Start: kiinduló stílus.** Négy kártya, mindegyik kitölti az összes
+   választ: Calm (ajánlott), Clean, Lively, Still. Mellette "Import from the
+   current profile", ha már van mentett profil.
+2. **Scene changes.** Átmenet típusa (Cut és az öt), hossza (Short, Normal,
+   Slow), iránya (csak push-slide), és hol: minden jelenetváltásnál, vagy csak
+   a script új szakaszainál (a szakaszon belül éles vágás).
+3. **Background.** Plain (a kinézet háttérszíne), Dot field, Aurora (csak
+   sötét kinézetnél választható, világosnál szürke, magyarázattal), és külön
+   kapcsoló: Film grain.
+4. **Camera.** Off, Drift (alig látható lebegés), Slow push-in (Subtle vagy
+   Medium).
+5. **Scenes.** Szerepenként a komponensek pipával (legalább egy marad), a
+   leírásukkal és egy állóképpel; alattuk a stílus-változók (kiemelés módja,
+   toll, fény, vonal), mindegyiknél "Let the AI choose" is.
+6. **Preview.** Valódi mintavideó lejátszóval: a Brand előnézet öt jelenete
+   és egy hatodik (kiemelés), a user kinézetével és a választott mozgással,
+   helyben renderelve. Gomb: "Render preview" (kb. 1 perc, a gép dolgozik).
+7. **Save.** Mentés az Identity mappájába. Az Identity export, import és
+   Duplicate viszi.
 
-**A. Tempó**
-1. Milyen tempójú legyen a mozgás? Nyugodt, Kiegyensúlyozott, Pörgős (háromfokú
-   skála). Az animációk idejét állítja, a jelenetek hosszát nem: az a hangból jön.
-2. Mekkora utat tegyenek meg az elemek? Kicsit, közepeset, nagyot (háromfokú
-   skála). A távolságokat skálázza, a sebesség-plafonon belül.
+Minden képernyőn ott a "Not sure? Keep the recommended" sor és a "Later you can
+change this in Settings" mondat. Csak egy választás képernyőnként, csúszka nincs.
 
-**B. Érkezés**
-3. Hogyan érkezzenek az elemek? Becsúszva, előtűnve, felnagyítva (egy választás).
-4. Honnan ússzanak be? Az új dolog alulról, a folytatás balról (ajánlott, a
-   kánon szabálya), vagy mindig alulról (egy választás).
-5. A felsorolás elemei egyenként jelenjenek meg? (igen/nem)
-6. Érkezzenek egy apró rugózással? (igen/nem). Ha igen, haladó: milyen erős
-   legyen (csúszka).
+## Mit nem csinál
 
-**C. Szöveg**
-7. A címek szavanként jelenjenek meg? (igen/nem). Ha nem: betűnként vagy
-   egész sorban (egy választás).
-8. A narráció kulcsszava kapjon kiemelést? (igen/nem)
-9. Milyen legyen a kiemelés: szövegkiemelő filc, aláhúzás, bekarikázás vagy
-   csak szín? (egy választás, előnézettel)
+- Nem ír saját átmenetet, hátteret vagy kamerát: csak a HyperFrames kész
+  receptjeit és komponenseit illeszti, rögzített commitról, SHA256-tal.
+- Shader-átmenet (WebGL blokkok: light-leak, whip-pan, sdf-iris) nincs: ezek a
+  registryben bemutató blokkok saját tartalommal és Google-betűvel, nem a két
+  jelenet közé illeszthető receptek.
+- A "slot" átmenet-komponensek (whip-pan-cut, iris-reveal, morph-swap) sincsenek
+  az első körben: a két jelenetet a saját belsejükbe kérik, és ezt a beágyazott
+  komponensekkel még nem mértük. Ha később kell, külön próba.
+- Visszatérő szegmensek, végképernyő, komment-CTA: a CTA varázslóé
+  (DECISIONS 50, 53).
 
-**D. Számok és adatok**
-10. A számok pörögjenek fel a végértékig, vagy egyszerűen jelenjenek meg? (egy
-    választás)
-11. A diagramok rajzolódjanak ki? (igen/nem)
-12. Mi történjen, amikor egy szám vagy diagram megérkezett: finoman lüktessen,
-    vagy kapjon egy jelvényt (badge) fölé? (egy választás)
+## Mérni kell, mielőtt bekerül (a kód első lépése)
 
-**E. Élet a képen**
-13. A megérkezett elemek finoman lüktessenek? (igen/nem). A "nem" a legkisebb
-    megengedett értéket jelenti (1%), mert semmi nem állhat meg teljesen. Ha
-    igen, haladó: milyen erős (1-4%, csúszka, ma 2%).
-
-**F. Jelenetváltás**
-14. Legyen éles vágás a jelenetek között? (igen/nem, oktatónál ajánlott)
-15. Ha nem: áttűnés, eltolás, törlés vagy nagyítás? (egy választás). A kánon
-    szerint egy videóban egyféle váltás, végig ugyanaz.
-
-**G. Háttér**
-16. Maradjon nyugodt a háttér? (igen/nem)
-17. Ha nem: lassú színátmenet, filmszemcse, finom rács vagy fényfutás? (több
-    választás, legfeljebb kettő)
-
-**H. Kamera**
-18. Mennyire közelítsen a kamera jelenetenként? Alig, közepesen (egy
-    választás). Kikapcsolni nem lehet: minden jelenetben van kameramozgás.
-
-**I. Visszatérő elemek (a playlist aláírása)**
-19. Legyen a szakaszok végén egy visszatérő záró-mozdulat? Bezáruló gyűrű,
-    pipa, aláhúzás, nincs (egy választás).
-20. Visszatérő szegmensek: rövid (3-6 mp-es) részek, amik minden videóban
-    ugyanott jönnek. Például feliratkozás-kérés, lead magnet ajánló, komment
-    felhívás. A user megadja a szövegüket és a helyüket (eleje, közepe,
-    vége). (igen/nem, utána szerkesztő)
-21. Hagyjunk a végén 20 mp-et a YouTube végképernyőnek (két videó és a
-    feliratkozás gomb helye üresen marad, a zene szól tovább)? (igen/nem,
-    ajánlott: igen)
-22. Látszódjon alul egy vékony haladásjelző, ami a videóval együtt telik, a
-    fejezethatároknál egy kis jellel? (igen/nem)
-
-Kimaradt: logó-intro (sokan már használnak saját introt, ne keveredjen bele).
-
-## A komponens-készlet
-
-Az archetípus a **jelenet**: mit mutat a kép egy mondatnál (kijelentés,
-csempék, nyíl, számláló). Ebből a jelenet-tábla választ, mondatonként egyet.
-A komponens **réteg vagy átmenet**: ami a jelenetek között, alatt vagy felett
-történik (váltás, háttér, kiemelés, számláló-effekt, zárás). Nem dönt a
-tartalomról.
-
-Forrás: a brand-frames `BLOCKS.md` "adopted set" listája (Zoltan válogatása a
-HyperFrames registryből), nem új válogatás. Induló méret kb. 20 elem, a
-kérdések választási lehetőségei szerint:
-
-| Hely | Darab | Példa |
-|---|---|---|
-| Jelenetváltás | 4 | fade-through, directional-wipe, iris-reveal, match-cut |
-| Háttér | 4 | mesh-gradient-bg, grain-overlay, dynamic-grid, light-sweep-pass |
-| Kiemelés | 4 | marker-highlight, hw-underline, hw-callout-circle, inline-highlight |
-| Számok | 2 | count-up, number-wheel |
-| Szöveg | 3 | per-word-rise, line-by-line-slide, kinetic-type-swap |
-| Zárás, szegmens | 3 | cta-close, logo-outro, social-proof-card |
-
-Mérőszámok, amik a méretet korlátozzák:
-
-1. **Választás kérdésenként legfeljebb 4-5**, különben a user elveszik.
-2. **Tesztmátrix:** minden elemet minden presettel és minden varázsló-opcióval
-   le kell renderelni a regress tesztben. 20 elem x 13 preset már 260 kombináció,
-   ez a valódi korlát, nem a letöltés.
-3. **Renderidő:** a háttér-rétegek 5-20%-ot adnak hozzá, a blur alapúak 100%-ot,
-   ezért azok kimaradnak. Egy elem akkor kerül be, ha a mintavideón a renderidő
-   legfeljebb 20%-kal nő.
-4. **Hibalehetőség:** minden új elem csak akkor kerül be, ha a lint és a check
-   minden presettel 0 hibát ad.
-
-A készlet verzióról verzióra bővülhet, mindig regress teszttel.
+Egy elem csak akkor kerül a varázslóba, ha a mintavideón, világos és sötét
+kinézettel is: lint és check 0 hiba, a render ideje legfeljebb 20%-kal nő, és a
+kontakt lapon a jelenet olvasható. A blur-crossfade és a zoom-through elmosást
+használ (0,4-0,6 mp-ig, jelenetváltásonként); ha ez a 20%-ot átlépi, kiesik vagy
+csak "Slow" hosszal marad.
