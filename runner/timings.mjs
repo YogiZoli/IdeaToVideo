@@ -23,6 +23,7 @@ export const DEFAULTS = {
   avatar: { perUnit: 15, min: 90 }, // per second of avatar clips (HeyGen renders)
   render: { perUnit: 1.5, min: 20 }, // per second of video (71 s: 102 s)
   "brand-preview": { perUnit: 3, min: 12 }, // per scene of the sample (5 scenes: 15 s, measured 2026-10-02)
+  "motion-preview": { perUnit: 8, min: 30 }, // per scene of the sample, a draft render (6 scenes, 18 s of video)
 };
 const KEEP = 5;
 

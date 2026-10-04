@@ -29,6 +29,10 @@
     "cta-close/cta-close.html": "1aff42f1ddfaebcd961b64987e59ed8a3bd1961b4d40d44d24e117093801c46f",
     "logo-brand-close/registry-item.json": "ebf50e9d69d7ad2f16630fc7a96fad10419efdc490dfe335a07a5ff3b47e8c7f",
     "logo-brand-close/logo-brand-close.html": "afd249a6bf34702f71a9bf4464adbe8f2dd3a768f9729701ee4a57f205991089",
+    "aurora-drift/registry-item.json": "822b07de0702951bd62198bf631b208255115c16791e85227bf761699f7fa767",
+    "aurora-drift/aurora-drift.html": "bf700650e032fc4f81ece1b88ab0bfb92f042f4ae40a4be02509b6e50be34c23",
+    "grain-field/registry-item.json": "2d269f695151c6863ee8b9a87ccafec7789850e59636cef3e68d12b02b86e51b",
+    "grain-field/grain-field.html": "2e2e06e1164a413d5625ffb4de2d4aa0e2bfc3175c8c342be735d28b884e451f",
     "presets/blue-professional/FRAME.md": "62e9a445885f6057084493de385a8ce20c3b4a299ae36a553ef54884f06bad68",
     "presets/biennale-yellow/FRAME.md": "76d22cced9c152b0edb520543cf34c4ce772a312caa7211c40d4315b53c053cf",
     "presets/blockframe/FRAME.md": "ef8d9d47a209bed4ccc2d928c14a81cdaecb5129f5dc0cdc0dc40afc7ef92931",
@@ -39,6 +43,8 @@
     "presets/code-editorial/FRAME.md": "b1c123526634e31a3e36cff9856e3b4322f2f778d2c7f573aa35a9ee1e90deb7",
     "presets/coral/FRAME.md": "8530ecb36d1bb2d53392d88d972df35beeba19a5bcb3260fc9b18a58de7cdfe8",
     "presets/creative-mode/FRAME.md": "c1a1359502d9fc79ef267305291fe0f651219c72d88088cee32327dd933dead8",
-    "presets/editorial-forest/FRAME.md": "ceeb2ab768367da1e1f3e1eca36ab9feeb3de3e4d15493319b0044c3d869329c"
+    "presets/editorial-forest/FRAME.md": "ceeb2ab768367da1e1f3e1eca36ab9feeb3de3e4d15493319b0044c3d869329c",
+    "motion/transitions.json": "e471afb61bc2b69b37d63f1438bdedcd36d625d03fe30166ad6bfe0aea29a103",
+    "motion/overview.md": "ec878d479d16addcd88c770b39fc88fa5219086478aee39e9f96a1096a58b084"
   }
 }

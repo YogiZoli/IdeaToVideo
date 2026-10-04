@@ -186,6 +186,29 @@ export type Dictionary = {
   distinct: { a: string; b: string; note?: string }[];
   positions: { against: string; kind?: "phenomenon" | "type" | "person"; stance?: string }[];
 };
+// The Identity's Motion profile (runner/motion/profile.mjs, docs/wizards/motion.md 4).
+export type MotionProfile = {
+  schema: "motion-profile/1";
+  updatedAt?: string;
+  transition: { mood: string; primary: string; accent: string | null; energy: "calm" | "medium" | "high"; where: "every" | "sections"; direction?: "LEFT" | "RIGHT" | "UP" | "DOWN" };
+  background: { type: "plain" | "grain-field" | "aurora-drift"; vars: Record<string, string | number | boolean> };
+  camera: { move: "off" | "jitter" | "push" };
+  scenes: { off: string[]; style: Record<string, Record<string, string | number | boolean>> };
+};
+export type MotionTransition = { name: string; kind: "cut" | "css" | "shader"; label: string };
+export type MotionStyleVar = { id: string; type: string; label: string; description?: string; default: unknown; options?: { value: string; label: string }[] };
+export type MotionOptions = {
+  moods: { id: string; label: string; hint: string; energy: string; primary: string; accent: string | null; transitions: MotionTransition[] }[];
+  energies: { id: string; label: string; seconds: number }[];
+  transitions: MotionTransition[];
+  backgrounds: { id: string; label: string; darkOnly: boolean; cost: string | null }[];
+  shaderCost: string;
+  cameras: { id: string; label: string }[];
+  scenes: { role: string; label: string; hint: string; components: { name: string; label: string; description: string; style: MotionStyleVar[] }[] }[];
+};
+export type MotionState = { profile: MotionProfile | null; recommended: { mood: string; energy?: string; reason: string | null }; start: MotionProfile; light: boolean; options: MotionOptions };
+export type MotionPreview = { file: string; seconds: number; renderSeconds: number; notes: string[]; transitions: string[] };
+
 export type DictFinding = { kind: "banned" | "spelling"; term: string; found: string; instead?: string; where: string };
 
 export function runner<T = any>(command: string, request: Record<string, unknown> = {}) {

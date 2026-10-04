@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-02 (Brand varázsló két körben kész; következik a Mozgás varázsló)
+Frissítve: 2026-10-04 (Mozgás varázsló kész; következik a CTA varázsló)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -154,6 +154,18 @@ Kész (2026-09-30):
   tokens.css"; Export és Import Brand Identity Card. Zoltan előző próbája
   (a 6df985d telepítővel): a napló 0 hiba. Tesztek: 144 Node, 43 Rust, e2e
   21/21.
+- **Mozgás varázsló kész (2026-10-04)**, DECISIONS 74, specifikáció:
+  `docs/motion-wizard.md` 3. változat, megvalósítás: `docs/wizards/motion.md`.
+  Identity-nként `motion.json`, minden ONE Video örökli. Minden a
+  HyperFrames-é: 9 hangulat és 3 energia a transition overview-ból, 5 CSS
+  átmenet a saját jegyzékéből, 14 shader a `@hyperframes/shader-transitions`
+  csomagból (0.8.22), háttér-komponensek (Dot field, Aurora csak sötétben,
+  átlátszó jelenet-talajjal), kamera a doktrína szerint (Off, Subtle
+  jitter, Push in). Komponensek szerepenként, stílusukkal. Valódi előnézet
+  (18 mp-es videó). Settings, Identity, Motion. Profil nélkül a build bájtra
+  a régi. Zoltan próbája ezzel a telepítővel még nincs (a 2026-10-02-i második
+  körös Brand telepítőt sem telepítette: a napló utolsó indítása az első
+  körösé, 0 hiba).
 
 ## Sorrend innen (Zoltan, 2026-10-01): külön chatek
 
@@ -173,12 +185,13 @@ Kész (2026-09-30):
    Brand wizard végig, mentés, egy ONE Video újra a 4. kapuig; Settings,
    Dictionary; és a 2b-ből elmaradt mentés a `G:/My Drive`-ba (a naplóban
    nem volt nyoma, a config.json-ban nincs mentési mappa).
-   **Következő: 4. pont, Mozgás varázsló, új chatben.** A Brand körből
-   nyitott kérdés nem maradt (open-design, tokens import, kártya export és
-   import: kész, DECISIONS 73).
-4. **Mozgás varázsló** (Opus 5.5, High): `docs/wizards/motion.md`. Első
-   feladat a `docs/motion-wizard.md` átírása a D útra, Zoltan jóváhagyása,
-   csak utána kód.
+   A Brand körből nyitott kérdés nem maradt (DECISIONS 73).
+4. **Mozgás varázsló: kész** (2026-10-04, DECISIONS 74). Zoltan próbája az
+   új telepítővel: Settings, Identity, Motion, Open Motion wizard végig,
+   Render preview, Save; egy ONE Video újra a 4. kapuig és renderig; és a
+   Brand második köre (163 kinézet, Import tokens.css, kártya export és
+   import). **Következő: 5. pont, CTA varázsló, új chatben** (a prompt a
+   2026-10-04-i chat végén; Zoltan ott adja a pontos leírást).
 5. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltantól kell a
    15 alap kulcsszó és a komment-CTA működése.
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
@@ -202,12 +215,12 @@ Stratégia (nem az IdeaToVideo kódja, de a suite iránya): a Drive
    "amelyik előbb jön".
 
 1. A kulcsszavas komment-CTA és a CTA varázsló részletei: Zoltan később adja.
-2. A `docs/motion-wizard.md` 2. változata (a D út szerint átírandó,
-   jóváhagyásra).
+2. ~~A `docs/motion-wizard.md`~~: jóváhagyva és kész (DECISIONS 74).
 3. A v1 videótípusa: explainer? Zoltan még nem döntött, a DECISIONS-be még nem
    kerül.
 4. A teljes registry (234 komponens): érvek a DECISIONS 56-ban, Zoltan később
-   átnézi.
+   átnézi. Javaslat a katalógus csoportjai szerint: DECISIONS 74 utolsó pont.
+5. A logo-brand-close kell-e (Zoltan: szinte biztosan nem): a CTA chatben.
 
 ## Hogyan indul egy új session
 

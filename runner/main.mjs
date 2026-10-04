@@ -33,6 +33,8 @@ import { isLightLook, libraryDir } from "./gates/build/assemble.mjs";
 import { loadCard, saveCard, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
 import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
 import { brandPreview, previewDir } from "./brand/preview.mjs";
+import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendMood, wizardOptions } from "./motion/profile.mjs";
+import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
 import { cardFromTokens } from "./brand/tokens.mjs";
 import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gates/script/dictionary.mjs";
@@ -75,8 +77,19 @@ const key = () => process.env.STUDIO_API_KEY || "";
 function lookOf({ identityDir, look }) {
   if (!identityDir) return look;
   const { card } = loadCard(identityDir);
-  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null };
+  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion: motionOf(identityDir) };
 }
+
+// The Identity's Motion profile, or null (motion/profile.mjs). A broken file
+// stops the build with a sentence, it is never silently ignored.
+function motionOf(identityDir) {
+  try {
+    return loadProfile(identityDir);
+  } catch (e) {
+    throw new Error(`The Motion profile cannot be used: ${e.message} Open Settings, Identity, Motion to fix it.`);
+  }
+}
+const offOf = (look) => (typeof look === "object" ? look?.motion?.scenes?.off ?? [] : []);
 
 // Dictionary findings for a ONE Video: the script's spoken text and every
 // text of the scene table (DECISIONS 68). Never blocks, the gates show them.
@@ -223,6 +236,31 @@ const commands = {
   "brand-preview": async ({ card, language = "en" }) => {
     const r = await timed("brand-preview", 5, emit, () => brandPreview({ card, language, onProgress: (p) => emit({ event: "progress", ...p }) }));
     return { ...r, dir: previewDir() };
+  },
+
+  // The Motion wizard (docs/wizards/motion.md): the saved profile (or null),
+  // the recommendation from the Brand, and every choice.
+  "motion-state": async ({ identityDir }) => {
+    const { card } = loadCard(identityDir);
+    const recommended = recommendMood(card);
+    const profile = identityDir ? loadProfile(identityDir) : null;
+    return { profile, recommended, start: profileFromMood(recommended.mood, { energy: recommended.energy }), light: card.appearance === "light", options: wizardOptions() };
+  },
+
+  // A mood's whole profile (the Start screen's cards), or a profile being
+  // edited checked (nothing saved).
+  "motion-check": async ({ profile, mood, energy }) => ({ profile: mood ? profileFromMood(mood, { energy }) : normalizeProfile(profile) }),
+
+  "motion-save": async ({ identityDir, profile }) => {
+    if (!identityDir) throw new Error("No Identity to save the Motion profile in.");
+    return { profile: saveProfile(identityDir, profile) };
+  },
+
+  // The real preview: the sample video with the card and this profile, rendered.
+  "motion-preview": async ({ identityDir, profile, language = "en" }) => {
+    const { card } = loadCard(identityDir);
+    const r = await timed("motion-preview", 6, emit, () => motionPreview({ card, profile, language, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    return { ...r, dir: motionPreviewDir() };
   },
 
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
@@ -383,13 +421,14 @@ const commands = {
           language: project.language,
           name,
           themeIsLight: isLightLook(look),
+          off: offOf(look),
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );
       project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `scenes: done, ${r.scenes} scenes${r.gaps.length ? `, gaps: ${r.gaps.map((g) => `${g.at} ${g.need}`).join("; ")}` : ""}`);
-      return { ...r, ...(await sceneRows(projectDir)), gate: project.gates.scenes, status: project.status };
+      return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: project.gates.scenes, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "scenes", { state: "failed", error: String(e.message).slice(0, 2000) }));
       appendLog(projectDir, `scenes: failed, ${e.message}`);
@@ -397,21 +436,21 @@ const commands = {
     }
   },
 
-  "scene-table": async ({ projectDir }) => sceneRows(projectDir),
+  "scene-table": async ({ projectDir, look }) => sceneRows(projectDir, { off: offOf(look) }),
 
-  "save-scenes": async ({ projectDir, scenes }) => {
+  "save-scenes": async ({ projectDir, scenes, look }) => {
     const r = await saveScenes({ projectDir, scenes });
     const project = edited(projectDir, "scenes");
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: edited by hand");
-    return { ...r, ...(await sceneRows(projectDir)), gate: project.gates.scenes, status: project.status };
+    return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: project.gates.scenes, status: project.status };
   },
 
   "refill-scene": async ({ projectDir, llm, index, component, look }) => {
     const project = loadProject(projectDir);
     appendLog(projectDir, `scenes: swapping scene ${index + 1} to ${component} with ${llm.provider}/${llm.model || "default model"}`);
     try {
-      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look) }));
+      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look), off: offOf(look) }));
     } catch (e) {
       // The table stays as it was; only the log learns about the failed swap.
       appendLog(projectDir, `scenes: swap of scene ${index + 1} failed, ${e.message}`);
@@ -420,7 +459,7 @@ const commands = {
     const next = edited(projectDir, "scenes");
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
-    return { ...(await sceneRows(projectDir)), gate: next.gates.scenes, status: next.status };
+    return { ...(await sceneRows(projectDir, { off: offOf(look) })), gate: next.gates.scenes, status: next.status };
   },
 
   // Gate 5, optional: an avatar says the opening and the closing (DECISIONS
@@ -532,6 +571,8 @@ const commands = {
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
+      if (r.transitions?.some((t) => t !== "cut")) appendLog(projectDir, `review: Motion profile, scene changes ${r.transitions.join(" ")}`);
+      for (const n of r.notes ?? []) appendLog(projectDir, `review: ${n}`);
       return { ...r, gate: project.gates.review, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "review", { state: "failed", error: String(e.message).slice(0, 2000) }));
@@ -574,8 +615,9 @@ const commands = {
   },
 };
 
-// The commands that theme something: they get the Identity's card as `look`.
-const LOOK_COMMANDS = new Set(["make-scenes", "refill-scene", "make-avatar", "build-video"]);
+// The commands that theme something or plan scenes: they get the Identity's
+// card as `look`, with its Motion profile (`look.motion`).
+const LOOK_COMMANDS = new Set(["make-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
 
 async function readStdin() {
   if (process.stdin.isTTY) return "";

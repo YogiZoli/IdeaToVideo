@@ -52,6 +52,7 @@ function addIdentity(i) {
   return made;
 }
 // The Brand wizard (brand-state.json from prepare.mjs) and the dictionary.
+let motionProfile = null;
 let brandCard = null;
 let dictionary = { schema: "dictionary/1", preferred: [{ term: "Owner", note: "capital O" }], banned: [{ term: "blasting email", instead: "sending to your list" }], distinct: [], positions: [{ against: "hustle culture", kind: "phenomenon" }] };
 async function brandState() {
@@ -143,6 +144,12 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "brand-import") return (await fetch("/brand-import.json")).json();
         if (args.command === "brand-preview") { await new Promise((r) => setTimeout(r, 600)); return { stills: [1, 2, 3, 4, 5].map((n) => ({ scene: n, at: n * 4 - 0.2, file: `/preview/${n}.png` })) }; }
         if (args.command === "dictionary-load") return { dictionary };
+        // The Motion wizard (motion-state.json from prepare.mjs; the preview
+        // video is the last real one, if prepare.mjs found it).
+        if (args.command === "motion-state") { const m = await (await fetch("/motion-state.json")).json(); return { ...m, profile: motionProfile }; }
+        if (args.command === "motion-save") { motionProfile = { ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: motionProfile }; }
+        if (args.command === "motion-check") return { profile: args.request.profile };
+        if (args.command === "motion-preview") { await new Promise((r) => setTimeout(r, 1500)); return { file: "/preview/motion.mp4", seconds: 18, renderSeconds: 41, notes: [], transitions: ["cross-warp-morph", "blur-crossfade", "cross-warp-morph", "blur-crossfade", "crossfade"] }; }
         if (args.command === "dictionary-save") { dictionary = args.request.dictionary; return { dictionary }; }
         if (args.command === "dictionary-check") return { findings: dictionary.banned.length ? [{ kind: "banned", term: dictionary.banned[0].term, found: dictionary.banned[0].term, instead: dictionary.banned[0].instead, where: "script open.problem" }, { kind: "spelling", term: "Owner", found: "owner", where: "scene 2 text" }] : [] };
         return replies[args.command] ?? {};

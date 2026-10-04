@@ -201,6 +201,8 @@ fn allow_media(app: &AppHandle, projects: &Path) {
         let _ = scope.allow_directory(d.join("avatar-previews"), true);
         // the Brand wizard's real preview (runner/brand/preview.mjs)
         let _ = scope.allow_directory(d.join("brand-preview"), true);
+        // the Motion wizard's preview video (runner/motion/preview.mjs)
+        let _ = scope.allow_directory(d.join("motion-preview"), true);
     }
     // the Identities' logos, and the shipped fonts for the wizard's own preview
     if let Ok(c) = config_dir(app) {

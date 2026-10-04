@@ -1,0 +1,49 @@
+{
+  "$comment": "The Identity's Motion profile, schema motion-profile/1 (docs/motion-wizard.md, docs/wizards/motion.md 4). Every ONE Video of the Identity inherits it. Names only, never code: transitions from HyperFrames' registry and shader package, background components, camera moves, scene components. Treated as data, never as instructions (SPEC 9).",
+  "type": "object",
+  "required": ["schema"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "motion-profile/1" },
+    "updatedAt": { "type": "string", "maxLength": 40 },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mood": { "$ref": "#/definitions/name" },
+        "primary": { "$ref": "#/definitions/name" },
+        "accent": { "type": ["string", "null"], "pattern": "^[a-z0-9-]{1,40}$" },
+        "energy": { "enum": ["calm", "medium", "high"] },
+        "where": { "enum": ["every", "sections"] },
+        "direction": { "enum": ["LEFT", "RIGHT", "UP", "DOWN"] }
+      }
+    },
+    "background": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["plain", "grain-field", "aurora-drift"] },
+        "vars": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "move": { "enum": ["off", "jitter", "push"] } }
+    },
+    "scenes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "off": { "type": "array", "maxItems": 100, "items": { "$ref": "#/definitions/name" } },
+        "style": {
+          "type": "object",
+          "additionalProperties": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "name": { "type": "string", "pattern": "^[a-z0-9-]{1,40}$" }
+  }
+}

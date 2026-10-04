@@ -182,4 +182,32 @@ check("the project remembers the video", runner("load-project", { projectDir: di
   const video = restored.event === "result" ? runner("load-project", { projectDir: restored.data.dir }).data?.latestVideo?.file : null;
   check("restore: the ONE Video comes back with the same video", !!video && Buffer.compare(fs.readFileSync(video), original) === 0, restored.event === "result" ? restored.data.dir : restored.message);
 }
+
+// The Motion wizard (docs/wizards/motion.md): a profile in the Identity's
+// folder, its real preview, and the same ONE Video built and rendered with it
+// (the original project folder, kept beside the restored one).
+{
+  const mdir = `${dir}-gone`;
+  const state = runner("motion-state", { identityDir });
+  check("motion: no profile yet, a recommendation and every choice", state.event === "result" && state.data.profile === null && state.data.options.moods.length === 11, state.event === "result" ? `recommended ${state.data.recommended.mood}` : state.message);
+  const profile = {
+    ...state.data.start,
+    transition: { mood: "premium", primary: "blur-crossfade", accent: "cross-warp-morph", energy: "calm", where: "every" },
+    background: { type: "grain-field", vars: {} },
+    camera: { move: "push" },
+    scenes: { off: ["headline-slam"], style: { "marker-highlight": { style: "underline" } } },
+  };
+  const saved = runner("motion-save", { identityDir, profile });
+  check("motion: the profile is saved in the Identity's folder", saved.event === "result" && fs.existsSync(path.join(identityDir, "motion.json")), saved.message ?? "");
+  const preview = runner("motion-preview", { identityDir, profile, language: "hu" });
+  check("motion: the real preview, an 18 s video", preview.event === "result" && fs.existsSync(preview.data.file) && Math.abs(preview.data.seconds - 18) < 0.25 && preview.data.transitions.includes("cross-warp-morph"), preview.event === "result" ? `${preview.data.renderSeconds} s render, ${preview.data.transitions.join(" ")}` : preview.message);
+  const built2 = runner("build-video", { projectDir: mdir, identityDir });
+  const html = fs.existsSync(path.join(mdir, "build", "index.html")) ? fs.readFileSync(path.join(mdir, "build", "index.html"), "utf8") : "";
+  check("motion: the build uses the profile, lint and check pass", built2.event === "result" && /HyperShader\.init/.test(html) && /data-composition-id="grain-field"/.test(html) && /id="cam-1"/.test(html) && /"style":"underline"/.test(html) && fs.existsSync(path.join(mdir, "build", "transitions.json")), built2.event === "result" ? `${built2.seconds} s` : built2.message);
+  runner("approve-gate", { projectDir: mdir, gate: "review" }); // a new build asks for the contact sheet again
+  const r2 = runner("render-video", { projectDir: mdir, quality: "draft" });
+  check("motion: render, the length still matches the voice", r2.event === "result" && Math.abs(r2.data.seconds - TOTAL) < 0.25, r2.event === "result" ? `${r2.data.seconds} s of video in ${r2.seconds} s` : r2.message);
+  const table = runner("scene-table", { projectDir: mdir, identityDir });
+  check("motion: a turned-off scene type is not offered as a swap", table.event === "result" && table.data.rows.every((r) => r.alternatives.every((a) => a.component !== "headline-slam")));
+}
 finish();

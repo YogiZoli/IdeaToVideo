@@ -34,11 +34,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { prepareBuild, buildDir } from "./index.mjs";
+import { prepareBuild, buildDir, TRANSITIONS_FILE } from "./index.mjs";
+import { engineDir } from "../../tools.mjs";
 import { duration } from "../../audio.mjs";
 import { avatarClips } from "../avatar/index.mjs";
 import { cardForPreset, cardTheme, cardFamilies } from "../../brand/card.mjs";
 import { fontFaces, categories } from "../../brand/fonts.mjs";
+import { sentenceSections } from "../scenes/index.mjs";
+import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE } from "../../motion/transitions.mjs";
+import { backgroundFor, backgroundPieces, cameraLines } from "../../motion/stage.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -92,6 +96,25 @@ export function fitDuration(html, name, seconds) {
     .replace(/data-composition-duration="[\d.]+"/, `data-composition-duration="${s}"`)
     .replaceAll(`data-duration="${authored}"`, `data-duration="${s}"`)
     .replaceAll("root.dataset.duration", JSON.stringify(s));
+}
+
+// The component with its ground see-through, for a build with a background
+// component under the scenes (motion/stage.mjs). HyperFrames scene components
+// paint their own full-frame ground in the theme's --bg (on #root or on their
+// "-clip" layer); that rule, and only its background, is overridden, so the
+// background shows through and everything else stays as authored (text,
+// cards and shadows keep using --bg). Returns the selectors it changed.
+export function transparentGround(html) {
+  const grounds = [];
+  for (const m of html.matchAll(/(^|[\s}])(#root|\.[A-Za-z0-9_-]+-clip)\s*\{([^{}]*)\}/g)) {
+    if (/(^|[;\s])background\s*:[^;]*var\(--bg\b/.test(m[3]) && !grounds.includes(m[2])) grounds.push(m[2]);
+  }
+  if (!grounds.length) return { html, grounds };
+  const css = `<style data-itv-ground>${grounds.map((g) => `${g} { background: transparent !important; }`).join(" ")}</style>`;
+  const root = /<div[^>]*\bid="root"[^>]*>/.exec(html);
+  if (!root) return { html, grounds: [] };
+  const at = root.index + root[0].length;
+  return { html: html.slice(0, at) + css + html.slice(at), grounds };
 }
 
 // Problems with one scene's variables, as readable sentences. Missing
@@ -289,15 +312,46 @@ export function avatarStyle(layout = {}, width = 1920, height = 1080) {
 export const avatarVideo = (a, width = 1920, height = 1080) =>
   `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="${avatarStyle(a.layout, width, height)}"></video>`;
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video", fontCss = "" }) {
-  const hosts = mounts
-    .map(
-      (m) =>
-        `    <div id="${m.id}" class="clip" data-composition-id="${m.compositionId}" data-composition-src="${m.src}"` +
-        ` data-start="${m.start}" data-duration="${m.duration}" data-track-index="1" data-width="${width}" data-height="${height}"` +
-        ` data-variable-values='${attr(JSON.stringify(m.vars ?? {}))}' style="${m.style}"></div>`,
-    )
-    .join("\n");
+// Motion (the Identity's Motion profile, motion/): `motion` is null for a
+// build without one, and then the page is exactly what it was before the
+// Motion wizard. Otherwise:
+//   mounts[].track      scenes alternate between two tracks where they overlap
+//   mounts[].camera     a camera wrapper id around the scene
+//   backgrounds         background component pieces on track 0 (no #main-bg)
+//   lines               GSAP lines for the main timeline (transitions, camera)
+//   shader              HyperShader.init config, or null
+const hostHtml = (m, width, height, motion) => {
+  // The shader package finds the scenes by their class.
+  const cls = motion?.shader ? "clip scene" : "clip";
+  const host =
+    `<div id="${m.id}" class="${cls}" data-composition-id="${m.compositionId}" data-composition-src="${m.src}"` +
+    ` data-start="${m.start}" data-duration="${m.duration}" data-track-index="${m.track ?? 1}" data-width="${width}" data-height="${height}"` +
+    ` data-variable-values='${attr(JSON.stringify(m.vars ?? {}))}' style="${m.style}"></div>`;
+  if (!m.camera) return `    ${host}`;
+  return [`    <div id="${m.camera}" class="itv-cam" style="position:absolute;inset:0;transform-origin:50% 50%">`, `      ${host}`, `    </div>`].join(NL);
+};
+const NL = "\n";
+
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video", fontCss = "", motion = null }) {
+  const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
+  const ground = motion?.backgrounds?.length
+    ? motion.backgrounds
+        .map(
+          (b) =>
+            `    <div id="${b.id}" class="clip" data-composition-id="${b.compositionId}" data-composition-src="${b.src}"` +
+            ` data-start="${b.start}" data-duration="${b.duration}" data-track-index="0" data-width="${width}" data-height="${height}"` +
+            ` data-variable-values='${attr(JSON.stringify(b.vars ?? {}))}' style="${b.style}"></div>`,
+        )
+        .join(NL)
+    : `    <div id="main-bg" class="clip" data-start="0" data-duration="${total}" data-track-index="0"></div>`;
+  const shaderTag = motion?.shader ? `${NL}    <script src="${SHADER_FILE}"></script>` : "";
+  const extra = motion
+    ? [
+        `      var tl = window.__timelines["main"];`,
+        ...(motion.lines ?? []).map((l) => "      " + l),
+        ...(motion.shader ? [`      HyperShader.init(Object.assign(${JSON.stringify(motion.shader)}, { timeline: tl }));`] : []),
+      ].join(NL) + NL
+    : "";
   return `<!doctype html>
 <html lang="${attr(language)}">
   <head>
@@ -328,11 +382,11 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
         background: var(--bg, #000);
       }
     </style>
-    <script src="gsap.min.js"></script>
+    <script src="gsap.min.js"></script>${shaderTag}
   </head>
   <body>
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
-    <div id="main-bg" class="clip" data-start="0" data-duration="${total}" data-track-index="0"></div>
+${ground}
 ${hosts}
 ${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
@@ -340,16 +394,53 @@ ${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}
     <script>
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = gsap.timeline({ paused: true });
-    </script>
+${extra}    </script>
   </body>
 </html>
 `;
 }
 
+// The Motion profile's part of a build (motion/): scene changes, camera
+// wrappers, background pieces. `sectionStarts`: the scenes that open a new
+// script section (the topic changes of HyperFrames' narrative positions).
+export function motionPlan(profile, { times, theme, light, width, height, sectionStarts = new Set(), env = process.env }) {
+  const dir = libraryDir(env);
+  const registry = loadRegistry(dir);
+  const ids = times.map((_, n) => `scene-${n + 1}`);
+  const plan = planTransitions(times, { transition: profile.transition, registry, sectionStarts });
+  const built = transitionBuild(times, plan, { ids, registry, theme, width, height });
+  const move = profile.camera?.move ?? "off";
+  const cameras = times.map((t, n) => (move === "off" ? null : `cam-${n + 1}`));
+  const lines = [...built.lines];
+  times.forEach((t, n) => {
+    if (cameras[n]) lines.push(...cameraLines(move, { id: cameras[n], start: t.start, duration: t.duration + built.extend[n], index: n }));
+  });
+  const bg = backgroundFor(profile.background, { light });
+  return { plan, extend: built.extend, shader: built.shader, lines, cameras, background: bg, notes: bg.note ? [bg.note] : [] };
+}
+
+// Which scenes open a new script section (by their first sentence).
+export function sectionStartsOf(projectDir, scenes, sentences) {
+  const md = path.join(projectDir, "script.md");
+  if (!fs.existsSync(md)) return new Set();
+  const sections = sentenceSections(fs.readFileSync(md, "utf8"), sentences);
+  const index = new Map(sentences.map((s, i) => [s.id, i]));
+  const starts = new Set();
+  scenes.forEach((sc, n) => {
+    const i = index.get(sc.from);
+    if (n > 0 && i > 0 && sections[i] !== sections[i - 1]) starts.add(n);
+  });
+  return starts;
+}
+
 // Reads scenes.json + sentences.json, checks everything, then writes build/.
 // `total` (seconds) is the audio length; measured from the mix when not given.
-export async function assemble(projectDir, { env = process.env, total, language, title, look: wanted = DEFAULT_LOOK } = {}) {
+// `motion`: the Identity's Motion profile (motion/profile.mjs), or null; it
+// may also come on the look (main.mjs lookOf). `sectionStarts` overrides the
+// sections read from script.md (the previews).
+export async function assemble(projectDir, { env = process.env, total, language, title, look: wanted = DEFAULT_LOOK, motion, sectionStarts } = {}) {
   const look = resolveLook(wanted);
+  const profile = motion !== undefined ? motion : look.motion ?? null;
   const read = (f, what) => {
     const p = path.join(projectDir, f);
     if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet (${f}).`);
@@ -357,7 +448,9 @@ export async function assemble(projectDir, { env = process.env, total, language,
   };
   const table = read("scenes.json", "scene table");
   const sentences = read("sentences.json", "sentence table");
-  const scenes = table.scenes ?? [];
+  // The profile's style settings win over the scene table's (the user chose
+  // them in the Motion wizard).
+  const scenes = (table.scenes ?? []).map((sc) => (profile?.scenes?.style?.[sc.component] ? { ...sc, vars: { ...(sc.vars ?? {}), ...profile.scenes.style[sc.component] } } : sc));
   if (!scenes.length) throw new Error("The scene table is empty.");
   const width = table.width ?? 1920;
   const height = table.height ?? 1080;
@@ -383,7 +476,28 @@ export async function assemble(projectDir, { env = process.env, total, language,
   total = Math.round(total * 1000) / 1000;
   const times = sceneTimes(scenes, sentences, total);
 
-  const fitted = scenes.map((sc, n) => fitDuration(components.get(sc.component).html, sc.component, times[n].duration));
+  const mp = profile
+    ? motionPlan(profile, {
+        times,
+        theme: { ...baseTheme(look), ...(table.theme ?? {}) },
+        light: Boolean(look.light),
+        width,
+        height,
+        sectionStarts: sectionStarts ?? sectionStartsOf(projectDir, scenes, sentences),
+        env,
+      })
+    : null;
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  const ext = (n) => (mp ? mp.extend[n] : 0);
+  // A scene that holds past its end (its outgoing transition) is fitted to
+  // the longer length, so it stays visible under the incoming one.
+  const bgPieces = mp?.background.component ? backgroundPieces(total) : [];
+  const bgComponent = bgPieces.length ? loadComponent(mp.background.component, { env }) : null;
+  // With a background under them, the scenes' own grounds are see-through.
+  const fitted = scenes.map((sc, n) => {
+    const html = fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n)));
+    return bgComponent ? transparentGround(html).html : html;
+  });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
 
   const { out } = prepareBuild(projectDir, { env });
@@ -394,11 +508,26 @@ export async function assemble(projectDir, { env = process.env, total, language,
       fs.copyFileSync(a.from, path.join(out, a.target));
     }
   }
+  // Overlapping neighbours never share a track (HyperFrames lint), so with
+  // transitions the scenes alternate between tracks 1 and 4.
+  const overlap = Boolean(mp && mp.extend.some((x) => x > 0));
   const mounts = scenes.map((sc, n) => {
     const src = `compositions/components/scene-${n + 1}-${sc.component}.html`;
     fs.writeFileSync(path.join(out, src), fitted[n]);
-    return { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
+    const m = { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
+    if (mp) {
+      m.duration = r3(times[n].duration + ext(n));
+      if (overlap) m.track = n % 2 === 0 ? 1 : 4;
+      if (mp.cameras[n]) m.camera = mp.cameras[n];
+    }
+    return m;
   });
+  const backgrounds = bgPieces.map((p, k) => {
+    const src = `compositions/components/background-${k + 1}-${bgComponent.name}.html`;
+    fs.writeFileSync(path.join(out, src), fitDuration(bgComponent.html, bgComponent.name, p.duration));
+    return { id: `background-${k + 1}`, compositionId: bgComponent.name, src, ...mountTheme(mp.background.vars), ...p };
+  });
+  if (mp?.shader) fs.copyFileSync(path.join(engineDir(env), "node_modules", "@hyperframes", "shader-transitions", "dist", "index.global.js"), path.join(out, SHADER_FILE));
   // The look's fonts, local: no font is fetched while rendering.
   const fonts = fontFaces(look.families ?? [], { dir: libraryDir(env) });
   for (const f of fonts.files) {
@@ -409,8 +538,13 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.mkdirSync(path.join(out, "avatar"), { recursive: true });
     fs.copyFileSync(path.join(projectDir, a.file), path.join(out, a.file));
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, language, title, fontCss: fonts.css }));
-  return { out, scenes: mounts.length, seconds: total };
+  const motionPart = mp ? { lines: mp.lines, shader: mp.shader, backgrounds } : null;
+  if (mp) {
+    const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
+    fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
+  }
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, language, title, fontCss: fonts.css, motion: motionPart }));
+  return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [] };
 }
 
 export { buildDir };

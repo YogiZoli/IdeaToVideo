@@ -62,6 +62,10 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("dictionary-load", None),
     ("dictionary-save", None),
     ("dictionary-check", None),
+    ("motion-state", None),
+    ("motion-check", None),
+    ("motion-save", None),
+    ("motion-preview", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

@@ -17,6 +17,9 @@
 // Every family must cover all 10 content languages (runner/brand/cmap.mjs),
 // or the build fails. And library/presets.map.json as presets/MAP.json.
 // So renders never fetch a font from the network (docs/wizards/brand.md 6).
+// And for the Motion wizard (library/components.json "motion"): the background
+// components into components/, and HyperFrames' transition registry and
+// transition overview into motion/.
 //
 // Usage:
 //   node scripts/fetch-library.mjs            download + verify (the build)
@@ -43,6 +46,16 @@ export function rawUrl(commit, name, file) {
   if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`Bad component name: ${name}`);
   if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*\.[a-z0-9]+$/i.test(file)) throw new Error(`Bad file path in ${name}: ${file}`);
   return `https://raw.githubusercontent.com/heygen-com/hyperframes/${commit}/registry/components/${name}/${file}`;
+}
+
+// HyperFrames' own files the Motion wizard takes: only these two, so a typo in
+// components.json cannot pull anything else from the repo.
+export const MOTION_FILES = ["skills/faceless-explainer/scripts/lib/transitions.json", "skills/hyperframes-animation/transitions/overview.md"];
+
+export function skillUrl(commit, file) {
+  if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error(`Not a pinned commit: ${commit}`);
+  if (!MOTION_FILES.includes(file)) throw new Error(`Not a HyperFrames file the Motion wizard takes: ${file}`);
+  return `https://raw.githubusercontent.com/heygen-com/hyperframes/${commit}/${file}`;
 }
 
 export function presetUrl(commit, name) {
@@ -162,7 +175,10 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   if (!update && lock.commit !== list.commit) throw new Error("library.lock.json is for another commit. Run with --update.");
   const stage = `${out}.new`;
   fs.rmSync(stage, { recursive: true, force: true });
-  for (const name of list.components) {
+  // The Motion wizard's background components go in beside the scene
+  // components (same mount contract); the scene table never sees them
+  // (runner/gates/scenes/roles.mjs lists the scene components).
+  for (const name of [...list.components, ...(list.motion?.backgrounds ?? [])]) {
     // registry-item.json first: it lists the component's files (the HTML, and
     // for some, assets such as fonts), every one of them pinned in the lock.
     const item = await get(rawUrl(list.commit, name, "registry-item.json"), fetchImpl);
@@ -192,10 +208,21 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
     fs.writeFileSync(dst, buf);
   }
   fs.copyFileSync(path.join(ROOT, "library", "presets.map.json"), path.join(stage, "presets", "MAP.json"));
+  for (const file of list.motion?.files ?? []) {
+    const buf = await get(skillUrl(list.commit, file), fetchImpl);
+    const key = `motion/${path.basename(file)}`;
+    const got = sha256(buf);
+    if (update) lock.files[key] = got;
+    else if (lock.files[key] !== got) throw new Error(`SHA256 mismatch for ${key}: expected ${lock.files[key]}, got ${got}`);
+    const dst = path.join(stage, key);
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    fs.writeFileSync(dst, buf);
+  }
+  log(`library: ${list.motion?.backgrounds?.length ?? 0} backgrounds, ${list.motion?.files?.length ?? 0} motion files`);
   log(`library: ${list.presets?.length ?? 0} presets`);
   await fetchFonts({ update, fetchImpl, log, out: path.join(stage, "fonts") });
   await fetchOpenDesign({ update, fetchImpl, log, out: path.join(stage, "opendesign") });
-  fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); fonts OFL-1.1 (see fonts/<id>/LICENSE)" }, null, 2) + "\n");
+  fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], backgrounds: list.motion?.backgrounds ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); fonts OFL-1.1 (see fonts/<id>/LICENSE)" }, null, 2) + "\n");
   if (update) fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + "\n");
   fs.rmSync(out, { recursive: true, force: true });
   fs.renameSync(stage, out);

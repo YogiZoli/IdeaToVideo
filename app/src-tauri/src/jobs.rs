@@ -19,7 +19,7 @@ use serde_json::{json, Value};
 /// (docs/identity.md 9).
 pub const LOCAL_HEAVY_LIMIT: usize = 1;
 
-const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "render-video", "avatar-layout", "brand-preview"];
+const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "render-video", "avatar-layout", "brand-preview", "motion-preview"];
 
 /// Commands that spend a key on real work. Quick lookups (test a key, list
 /// voices or avatars, a cost estimate, a voice sample) are not jobs.
@@ -218,6 +218,7 @@ mod tests {
     fn classes() {
         assert_eq!(class_of("render-video", None), Class::LocalHeavy);
         assert_eq!(class_of("brand-preview", None), Class::LocalHeavy, "the Brand preview renders stills");
+        assert_eq!(class_of("motion-preview", None), Class::LocalHeavy, "the Motion preview renders a video");
         assert_eq!(class_of("write-script", Some(("gemini", "app"))), Class::Key("gemini@app".into()));
         assert_eq!(class_of("write-script", Some(("gemini", "vox"))), Class::Key("gemini@vox".into()));
         assert_eq!(class_of("list-voices", Some(("elevenlabs", "app"))), Class::Free);

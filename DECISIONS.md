@@ -580,3 +580,47 @@
       Identity Card** (`.brand.zip` vagy `.json`) a Brand oldalon.
     - Javítva: a Settings menü kattintásainál a napló a helyes csoportot
       írja (korábban mindig "App"-ot).
+
+## 2026-10-04 (Mozgás varázsló)
+
+74. **Mozgás varázsló** (Zoltan jóváhagyta a tervet, "mind az ajánlott",
+    2026-10-04; specifikáció: `docs/motion-wizard.md` 3. változat,
+    megvalósítás: `docs/wizards/motion.md`). Eldöntve:
+    - **Minden mozgás a HyperFrames-é**, rögzített verzióval: a hangulat- és
+      energia-táblája (`transitions/overview.md`, 9 hangulat, 3 energia, a
+      "mozgás design system"), a CSS átmenet-jegyzéke (`faceless-explainer`
+      `transitions.json`, 5 recept, a saját injektorának módszerével), a
+      `@hyperframes/shader-transitions` csomag 14 átmenete (0.8.22, mint a
+      motor), a háttér-komponensei (grain-field, aurora-drift), a kamera-
+      szabályai az explainer-doktrínája szerint (`motion-language.md`).
+    - **Egy Identity, egy profil** (`motion.json`); profil nélkül a build
+      bájtra a régi (mérve). Hatás a következő buildtől.
+    - **Narratív pozíciók** (HyperFrames): fő átmenet a szakaszon belül,
+      kiegészítő az elején és új szakasznál, a végén lassú crossfade.
+    - **Kamera**: Off (ajánlott), Subtle jitter, Push in (az első félidőben,
+      utána tart). Úszó kamera és közös lüktetés nincs (a doktrína szerint
+      "inkább semmi mozgás, mint rossz"); ez a DECISIONS 52 "a lüktetés 0
+      is lehet" pontját teljesíti.
+    - **Háttér**: Plain (ajánlott), Dot field, Aurora (csak sötét
+      kinézetnél, mert az alapja mindig sötétkék). 5-15 mp-es, varrat
+      nélküli darabokban. A jelenet-komponensek saját talaját a build
+      átlátszóvá teszi, ha van háttér (Zoltan választása, 2026-10-04):
+      automatikusan felismert szabály, csak a háttere változik.
+    - **Kimaradt**: filmszemcse (CSS `@keyframes`, a doktrína tiltja), a
+      slot-átmenetek (a shaderek lefedik), a shader-bemutató blokkok.
+    - **Ajánlás a Brandből**: az open-design stílus mozgás-tokenjei csak ott,
+      ahol eltérnek az átlagtól (152-ből 14 stílus); különben Premium.
+    - **Komponensek szerepenként** ki- és bekapcsolhatók (legalább egy
+      marad), stílus-változóik rögzíthetők; a zárás szerep a CTA
+      varázslóé. Zoltan: a logo-brand-close szinte biztosan nem kell, a CTA
+      chat dönti el.
+    - **Render-költség**: nem dobunk ki semmit a lassúság miatt (a régi
+      20%-os küszöb hüvelykujj-szabály volt); a mért arány a varázslóban
+      áll. Mérés: `docs/wizards/motion.md` 6.
+    - **Ellenőrzés**: mozgásos buildnél a check JSON-ját olvassuk; a csak
+      átmenet-ablakon belüli szöveg-átfedés nem hiba (ott két jelenet
+      szándékosan együtt látszik), minden más igen.
+    - **Javaslat a DECISIONS 56-hoz** (a teljes registry, nyitott): a
+      HyperFrames katalógus (hyperframes.heygen.com/catalog) csoportjai
+      szerint válogatni: "Transitions" és "Motion & effects" a Mozgás
+      varázslóé, "Scenes & demos" és "Data & charts" a jelenet-könyvtáré.

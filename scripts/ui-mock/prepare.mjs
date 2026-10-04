@@ -19,6 +19,7 @@ import { familyNames } from "../../runner/brand/fonts.mjs";
 import { fontsIndex } from "../../runner/brand/fonts.mjs";
 import { libraryDir } from "../../runner/gates/build/assemble.mjs";
 import { previewDir } from "../../runner/brand/preview.mjs";
+import { recommendMood, profileFromMood, wizardOptions } from "../../runner/motion/profile.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = process.argv[2];
@@ -50,4 +51,13 @@ fs.writeFileSync(path.join(out, "brand-import.json"), JSON.stringify({ card: imp
 const shots = path.join(previewDir({ ...process.env, ITV_DATA_DIR: process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop") }), "review", "snapshots");
 fs.mkdirSync(path.join(out, "preview"), { recursive: true });
 if (fs.existsSync(shots)) fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort().forEach((f, i) => fs.copyFileSync(path.join(shots, f), path.join(out, "preview", `${i + 1}.png`)));
+// The Motion wizard's data, and the last real Motion preview video, if any.
+const recommended = recommendMood(card);
+fs.writeFileSync(path.join(out, "motion-state.json"), JSON.stringify({ profile: null, recommended, start: profileFromMood(recommended.mood), light: card.appearance === "light", options: wizardOptions() }));
+const dataDir = process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop");
+const motionOut = path.join(dataDir, "motion-preview", "out");
+if (fs.existsSync(motionOut)) {
+  const last = fs.readdirSync(motionOut).filter((f) => f.endsWith(".mp4")).sort().pop();
+  if (last) fs.copyFileSync(path.join(motionOut, last), path.join(out, "preview", "motion.mp4"));
+}
 console.log(`ui-mock ready in ${out}`);

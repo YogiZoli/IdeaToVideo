@@ -1,96 +1,100 @@
 # Mozgás varázsló: specifikáció (3. változat, D út)
 
-Állapot: javaslat, Zoltan jóváhagyására vár. 2026-10-04.
-Előzmény: a 2. változat (2026-09-30) a kánon `motion.js` gombjaira épült. A D út
-(DECISIONS 48) óta az app nem használja a kánont, ezért az a változat elavult;
-a git történetben megvan. A megvalósítás terve: `docs/wizards/motion.md`.
+Állapot: Zoltan jóváhagyta (2026-10-04, "mind az ajánlott"), megvalósítva
+(DECISIONS 74). Előzmény: a 2. változat (2026-09-30) a kánon `motion.js`
+gombjaira épült; a D út (DECISIONS 48) óta elavult, a git történetben megvan.
+A megvalósítás részletei: `docs/wizards/motion.md`.
 
 ## Mit csinál
 
 A user egyszer végigmegy rajta, a kimenet az Identity **Mozgás profilja**
-(`identities/<id>/motion.json`). Minden ONE Video ezt örökli, így a playlist
-egy kaptafára mozog, a tartalom videónként más. Profil nélkül a kimenet
-pontosan a mai: éles vágás, sima háttér, nincs kamera, mind a 14 komponens.
+(`identities/<id>/motion.json`). Minden ONE Video ezt örökli a következő
+buildjétől, így a playlist egy kaptafára mozog, a tartalom videónként más.
+Profil nélkül a kimenet bájtra a régi: éles vágás, sima háttér, nincs kamera,
+mind a 14 komponens (mérve: a build `index.html`-je azonos).
 
-## A keret: mi állítható a D úton
+## A keret: minden a HyperFrames-ből jön
 
 A jelenetek a HyperFrames registry komponensei, mindegyik a saját, beégetett
-mozgásával. Közös tempó-, távolság- vagy rugózás-gombjuk nincs, és nem írjuk át
-őket. Ami állítható, az mind a HyperFrames-ből jön, kész és karbantartott
-formában:
+mozgásával. Közös tempó-, távolság- vagy rugózás-gombjuk nincs, és nem írjuk
+át őket. Ami állítható, az mind a HyperFrames saját, karbantartott része,
+rögzített verzióval:
 
-1. **Jelenetváltás.** A HyperFrames saját, gépi átmenet-jegyzéke
-   (`skills/faceless-explainer/scripts/lib/transitions.json`, ugyanaz a
-   rögzített commit, mint a komponenseké). Öt átmenet: crossfade,
-   blur-crossfade, push-slide (négy irány), squeeze, zoom-through. Mindegyik
-   kész GSAP recept a két jelenet keretére; a HyperFrames a saját
-   explainer- és termékvideó-menetében ugyanígy illeszti be (a kimenő jelenet
-   kitart, a bejövő a mondatánál kezd, így a hang szinkronja nem mozdul).
-2. **Háttér-mozgás.** A registry háttér-komponensei egy alsó sávon a teljes
-   videó alatt: grain-field (pontmező), aurora-drift (fényfátyol, csak sötét
-   kinézethez), és felül egy filmszemcse (grain-overlay).
-3. **Kamera.** A HyperFrames kamera-szabálya (`multi-phase-camera`,
-   `viewport-change`): jelenetenként egy lassú ráközelítés a jelenet keretén,
-   vagy csak egy alig látható lebegés. Kikapcsolható (DECISIONS 52).
-4. **Komponensek szerepenként.** Melyik komponens jöhet szóba a 3. kapuban
-   (szerepenként legalább egy marad), és a komponensek saját,
-   a kinézetet és a mozgást érintő változói: a kiemelés módja (filc, kör, aláhúzás,
-   firka), a rajzoló toll látszik-e, a szám kap-e fényt, a cím kap-e vonalat.
+1. **Hangulat és energia: a HyperFrames "mozgás design systemje".** A saját
+   átmenet-áttekintője (`skills/hyperframes-animation/transitions/overview.md`)
+   9 hangulatot (Warm, Premium, Editorial, Cold, Tech, Tense, Playful,
+   Dramatic, Retro) és 3 energiát (Calm, Medium, High) ad, mindegyikhez
+   átmeneteket, hosszt és görbét. Mellette két egyszerű választás: Simple
+   (crossfade) és No transitions (vágás). Ez az open-design párja a
+   mozgásra.
+2. **Jelenetváltás.** Két forrásból, mindkettő a HyperFrames-é:
+   - a CSS átmenet-jegyzéke (`skills/faceless-explainer/scripts/lib/
+     transitions.json`): crossfade, blur-crossfade, push-slide, zoom-through,
+     squeeze; a saját injektorának módszerével beillesztve (a kimenő jelenet
+     kitart, a bejövő a mondatánál kezd, így a hang, a felirat és a
+     fejezetlista nem mozdul);
+   - a `@hyperframes/shader-transitions` csomag 14 shader-átmenete (light
+     leak, whip pan, iris, morph, glitch...), ugyanazzal a verzióval, mint a
+     motor (0.8.22). Ha egy profil shadert használ, a csomag kezel minden
+     váltást; ahol nincs shader, ott áttűnés, és a CSS recept többi része
+     (elmosás, nagyítás, eltolás) megmarad.
+   - Hol melyik: a HyperFrames "Narrative Position" szabálya. Fő átmenet a
+     szakaszon belül, kiegészítő az első váltásnál és új szakasznál, a
+     végén lassú crossfade. Választható: csak új szakasznál legyen átmenet,
+     a szakaszon belül vágás.
+3. **Háttér-mozgás.** A registry háttér-komponensei egy alsó sávon: Dot field
+   (grain-field, a háttérszínre épül) és Aurora (aurora-drift, mindig sötét
+   alapú, ezért csak sötét kinézetnél választható). 5-15 mp-es darabokban,
+   mert egy komponens egy mozgás-kört tesz meg a teljes hosszán, és a darabok
+   eleje és vége ugyanaz a kocka (varrat nincs). A jelenet-komponensek a saját
+   talajukat festik (a HyperFrames elve: minden jelenet viszi a talaját); ha
+   a user hátteret választ, a build a jelenet-másolatokban csak ezt a talajt
+   teszi átlátszóvá (Zoltan döntése, 2026-10-04), minden más változatlan.
+4. **Kamera.** A HyperFrames explainer-doktrínája szerint
+   (`skills/faceless-explainer/references/motion-language.md`: "inkább
+   semmi mozgás, mint rossz mozgás"): Off (ajánlott), Subtle jitter (az
+   egyetlen megengedett "élet" egy kitartott képen), Push in (lassú
+   ráközelítés a jelenet első felében, utána tart). Lebegő, úszó kamera
+   nincs, mert a doktrína tiltja.
+5. **Komponensek szerepenként.** Melyik jöhet szóba a 3. kapuban
+   (szerepenként legalább egy marad), és a stílus-változóik (a kiemelés
+   módja, a toll, a fény, a vonal, az árnyék), mindegyiknél "Let the AI
+   choose". A zárás szerep a CTA varázslóé.
 
 Ami nem állítható: globális tempó, távolság, rugózás, a komponensek belső
-időzítése. Ezt a varázsló nem is ígéri.
+időzítése, a kilépő animáció (`exit`: a jelenetváltásé).
 
-## Eldőlt, és így marad (DECISIONS 52)
+## Eldőlt (DECISIONS 52 és 74)
 
-- A kamera kikapcsolható.
-- Lüktetés: a D úton nincs külön, közös lüktetés (a komponensek saját
-  kitartása marad). A "0 is lehet" ezzel teljesül; a helyén a kamera
-  "lebegés" fokozata áll, ami szintén kikapcsolható. Lásd a kérdéseket.
-- Bezáruló gyűrű és haladásjelző nincs.
-- Fejezetek igen (kész, a render mellé kerül a fejezetlista).
+- A kamera kikapcsolható; alapból ki.
+- Közös lüktetés a D úton nincs; a helyén a kamera "Subtle jitter" fokozata.
+- Bezáruló gyűrű és haladásjelző nincs. Fejezetek igen (kész).
+- Filmszemcse (grain-overlay) nincs: CSS `@keyframes`-szel mozog, amit a
+  HyperFrames doktrínája a render órájától független futás miatt tilt.
+- Slot-átmenetek (whip-pan-cut, iris-reveal) nincsenek: ugyanezek a hatások
+  shaderként jönnek, a jelenetek átrendezése nélkül.
+- A shader-blokkok (registry/blocks) bemutató kompozíciók saját tartalommal,
+  nem illeszthetők be; helyettük a shader-csomag.
+- Render-költség: nem dobunk ki semmit a lassúság miatt, a mért adat a
+  varázslóban az opció mellett áll.
 
-## Menet (a Brand varázsló keretében, WizardShell)
+## Menet (WizardShell, hat képernyő)
 
-1. **Start: kiinduló stílus.** Négy kártya, mindegyik kitölti az összes
-   választ: Calm (ajánlott), Clean, Lively, Still. Mellette "Import from the
-   current profile", ha már van mentett profil.
-2. **Scene changes.** Átmenet típusa (Cut és az öt), hossza (Short, Normal,
-   Slow), iránya (csak push-slide), és hol: minden jelenetváltásnál, vagy csak
-   a script új szakaszainál (a szakaszon belül éles vágás).
-3. **Background.** Plain (a kinézet háttérszíne), Dot field, Aurora (csak
-   sötét kinézetnél választható, világosnál szürke, magyarázattal), és külön
-   kapcsoló: Film grain.
-4. **Camera.** Off, Drift (alig látható lebegés), Slow push-in (Subtle vagy
-   Medium).
-5. **Scenes.** Szerepenként a komponensek pipával (legalább egy marad), a
-   leírásukkal és egy állóképpel; alattuk a stílus-változók (kiemelés módja,
-   toll, fény, vonal), mindegyiknél "Let the AI choose" is.
-6. **Preview.** Valódi mintavideó lejátszóval: a Brand előnézet öt jelenete
-   és egy hatodik (kiemelés), a user kinézetével és a választott mozgással,
-   helyben renderelve. Gomb: "Render preview" (kb. 1 perc, a gép dolgozik).
-7. **Save.** Mentés az Identity mappájába. Az Identity export, import és
-   Duplicate viszi.
+1. **Start:** a 11 hangulat galériája, mellette az energia. Ajánlott
+   hangulat a Brandből: egy open-design stílus mozgás-tokenjei
+   (`--motion-base`, `--ease-standard`) ott, ahol eltérnek az átlagtól
+   (lassú, gyors, lépcsős, rugós vagy mozdulatlan); különben Premium.
+2. **Scene changes:** fő átmenet, kiegészítő, irány (push-nál), hol.
+3. **Background:** Plain (ajánlott), Dot field, Aurora.
+4. **Camera:** Off (ajánlott), Subtle jitter, Push in.
+5. **Scenes:** szerepenként a komponensek és a stílusuk.
+6. **Preview and save:** valódi, 18 mp-es mintavideó a user kinézetével és
+   a még nem mentett profillal, helyben renderelve, lejátszóval; Save.
 
-Minden képernyőn ott a "Not sure? Keep the recommended" sor és a "Later you can
-change this in Settings" mondat. Csak egy választás képernyőnként, csúszka nincs.
+## Ellenőrzés
 
-## Mit nem csinál
-
-- Nem ír saját átmenetet, hátteret vagy kamerát: csak a HyperFrames kész
-  receptjeit és komponenseit illeszti, rögzített commitról, SHA256-tal.
-- Shader-átmenet (WebGL blokkok: light-leak, whip-pan, sdf-iris) nincs: ezek a
-  registryben bemutató blokkok saját tartalommal és Google-betűvel, nem a két
-  jelenet közé illeszthető receptek.
-- A "slot" átmenet-komponensek (whip-pan-cut, iris-reveal, morph-swap) sincsenek
-  az első körben: a két jelenetet a saját belsejükbe kérik, és ezt a beágyazott
-  komponensekkel még nem mértük. Ha később kell, külön próba.
-- Visszatérő szegmensek, végképernyő, komment-CTA: a CTA varázslóé
-  (DECISIONS 50, 53).
-
-## Mérni kell, mielőtt bekerül (a kód első lépése)
-
-Egy elem csak akkor kerül a varázslóba, ha a mintavideón, világos és sötét
-kinézettel is: lint és check 0 hiba, a render ideje legfeljebb 20%-kal nő, és a
-kontakt lapon a jelenet olvasható. A blur-crossfade és a zoom-through elmosást
-használ (0,4-0,6 mp-ig, jelenetváltásonként); ha ez a 20%-ot átlépi, kiesik vagy
-csak "Slow" hosszal marad.
+A lint és a check minden mozgásos buildnél fut. Egy jelenetváltás alatt két
+jelenet szándékosan együtt látszik (shadernél teljes fedéssel, mert a motor
+keveri őket), ezért a check JSON-jából a csak az átmenet-ablakon belül látott
+szöveg-átfedés nem hiba; minden más igen. A jeleneteket a check a
+"megérkezett" pillanatukban is nézi.

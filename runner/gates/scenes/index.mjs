@@ -28,8 +28,9 @@ const r3 = (x) => Math.round(x * 1000) / 1000;
 
 // What the LLM (and the UI) know about each component, from its own
 // registry-item.json. exit and cues stay at their defaults.
-export function libraryCatalog({ env = process.env } = {}) {
-  return Object.entries(COMPONENTS).map(([name, meta]) => {
+// `off`: components the Identity's Motion profile turned off (motion/profile.mjs).
+export function libraryCatalog({ env = process.env, off = [] } = {}) {
+  return Object.entries(COMPONENTS).filter(([name]) => !off.includes(name)).map(([name, meta]) => {
     const { item } = loadComponent(name, { env });
     return {
       name,
@@ -103,7 +104,7 @@ function onScreen(component, vars = {}) {
 
 // Every problem with a planned table, as sentences the repair call can act on.
 // `warnings` do not fail the gate; the UI shows them.
-export function checkScenes(answer, { sentences, total, env = process.env }) {
+export function checkScenes(answer, { sentences, total, env = process.env, off = [] }) {
   const issues = [];
   const warnings = [];
   const scenes = answer?.scenes;
@@ -112,6 +113,7 @@ export function checkScenes(answer, { sentences, total, env = process.env }) {
     const at = `scene ${i + 1}`;
     if (!sc || typeof sc !== "object") return issues.push(`${at}: not an object`);
     if (!COMPONENTS[sc.component]) return issues.push(`${at}: unknown component ${sc.component} (use one from the LIBRARY)`);
+    if (off.includes(sc.component)) return issues.push(`${at}: ${sc.component} is turned off for this channel (use one from the LIBRARY)`);
     if (sc.vars !== undefined && (typeof sc.vars !== "object" || Array.isArray(sc.vars) || sc.vars === null)) return issues.push(`${at}: vars must be an object`);
     const vars = sc.vars ?? {};
     const { item } = loadComponent(sc.component, { env });
@@ -206,14 +208,14 @@ export function writeTable(projectDir, table) {
 }
 
 // Gate 3, Recommended. llm = { provider, apiKey, model, fetchImpl?, sleep? }.
-export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, onProgress = () => {} }) {
+export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], onProgress = () => {} }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
-  const catalog = libraryCatalog({ env });
+  const catalog = libraryCatalog({ env, off });
   const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language });
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env }));
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env, off }));
   const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
   const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
   writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: answer.scenes.map(clean), gaps, warnings: result.warnings });
@@ -233,13 +235,14 @@ export async function saveScenes({ projectDir, scenes, env = process.env }) {
 
 // Swap one row for another component (same role): the LLM fills in only that
 // scene's variables, from that scene's sentences.
-export async function refillScene({ llm, projectDir, index, component, env = process.env, language = "en", name = null, themeIsLight = false }) {
+export async function refillScene({ llm, projectDir, index, component, env = process.env, language = "en", name = null, themeIsLight = false, off = [] }) {
   const table = readJson(projectDir, "scenes.json", "scene table");
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
   const sc = table.scenes[index];
   if (!sc) throw new Error(`There is no scene ${index + 1}.`);
   if (!COMPONENTS[component]) throw new Error(`Unknown component: ${component}`);
   if (roleOf(component) !== roleOf(sc.component)) throw new Error("Swap only within the same role.");
+  if (off.includes(component)) throw new Error("That scene type is turned off in the Motion profile.");
   const ids = sentences.map((s) => s.id);
   const covered = sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1);
   const catalog = libraryCatalog({ env }).filter((c) => c.name === component);
@@ -262,7 +265,7 @@ export async function refillScene({ llm, projectDir, index, component, env = pro
 
 // The table as the UI shows it: times, what is said, the component in plain
 // words, the editable text, and the swap choices.
-export async function sceneRows(projectDir, { env = process.env } = {}) {
+export async function sceneRows(projectDir, { env = process.env, off = [] } = {}) {
   if (!fs.existsSync(path.join(projectDir, "scenes.json"))) return { rows: [], gaps: [], warnings: [] };
   const table = readJson(projectDir, "scenes.json", "scene table");
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
@@ -291,7 +294,7 @@ export async function sceneRows(projectDir, { env = process.env } = {}) {
       mainText: meta.mainVar ? (sc.vars?.[meta.mainVar] ?? null) : null,
       shows: onScreen(sc.component, sc.vars).map((l) => l.text).join(" / "),
       alternatives: Object.entries(COMPONENTS)
-        .filter(([c, m]) => m.role === meta.role && c !== sc.component)
+        .filter(([c, m]) => m.role === meta.role && c !== sc.component && !off.includes(c))
         .map(([c, m]) => ({ component: c, label: m.label })),
     };
   });

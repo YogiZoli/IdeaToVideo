@@ -24,6 +24,8 @@
   import BrandWizard from "./brand/BrandWizard.svelte";
   import BrandMini from "./brand/BrandMini.svelte";
   import DictionaryPage from "./brand/DictionaryPage.svelte";
+  import MotionWizard from "./motion/MotionWizard.svelte";
+  import MotionPage from "./motion/MotionPage.svelte";
   import { ensureFonts } from "./brand/fontsDom";
   import { runner, exportBrand, importBrand } from "./api";
   import type { BrandState, BrandCard } from "./api";
@@ -47,6 +49,8 @@
   let pageId = $state<PageId>(untrack(() => startPage));
   let wizard = $state(false);
   let brandWizard = $state(false);
+  let motionWizard = $state(false);
+  let motionSaved = $state(0);
   let brand = $state<BrandState | null>(null);
 
   // The Brand page: the Identity's card as it is now (docs/wizards/brand.md 5).
@@ -216,6 +220,8 @@
 
 {#if brandWizard}
   <BrandWizard {app} onclose={() => (brandWizard = false)} onsaved={brandSaved} />
+{:else if motionWizard}
+  <MotionWizard {app} onclose={() => (motionWizard = false)} onsaved={() => { motionWizard = false; motionSaved += 1; message = "Your motion is saved. Every ONE Video of this Identity uses it from its next build."; }} />
 {:else if wizard}
   <Onboarding
     bind:config
@@ -246,7 +252,7 @@
         <p class="for">{page.group === "app" ? "Settings for all Identities" : `Settings for: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      {#if pageId !== "look" && pageId !== "dictionary"}
+      {#if pageId !== "look" && pageId !== "dictionary" && pageId !== "motion"}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
@@ -335,6 +341,8 @@
           <button type="button" disabled={busy} onclick={importCard}>Import Brand Identity Card</button>
         </div>
       </section>
+    {:else if pageId === "motion"}
+      <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
     {:else if pageId === "identity-ai"}

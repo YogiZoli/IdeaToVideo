@@ -16,9 +16,14 @@ export const COLUMNS = 5;
 export const TILE_WIDTH = 384;
 
 // The moment to capture for each scene: 0.2 s before it ends, never before its
-// middle.
+// middle. A scene that holds under the next one's transition (Motion profile)
+// ends, for this, where the next one starts.
 export function landedTimes(mounts) {
-  return mounts.map((m) => Math.round((m.start + Math.max(m.duration - 0.2, m.duration / 2)) * 100) / 100);
+  return mounts.map((m, i) => {
+    const next = mounts[i + 1];
+    const duration = next && next.start < m.start + m.duration ? next.start - m.start : m.duration;
+    return Math.round((m.start + Math.max(duration - 0.2, duration / 2)) * 100) / 100;
+  });
 }
 
 // The scenes as the built index.html mounts them.
@@ -88,5 +93,5 @@ export async function buildAndReview(projectDir, { env = process.env, language, 
   const built = await assemble(projectDir, { env, language, title, look });
   await lintAndCheck(projectDir, { env, onProgress });
   const sheet = await contactSheet(projectDir, { env, onProgress });
-  return { scenes: built.scenes, seconds: built.seconds, ...sheet };
+  return { scenes: built.scenes, seconds: built.seconds, notes: built.notes ?? [], transitions: (built.transitions ?? []).map((t) => t.type), ...sheet };
 }

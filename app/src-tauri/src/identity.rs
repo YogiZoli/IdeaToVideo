@@ -741,9 +741,10 @@ mod tests {
         fs::remove_dir_all(&base).unwrap();
     }
 
-    // The Brand wizard's results travel with the Identity (docs/wizards/brand.md 3).
+    // The Brand and Motion wizards' results travel with the Identity
+    // (docs/wizards/brand.md 3, docs/wizards/motion.md 2).
     #[test]
-    fn export_carries_the_brand_card_frame_dark_logo_and_dictionary() {
+    fn export_carries_the_brand_card_frame_dark_logo_dictionary_and_motion() {
         let base = tmpdir("brandexport");
         let src = complete_new(json!({"name": "Anna", "channel": {}, "narrator": {"provider": "gemini"}}), &[]).unwrap();
         let d = dir_of(&base, "anna").unwrap();
@@ -752,19 +753,20 @@ mod tests {
             fs::write(d.join("brand").join(f), b"x").unwrap();
         }
         fs::write(d.join("dictionary.json"), b"{}").unwrap();
+        fs::write(d.join("motion.json"), b"{}").unwrap();
         save(&base, &src).unwrap();
         let out = base.join("Anna.identity.zip");
         export(&base, &src, "IdeaToVideo", &out).unwrap();
         let (ident, files) = read_export(&out).unwrap();
         let mut names: Vec<String> = files.iter().map(|(p, _)| p.to_string_lossy().replace('\\', "/")).collect();
         names.sort();
-        assert_eq!(names, ["brand/FRAME.md", "brand/brand-identity-card.json", "brand/logo-dark.svg", "dictionary.json"]);
+        assert_eq!(names, ["brand/FRAME.md", "brand/brand-identity-card.json", "brand/logo-dark.svg", "dictionary.json", "motion.json"]);
         let new = import(&base, ident, files, &list(&base)).unwrap();
         let nd = dir_of(&base, new["id"].as_str().unwrap()).unwrap();
-        assert!(nd.join("brand").join("brand-identity-card.json").exists() && nd.join("dictionary.json").exists());
+        assert!(nd.join("brand").join("brand-identity-card.json").exists() && nd.join("dictionary.json").exists() && nd.join("motion.json").exists());
         let copy = duplicate(&base, &src, "Anna Copy", &list(&base)).unwrap();
         let cd = dir_of(&base, copy["id"].as_str().unwrap()).unwrap();
-        assert!(cd.join("brand").join("FRAME.md").exists() && cd.join("dictionary.json").exists());
+        assert!(cd.join("brand").join("FRAME.md").exists() && cd.join("dictionary.json").exists() && cd.join("motion.json").exists());
         fs::remove_dir_all(&base).unwrap();
     }
 

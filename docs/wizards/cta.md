@@ -31,3 +31,22 @@ lépésre viszi. Az onboarding után opcionális varázsló.
 - A visszatérő szegmensek: hol legyenek (eleje, vége, közbe), és a feltöltött
   saját videó hogyan illeszkedjen (vágás, hang).
 - A végképernyő tartalma a 20 mp alatt.
+
+## A Brand és a Mozgás körből kész (2026-10-04, DECISIONS 72-74)
+
+- Közös keret: `app/src/lib/wizard/WizardShell.svelte`; minta a
+  `app/src/lib/motion/MotionWizard.svelte` és a `brand/BrandWizard.svelte`.
+- Identity-szintű JSON az Identity mappájában (mint a `motion.json`), runner
+  parancsok `*-state` és `*-save` mintára (`runner/main.mjs`), a Rust magban
+  a parancs-lista (`app/src-tauri/src/runner.rs`); az Identity export,
+  import és Duplicate a teljes mappát viszi.
+- Valódi mintavideó-előnézet: `runner/motion/preview.mjs` (draft render,
+  lejátszó a varázslóban), nehéz munkaként a Jobs sorban (`jobs.rs`).
+- Az átmenet-beillesztés és a háttér-darabolás: `runner/gates/build/
+  assemble.mjs` `motionPlan`; a visszatérő szegmensek a profil átmenetével
+  kapcsolódhatnak, a végképernyő alatt a háttér folytatódhat.
+- A zárás szerep (cta-close, logo-brand-close) ide tartozik; a Mozgás
+  varázsló nem mutatja. Zoltan: a logo-brand-close szinte biztosan nem kell.
+- A HyperFrames katalógusban (hyperframes.heygen.com/catalog) CTA-hoz illő
+  elemek is vannak (például "Logo Outro", social follow kártyák a blocks
+  között); ugyanaz a registry, rögzített commitról.
