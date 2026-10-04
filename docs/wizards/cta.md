@@ -50,3 +50,110 @@ lépésre viszi. Az onboarding után opcionális varázsló.
 - A HyperFrames katalógusban (hyperframes.heygen.com/catalog) CTA-hoz illő
   elemek is vannak (például "Logo Outro", social follow kártyák a blocks
   között); ugyanaz a registry, rögzített commitról.
+
+## Megbeszélés, 1. kör (2026-10-05): Comment Routing
+
+Zoltan leírása ebben a chatben: a CTA varázsló alapelve a **Comment Routing**
+(komment = lead hőmérséklet). A néző egy kulcsszót kommentel, és a kulcsszó
+hőmérsékletének megfelelő landinget kapja. Az app **nem** köt CRM-et, nem figyel
+YouTube URL-t, nem ad linket: ez a vidrev.app dolga. Az app csak a kulcsszó-logikát
+állítja be ugyanúgy, mint a vidrev, hogy egységes legyen a rendszer. Kód még nincs,
+előbb Zoltan válaszai a lenti kérdésekre.
+
+### Tények (ellenőrizve 2026-10-05)
+
+- A vidrev repó: `github.com/YogiZoli/c2c-saas` (élő: vidrev.app). A katalógus:
+  `src/lib/keyword-catalog.ts`, kulcsszó, hőmérséklet és "gets" (mit kap a néző):
+  - Cold (wants a free resource): GUIDE (a free guide), CHECKLIST (a checklist),
+    TEMPLATE (a template), PDF (a free PDF), START (where to start)
+  - Warm (wants to learn more): TRAINING (a free training), WORKSHOP (a workshop
+    seat), WEBINAR (a webinar seat), COURSE (course details), SURVEY (a short survey)
+  - Hot (ready to buy): TRIGGER (a link to buy now), CALL (a call with you), BUY
+    (a link to buy), APPLY (an application), ACTION (the next step)
+  - Alap: GUIDE. A DOWNLOAD már nincs benne (a régi commentclient #96 vezette ki).
+- A vidrev UI (`src/app/app/campaigns/KeywordPicker.tsx`): soronként egy
+  hőmérséklet, a sor halványan színezett (surface 40%), a kártya erősebben (70%),
+  a kiválasztott kártya "lélegzik" a hőmérséklet színében. Színek
+  (`src/app/globals.css`): Cold #2E6FE0 / felület #E7EFFC / szöveg #1D4F9C;
+  Warm #E5A400 / #FBF2DD / #6B4E00; Hot #D92D20 / #FDECEA / #A5161B.
+  Saját kulcsszó: "coming soon" az Advanced alatt. Elírásokat (GUDIE) a vidrev
+  magától kezel.
+- A vidrevben a kampány lehet csatorna-szintű vagy egy videóra szóló; több
+  kulcsszó egy kommentben: a magasabb hőmérséklet nyer (Q-10b). Statikus link
+  kampányonként és videónként a leíráshoz és a kitűzött kommenthez (P5-01).
+- Az app scriptje ma két CTA-helyet ismer: `ownershipCta` (a legértékesebb
+  szakasz után, kb. a közepén) és `own.cta` (a végén), mindkettő "link a
+  leírásban" jellegű (`runner/gates/script/prompt.md`).
+- DECISIONS 35 azért vette ki a komment-CTA-t, mert a user oldalán nincs mögötte
+  automatizmus. DECISIONS 51 visszahozta, márkanév említése nélkül.
+- A tiltott-nevek teszt a "hot" szót önmagában nem tiltja, csak egy harmadik fél
+  módszer-nevét, amiben szerepel. A Cold, Warm, Hot címkék rendben vannak.
+
+### Kérdések Zoltanhoz, Claude javaslatával
+
+K1. A 15 kulcsszó a vidrev fenti listája, angolul, nagybetűvel, a "gets"
+    szövegekkel együtt? Javaslat: igen, egy teszt rögzíti.
+K2. Nem angol videóban is angol marad a kulcsszó (például magyar videóban
+    "írd be kommentben, hogy GUIDE")? Javaslat: igen, mert a vidrev ezt keresi; a
+    kiejtést a Szótár kezeli.
+K3. Három mód: **Routing** (alap: Cold, Warm, Hot), **Egy kulcsszó**, **Nincs
+    komment-CTA**. Az "egy, kettő vagy három" az egy-hőmérsékletes videóban a
+    helyek számát jelenti, vagy különböző kulcsszavakat is (például GUIDE és
+    CHECKLIST egy videóban)? Javaslat: egy kulcsszó, 1-3 helyen.
+K4. Hely a script szerkezetéhez kötve, százalék nélkül: **Eleje** = az OPEN
+    ígérete után (kb. 20-60. mp, nem 0:00), **Közepe** = a legértékesebb szakasz
+    után (ahol ma az `ownershipCta` van), **Vége** = az OWN-ban, a végképernyő
+    előtt. A CTA-k száma a bekapcsolt helyek száma (0-3), a "hány CTA" kérdés így
+    elmarad. Az időbélyeget az app pontosan tudja (mondat-időzítés).
+K5. Routingnál a hely és a hőmérséklet kötött (Eleje Cold, Közepe Warm, Vége
+    Hot), egy helyet ki lehet kapcsolni, de felcserélni nem? Javaslat: kötött.
+K6. Mit kap a néző: a mondat a "gets" szövegből épül ("comment GUIDE and I'll
+    send you the free guide"). Kulcsszavanként egy opcionális saját sor a
+    konkrét ajánlathoz ("a 7 lépéses YouTube ellenőrzőlista"), üresen a vidrev
+    "gets" szövege. Javaslat: igen.
+K7. Szint: Identity-szintű alap a varázslóban (`cta.json`, mint a `motion.json`),
+    videónként felülírható az 1. kapuban (a felülírás nullázza a későbbi
+    kapukat). Javaslat: igen.
+K8. A képernyőn (2. szabály): amikor elhangzik, a kulcsszó látszik. Eleje és
+    közepe: rövid sáv a futó jelenet alján, vagy külön rövid jelenet? Vége: a
+    `cta-close` mutatja. Szín a videóban: a user brand színe, nem a hőmérsékleté
+    (a néző nem lát "cold" feliratot). Javaslat: sáv és brand szín; a sávot a
+    HyperFrames registryből kell választani, ezt Claude megnézi.
+K9. Ki válaszol a kommentekre? A varázsló egy mondattal jelezze, hogy a
+    kulcsszavas kommentekre valakinek válaszolnia kell (kézzel vagy egy
+    eszközzel). Említheti az app a vidrevet (DECISIONS 51 szerint nem)?
+K10. A mai "link a leírásban" CTA (Settings CTA szöveg és landing URL) marad
+    negyedik módként, vagy megszűnik? Javaslat: marad, mert ehhez nem kell
+    válaszoló eszköz.
+K11. Hatókör: a fenti "Zoltantól kell" visszatérő szegmensek (intro, outro,
+    saját videó, avatar) ebben a körben? Javaslat: nem, a v1 csak Comment Routing;
+    a végképernyő marad (20 mp, DECISIONS 53), a Hot CTA közvetlenül előtte.
+K12. `logo-brand-close` kikerül a könyvtárból? Javaslat: igen.
+K13. Előválasztás vagy lüktetés: Zoltan kérése, hogy amíg nincs választás, a
+    kulcsszavak lüktessenek. A vidrevben a GUIDE eleve ki van választva, és a
+    kiválasztott lélegzik. Javaslat: a varázslóban első nyitáskor nincs
+    előválasztás, a sorok lüktetnek (±2%, MOTION.md); ha a varázsló soha nem fut,
+    az app alapja GUIDE, WEBINAR, CALL (ezt Zoltan erősítse meg vagy cserélje).
+K14. Saját kulcsszó: Claude véleménye: a v1-ben nem. A vidrev is "coming soon"-nal
+    jelzi, a 15 elem átlátható, mérhető, a hőmérséklet csak ezekhez ismert.
+
+### Claude javaslata: hozzáadás és elvétel
+
+Hozzáadás:
+- Render után "Copy pinned comment" és egy leírás-sor a kulcsszóval (a fejezetek
+  mellett). A vidrev statikus linkje ide illik, az app csak a szöveget adja.
+- A videó mellé `comment-keywords.txt`: kulcsszó, hőmérséklet, időbélyeg, mit
+  kap. Ebből állítja be a user a válaszoló eszközt.
+- Gépi ellenőrzés a scriptben: a kulcsszó szó szerint, nagybetűvel elhangzik a
+  saját helyén, máshol nem.
+- Előnézet: a három CTA-mondat szövegként, és állókép a kulcsszó-sávról (nem
+  teljes mintavideó).
+
+Elvétel:
+- Százalékos hely, "hány CTA" külön kérdés, saját kulcsszó, hőmérséklet-szín a
+  videóban, `logo-brand-close`, minden CRM és GoHighLevel kötés, landing URL a
+  komment-módban.
+
+### Zoltan válaszai
+
+(az új chatben ide kerülnek)

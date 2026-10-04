@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-04 (Mozgás varázsló kész; következik a CTA varázsló)
+Frissítve: 2026-10-05 (CTA varázsló: megbeszélés, 1. kör)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -192,8 +192,10 @@ Kész (2026-09-30):
    Brand második köre (163 kinézet, Import tokens.css, kártya export és
    import). **Következő: 5. pont, CTA varázsló, új chatben** (a prompt a
    2026-10-04-i chat végén; Zoltan ott adja a pontos leírást).
-5. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltantól kell a
-   15 alap kulcsszó és a komment-CTA működése.
+5. **CTA varázsló** (Opus 5.5, High): `docs/wizards/cta.md`. Zoltan leírta az
+   elvet (Comment Routing, 2026-10-05); a 15 kulcsszó a vidrev katalógusa. A
+   tisztázó kérdések (K1-K14) a `cta.md` "Megbeszélés, 1. kör" részében;
+   **következő: Zoltan válaszai, utána a terv véglegesítése, utána kód.**
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
