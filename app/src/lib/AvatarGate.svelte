@@ -44,6 +44,14 @@
 
   let command = $state("make-avatar");
 
+  // "Previously used" (per Identity, runner last-used): the look this brand
+  // used last is chosen; the lists open only on "Choose another".
+  let lastLook = $state<string | null>(null);
+  let chooseOther = $state(false);
+  const allLooks = $derived([...own.flatMap((g) => g.looks), ...stock]);
+  const chosenLook = $derived(allLooks.find((l) => l.id === lookId) ?? null);
+  const previous = $derived(!!lastLook && lookId === lastLook && !!chosenLook);
+
   async function start() {
     open = true;
     busy = true;
@@ -53,9 +61,17 @@
     try {
       ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen" }));
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
-      lookId = plan.current?.lookId ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
+      let used: { lookId?: string; layout?: AvatarLayout } | undefined;
+      try {
+        used = (await runner<{ used: { avatar?: { lookId: string; layout?: AvatarLayout } } }>("last-used", {})).used.avatar;
+      } catch {
+        used = undefined;
+      }
+      const known = (id?: string | null) => !!id && [...own.flatMap((g) => g.looks), ...stock].some((l) => l.id === id);
+      lastLook = known(used?.lookId) ? used!.lookId! : null;
+      lookId = plan.current?.lookId ?? lastLook ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
       const a = app.config?.avatar;
-      layout = { ...(plan.current?.layout ?? { style: a?.style ?? "cutout", position: a?.position ?? "bottom-right", size: a?.size ?? "medium" }) };
+      layout = { ...(plan.current?.layout ?? used?.layout ?? { style: a?.style ?? "cutout", position: a?.position ?? "bottom-right", size: a?.size ?? "medium" }) };
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -89,7 +105,7 @@
     error = "";
     step = "Starting...";
     try {
-      await runner("make-avatar", { projectDir: dir, service: "heygen", lookId, which, look, layout: { ...layout } });
+      await runner("make-avatar", { projectDir: dir, service: "heygen", lookId, lookName: chosenLook?.name ?? null, which, look, layout: { ...layout } });
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
       stamp = Date.now();
       await changed();
@@ -162,7 +178,18 @@
     {#if busy}{#key command}<Progress {command} label={step || "Working"} />{/key}{/if}
     {#if error}<ErrorBox message={error} context={{ step: "avatar", provider: "heygen" }} />{/if}
 
-    {#if own.length || stock.length}
+    {#if previous && !chooseOther}
+      <div class="actions">
+        <span class="label">Avatar</span>
+        {#if chosenLook?.image}<img class="thumb" src={convertFileSrc(chosenLook.image)} alt="" />{/if}
+        <b class="grow">{chosenLook?.name}</b>
+        <span class="pill">previously used</span>
+        {#if chosenLook?.video}<button type="button" class="ghost" onclick={() => showPreview(chosenLook!)}>Preview</button>{/if}
+        <button type="button" class="ghost" disabled={busy} onclick={() => (chooseOther = true)}>Choose another</button>
+      </div>
+      <!-- svelte-ignore a11y_media_has_caption -->
+      {#if preview}<video controls autoplay src={preview}></video>{/if}
+    {:else if own.length || stock.length}
       <div class="actions">
         <span class="label grow">Your avatars</span>
         <button type="button" class="ghost" onclick={() => openUrl("https://app.heygen.com/avatars")}>Open HeyGen</button>
@@ -265,4 +292,5 @@
   .pill.approved { background: var(--success-surface); color: var(--success); }
   .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
   .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
+  .thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 </style>

@@ -44,11 +44,26 @@
   const voSrc = $derived(convertFileSrc(`${dir}/audio/vo.mp3`) + `?t=${stamp}`);
   const made = $derived(gate?.state === "pending" || gate?.state === "approved");
 
+  // "Previously used" (per Identity, runner last-used): the voice this brand
+  // used last is chosen, and the list opens only on "Choose another".
+  let lastVoice = $state<string | null>(null);
+  let chooseOther = $state(false);
+  const previous = $derived(!!lastVoice && voiceId === lastVoice);
+
   async function loadVoices() {
     if (!hasKey) return;
     try {
       const r = await runner<{ voices: Voice[] }>("list-voices", { narrator: { provider } });
       voices = r.voices;
+      try {
+        const used = (await runner<{ used: { voice?: { provider: string; voice: string } } }>("last-used", {})).used.voice;
+        if (used?.provider === provider && voices.some((v) => v.id === used.voice)) {
+          lastVoice = used.voice;
+          voiceId = used.voice;
+        }
+      } catch {
+        // no memory yet: the Settings voice
+      }
       // Settings may hold the voice's name ("Zoltan BD") instead of its id:
       // find it by name, else start with the user's own voice (listed first).
       if (!voices.some((v) => v.id === voiceId)) {
@@ -120,7 +135,7 @@
     step = "Starting...";
     let ok = false;
     try {
-      const r = await runner<{ info: Info }>("make-voice", { projectDir: dir, narrator: { provider, voice: voiceId }, music: null });
+      const r = await runner<{ info: Info }>("make-voice", { projectDir: dir, narrator: { provider, voice: voiceId, name: voices.find((v) => v.id === voiceId)?.name ?? null }, music: null });
       madeInfo = r.info;
       stamp = Date.now();
       ok = true;
@@ -184,6 +199,15 @@
       {provider === "gemini" ? "The free voice uses a Gemini key. Add it in Settings, at Narrator Voice." : "Add your ElevenLabs key in Settings. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use."}
     </p>
   {:else}
+    {#if previous && !chooseOther}
+      <div class="row">
+        <span class="label">Narrator Voice</span>
+        <b>{voices.find((v) => v.id === voiceId)?.name ?? voiceId}</b>
+        <span class="pill">previously used</span>
+        <button type="button" onclick={playSample} disabled={!voiceId || sampling}>{sampling ? "Loading..." : "Play sample"}</button>
+        <button type="button" class="ghost" disabled={busy} onclick={() => (chooseOther = true)}>Choose another</button>
+      </div>
+    {:else}
     <div class="row">
       <label for="voice">Narrator Voice</label>
       <select id="voice" bind:value={voiceId} disabled={busy}>
@@ -197,7 +221,9 @@
         </optgroup>
       </select>
       <button type="button" onclick={playSample} disabled={!voiceId || sampling}>{sampling ? "Loading..." : "Play sample"}</button>
+      {#if previous}<span class="pill">previously used</span>{/if}
     </div>
+    {/if}
     {#if sample}<audio controls autoplay src={sample}></audio>{/if}
 
     <fieldset class="music" disabled={busy}>

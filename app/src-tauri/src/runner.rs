@@ -70,6 +70,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("cta-check", None),
     ("cta-save", None),
     ("cta-preview", None),
+    ("last-used", None),
     ("segments-list", None),
     ("segment-add", None),
     ("segment-remove", None),

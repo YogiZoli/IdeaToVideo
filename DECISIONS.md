@@ -714,3 +714,13 @@
       találatait nem számolja (`covered.json`).
     - A `publish.json` a szegmenses CTA-kat is tartalmazza (`via`), és a
       végképernyő kezdetét.
+79. **"Previously used" hang és avatar, Identity-nként** (Zoltan,
+    2026-10-05): minden brand (Identity) megjegyzi az utoljára használt
+    narrátor-hangot és avatar-lookot (`<identity>/last-used.json`, a sikeres
+    hang- és avatar-készítéskor frissül). A 2. és az 5. kapu ezzel indul,
+    "previously used" jelöléssel; a lista csak a "Choose another" gombra
+    nyílik ki. Sorrend: a videó saját korábbi választása, utána a brand
+    legutóbbija, utána a Settings alapja. Brandenként külön, így több brand
+    futhat párhuzamosan más hanggal és avatarral; egy brand később bármikor
+    válthat. Az Identity export és Duplicate a teljes mappát viszi, ezzel
+    együtt.

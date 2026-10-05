@@ -124,6 +124,24 @@ function takeSegments(projectDir, identityDir, plan, own) {
   }
   return { segmentCalls, endScreen };
 }
+// The Identity's memory of its last voice and avatar (Zoltan, 2026-10-05):
+// every brand keeps its own, so gate 2 and gate 5 start from what this brand
+// used before, not from a list. <identity>/last-used.json
+const lastUsedFile = (identityDir) => path.join(identityDir, "last-used.json");
+function lastUsed(identityDir) {
+  try {
+    return identityDir ? JSON.parse(fs.readFileSync(lastUsedFile(identityDir), "utf8")) : {};
+  } catch {
+    return {};
+  }
+}
+function rememberUsed(identityDir, part) {
+  if (!identityDir) return;
+  const at = new Date().toISOString();
+  const next = { ...lastUsed(identityDir), ...Object.fromEntries(Object.entries(part).map(([k, v]) => [k, { ...v, at }])) };
+  fs.mkdirSync(identityDir, { recursive: true });
+  fs.writeFileSync(lastUsedFile(identityDir), JSON.stringify(next, null, 2) + "\n");
+}
 function loadCtaChecked(identityDir) {
   try {
     return identityDir ? loadCta(identityDir) : null;
@@ -352,6 +370,8 @@ const commands = {
   // The Identity's segments (cta/segments.mjs). An upload is copied into
   // <identity>/segments by the Rust core (import_segment) first; this checks
   // and registers it.
+  // "Previously used": the voice and the avatar look this Identity used last.
+  "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
   "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, perKeyword: SEGMENTS_PER_KEYWORD }),
   "segment-add": async ({ identityDir, file, keyword, name }) => ({ segment: await addSegment({ identityDir, file, keyword, name, source: "upload" }) }),
   "segment-remove": async ({ identityDir, id }) => removeSegment(identityDir, id),
@@ -445,7 +465,7 @@ const commands = {
   "voice-sample": async ({ narrator, language }) => ({ file: await voiceSample({ narrator, apiKey: key(), language, dir: path.join(dataDir(), "voice-previews") }) }),
 
   // Gate 2: narration + music, approved as one artifact.
-  "make-voice": async ({ projectDir, narrator, music }) => {
+  "make-voice": async ({ projectDir, identityDir, narrator, music }) => {
     let project = setGate(loadProject(projectDir), "voice", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `voice: ${narrator?.provider}/${narrator?.voice ?? "?"}${music ? `, music ${music}` : ""}`);
@@ -475,6 +495,7 @@ const commands = {
       project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS, ${table.sentences} sentences`);
+      rememberUsed(identityDir, { voice: { provider: narrator?.provider, voice: narrator?.voice, name: narrator?.name ?? null } });
       return { info, gate: project.gates.voice, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "voice", { state: "failed", error: String(e.message).slice(0, 2000) }));
@@ -605,7 +626,7 @@ const commands = {
     return { ...plan, estimate: heygen.estimateUsd(seconds), account };
   },
 
-  "make-avatar": async ({ projectDir, lookId, which, look, layout }) => {
+  "make-avatar": async ({ projectDir, identityDir, lookId, lookName, which, look, layout }) => {
     let project = setGate(loadProject(projectDir), "avatar", { state: "running", mode: "custom" });
     saveProject(projectDir, project);
     appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}`);
@@ -618,6 +639,7 @@ const commands = {
       project = setGate(project, "avatar", { state: "pending", mode: "custom" });
       saveProject(projectDir, project);
       appendLog(projectDir, `avatar: done, ${r.segments.map((s) => `${s.name} ${s.duration}s`).join(", ")}`);
+      rememberUsed(identityDir, { avatar: { lookId, name: lookName ?? null, layout: r.layout } });
       return { avatar: r, gate: project.gates.avatar, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "avatar", { state: "failed", error: String(e.message).slice(0, 2000) }));
