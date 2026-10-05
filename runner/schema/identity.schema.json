@@ -15,7 +15,18 @@
       "additionalProperties": false,
       "properties": {
         "provider": {"enum": ["gemini", "openrouter", "claude", "openai", "deepseek", "grok"]},
-        "model": {"type": "string", "minLength": 1, "maxLength": 200}
+        "model": {"type": "string", "minLength": 1, "maxLength": 200},
+        "effort": {"enum": ["low", "medium", "high", "xhigh", "max", null]},
+        "perStep": {"type": "boolean"},
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "script": {"$ref": "#/definitions/stepLlm"},
+            "scenes": {"$ref": "#/definitions/stepLlm"},
+            "texts": {"$ref": "#/definitions/stepLlm"}
+          }
+        }
       }
     },
     "brand": {
@@ -66,6 +77,18 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {"scriptTemplate": {"enum": ["ownership"]}, "targetLengthMin": {"type": "number", "minimum": 1, "maximum": 30}}
+    }
+  },
+  "definitions": {
+    "stepLlm": {
+      "type": "object",
+      "required": ["provider", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": {"enum": ["gemini", "openrouter", "claude", "openai", "deepseek", "grok"]},
+        "model": {"type": "string", "minLength": 1, "maxLength": 200},
+        "effort": {"enum": ["low", "medium", "high", "xhigh", "max", null]}
+      }
     }
   }
 }

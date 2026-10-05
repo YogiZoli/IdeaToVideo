@@ -22,9 +22,11 @@
   import { work, running, track, measure, startWork } from "./work.svelte";
   import { TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
   import { avatarLooks } from "./avatars";
+  import { llmFor } from "./llm";
   import { notifyDone } from "./notify";
 
-  let { app, dir: dirProp, back }: { app: AppState; dir: string; back: () => void } = $props();
+  // saved: new settings from a tab (the AI of a step, StepModel)
+  let { app, dir: dirProp, back, saved }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
   // render) keeps writing to it even if the user opens Settings meanwhile.
   const dir = untrack(() => dirProp);
@@ -117,7 +119,7 @@
         if (!data.scriptMarkdown) {
           pilot = "Writing the script";
           show("script", "autopilot");
-          await runner("write-script", { projectDir: dir, llm: app.config!.llm, input: { topic: data.project.title, targetLengthMin: data.brief?.targetLengthMin ?? app.config?.defaults?.targetLengthMin ?? 8 }, channel: app.config!.channel });
+          await runner("write-script", { projectDir: dir, llm: llmFor(app.config, "script"), input: { topic: data.project.title, targetLengthMin: data.brief?.targetLengthMin ?? app.config?.defaults?.targetLengthMin ?? 8 }, channel: app.config!.channel });
           await load();
         }
         await approveGate("script");
@@ -146,7 +148,7 @@
       if (!approved("scenes")) {
         pilot = "Planning the scenes";
         show("scenes", "autopilot");
-        await runner("make-scenes", { projectDir: dir, llm: app.config!.llm, look });
+        await runner("make-scenes", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
         await approveGate("scenes");
       }
       if (!approved("review")) {
@@ -211,11 +213,11 @@
 
     <div class="body" bind:this={body}>
       {#if active === "script"}
-        <ScriptGate {app} {dir} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} />
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}
-        <SceneGate {app} {dir} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} goto={show} next={nextAfter("scenes", hasHeygen)} />
+        <SceneGate {app} {dir} {saved} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} goto={show} next={nextAfter("scenes", hasHeygen)} />
       {:else if active === "avatar"}
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}

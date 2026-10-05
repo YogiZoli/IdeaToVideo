@@ -277,7 +277,7 @@
       <section class="card">
         <h2>AI for every Identity</h2>
         <p class="hint">The default. An Identity can use a different AI on its own "AI and keys" page.</p>
-        <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" />
+        <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" steps />
       </section>
       <section class="card">
         <h2>Service keys for every Identity</h2>
@@ -362,7 +362,7 @@
         <label class="radio"><input type="radio" name="ownllm" checked={!ownLlm} onchange={() => (ownLlm = false)} /> Use the App's AI ({appProvider.label}, {appCfg.llm.model})</label>
         <label class="radio"><input type="radio" name="ownllm" checked={ownLlm} onchange={() => (ownLlm = true)} /> Use a different AI for this Identity</label>
         {#if ownLlm}
-          <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" /></div>
+          <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" steps /></div>
         {/if}
       </section>
       <section class="card">

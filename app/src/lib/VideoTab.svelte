@@ -19,6 +19,7 @@
   import { running } from "./work.svelte";
   import { log } from "./logger";
   import type { TabId } from "./tabs";
+  import { llmFor } from "./llm";
 
   type Youtube = { titles: string[]; title: string; summary: string; description: string; tags: string[] };
   type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; publishFile?: string | null; comments?: string | null; youtube?: Youtube | null };
@@ -87,7 +88,7 @@
     ytBusy = true;
     error = "";
     try {
-      yt = await runner<Youtube>("youtube-texts", { projectDir: dir, file: video.file, llm: app.config!.llm });
+      yt = await runner<Youtube>("youtube-texts", { projectDir: dir, file: video.file, llm: llmFor(app.config, "texts") });
     } catch (e) {
       error = errorText(e);
     } finally {

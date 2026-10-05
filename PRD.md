@@ -163,9 +163,10 @@ egymástól függetlenül fejlődhessen.
 - **Tauri** asztali app, Windows és Mac. A build GitHub Actionsben mindkettőre.
 - A Node és az ffmpeg sidecarként a csomagban.
 - Render: `npx hyperframes` pinnelt verzióval.
-- LLM: **egyetlen OpenAI-kompatibilis integráció**. Minden szolgáltató ezen
-  megy, a Claude is (Anthropic kompatibilis végpont). Natív Claude csatlakozó
-  csak ha a pilot indokolja.
+- LLM: **OpenAI-kompatibilis integráció** minden szolgáltatónak, kivéve a
+  Claude-ot: az a hivatalos Anthropic SDK-val natívan megy, mert az effort
+  csak ott állítható (DECISIONS 89, 2026-10-05). Lépésenként (Script, Scenes,
+  kis szövegek) külön modell és effort választható.
 - Kulcsok: az operációs rendszer kulcstárában (Windows Credential Manager, Mac
   Keychain). A config fájl (JSON) csak nem titkos beállítást tárol.
 - A PowerShell pipeline szkriptek (`sentences.ps1`, `stamp-timing.ps1`,

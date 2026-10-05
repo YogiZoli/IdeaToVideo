@@ -1,16 +1,25 @@
-// llm.mjs: the one LLM integration (SPEC 5). Every provider speaks the OpenAI
-// chat completions API; a provider is only a base URL, a key and a model name.
+// llm.mjs: the LLM integration (SPEC 5). Every provider but Claude speaks the
+// OpenAI chat completions API; a provider is only a base URL, a key and a
+// model name. Claude has its own connector (claude.mjs, DECISIONS 89), because
+// its effort setting exists only on its own API.
+//
+// effort (DECISIONS 89): low, medium, high (Claude also xhigh, max), per
+// step. Gemini and OpenAI take it as reasoning_effort, OpenRouter as
+// reasoning.effort; DeepSeek and Grok get none. Above "high" counts as high
+// where the provider stops there.
 //
 // The key comes in as an argument (the runner reads it from the env the Rust
 // core sets from the OS keychain). It is never logged, never written to disk and
 // never part of an error message: every message goes through redact().
+
+import { claudeChat } from "./claude.mjs";
 
 export const PROVIDERS = {
   // overloaded (5xx) after the retries: the same request once more on the
   // other Gemini model, before the user sees an error (Zoltan, 2026-10-01)
   gemini: { label: "Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-3.5-flash", jsonMode: true, fallbackModels: ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"] },
   openrouter: { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1/", model: "openrouter/auto", jsonMode: true },
-  claude: { label: "Claude", baseUrl: "https://api.anthropic.com/v1/", model: "claude-sonnet-5", jsonMode: false },
+  claude: { label: "Claude", baseUrl: "https://api.anthropic.com/v1/", model: "claude-sonnet-5-5", jsonMode: false, native: true },
   openai: { label: "ChatGPT (OpenAI API)", baseUrl: "https://api.openai.com/v1/", model: null, jsonMode: true },
   deepseek: { label: "DeepSeek", baseUrl: "https://api.deepseek.com/", model: "deepseek-chat", jsonMode: true },
   grok: { label: "Grok (xAI)", baseUrl: "https://api.x.ai/v1/", model: null, jsonMode: true },
@@ -92,14 +101,45 @@ export async function chat(opts) {
   }
 }
 
-async function chatOnce({ provider, apiKey, model, messages, json = false, maxTokens, allowEmpty = false, temperature = 0.7, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 120000 }) {
+// The effort field each OpenAI-compatible provider understands.
+const EFFORT_FIELD = { gemini: "reasoning_effort", openai: "reasoning_effort", openrouter: "reasoning" };
+export function effortFields(provider, effort) {
+  const field = EFFORT_FIELD[provider];
+  if (!field || !effort) return {};
+  const e = effort === "xhigh" || effort === "max" ? "high" : effort;
+  if (!["low", "medium", "high"].includes(e)) return {};
+  return field === "reasoning" ? { reasoning: { effort: e } } : { [field]: e };
+}
+
+async function chatOnce({ provider, apiKey, model, effort = null, messages, json = false, maxTokens, allowEmpty = false, temperature = 0.7, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 120000, claudeClient = null }) {
   const p = PROVIDERS[provider];
   if (!p) throw new LlmError(`Unknown provider: ${provider}`);
   if (!apiKey) throw new LlmError(`No API key set for ${p.label}. Add it in Settings.`);
   const useModel = model || p.model;
   if (!useModel) throw new LlmError(`Pick a model for ${p.label} in Settings.`);
 
-  const body = { model: useModel, messages, temperature };
+  if (p.native) {
+    // the SDK retries 429, 5xx and network errors itself (twice)
+    const text = await claudeChat({
+      apiKey,
+      model: useModel,
+      messages,
+      maxTokens,
+      effort,
+      temperature,
+      client: claudeClient,
+      errors: (e) => {
+        if (e?.refusal) return new LlmError(e.message, { status: 200 });
+        const status = typeof e?.status === "number" ? e.status : undefined;
+        if (status) return new LlmError(friendlyError(p.label, status, redact(e.message, apiKey)), { status, retryable: status === 429 || status >= 500 });
+        return new LlmError(`Could not reach ${p.label}: ${redact(e?.message, apiKey)}`, { retryable: true });
+      },
+    });
+    if (!allowEmpty && (typeof text !== "string" || text.trim() === "")) throw new LlmError(`${p.label} returned an empty answer.`);
+    return text;
+  }
+
+  const body = { model: useModel, messages, temperature, ...effortFields(provider, effort) };
   if (maxTokens) body.max_tokens = maxTokens;
   if (json && p.jsonMode) body.response_format = { type: "json_object" };
 

@@ -877,3 +877,29 @@
     Csak a kimondott mezőket írja át (szerkezet, kulcsszavak maradnak), utána
     ugyanazok az ellenőrzések; ha egy javító kör után sem megy át, az első
     script marad, és az app megmondja. Kód: `runner/gates/script/humanize.mjs`.
+89. **AI-modell és effort lépésenként; natív Claude csatlakozó** (Zoltan,
+    2026-10-05, M1-M4). Settings, AI and keys (az App és az Identity oldalán
+    is): az alap modell és effort, alatta a "Choose a model for each step"
+    kapcsoló, három sorral: Script (a script és a natural voice), Scenes (a
+    terv és a jelenet-javítások), Small texts (YouTube szövegek, javaslatok,
+    B-roll leírás). Minden választás két lista: Modell (például Claude Opus
+    5.5, Sonnet 5.5, Haiku 4.5, Gemini 3.5 Flash, vagy "Other model") és
+    Effort (Low, Medium, High, Claude-nál Extra high és Max is; Default a
+    szolgáltató sajátja). Kikapcsolva minden lépés a Settings alap modelljét
+    használja (M4). A Script és a Scenes tabon "AI: Claude Opus 5.5, High
+    effort · Change"; a Change az Identity beállításaiba ment, így a
+    következő videó is azzal indul ("previously used", egyetlen igazságforrás
+    a Settings). A hang, a zene és az avatar saját szolgáltatást használ, a
+    build, a Preview és a render semmilyen AI-t.
+    **Eltérés a PRD 9. pontjától, Zoltan jóváhagyásával:** a Claude effort csak
+    a natív Messages API-n állítható, ezért a Claude saját csatlakozót kap a
+    hivatalos Anthropic SDK-val (`@anthropic-ai/sdk` 0.131.0, pinnelve, a
+    runner mellett, `runner/providers/claude.mjs`); a többi szolgáltató marad
+    az OpenAI-kompatibilis kapun (Gemini és OpenAI: `reasoning_effort`,
+    OpenRouter: `reasoning.effort`). Claude: `output_config.effort`, a
+    gondolkodás adaptív (a mai modelleken nem kapcsolható ki), nincs
+    temperature, elutasításnál szerver oldali tartalék modell (`fallbacks:
+    "default"`). Az alap Claude modell `claude-sonnet-5-5`. Mérés nincs
+    (Zoltan: elég, ha a saját kulcsával használhatja). A Claude Pro és Gemini
+    Pro előfizetés nem API kulcs; ingyen tesztelni a Gemini API ingyenes
+    keretével és az OpenRouter ingyenes modelljeivel lehet.

@@ -201,7 +201,7 @@
       {/key}
     {:else if projectDir}
       {#key projectDir}
-        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} />
+        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} saved={take} />
       {/key}
     {:else}
       {#key app.identity.id}

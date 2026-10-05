@@ -5,6 +5,7 @@
   // stills; the AI writes what is on it (the user can edit it), which is what
   // the scene planner matches to the narration. A long clip serves many
   // videos: every video takes the piece used least before, starting at a cut.
+  import { llmFor } from "../llm";
   import { onMount } from "svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { convertFileSrc } from "@tauri-apps/api/core";
@@ -21,7 +22,7 @@
   let saved = $state("");
   let drafts = $state<Record<string, string>>({});
 
-  const llm = $derived(app.config?.llm ?? null);
+  const llm = $derived(app.config ? llmFor(app.config, "texts") : null);
   const canDescribe = $derived(!!llm && llm.provider !== "deepseek");
 
   async function load() {

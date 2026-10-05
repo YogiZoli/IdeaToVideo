@@ -22,7 +22,12 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
   }
 }
 
-export type Llm = { provider: string; model: string };
+export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+/** One model with its effort (null: the provider's own default, or none). */
+export type StepLlm = { provider: string; model: string; effort?: Effort | null };
+/** The steps that can have their own model (llm.ts, DECISIONS 89). */
+export type LlmStep = "script" | "scenes" | "texts";
+export type Llm = StepLlm & { perStep?: boolean; steps?: Partial<Record<LlmStep, StepLlm>> };
 
 /** The effective settings: the active Identity over the App defaults. */
 export type Config = {
@@ -31,7 +36,7 @@ export type Config = {
   name?: string;
   onboarded?: boolean;
   ui?: { language: "en" };
-  llm: { provider: string; model: string };
+  llm: Llm;
   brand?: { preset?: string; logo?: string | null; overrides?: Record<string, string> };
   channel: {
     audience?: string;

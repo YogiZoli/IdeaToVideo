@@ -3,6 +3,7 @@
 // each. Settings shows the same sections. Every step but "ai" belongs to the
 // Identity; "New Identity" runs IDENTITY_STEPS.
 
+import { llmFor } from "./llm";
 import type { Config } from "./api";
 import { runner } from "./api";
 import { DEFAULT_PRESET, LLM_PROVIDERS, GEMINI_DEFAULT_VOICE } from "./catalog";
@@ -69,7 +70,7 @@ export function skipStep(id: StepId, c: Config): Config {
 /** "Use recommended". Audience and Brand Voice ask the AI (needs the AI key). */
 export async function recommendStep(id: StepId, c: Config): Promise<Config> {
   if (id === "audience" || id === "brandVoice") {
-    const r = await runner<{ text: string }>("suggest-channel", { llm: c.llm, field: id, channel: c.channel });
+    const r = await runner<{ text: string }>("suggest-channel", { llm: llmFor(c, "texts"), field: id, channel: c.channel });
     return { ...c, channel: { ...c.channel, [id]: r.text } };
   }
   if (id === "ai") {

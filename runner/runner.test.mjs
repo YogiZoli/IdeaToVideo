@@ -143,20 +143,62 @@ test("chat recovers when a retry succeeds, and honours Retry-After", async () =>
 
 test("chat does not retry a rejected key, and never repeats the key", async () => {
   const f = fakeFetch([{ status: 401, text: `invalid key ${KEY}` }]);
-  await assert.rejects(chat({ provider: "claude", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), (e) => {
+  await assert.rejects(chat({ provider: "deepseek", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), (e) => {
     assert.equal(f.calls.length, 1);
     assert.ok(!e.message.includes(KEY));
-    assert.match(e.message, /Claude rejected the API key/);
+    assert.match(e.message, /DeepSeek rejected the API key/);
     return true;
   });
 });
 
-test("claude goes through the compatible endpoint without json mode", async () => {
-  const f = fakeFetch([answer("{}")]);
-  await chat({ provider: "claude", apiKey: KEY, messages: [], json: true, fetchImpl: f, sleep: noSleep });
-  assert.equal(f.calls[0].url, "https://api.anthropic.com/v1/chat/completions");
-  assert.equal(f.calls[0].body.model, "claude-sonnet-5");
-  assert.equal(f.calls[0].body.response_format, undefined);
+// Claude goes through its own connector (DECISIONS 89): a stand-in for the SDK.
+function fakeClaude(reply) {
+  const sent = [];
+  return { sent, beta: { messages: { stream: (body) => { sent.push(body); return { finalMessage: async () => (reply instanceof Error ? Promise.reject(reply) : reply) }; } } } };
+}
+
+test("claude goes through its native connector, with effort and the server-side fallback", async () => {
+  const c = fakeClaude({ stop_reason: "end_turn", content: [{ type: "thinking", thinking: "" }, { type: "text", text: "{}" }] });
+  const text = await chat({ provider: "claude", model: "claude-opus-5-5", effort: "high", apiKey: KEY, messages: [{ role: "system", content: "S" }, { role: "user", content: "U" }], json: true, claudeClient: c });
+  assert.equal(text, "{}");
+  const b = c.sent[0];
+  assert.equal(b.model, "claude-opus-5-5");
+  assert.deepEqual(b.output_config, { effort: "high" });
+  assert.equal(b.system, "S");
+  assert.deepEqual(b.messages, [{ role: "user", content: "U" }]);
+  assert.equal(b.temperature, undefined);
+  assert.equal(b.thinking, undefined);
+  assert.equal(b.fallbacks, "default");
+  assert.deepEqual(b.betas, ["server-side-fallback-2026-07-01"]);
+});
+
+test("claude: Haiku gets no effort, the default model is Sonnet 5.5, a refusal and a bad key read well", async () => {
+  const c = fakeClaude({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] });
+  await chat({ provider: "claude", model: "claude-haiku-4-5", effort: "high", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: c });
+  assert.equal(c.sent[0].output_config, undefined);
+  assert.equal(c.sent[0].fallbacks, undefined);
+  const d = fakeClaude({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] });
+  await chat({ provider: "claude", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: d });
+  assert.equal(d.sent[0].model, "claude-sonnet-5-5");
+  const r = fakeClaude({ stop_reason: "refusal", stop_details: { category: "cyber" }, content: [] });
+  await assert.rejects(chat({ provider: "claude", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: r }), /Claude declined this request \(cyber\)/);
+  const k = fakeClaude(Object.assign(new Error(`bad key ${KEY}`), { status: 401 }));
+  await assert.rejects(chat({ provider: "claude", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: k }), (e) => {
+    assert.match(e.message, /Claude rejected the API key/);
+    assert.ok(!e.message.includes(KEY));
+    return true;
+  });
+});
+
+test("effort reaches the OpenAI-compatible providers in their own field", async () => {
+  const f = fakeFetch([answer("x"), answer("x"), answer("x")]);
+  await chat({ provider: "gemini", apiKey: KEY, effort: "medium", messages: [], fetchImpl: f, sleep: noSleep });
+  await chat({ provider: "openrouter", apiKey: KEY, effort: "max", messages: [], fetchImpl: f, sleep: noSleep });
+  await chat({ provider: "deepseek", apiKey: KEY, effort: "high", messages: [], fetchImpl: f, sleep: noSleep });
+  assert.equal(f.calls[0].body.reasoning_effort, "medium");
+  assert.deepEqual(f.calls[1].body.reasoning, { effort: "high" });
+  assert.equal(f.calls[2].body.reasoning_effort, undefined);
+  assert.equal(f.calls[2].body.reasoning, undefined);
 });
 
 test("chat asks for a model when the provider has no default, and for a key", async () => {

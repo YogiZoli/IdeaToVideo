@@ -17,6 +17,7 @@
   import { running } from "./work.svelte";
   import { onDestroy } from "svelte";
   import type { TabId } from "./tabs";
+  import { llmFor } from "./llm";
 
   type Row = {
     index: number; start: number | null; duration: number | null; said: string; component: string; label: string; roleLabel: string;
@@ -166,8 +167,8 @@
     const scenes = (table.scenes ?? []).map((s, i) => (i === row.index && row.mainVar ? { ...s, vars: { ...s.vars, [row.mainVar]: text } } : s));
     return edit("save-scenes", { scenes, look }, "Saved. Update the preview to see it.");
   }
-  const swap = (component: string) => edit("refill-scene", { llm: app.config!.llm, index: openRow!.index, component, look }, "Swapped. Update the preview to see it.");
-  const askChange = () => edit("refill-scene", { llm: app.config!.llm, index: openRow!.index, request: wish.trim(), look }, "Changed as you asked. Update the preview to see it.");
+  const swap = (component: string) => edit("refill-scene", { llm: llmFor(app.config, "scenes"), index: openRow!.index, component, look }, "Swapped. Update the preview to see it.");
+  const askChange = () => edit("refill-scene", { llm: llmFor(app.config, "scenes"), index: openRow!.index, request: wish.trim(), look }, "Changed as you asked. Update the preview to see it.");
 
   function onKey(e: KeyboardEvent) {
     const i = open;

@@ -278,7 +278,7 @@ const commands = {
 
   // Onboarding "Use recommended" for Audience and Brand Voice.
   "suggest-channel": async ({ llm, field, channel, topic }) =>
-    suggestChannel({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, field, channel, topic }),
+    suggestChannel({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, field, channel, topic }),
 
   "create-project": async ({ projectsDir, title, language, brief, autopilot, identity }) => {
     const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot, identity });
@@ -390,7 +390,7 @@ const commands = {
   "footage-update": async ({ identityDir, id, name, description }) => ({ clip: updateClip(identityDir, id, { name, description }) }),
   "footage-remove": async ({ identityDir, id }) => removeClip(identityDir, id),
   "footage-mode": async ({ identityDir, mode }) => setFootageMode(identityDir, mode),
-  "footage-describe": async ({ identityDir, id, llm }) => ({ clip: await describeClip({ identityDir, id, llm: { provider: llm.provider, model: llm.model, apiKey: key() } }) }),
+  "footage-describe": async ({ identityDir, id, llm }) => ({ clip: await describeClip({ identityDir, id, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } }) }),
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
@@ -430,7 +430,7 @@ const commands = {
       const plan = ctaOf(identityDir, input.cta);
       const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
         writeScript({
-          llm: { provider: llm.provider, model: llm.model, apiKey: key() },
+          llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
           input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
@@ -562,7 +562,7 @@ const commands = {
     try {
       const r = await timed("scenes", jsonCount(projectDir, "sentences.json"), emit, () =>
         makeScenes({
-          llm: { provider: llm.provider, model: llm.model, apiKey: key() },
+          llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
           projectDir,
           language: project.language,
           name,
@@ -618,7 +618,7 @@ const commands = {
     const project = loadProject(projectDir);
     appendLog(projectDir, `scenes: ${request ? "change asked for" : "swapping"} scene ${index + 1}${component ? ` to ${component}` : ""} with ${llm.provider}/${llm.model || "default model"}`);
     try {
-      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, request, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look), off: offOf(look) }));
+      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, index, component, request, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look), off: offOf(look) }));
     } catch (e) {
       // The table stays as it was; only the log learns about the failed swap.
       appendLog(projectDir, `scenes: swap of scene ${index + 1} failed, ${e.message}`);
@@ -785,7 +785,7 @@ const commands = {
     const video = path.resolve(file);
     if (!video.startsWith(path.resolve(projectDir)) || !/\.mp4$/i.test(video)) throw new Error("That is not a video of this project.");
     appendLog(projectDir, `youtube: texts with ${llm.provider}/${llm.model || "default model"}`);
-    return youtubeTexts({ llm: { provider: llm.provider, model: llm.model, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }, videoFile: video });
+    return youtubeTexts({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }, videoFile: video });
   },
 
   "approve-gate": async ({ projectDir, gate }) => {

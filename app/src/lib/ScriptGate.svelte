@@ -10,6 +10,8 @@
   import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import VideoCalls from "./cta/VideoCalls.svelte";
   import HumanizeSlider from "./HumanizeSlider.svelte";
+  import StepModel from "./StepModel.svelte";
+  import { llmFor } from "./llm";
   import type { AppState, Gate, CtaProfile, CtaSlot } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { running } from "./work.svelte";
@@ -25,6 +27,7 @@
     hasBrief,
     calls,
     changed,
+    saved,
   }: {
     app: AppState;
     dir: string;
@@ -35,6 +38,7 @@
     hasBrief: boolean;
     calls: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
     changed: () => Promise<void>;
+    saved: (s: AppState) => void;
   } = $props();
 
   const COMMANDS = ["write-script", "save-script", "keyword-ideas"];
@@ -55,7 +59,8 @@
   let own = $state(false);
 
   const dirty = $derived(draft !== (markdown ?? "") && draft.trim() !== "");
-  const llmContext = $derived({ step: "script", provider: app.config?.llm.provider, model: app.config?.llm.model });
+  const stepLlm = $derived(llmFor(app.config, "script"));
+  const llmContext = $derived({ step: "script", provider: stepLlm.provider, model: stepLlm.model });
   const approved = $derived(gate?.state === "approved");
 
   const unlisten = onProgress((p) => {
@@ -99,7 +104,7 @@
     try {
       const r = await runner<{ words: number; humanizeNote?: string | null }>("write-script", {
         projectDir: dir,
-        llm: app.config!.llm,
+        llm: stepLlm,
         input: { topic: title, targetLengthMin: length, humanize, ...(angle.trim() ? { angle: angle.trim() } : {}), ...(keyword ? { keyword } : {}), ...(ownCalls ? { cta: $state.snapshot(ownCalls) } : {}) },
         channel: app.config!.channel,
       });
@@ -152,6 +157,7 @@
   <h2>1. Script</h2>
   <p class="hint lead">What the narrator will say. The AI writes it from your title, your Audience and your Brand Voice, or you write it yourself.</p>
 
+  <StepModel {app} step="script" {saved} disabled={locked} />
   <div class="controls">
     <label for="len">Length</label>
     <input id="len" type="number" min="1" max="30" bind:value={length} disabled={locked} />

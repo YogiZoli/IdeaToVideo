@@ -15,8 +15,10 @@
   import { runner, onProgress, errorText } from "./api";
   import { running } from "./work.svelte";
   import { tabLabel, type TabId } from "./tabs";
+  import StepModel from "./StepModel.svelte";
+  import { llmFor } from "./llm";
 
-  let { app, dir, gate, voiceApproved, changed, goto, next }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId } = $props();
+  let { app, dir, gate, voiceApproved, changed, goto, next, saved }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId; saved: (s: AppState) => void } = $props();
 
   type Row = {
     index: number; from: string; to: string; start: number | null; duration: number | null; said: string;
@@ -39,7 +41,8 @@
   let error = $state("");
   let current = $state("");
 
-  const llmContext = $derived({ step: "scenes", provider: app.config?.llm.provider, model: app.config?.llm.model });
+  const stepLlm = $derived(llmFor(app.config, "scenes"));
+  const llmContext = $derived({ step: "scenes", provider: stepLlm.provider, model: stepLlm.model });
   const dirty = $derived(Object.keys(edits).length > 0);
   // a table that does not fit the current voice (the voice was made again)
   const stale = $derived(table.rows.length > 0 && table.rows.some((r) => r.start === null));
@@ -96,13 +99,13 @@
   const look = $derived(app.config?.brand?.preset ?? "blue-professional");
   async function plan() {
     if (table.rows.length && !stale && !(await ask("Plan all the scenes again? The scenes in this table are replaced. This uses AI tokens.", { title: "Plan again", kind: "warning" }))) return;
-    await run("make-scenes", { llm: app.config!.llm, look }, "Starting...");
+    await run("make-scenes", { llm: stepLlm, look }, "Starting...");
   }
   async function simple() {
     if (table.rows.length && !stale && !(await ask("Make a simple plan without AI? The scenes in this table are replaced.", { title: "Simple plan", kind: "warning" }))) return;
     await run("simple-scenes", { look }, "Planning without AI...");
   }
-  const swap = (row: Row, component: string) => run("refill-scene", { llm: app.config!.llm, index: row.index, component, look }, "Filling in the new scene...");
+  const swap = (row: Row, component: string) => run("refill-scene", { llm: stepLlm, index: row.index, component, look }, "Filling in the new scene...");
 
   function save() {
     const scenes = (table.scenes ?? []).map((s, i) => {
@@ -150,6 +153,7 @@
   {#if !voiceApproved}
     <Needs text="The scenes are timed to the voice. Approve the voice and music first." tab="voice" {goto} />
   {:else}
+    <StepModel {app} step="scenes" {saved} disabled={locked} />
     {#if job && job !== "save-scenes"}<Progress command={job} project={dir} label={step || "Planning the scenes"} />{/if}
     {#if error}
       <ErrorBox message={error} context={llmContext} />

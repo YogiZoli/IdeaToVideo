@@ -10,11 +10,42 @@ export type Provider = { id: string; label: string; model: string; keyUrl: strin
 export const LLM_PROVIDERS: Provider[] = [
   { id: "gemini", label: "Gemini", model: "gemini-3.5-flash", keyUrl: "https://aistudio.google.com/apikey", note: "Free tier available. Recommended to start." },
   { id: "openrouter", label: "OpenRouter", model: "openrouter/auto", keyUrl: "https://openrouter.ai/keys", note: "One key, many models." },
-  { id: "claude", label: "Claude", model: "claude-sonnet-5", keyUrl: "https://console.anthropic.com/settings/keys" },
+  { id: "claude", label: "Claude", model: "claude-sonnet-5-5", keyUrl: "https://console.anthropic.com/settings/keys" },
   { id: "openai", label: "ChatGPT (OpenAI API)", model: "", keyUrl: "https://platform.openai.com/api-keys", note: "Type the model name you want to use." },
   { id: "deepseek", label: "DeepSeek", model: "deepseek-chat", keyUrl: "https://platform.deepseek.com/api_keys" },
   { id: "grok", label: "Grok (xAI)", model: "", keyUrl: "https://console.x.ai", note: "Type the model name you want to use." },
 ];
+
+// The models offered per provider (DECISIONS 89), the strongest first, and
+// the efforts each takes. A provider without a list, or "Other model", takes
+// any model name. Claude's list mirrors runner/providers/claude.mjs.
+export type ModelChoice = { id: string; label: string; efforts: string[] };
+const ALL_EFFORTS = ["low", "medium", "high", "xhigh", "max"];
+const LMH = ["low", "medium", "high"];
+export const MODEL_CHOICES: Record<string, ModelChoice[]> = {
+  claude: [
+    { id: "claude-fable-5-1", label: "Claude Fable 5.1", efforts: ALL_EFFORTS },
+    { id: "claude-opus-5-5", label: "Claude Opus 5.5", efforts: ALL_EFFORTS },
+    { id: "claude-sonnet-5-5", label: "Claude Sonnet 5.5", efforts: ALL_EFFORTS },
+    { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", efforts: [] },
+  ],
+  gemini: [
+    { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash", efforts: LMH },
+    { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", efforts: LMH },
+    { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite", efforts: LMH },
+  ],
+  openrouter: [{ id: "openrouter/auto", label: "OpenRouter Auto", efforts: LMH }],
+  deepseek: [{ id: "deepseek-chat", label: "DeepSeek Chat", efforts: [] }],
+};
+// providers whose typed-in model names may take an effort
+const OPEN_EFFORTS: Record<string, string[]> = { openai: LMH, openrouter: LMH, gemini: LMH, claude: ALL_EFFORTS };
+export const EFFORT_LABELS: Record<string, string> = { low: "Low", medium: "Medium", high: "High", xhigh: "Extra high", max: "Max" };
+
+export const modelChoices = (provider: string): ModelChoice[] => MODEL_CHOICES[provider] ?? [];
+export function effortChoices(provider: string, model: string): string[] {
+  const known = modelChoices(provider).find((m) => m.id === model);
+  return known ? known.efforts : (OPEN_EFFORTS[provider] ?? []);
+}
 
 export const SERVICE_KEY_URLS: Record<string, string> = {
   elevenlabs: "https://elevenlabs.io/app/settings/api-keys",
