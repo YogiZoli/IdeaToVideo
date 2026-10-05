@@ -34,12 +34,13 @@ export async function segmentVoice({ identityDir, narrator, apiKey, text, langua
   return { audio: name, seconds };
 }
 
-export async function segmentVideo({ identityDir, apiKey, lookId, audio, keyword, name, background = "#ffffff", fetchImpl = fetch, sleep, onProgress = () => {}, env = process.env }) {
+export async function segmentVideo({ identityDir, apiKey, lookId, audio, keyword, name, text = "", background = "#ffffff", fetchImpl = fetch, sleep, onProgress = () => {}, env = process.env }) {
   if (!lookId) throw new Error("Choose an avatar in Settings, Voice and avatar first.");
   const info = keywordInfo(keyword);
   if (!info) throw new Error("Pick the keyword this segment says.");
   const dir = segmentsDir(identityDir);
   const sound = path.join(dir, path.basename(String(audio ?? "")));
+  const spokenText = String(text ?? "").trim();
   if (!/^voice-\d+\.(mp3|wav)$/.test(path.basename(sound)) || !fs.existsSync(sound)) throw new Error("Make the voice of the segment first.");
   onProgress({ step: "upload" });
   const assetId = await heygen.uploadAudio({ apiKey, file: sound, fetchImpl });
@@ -47,5 +48,5 @@ export async function segmentVideo({ identityDir, apiKey, lookId, audio, keyword
   const file = incomingName(".mp4");
   await heygen.waitAndDownload({ apiKey, id, out: path.join(dir, file), fetchImpl, ...(sleep ? { sleep } : {}), onStatus: (status) => onProgress({ step: "heygen", status }) });
   fs.rmSync(sound, { force: true });
-  return addSegment({ identityDir, file, keyword: info.keyword, name, source: "heygen", env });
+  return addSegment({ identityDir, file, keyword: info.keyword, name, text: spokenText, source: "heygen", env });
 }

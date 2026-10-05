@@ -43,6 +43,30 @@ export function captionCues(words) {
   return cues;
 }
 
+// The words of the CTA segments (what the user wrote the clip says; the
+// voice gate placed them, audio/voice.json inserts), spread evenly over the
+// clip in lines of at most MAX_LINE characters. Without a text: no caption.
+export function segmentCues(projectDir) {
+  let inserts = [];
+  try {
+    inserts = JSON.parse(fs.readFileSync(path.join(projectDir, "audio", "voice.json"), "utf8")).inserts ?? [];
+  } catch {
+    return [];
+  }
+  const cues = [];
+  for (const g of inserts) {
+    if (!g.text) continue;
+    const lines = [];
+    for (const w of String(g.text).split(/\s+/)) {
+      if (lines.length && (lines[lines.length - 1] + " " + w).length <= MAX_LINE) lines[lines.length - 1] += " " + w;
+      else lines.push(w);
+    }
+    const each = (g.end - g.start) / lines.length;
+    lines.forEach((text, i) => cues.push({ start: g.start + i * each, end: g.start + (i + 1) * each - 0.05, text }));
+  }
+  return cues;
+}
+
 export function toSrt(cues) {
   return cues.map((c, i) => `${i + 1}\n${srtTime(c.start)} --> ${srtTime(c.end)}\n${c.text}\n`).join("\n");
 }
@@ -93,7 +117,7 @@ export function writeExtras(projectDir, videoFile, { language = "en", total, app
   const sentences = JSON.parse(fs.readFileSync(path.join(projectDir, "sentences.json"), "utf8"));
   const mdFile = path.join(projectDir, "script.md");
   const md = fs.existsSync(mdFile) ? fs.readFileSync(mdFile, "utf8") : "";
-  fs.writeFileSync(`${base}.srt`, toSrt(captionCues(words)));
+  fs.writeFileSync(`${base}.srt`, toSrt([...captionCues(words), ...segmentCues(projectDir)].sort((a, b) => a.start - b.start)));
   const ch = chapters(sentences, sentenceSections(md, sentences), total ?? sentences[sentences.length - 1]?.end ?? 0, language);
   fs.writeFileSync(`${base}.chapters.txt`, ch.text + "\n");
   const pub = writePublish(projectDir, videoFile, { language, total, chapters: ch.chapters, chaptersText: ch.text, appVersion, project });

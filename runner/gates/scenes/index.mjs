@@ -210,6 +210,38 @@ function readJson(projectDir, f, what) {
   return JSON.parse(fs.readFileSync(p, "utf8"));
 }
 
+// A scene under MIN_SECONDS of its own joins its neighbour before the check
+// (Zoltan's test, 2026-10-05: a 1.85 s last sentence failed the whole table
+// after the repair). It goes into the scene before it, or after it when the
+// one before is a comment call. A call scene is never joined.
+export function joinShort(answer, { sentences, total, calls = new Map(), gaps = [] }) {
+  const scenes = answer?.scenes;
+  if (!Array.isArray(scenes) || scenes.length < 2) return answer;
+  let times;
+  try {
+    times = sceneTimes(scenes, sentences, total);
+  } catch {
+    return answer; // the check reports the structure
+  }
+  const own = (i) => times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0);
+  const out = scenes.map((sc) => ({ ...sc }));
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out.length < 2 || calls.has(out[i].from) || own(i) >= MIN_SECONDS) continue;
+    const prev = out[i - 1];
+    const next = out[i + 1];
+    if (prev && !calls.has(prev.from)) {
+      prev.to = out[i].to ?? out[i].from;
+      out.splice(i, 1);
+      times.splice(i, 1);
+    } else if (next && !calls.has(next.from)) {
+      next.from = out[i].from;
+      out.splice(i, 1);
+      times.splice(i, 1);
+    }
+  }
+  return { ...answer, scenes: out };
+}
+
 // The segments and the end-screen tail in the recorded voice (voice gate).
 export function gapsOf(projectDir) {
   try {
@@ -279,11 +311,11 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   const calls = callSentences(readScript(projectDir), sentences);
   const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language, calls });
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env, off, calls, gaps: gapsOf(projectDir) }));
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir) }));
   const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
   const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
-  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(answer.scenes.map(clean), calls), gaps, warnings: result.warnings });
-  return { scenes: answer.scenes.length, gaps, warnings: result.warnings };
+  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.map(clean), calls), gaps, warnings: result.warnings });
+  return { scenes: joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.length, gaps, warnings: result.warnings };
 }
 
 // Custom: the user's edited table, checked the same way (no LLM).

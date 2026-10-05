@@ -47,7 +47,8 @@ export function buildMessages(data) {
   const system = fs
     .readFileSync(path.join(here, "prompt.md"), "utf8")
     .replaceAll("{{targetWords}}", String(Math.round(minutes * WORDS_PER_MINUTE)))
-    .replaceAll("{{targetMinutes}}", String(minutes));
+    .replaceAll("{{targetMinutes}}", String(minutes))
+    .replaceAll("{{minWords}}", String(Math.round(minutes * WORDS_PER_MINUTE * 0.85)));
   const user = `DATA\n${JSON.stringify(data, null, 2)}\nEND DATA\n\nWrite the script now. Answer with the JSON object only.`;
   return [
     { role: "system", content: system },
@@ -135,8 +136,9 @@ export function commentCallIssues(script, calls) {
 // The length the user set (Zoltan's test, 2026-10-05: 3 minutes asked, 318
 // words written, about 2 minutes). Within 85 to 120 percent of the target
 // passes; otherwise the repair call is told how many words to add or cut.
+const targetWords = (data) => Math.round((data.targetLengthMin || 8) * WORDS_PER_MINUTE);
 export function lengthIssues(script, data) {
-  const target = Math.round((data.targetLengthMin || 8) * WORDS_PER_MINUTE);
+  const target = targetWords(data);
   const words = wordCount(script);
   if (words < target * 0.85) return [`the script has ${words} spoken words, too short for ${data.targetLengthMin} minutes: write about ${target} words (at least ${Math.round(target * 0.85)}), with more substance in the TEACH sections, not padding`];
   if (words > target * 1.2) return [`the script has ${words} spoken words, too long for ${data.targetLengthMin} minutes: cut it to about ${target} words`];
@@ -194,6 +196,22 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
       const err = new Error(`The script did not pass the checks after one repair: ${issues.slice(0, 5).join("; ")}`);
       err.issues = issues;
       throw err;
+    }
+  }
+  // The length, up to two more times on its own (Zoltan's second test: 265
+  // words for 3 minutes after the first repair). A longer answer is kept
+  // only if it still passes every other check.
+  for (let round = 0; round < 2; round++) {
+    const short = lengthIssues(script, data);
+    if (!short.length) break;
+    onProgress({ step: "lengthening", issues: short });
+    messages.push({ role: "assistant", content: JSON.stringify(script) });
+    messages.push({ role: "user", content: `Keep everything that is right, and fix only this, answering with the whole corrected JSON object:\n- ${short.join("\n- ")}` });
+    try {
+      const next = extractJson(await chat({ ...llm, messages, json: true }));
+      if (!checkScript(next, data).length && Math.abs(wordCount(next) - targetWords(data)) < Math.abs(wordCount(script) - targetWords(data))) script = next;
+    } catch {
+      break; // keep the script that passed
     }
   }
   if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature, gets: c.gets ?? null, offer: c.offer ?? null }));

@@ -12,6 +12,7 @@
     value = null,
     compact = false,
     marks = {},
+    picked = {},
     onpick,
   }: {
     keywords: CtaKeyword[];
@@ -19,13 +20,18 @@
     value?: string | null;
     compact?: boolean;
     marks?: Record<string, string>;
+    /** Keywords chosen elsewhere (the other places), with their labels. */
+    picked?: Record<string, string[]>;
     onpick: (keyword: string) => void;
   } = $props();
 
-  const rows = $derived(Object.entries(temperatures).map(([id, t]) => ({ id, t, words: keywords.filter((k) => k.temperature === id) })));
+  // Always cold, warm, hot: the order the method goes (the map can arrive
+  // sorted by name from the Rust core).
+  const ORDER = ["cold", "warm", "hot"];
+  const rows = $derived(ORDER.filter((id) => temperatures[id]).map((id) => ({ id, t: temperatures[id], words: keywords.filter((k) => k.temperature === id) })));
 </script>
 
-<div class="picker" class:waiting={!value} class:compact role="radiogroup" aria-label="Comment keyword">
+<div class="picker" class:waiting={!value && !Object.keys(picked).length} class:compact role="radiogroup" aria-label="Comment keyword">
   {#each rows as row (row.id)}
     <div class="row" style={`--dot: ${row.t.dot}; --surface: ${row.t.surface}; --ink: ${row.t.text}; --on-dot: ${row.id === "warm" ? "#1a1a1a" : "#ffffff"}`}>
       <div class="head">
@@ -34,9 +40,10 @@
       </div>
       <div class="cards">
         {#each row.words as k (k.keyword)}
-          <button type="button" role="radio" aria-checked={value === k.keyword} class="kw" class:chosen={value === k.keyword} onclick={() => onpick(k.keyword)}>
+          <button type="button" role="radio" aria-checked={value === k.keyword} class="kw" class:chosen={value === k.keyword} class:picked={value !== k.keyword && !!picked[k.keyword]} onclick={() => onpick(k.keyword)}>
             <span class="word">{k.keyword}</span>
             {#if !compact}<span class="gets">{k.gets}</span>{/if}
+            {#if picked[k.keyword]}<span class="tag">{picked[k.keyword].join(", ")}</span>{/if}
             {#if marks[k.keyword]}<span class="mark">{marks[k.keyword]}</span>{/if}
           </button>
         {/each}
@@ -61,6 +68,8 @@
   .kw:focus-visible { outline: 2px solid var(--dot); outline-offset: 2px; }
   .word { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; font-size: 15px; }
   .gets { font-size: 12px; color: #444; }
+  .kw.picked { border-color: var(--dot); background: color-mix(in srgb, var(--dot) 30%, var(--surface)); }
+  .tag { justify-self: start; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: var(--dot); color: var(--on-dot); }
   .mark { justify-self: start; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: #1a1a1a; color: #fff; }
   .kw.chosen { background: var(--dot); border-color: var(--dot); color: var(--on-dot); animation: breathe 2.4s ease-in-out infinite; }
   .kw.chosen .gets { color: var(--on-dot); }

@@ -32,6 +32,13 @@
   // Which keywords have the Identity's segments: shown on the cards.
   const marks = $derived(Object.fromEntries([...new Set(segments.map((g) => g.keyword))].map((k) => [k, `${segsOf(k).length} clip${segsOf(k).length === 1 ? "" : "s"}`])));
   const segKeywords = $derived([...new Set(segments.map((g) => g.keyword))]);
+  // The keywords of the other places stay marked while one place is open
+  // (Zoltan, 2026-10-05: only the last pick stayed highlighted).
+  const pickedElsewhere = (here: CtaSlot) => {
+    const out: Record<string, string[]> = {};
+    for (const s of SLOT_IDS) if (s !== here && on[s] && slots[s]) (out[slots[s]!] ??= []).push(options.slots[s].label);
+    return out;
+  };
   const playsSegment = (s: CtaSlot) => modes[s] === "segment" || (modes[s] !== "narrator" && segsOf(slots[s]).length > 0);
 
   const SLOT_IDS: CtaSlot[] = ["start", "middle", "end"];
@@ -106,7 +113,7 @@
     </div>
     {#if shown}
       <p class="for">Keyword for the {options.slots[shown].label.toLowerCase()}:</p>
-      <KeywordPicker keywords={options.keywords} temperatures={options.temperatures} value={slots[shown]} {compact} {marks} onpick={(k) => pick(shown!, k)} />
+      <KeywordPicker keywords={options.keywords} temperatures={options.temperatures} value={slots[shown]} {compact} {marks} picked={pickedElsewhere(shown)} onpick={(k) => pick(shown!, k)} />
     {/if}
   {/if}
 </div>

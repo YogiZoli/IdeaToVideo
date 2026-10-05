@@ -114,7 +114,7 @@ async function withInserts({ projectDir, blocks, files, audioDir, env }) {
       const clip = path.join(projectDir, call.file);
       if (!fs.existsSync(clip)) throw new Error(`The segment for ${call.keyword} is missing from the project. Write the script again at gate 1.`);
       const a = await clipAudio(clip, path.join(audioDir, `segment-${call.slot}.mp3`), env);
-      inserts.push({ at: items.length, seconds: a.seconds, call: { slot: call.slot, keyword: call.keyword, temperature: call.temperature, file: call.file, seconds: a.seconds } });
+      inserts.push({ at: items.length, seconds: a.seconds, call: { slot: call.slot, keyword: call.keyword, temperature: call.temperature, file: call.file, seconds: a.seconds, text: call.text ?? null } });
       items.push(a.file);
     }
   }

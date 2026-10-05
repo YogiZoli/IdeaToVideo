@@ -50,7 +50,10 @@ export function normalizeProfile(input) {
     slots[id] = v === null ? null : keywordInfo(v).keyword;
     // auto (default): your segment when the keyword has one (Zoltan's test,
     // 2026-10-05: three uploaded segments, none used).
-    modes[id] = ["segment", "narrator"].includes(input.modes?.[id]) ? input.modes[id] : "auto";
+    // A save from before "auto" (no modesV) wrote narrator as a mere
+    // default: it reads as auto (Zoltan's second test, 2026-10-05).
+    const m = input.modes?.[id];
+    modes[id] = m === "segment" || (m === "narrator" && input.modesV === 2) ? m : "auto";
     if (input.segmentIds?.[id]) segmentIds[id] = input.segmentIds[id];
   }
   const offers = {};
@@ -65,6 +68,7 @@ export function normalizeProfile(input) {
     ...(input.updatedAt ? { updatedAt: input.updatedAt } : {}),
     slots,
     modes,
+    modesV: 2,
     ...(Object.keys(segmentIds).length ? { segmentIds } : {}),
     offers,
     endScreen: input.endScreen ?? END_SCREEN_DEFAULT,

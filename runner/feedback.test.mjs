@@ -61,5 +61,20 @@ test("segments: by default a place plays your segment when its keyword has one",
   const plan = ctaPlan(normalizeProfile({ slots: { start: "GUIDE", middle: "WEBINAR", end: null } }), segs);
   assert.deepEqual(plan.map((c) => `${c.keyword} ${c.mode}`), ["GUIDE segment", "WEBINAR narrator"]);
   assert.equal(plan[1].note, undefined, "no note: nothing was asked for");
-  assert.equal(ctaPlan(normalizeProfile({ slots: { start: "GUIDE" }, modes: { start: "narrator" } }), segs)[0].mode, "narrator", "an explicit narrator stays");
+  assert.equal(ctaPlan(normalizeProfile({ slots: { start: "GUIDE" }, modes: { start: "narrator" }, modesV: 2 }), segs)[0].mode, "narrator", "an explicit narrator stays");
+  assert.equal(ctaPlan(normalizeProfile({ slots: { start: "GUIDE" }, modes: { start: "narrator" } }), segs)[0].mode, "segment", "an older save's narrator was only the default: auto");
+});
+
+test("a scene under 2 s of its own joins its neighbour instead of failing the table", async () => {
+  const { joinShort } = await import("./gates/scenes/index.mjs");
+  const sentences = [
+    { id: "S1", start: 0, end: 4, dur: 4, text: "One." },
+    { id: "S2", start: 4.2, end: 9, dur: 4.8, text: "Two." },
+    { id: "S3", start: 9.2, end: 10.9, dur: 1.7, text: "Three." },
+  ];
+  const a = { scenes: [{ from: "S1", component: "titlecard-lockup" }, { from: "S2", component: "per-word-rise" }, { from: "S3", component: "headline-slam" }] };
+  const gaps = [{ start: 11.0, end: 31.2 }];
+  assert.deepEqual(joinShort(a, { sentences, total: 31.2, gaps }).scenes.map((s) => `${s.from}-${s.to ?? s.from}`), ["S1-S1", "S2-S3"]);
+  const call = new Map([["S2", { keyword: "GUIDE" }]]);
+  assert.deepEqual(joinShort(a, { sentences, total: 31.2, gaps, calls: call }).scenes.length, 3, "never into a comment call scene, and no other neighbour");
 });

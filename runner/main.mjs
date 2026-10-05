@@ -114,7 +114,7 @@ function takeSegments(projectDir, identityDir, plan, own) {
     fs.mkdirSync(dir, { recursive: true });
     const file = `segments/${c.slot}${path.extname(c.segment.file)}`;
     fs.copyFileSync(path.join(segmentsDir(identityDir), c.segment.file), path.join(projectDir, file));
-    return { slot: c.slot, keyword: c.keyword, temperature: c.temperature, gets: c.offer || c.gets, segmentId: c.segment.id, name: c.segment.name, file, seconds: c.segment.seconds };
+    return { slot: c.slot, keyword: c.keyword, temperature: c.temperature, gets: c.offer || c.gets, segmentId: c.segment.id, name: c.segment.name, file, seconds: c.segment.seconds, text: c.segment.text ?? null };
   });
   const endScreen = identityDir ? endScreenOf(identityDir, own) : 0;
   if (identityDir) {
@@ -373,13 +373,13 @@ const commands = {
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
   "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, perKeyword: SEGMENTS_PER_KEYWORD }),
-  "segment-add": async ({ identityDir, file, keyword, name }) => ({ segment: await addSegment({ identityDir, file, keyword, name, source: "upload" }) }),
+  "segment-add": async ({ identityDir, file, keyword, name, text }) => ({ segment: await addSegment({ identityDir, file, keyword, name, text, source: "upload" }) }),
   "segment-remove": async ({ identityDir, id }) => removeSegment(identityDir, id),
   // A segment made in the app: the narrator reads the sentence (its key),
   // then HeyGen makes the avatar video on it (the HeyGen key).
   "segment-voice": async ({ identityDir, narrator, text, language }) => segmentVoice({ identityDir, narrator, apiKey: key(), text, language }),
-  "segment-make": async ({ identityDir, lookId, audio, keyword, name }) => ({
-    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "segment-make": async ({ identityDir, lookId, audio, keyword, name, text }) => ({
+    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, text, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
   }),
 
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),

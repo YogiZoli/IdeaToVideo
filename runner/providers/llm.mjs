@@ -8,7 +8,7 @@
 export const PROVIDERS = {
   // overloaded (5xx) after the retries: the same request once more on the
   // other Gemini model, before the user sees an error (Zoltan, 2026-10-01)
-  gemini: { label: "Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-3.5-flash", jsonMode: true, fallbackModels: ["gemini-3.5-flash", "gemini-3.8-flash"] },
+  gemini: { label: "Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-3.5-flash", jsonMode: true, fallbackModels: ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"] },
   openrouter: { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1/", model: "openrouter/auto", jsonMode: true },
   claude: { label: "Claude", baseUrl: "https://api.anthropic.com/v1/", model: "claude-sonnet-5", jsonMode: false },
   openai: { label: "ChatGPT (OpenAI API)", baseUrl: "https://api.openai.com/v1/", model: null, jsonMode: true },
@@ -42,7 +42,7 @@ export function friendlyError(label, status, body) {
   if (status === 429) return `${label} quota ran out or the rate limit was hit. Wait a little, or switch provider in Settings.`;
   if (status === 404) return `${label} does not know this model. Check the model name in Settings.`;
   if (status === 400) return `${label} refused the request: ${String(body).slice(0, 300)}`;
-  if (status >= 500) return `${label} is overloaded or having problems right now (HTTP ${status}). Try again in a few minutes, or pick another model in Settings.`;
+  if (status >= 500) return `${label} is overloaded or having problems right now (HTTP ${status}). The app already tried its other models. Wait a few minutes and press the button again; nothing is lost.`;
   return `${label} answered with HTTP ${status}.`;
 }
 
@@ -71,12 +71,24 @@ export async function chat(opts) {
     // Overloaded (5xx) or out of quota (429): the same request once on the
     // provider's other model. Gemini counts the free quota per model, so the
     // other one often still has room (DECISIONS 72, K5).
-    const switchable = e instanceof LlmError && (e.status >= 500 || e.status === 429);
-    const next = switchable && !opts.noFallback ? p?.fallbackModels?.find((m) => m !== used) : null;
-    if (!next) throw e;
-    report({ step: "fallback", provider: opts.provider, from: used, to: next, status: e.status });
-    opts.onFallback?.(next);
-    return chatOnce({ ...opts, model: next });
+    // Every other model of the provider in turn (Zoltan's test, 2026-10-05:
+    // both Flash models were overloaded at once).
+    const switchable = (err) => err instanceof LlmError && (err.status >= 500 || err.status === 429);
+    if (!switchable(e) || opts.noFallback) throw e;
+    let last = e;
+    let from = used;
+    for (const next of (p?.fallbackModels ?? []).filter((m) => m !== used)) {
+      report({ step: "fallback", provider: opts.provider, from, to: next, status: last.status });
+      opts.onFallback?.(next);
+      try {
+        return await chatOnce({ ...opts, model: next });
+      } catch (err) {
+        if (!switchable(err)) throw err;
+        last = err;
+        from = next;
+      }
+    }
+    throw last;
   }
 }
 

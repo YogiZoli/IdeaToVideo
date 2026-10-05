@@ -44,7 +44,9 @@ function saveSegments(identityDir, segments) {
 // A new segment from a clip already inside <identity>/segments (an upload
 // the app copied there, or a HeyGen video it downloaded). The clip is
 // checked here; a refused one is deleted.
-export async function addSegment({ identityDir, file, keyword, name, source = "upload", env = process.env }) {
+// text: what the clip says, optional; it goes into the captions and the
+// publishing data (an upload's words are not in the narration).
+export async function addSegment({ identityDir, file, keyword, name, text = "", source = "upload", env = process.env }) {
   const dir = segmentsDir(identityDir);
   const src = path.join(dir, path.basename(String(file ?? "")));
   const drop = () => fs.rmSync(src, { force: true });
@@ -77,7 +79,7 @@ export async function addSegment({ identityDir, file, keyword, name, source = "u
   const id = crypto.randomBytes(5).toString("hex");
   const target = `${id}${path.extname(src).toLowerCase()}`;
   fs.renameSync(src, path.join(dir, target));
-  const seg = { id, keyword: info.keyword, name: String(name ?? "").trim().slice(0, 60) || `${info.keyword} ${all.filter((s) => s.keyword === info.keyword).length + 1}`, file: target, seconds, source, createdAt: new Date().toISOString(), lastUsedAt: null };
+  const seg = { id, keyword: info.keyword, name: String(name ?? "").trim().slice(0, 60) || `${info.keyword} ${all.filter((s) => s.keyword === info.keyword).length + 1}`, file: target, seconds, source, text: String(text ?? "").replace(/\s+/g, " ").trim().slice(0, 400) || null, createdAt: new Date().toISOString(), lastUsedAt: null };
   saveSegments(identityDir, [...all, seg]);
   return seg;
 }

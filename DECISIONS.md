@@ -734,3 +734,11 @@
     listát, rajzot és kiemelést kér a sima kulcsmondat helyett; a fejezetek
     és a kulcsszavak a 4. kapuban összecsukva, a publikálási adatban. Nyitott:
     B-roll (valódi felvétel vagy kép), Zoltan dönt.
+81. **CTA második kör javításai** (Zoltan, 2026-10-05, `feedback/2026-10-05/NOTES.md`
+    második rész): a választó sorrendje mindig Cold, Warm, Hot; a többi hely
+    kulcsszava jelölve; a szegmens-választó jelöli a CTA kulcsszavait; a
+    feltöltés két külön út (A: saját klip opcionális "mit mond" szöveggel a
+    felirathoz és a publikálási adathoz, B: HeyGen); szegmensnél nincs "mit
+    kap" szöveg; a régi mentések "Narrator"-ja "auto" (`modesV`); a script
+    minimum szószámot kap és a hosszra két javító kört; a Gemini tartalék
+    harmadik modellel (Flash Lite); a 2 mp alatti jelenetet a gép összevonja.

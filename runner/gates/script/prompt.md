@@ -98,7 +98,9 @@ When the data has a "dictionary", follow it everywhere in the script:
 ## Length
 
 Aim for about {{targetWords}} spoken words in total (about {{targetMinutes}}
-minutes at 150 words per minute).
+minutes at 150 words per minute), never fewer than {{minWords}}. The TEACH
+sections carry about four fifths of them: give each section its full
+explanation, example and action step. Count before you answer.
 
 ## Data
 

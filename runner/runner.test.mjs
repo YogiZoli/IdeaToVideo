@@ -251,7 +251,7 @@ test("writeScript: one repair call fixes a bad first answer", async () => {
   bad.open.problem = "Problem: too hard.";
   const f = fakeFetch([answer(JSON.stringify(bad)), answer("```json\n" + JSON.stringify(plain) + "\n```")]);
   const steps = [];
-  const r = await writeScript({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, input: { topic: "t", channel: { ctaText: "Checklist" } }, onProgress: (p) => steps.push(p.step) });
+  const r = await writeScript({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, input: { topic: "t", targetLengthMin: 0.5, channel: { ctaText: "Checklist" } }, onProgress: (p) => steps.push(p.step) });
   assert.equal(f.calls.length, 2);
   assert.deepEqual(steps, ["writing", "repairing"]);
   assert.match(f.calls[1].body.messages.at(-1).content, /contains a colon/);
@@ -376,14 +376,14 @@ test("Gemini overloaded after the retries: the same request once on the other Ge
   assert.equal(text, "from the other model");
   assert.deepEqual(used, ["gemini-3.8-flash"]);
   assert.equal(f.calls.at(-1).body.model, "gemini-3.8-flash");
-  // 2026-10-02 (K5): out of quota on one Gemini model, the other one is tried
-  // once; when both are out, the plain quota message.
+  // 2026-10-02 (K5): out of quota on one Gemini model, the others are tried
+  // in turn (2026-10-05: three models); when all are out, the plain quota message.
   const quota = fakeFetch([{ status: 429 }, { status: 429 }, { status: 429 }, answer("from the other model's quota")]);
   assert.equal(await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: quota, sleep: noSleep }), "from the other model's quota");
   assert.equal(quota.calls.at(-1).body.model, "gemini-3.8-flash");
-  const both = fakeFetch(Array(6).fill({ status: 429 }));
-  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: both, sleep: noSleep }), /quota/);
-  assert.equal(both.calls.length, 6);
+  const all = fakeFetch(Array(9).fill({ status: 429 }));
+  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: all, sleep: noSleep }), /quota/);
+  assert.deepEqual([...new Set(all.calls.map((c) => c.body.model))], ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"]);
 });
 
 // 2026-10-01: a gate left "running" by a closed app showed "Running" forever.

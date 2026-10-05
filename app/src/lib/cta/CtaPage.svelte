@@ -80,7 +80,7 @@
       {#if endSaved}<span class="hint">{endSaved}</span>{/if}
     </label>
   </section>
-  <SegmentsManager {app} options={st.options} bind:segments={st.segments} />
+  <SegmentsManager {app} options={st.options} cta={st.profile ?? st.start} bind:segments={st.segments} />
 {/if}
 
 <style>

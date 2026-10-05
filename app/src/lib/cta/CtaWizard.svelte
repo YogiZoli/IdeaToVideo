@@ -35,6 +35,12 @@
 
   const chosen = $derived([...new Set(SLOT_IDS.filter((s) => on[s] && slots[s]).map((s) => slots[s]!))]);
   const missing = $derived(SLOT_IDS.filter((s) => on[s] && !slots[s]));
+  // A keyword whose every place plays the user's segment needs no wording:
+  // the clip says it (Zoltan, 2026-10-05).
+  const bySegment = (k: string) => {
+    const places = SLOT_IDS.filter((s) => on[s] && slots[s] === k);
+    return places.length > 0 && places.every((s) => modes[s] !== "narrator" && !!st?.segments.some((g) => g.keyword === k));
+  };
 
   onMount(async () => {
     try {
@@ -109,7 +115,11 @@
         {@const t = st.options.temperatures[info.temperature]}
         <label class="offer" style={`--dot: ${t.dot}; --surface: ${t.surface}`}>
           <span class="kw">{k}</span>
-          <input type="text" maxlength="80" placeholder={info.gets} value={offers[k] ?? ""} oninput={(e) => (offers[k] = e.currentTarget.value)} />
+          {#if bySegment(k)}
+            <span class="segsays">Your segment says it: nothing to write here.</span>
+          {:else}
+            <input type="text" maxlength="80" placeholder={info.gets} value={offers[k] ?? ""} oninput={(e) => (offers[k] = e.currentTarget.value)} />
+          {/if}
           <span class="hint">{t.label}</span>
         </label>
       {/each}
@@ -125,6 +135,7 @@
   .lead { margin: 0; }
   .row { display: flex; gap: 8px; align-items: center; }
   .offer { display: grid; grid-template-columns: 130px minmax(0, 1fr) 60px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
+  .segsays { font-size: 14px; color: var(--muted-foreground); }
   .kw { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; color: var(--dot); }
   .hint { font-size: 12px; color: var(--muted-foreground); }
 </style>

@@ -170,6 +170,12 @@
               "narrator",
               "segment"
             ]
+          },
+          "said": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }

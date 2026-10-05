@@ -225,7 +225,7 @@ export type CtaProfile = {
   offers: Record<string, string>;
   endScreen?: 0 | 5 | 10 | 15 | 20;
 };
-export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen"; createdAt: string; lastUsedAt: string | null };
+export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen"; text?: string | null; createdAt: string; lastUsedAt: string | null };
 export type CtaState = {
   profile: CtaProfile | null;
   start: CtaProfile;
