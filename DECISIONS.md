@@ -772,3 +772,78 @@
     "Go to scene N" a jegyzeteknél; az egyetlen fajta jelenet jelölve; a
     jóváhagyás után a következő lépés kiírva; a csere csak az első jelenetet
     nézi.
+
+## 2026-10-05 (UI szebbé tétele, "Ford-elv")
+
+85. **A ONE Video tabokra bontva** (Zoltan, 2026-10-05, K1-K11). Elv: a user
+    mindig egyetlen döntést lát, egy képernyőn, és minden futó munka azonnal
+    látszik. Eldöntve:
+    - **K1** hat tab: 1 Script, 2 Voice and music, 3 Scenes, 4 Avatar
+      (optional), 5 Preview, 6 Your video. Nincs külön Render tab: a Preview
+      "Approve and render" gombja elindítja a renderelést, és átvisz a 6.
+      tabra, ahol a haladás, majd a kész videó, a letöltés, a mentés és a
+      backup van.
+    - **K2** minden tab mindig kattintható. Ahol egy korábbi lépés kell, a tab
+      megmondja, mi hiányzik, és egy gombbal odavisz. Kiút AI nélkül: (a) a
+      script mindig beírható vagy beilleszthető AI nélkül ("Write it
+      myself"); (b) a jelenet-táblánál "Simple plan without AI" (runner
+      `simple-scenes`, szabály alapú terv, ugyanazokkal az ellenőrzésekkel).
+    - **K3** nincs "Render anyway". A Preview-ban jelenetenként lehet
+      változtatni: a képre kattintva panel nyílik (mit mond a narrátor, a
+      képernyő szövege szerkeszthető, másik jelenet ugyanabból a fajtából,
+      "Ask for a change" saját szavakkal, egy kis AI-hívás: `refill-scene`
+      `request`), a változtatások gyűlnek, "Update the preview" egyszerre
+      építi újra. Mindig látható útmutató: "How to change things before the
+      render".
+    - **K4** választók a HeyGen mintájára: az avatarnál először az emberek
+      (egy kártya, egy kép), kattintásra csak az ő lookjai; két fül ("Your
+      avatars", "HeyGen avatars" kereséssel); fix magasságú, saját magában
+      gördülő keret. A hang ugyanígy: "My voices" és "Library", kártyák
+      lejátszás gombbal. Nyitott: van-e máshol is ilyen hosszú lista (zene,
+      B-roll, Brand galéria).
+    - **K5** a megnyomott gomb helyén jelenik meg a haladásjelző, és a lap
+      odagördül; kész lépés után az eredményhez gördül; jóváhagyás után a
+      következő tab nyílik meg magától; minden tab alján mindig látható sáv
+      az egyetlen fő gombbal; futás közben a tab neve alatt is látszik a
+      százalék; ugyanaz a gomb mindenhol tiltva, amíg a munka fut (az app
+      központi munkalistájából, `work.svelte.ts`, akkor is, ha a nézetet
+      bezárták és újranyitották).
+    - **K6** ha már van eredmény, az Approve az egyetlen kiemelt gomb; a
+      "Make again" sima gomb, és megkérdezi, mibe kerül.
+    - **K7** "Save a copy to Google Drive / OneDrive / Dropbox" a gépen lévő
+      szinkronmappába (nincs bejelentkezés, nincs API, nincs költség), mellette
+      "Download". Rust `export_video`, soha nem ír felül.
+    - **K8** nincs közvetlen YouTube feltöltés (OAuth, Google audit, közös
+      napi kvóta, PRD 4: a publikálás a PDT-é). Helyette "Open YouTube
+      Studio": megnyitja a Studiót, megmutatja a fájlt a mappában, mellette
+      másolható cím, leírás (a fejezetekkel) és tagek, lásd 86.
+    - **K9** most csak a Preview-n belüli jelenet-javítás (K3). Az élő, hangos
+      előnézet renderelés nélkül később, Zoltan még nem döntött.
+    - **K10** (a) egy képernyő, egy döntés, egy fő gomb; (b) az app előre
+      dolgozik, de csak ingyen (az avatar-lista és a képei a videó
+      megnyitásakor töltődnek); (c) hosszú lépés végén, ha az app nincs
+      előtérben, néma jelzés (a tálca gombja villog), **az app soha nem ad ki
+      hangot**; (d) élő előnézet: később; (e) idő- és költségösszesítő: nem kell.
+    - **K11** a tab színe és szava: Done (zöld), Now (kiemelt keret), Next
+      (normál), Optional (halvány), Failed (piros). Nincs pipa ikon. Célméret
+      1100x620 (Zoltan gépén az ablak 1100x700-zal indul, teljes ablakban
+      1280x650); a hosszú tartalom a saját keretében gördül.
+    - A haladásjelző javítva (mérés a naplóból, 2026-10-05): a render a
+      kockaszámból számol (a HyperFrames saját százaléka 2 mp alatt 20%-ot
+      mondott, utána percekig állt); a javító és újrapróbáló AI-körök növelik
+      a becsült időt; a zene becslése a videó hosszából (eddig mindig 20 mp
+      volt, valójában 95).
+    Állapot (2026-10-05 este): **még nincs kész.** Kód kész és típushiba
+    nélkül fordul: tabok, munkalista, haladásjelző, Script, Voice, Scenes,
+    Avatar, Preview, Your video, `simple-scenes`, `skip-gate`,
+    `refill-scene request`, `youtube-texts`, `export_video`. Hátra: a UI
+    próbája a böngészős próbakörnyezetben 1100x620-ban, a Settings avatar- és
+    hangválasztója az új választókra, tesztek, telepítő, Zoltan próbája.
+86. **YouTube szövegek a kész videó mellett is** (Zoltan, 2026-10-05, K8): a
+    DECISIONS 77 eddig a címet, a leírást és a tageket csak a PDT-nek hagyta.
+    Mostantól a 6. tabon is: runner `youtube-texts`, az AI három cím-ötletet,
+    egy rövid összefoglalót és tageket ír; a leírásba a landing link, a
+    komment-kulcsszavak és a fejezetlista kód írja be, nem az AI;
+    `out/video-<stamp>.youtube.json`. Nem duplikáció: a PDT a sajátját
+    csinálja. A lokalizáció és a fordítás (YouTube API, napi 10000 egység
+    kvóta, egy teljes fordítás kb. 400) később, Zoltan most nem kéri.

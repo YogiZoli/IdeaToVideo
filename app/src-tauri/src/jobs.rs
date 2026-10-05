@@ -35,6 +35,7 @@ const KEY_JOBS: &[&str] = &[
     "segment-voice",
     "segment-make",
     "footage-describe",
+    "youtube-texts",
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]

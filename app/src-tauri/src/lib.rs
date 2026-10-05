@@ -103,6 +103,7 @@ async fn run_command(
         let secret = api_key.clone().unwrap_or_default();
         let secrets = [secret.as_str()];
         let started = std::time::Instant::now();
+        let project = job.as_ref().and_then(|(i, _)| i.project.clone());
         let who = job.as_ref().map(|(i, c)| {
             json!({ "identity": i.identity, "identityName": i.identity_name, "class": format!("{c:?}"), "project": i.project })
         });
@@ -128,7 +129,7 @@ async fn run_command(
                     last_bucket = b;
                 }
             }
-            let _ = app.emit("runner-progress", runner::progress_payload(&command, v));
+            let _ = app.emit("runner-progress", runner::progress_payload(&command, project.as_deref(), v));
         };
         let ticket = job.map(|(info, class)| {
             let t = core.jobs.start(info, class, &mut |message| {
@@ -799,6 +800,41 @@ fn export_publish(app: AppHandle, file: String, path: String) -> Result<String, 
     Ok(out.to_string_lossy().to_string())
 }
 
+/// The finished video, out of the project (Zoltan, 2026-10-05): "Download"
+/// (a place the user picked in the save dialog) and "Save a copy to Google
+/// Drive" (the cloud's own folder on this computer, from `cloud_folders`).
+/// Only a rendered .mp4 of a ONE Video, with its .srt next to it when there
+/// is one. An existing file is never overwritten: a number is added.
+#[tauri::command]
+fn export_video(app: AppHandle, file: String, path: String) -> Result<String, String> {
+    let cfg = load_app_config(&app)?;
+    let root = projects_dir(&app, cfg.as_ref())?;
+    runner::check_paths(&json!({ "projectDir": file }), &root, &[])?;
+    if !file.to_ascii_lowercase().ends_with(".mp4") {
+        return Err("Only a rendered video can be saved here.".into());
+    }
+    let mut out = PathBuf::from(&path);
+    if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("mp4".into()) {
+        out.set_extension("mp4");
+    }
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| format!("Could not create the folder {}: {e}", dir.display()))?;
+    }
+    let stem = out.file_stem().and_then(|s| s.to_str()).unwrap_or("video").to_string();
+    let mut n = 2;
+    while out.exists() {
+        out.set_file_name(format!("{stem} ({n}).mp4"));
+        n += 1;
+    }
+    std::fs::copy(&file, &out).map_err(|e| format!("Could not save the video: {e}"))?;
+    let srt = PathBuf::from(&file).with_extension("srt");
+    if srt.exists() {
+        let _ = std::fs::copy(&srt, out.with_extension("srt"));
+    }
+    note(&app, "info", "video_exported", json!({ "file": out }));
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// Copies a music file the user picked into the project (audio/music.<ext>),
 /// returns that relative name for the voice gate. The runner never gets a
 /// path outside the projects folder.
@@ -908,6 +944,7 @@ pub fn run() {
             read_tokens_file,
             import_music,
             export_publish,
+            export_video,
             import_segment,
             import_footage,
             backup_settings_now,

@@ -26,9 +26,10 @@ import * as heygen from "./providers/avatar/heygen.mjs";
 import { keywordIdeas } from "./providers/research/vidiq.mjs";
 import { avatarPlan, makeAvatar, removeAvatar, setLayout } from "./gates/avatar/index.mjs";
 import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
-import { makeScenes, saveScenes, refillScene, sceneRows } from "./gates/scenes/index.mjs";
+import { makeScenes, saveScenes, refillScene, sceneRows, simpleScenes } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
+import { youtubeTexts } from "./gates/render/youtube.mjs";
 import { isLightLook, libraryDir, baseTheme, callColor } from "./gates/build/assemble.mjs";
 import { loadCard, saveCard, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
 import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
@@ -211,6 +212,15 @@ function readVoiceInfo(projectDir) {
 
 // The newest render of a project, with its captions and chapters, so the UI
 // shows it again after a restart or an Autopilot run.
+// The YouTube texts made for a video (gates/render/youtube.mjs), if any.
+function readYoutube(base) {
+  try {
+    return JSON.parse(fs.readFileSync(`${base}.youtube.json`, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 function latestVideo(projectDir) {
   const out = path.join(projectDir, "out");
   if (!fs.existsSync(out)) return null;
@@ -232,6 +242,7 @@ function latestVideo(projectDir) {
     publishFile: fs.existsSync(`${base}.publish.json`) ? `${base}.publish.json` : null,
     comments: fs.existsSync(`${base}.comments.txt`) ? fs.readFileSync(`${base}.comments.txt`, "utf8") : null,
     calls,
+    youtube: readYoutube(base),
   };
 }
 
@@ -533,7 +544,7 @@ const commands = {
 
   "make-music": async ({ projectDir, music }) => {
     appendLog(projectDir, "music: ElevenLabs Music");
-    const info = await timed("music", 60, emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    const info = await timed("music-length", Math.max(30, videoSeconds(projectDir)), emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) }));
     const project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
@@ -571,6 +582,25 @@ const commands = {
     }
   },
 
+  // Default mode of gate 3: the plan without AI (gates/scenes/simple.mjs),
+  // for when the AI is out of tokens or overloaded (Zoltan, 2026-10-05).
+  "simple-scenes": async ({ projectDir, look }) => {
+    let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "default" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, "scenes: simple plan without AI");
+    try {
+      const r = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look) });
+      project = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "default" });
+      saveProject(projectDir, project);
+      appendLog(projectDir, `scenes: simple plan done, ${r.scenes} scenes`);
+      return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: project.gates.scenes, status: project.status };
+    } catch (e) {
+      saveProject(projectDir, setGate(loadProject(projectDir), "scenes", { state: "failed", error: String(e.message).slice(0, 2000) }));
+      appendLog(projectDir, `scenes: simple plan failed, ${e.message}`);
+      throw e;
+    }
+  },
+
   "scene-table": async ({ projectDir, look }) => sceneRows(projectDir, { off: offOf(look) }),
 
   "save-scenes": async ({ projectDir, scenes, look }) => {
@@ -581,11 +611,13 @@ const commands = {
     return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: project.gates.scenes, status: project.status };
   },
 
-  "refill-scene": async ({ projectDir, llm, index, component, look }) => {
+  // `request`: the user's own words for this scene (the Preview's "Ask for a
+  // change"); then the AI may pick any scene type, `component` is optional.
+  "refill-scene": async ({ projectDir, llm, index, component, request, look }) => {
     const project = loadProject(projectDir);
-    appendLog(projectDir, `scenes: swapping scene ${index + 1} to ${component} with ${llm.provider}/${llm.model || "default model"}`);
+    appendLog(projectDir, `scenes: ${request ? "change asked for" : "swapping"} scene ${index + 1}${component ? ` to ${component}` : ""} with ${llm.provider}/${llm.model || "default model"}`);
     try {
-      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look), off: offOf(look) }));
+      await timed("refill", 1, emit, () => refillScene({ llm: { provider: llm.provider, model: llm.model, apiKey: key() }, projectDir, index, component, request, language: project.language, name: typeof look === "object" ? look?.name ?? null : null, themeIsLight: isLightLook(look), off: offOf(look) }));
     } catch (e) {
       // The table stays as it was; only the log learns about the failed swap.
       appendLog(projectDir, `scenes: swap of scene ${index + 1} failed, ${e.message}`);
@@ -593,7 +625,7 @@ const commands = {
     }
     const next = edited(projectDir, "scenes");
     saveProject(projectDir, next);
-    appendLog(projectDir, `scenes: scene ${index + 1} swapped to ${component}`);
+    appendLog(projectDir, `scenes: scene ${index + 1} ${request ? "changed" : `swapped to ${component}`}`);
     return { ...(await sceneRows(projectDir, { off: offOf(look) })), gate: next.gates.scenes, status: next.status };
   },
 
@@ -735,6 +767,26 @@ const commands = {
     }
   },
 
+  // The optional avatar step, left out on purpose ("Continue without an
+  // avatar"). Only the avatar can be skipped: every other gate makes
+  // something a later one needs.
+  "skip-gate": async ({ projectDir, gate }) => {
+    if (gate !== "avatar") throw new Error(`The ${gate} step cannot be skipped.`);
+    const project = setGate(loadProject(projectDir), gate, { state: "skipped" });
+    saveProject(projectDir, project);
+    appendLog(projectDir, `${gate}: skipped`);
+    return { gate: project.gates[gate], status: project.status };
+  },
+
+  // The YouTube texts of the rendered video (title ideas, description with
+  // the chapters, tags), for "Upload on YouTube" (DECISIONS 86).
+  "youtube-texts": async ({ projectDir, file, llm }) => {
+    const video = path.resolve(file);
+    if (!video.startsWith(path.resolve(projectDir)) || !/\.mp4$/i.test(video)) throw new Error("That is not a video of this project.");
+    appendLog(projectDir, `youtube: texts with ${llm.provider}/${llm.model || "default model"}`);
+    return youtubeTexts({ llm: { provider: llm.provider, model: llm.model, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }, videoFile: video });
+  },
+
   "approve-gate": async ({ projectDir, gate }) => {
     const current = loadProject(projectDir);
     // A scene table is approved only if it fits the current voice.
@@ -753,7 +805,7 @@ const commands = {
 
 // The commands that theme something or plan scenes: they get the Identity's
 // card as `look`, with its Motion profile (`look.motion`).
-const LOOK_COMMANDS = new Set(["make-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
+const LOOK_COMMANDS = new Set(["make-scenes", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
 
 async function readStdin() {
   if (process.stdin.isTTY) return "";

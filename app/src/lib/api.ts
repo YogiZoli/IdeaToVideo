@@ -178,6 +178,8 @@ export const exportBrand = (path: string) => call<string>("export_brand", { path
 export const importFootage = (path: string) => call<string>("import_footage", { path });
 export const importSegment = (path: string) => call<string>("import_segment", { path });
 export const exportPublish = (file: string, path: string) => call<string>("export_publish", { file, path });
+/** A rendered video (and its .srt) out of the project; never overwrites. */
+export const exportVideo = (file: string, path: string) => call<string>("export_video", { file, path });
 export const importBrand = (path: string) => call<BrandCard>("import_brand", { path });
 export const readTokensFile = (path: string) => call<string>("read_tokens_file", { path });
 export type Still = { scene: number; at: number; file: string };

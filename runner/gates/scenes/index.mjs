@@ -19,6 +19,7 @@ import { duration } from "../../audio.mjs";
 import { ROLES, COMPONENTS, roleOf } from "./roles.mjs";
 import { CALL_FIELDS } from "../script/index.mjs";
 import { catalogForPlanner } from "../../footage/library.mjs";
+import { simplePlan } from "./simple.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -368,6 +369,21 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   return { scenes: joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.length, gaps, warnings: result.warnings };
 }
 
+// Default: the plan without AI (simple.mjs), checked like the AI's plan.
+export async function simpleScenes({ projectDir, env = process.env, title = "", themeIsLight = false, off = [] }) {
+  const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
+  const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
+  const total = await audioLength(projectDir, sentences, env);
+  const calls = callSentences(readScript(projectDir), sentences);
+  const gaps = gapsOf(projectDir);
+  const answer = joinShort(simplePlan({ sentences, sections: sentenceSections(md, sentences), title, calls, off, themeIsLight }), { sentences, total, calls, gaps });
+  const { issues, warnings } = checkScenes(answer, { sentences, total, env, off, calls, gaps });
+  if (issues.length) throw new Error(`The simple plan did not pass the checks: ${issues.slice(0, 5).join("; ")}`);
+  const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
+  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(answer.scenes.map(clean), calls), gaps: [], warnings });
+  return { scenes: answer.scenes.length, gaps: [], warnings };
+}
+
 // Custom: the user's edited table, checked the same way (no LLM).
 export async function saveScenes({ projectDir, scenes, env = process.env }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
@@ -382,33 +398,46 @@ export async function saveScenes({ projectDir, scenes, env = process.env }) {
 
 // Swap one row for another component (same role): the LLM fills in only that
 // scene's variables, from that scene's sentences.
-export async function refillScene({ llm, projectDir, index, component, env = process.env, language = "en", name = null, themeIsLight = false, off = [] }) {
+export async function refillScene({ llm, projectDir, index, component, request = "", env = process.env, language = "en", name = null, themeIsLight = false, off = [] }) {
   const table = readJson(projectDir, "scenes.json", "scene table");
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
   const sc = table.scenes[index];
   if (!sc) throw new Error(`There is no scene ${index + 1}.`);
-  if (!COMPONENTS[component]) throw new Error(`Unknown component: ${component}`);
-  if (roleOf(component) !== roleOf(sc.component)) throw new Error("Swap only within the same role.");
+  const wish = String(request ?? "").trim().slice(0, 500);
+  if (!component && !wish) throw new Error("Pick a scene type or say what to change.");
+  if (component && !COMPONENTS[component]) throw new Error(`Unknown component: ${component}`);
+  if (component && !wish && roleOf(component) !== roleOf(sc.component)) throw new Error("Swap only within the same role.");
   if (sc.call) throw new Error(`This scene is the comment call ${sc.call.keyword}: it always shows the keyword.`);
-  if (off.includes(component)) throw new Error("That scene type is turned off in the Motion profile.");
+  if (component && off.includes(component)) throw new Error("That scene type is turned off in the Motion profile.");
   const ids = sentences.map((s) => s.id);
   const covered = sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1);
-  const catalog = libraryCatalog({ env }).filter((c) => c.name === component);
+  // With the user's words and no type: any type except the neighbours' (never
+  // the same twice in a row) and the comment-call scene.
+  const neighbours = [table.scenes[index - 1]?.component, table.scenes[index + 1]?.component];
+  const catalog = component
+    ? libraryCatalog({ env }).filter((c) => c.name === component)
+    : libraryCatalog({ env, off }).filter((c) => c.name !== "cta-close" && !neighbours.includes(c.name));
   const data = buildData({ sentences: covered, name, themeIsLight, language });
   const messages = buildMessages(data, catalog);
-  messages[1].content += `\n\nThis is ONE scene of a longer video: answer with exactly one scene, from ${sc.from}${sc.to ? ` to ${sc.to}` : ""}, component ${component}. Ignore the rules about the first and the last scene.`;
+  messages[1].content += `\n\nThis is ONE scene of a longer video: answer with exactly one scene, from ${sc.from}${sc.to ? ` to ${sc.to}` : ""}${component ? `, component ${component}` : ", with the component from the LIBRARY that best fits the request below"}. Ignore the rules about the first and the last scene.`;
+  if (wish) {
+    messages[1].content += `\n\nThe current scene is ${sc.component} with ${JSON.stringify(sc.vars ?? {})}. The video's owner asks for this change to it (their own words; follow them within the rules above, the on-screen text still comes from the sentences):\n${wish}`;
+  }
   const total = r3(covered[covered.length - 1].end + 0.3);
   const check = (raw) => {
     // one scene is asked for; a second one in the answer is not this scene's problem
     const a = raw && Array.isArray(raw.scenes) ? { ...raw, scenes: raw.scenes.slice(0, 1) } : raw;
     const r = checkScenes(a, { sentences: covered, total, env, gaps: gapsOf(projectDir) });
-    if (!r.issues.length && (a.scenes.length !== 1 || a.scenes[0].component !== component)) r.issues.push(`answer with exactly one scene using ${component}`);
+    if (!r.issues.length && a.scenes.length !== 1) r.issues.push("answer with exactly one scene");
+    else if (!r.issues.length && component && a.scenes[0].component !== component) r.issues.push(`answer with exactly one scene using ${component}`);
+    else if (!r.issues.length && !catalog.some((c) => c.name === a.scenes[0].component)) r.issues.push(`use one of: ${catalog.map((c) => c.name).join(", ")}`);
     return r;
   };
   const { answer } = await ask(llm, messages, check);
   const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...answer.scenes[0], from: sc.from, to: sc.to, call: sc.call }) : s));
-  if (index > 0 && scenes[index - 1].component === component) throw new Error("The scene before uses the same component. Pick another one.");
-  if (scenes[index + 1]?.component === component) throw new Error("The scene after uses the same component. Pick another one.");
+  const chosen = scenes[index].component;
+  if (index > 0 && scenes[index - 1].component === chosen) throw new Error("The scene before uses the same component. Pick another one.");
+  if (scenes[index + 1]?.component === chosen) throw new Error("The scene after uses the same component. Pick another one.");
   writeTable(projectDir, { ...table, scenes });
   return { scene: scenes[index] };
 }

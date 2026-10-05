@@ -3,15 +3,20 @@
   // sentences (Recommended). Each row shows what is said, the scene in plain
   // words and what is on screen. The user can swap a row for another scene of
   // the same role (the AI refills that row), edit the main text (Custom), and
-  // approve.
+  // approve. Without AI (out of tokens, overloaded) a simple plan by rules
+  // (Default, runner simple-scenes) lets the video go on (Zoltan, 2026-10-05).
   import { onDestroy } from "svelte";
+  import { ask } from "@tauri-apps/plugin-dialog";
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
+  import Needs from "./Needs.svelte";
   import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
+  import { running } from "./work.svelte";
+  import { tabLabel, type TabId } from "./tabs";
 
-  let { app, dir, gate, voiceApproved, changed }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void> } = $props();
+  let { app, dir, gate, voiceApproved, changed, goto, next }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId } = $props();
 
   type Row = {
     index: number; from: string; to: string; start: number | null; duration: number | null; said: string;
@@ -24,16 +29,21 @@
   type Insert = { kind: "segment" | "end"; slot?: string; keyword?: string; temperature?: string; name?: string | null; start: number; seconds: number; after: number };
   type Table = { rows: Row[]; gaps: { at: string; need: string }[]; warnings: string[]; scenes?: Scene[]; inserts?: Insert[] };
 
+  const COMMANDS = ["make-scenes", "simple-scenes", "refill-scene", "save-scenes"];
+  const job = $derived(running(dir, COMMANDS));
   let table = $state<Table>({ rows: [], gaps: [], warnings: [] });
   let edits = $state<Record<number, string>>({});
   let busy = $state(false);
+  const locked = $derived(busy || !!job);
   let step = $state("");
   let error = $state("");
+  let current = $state("");
 
   const llmContext = $derived({ step: "scenes", provider: app.config?.llm.provider, model: app.config?.llm.model });
   const dirty = $derived(Object.keys(edits).length > 0);
   // a table that does not fit the current voice (the voice was made again)
   const stale = $derived(table.rows.length > 0 && table.rows.some((r) => r.start === null));
+  const approved = $derived(gate?.state === "approved");
 
   async function load() {
     try {
@@ -46,6 +56,15 @@
   $effect(() => {
     if (voiceApproved) load();
   });
+  // a job that finished while this tab was closed: show its table
+  let hadJob = false;
+  $effect(() => {
+    if (job) hadJob = true;
+    else if (hadJob && !busy) {
+      hadJob = false;
+      load();
+    }
+  });
 
   const unlisten = onProgress((p) => {
     if (p.command === "make-scenes") step = p.progress.step === "repairing" ? "Fixing a few problems in the plan..." : "Planning the scenes...";
@@ -53,11 +72,9 @@
   });
   onDestroy(() => unlisten.then((f) => f()));
 
-  let current = $state("");
-
   async function run<T>(command: string, request: Record<string, unknown>, label: string) {
     busy = true;
-    current = command === "save-scenes" ? "" : command;
+    current = command;
     error = "";
     step = label;
     try {
@@ -77,7 +94,14 @@
   }
 
   const look = $derived(app.config?.brand?.preset ?? "blue-professional");
-  const plan = () => run("make-scenes", { llm: app.config!.llm, look }, "Starting...");
+  async function plan() {
+    if (table.rows.length && !stale && !(await ask("Plan all the scenes again? The scenes in this table are replaced. This uses AI tokens.", { title: "Plan again", kind: "warning" }))) return;
+    await run("make-scenes", { llm: app.config!.llm, look }, "Starting...");
+  }
+  async function simple() {
+    if (table.rows.length && !stale && !(await ask("Make a simple plan without AI? The scenes in this table are replaced.", { title: "Simple plan", kind: "warning" }))) return;
+    await run("simple-scenes", { look }, "Planning without AI...");
+  }
   const swap = (row: Row, component: string) => run("refill-scene", { llm: app.config!.llm, index: row.index, component, look }, "Filling in the new scene...");
 
   function save() {
@@ -101,9 +125,6 @@
     try {
       await runner("approve-gate", { projectDir: dir, gate: "scenes" });
       await changed();
-      approvedNow = true;
-      // the next step is gate 4, further down: bring it into view
-      setTimeout(() => [...document.querySelectorAll("h2")].find((h) => h.textContent?.startsWith("4."))?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -111,7 +132,6 @@
     }
   }
 
-  let approvedNow = $state(false);
   // "Scene 44: ..." in a note: jump to that row and mark it.
   let marked = $state<number | null>(null);
   function goTo(n: number) {
@@ -124,30 +144,35 @@
 </script>
 
 <section class="card">
-  <div class="head">
-    <h2>3. Scene table</h2>
-    {#if gate}<span class="pill {gate.state}">{gate.state}{gate.mode ? `, ${gate.mode}` : ""}</span>{/if}
-  </div>
+  <h2>3. Scenes</h2>
+  <p class="hint lead">What the viewer sees while each sentence is spoken. The AI picks a scene for every sentence; you can swap a scene or change its text.</p>
 
   {#if !voiceApproved}
-    <p class="hint">Approve the voice and music first.</p>
+    <Needs text="The scenes are timed to the voice. Approve the voice and music first." tab="voice" {goto} />
   {:else}
-    <div class="actions">
-      <span class="hint grow">The AI picks a scene for every sentence, from what the voice says. You can swap a scene or change its text.</span>
-      <button type="button" class="primary" disabled={busy} onclick={plan}>{table.rows.length ? "Plan again" : "Plan scenes (Recommended)"}</button>
-    </div>
-    {#if busy && current}{#key current}<Progress command={current} label={step} />{/key}{/if}
-    {#if error}<ErrorBox message={error} context={llmContext} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={llmContext} />{/if}
-    {#if (error || gate?.state === "failed") && !stale && table.rows.length && gate?.state !== "approved"}
+    {#if job && job !== "save-scenes"}<Progress command={job} project={dir} label={step || "Planning the scenes"} />{/if}
+    {#if error}
+      <ErrorBox message={error} context={llmContext} />
+      {#if current === "make-scenes"}
+        <div class="keep">
+          <p>No AI right now? Make a simple plan without it: plainer scenes, but your video can go on. You can plan with the AI again later.</p>
+          <button type="button" class="primary" disabled={locked} onclick={simple}>Simple plan without AI</button>
+        </div>
+      {/if}
+    {:else if gate?.state === "failed" && gate.error}
+      <ErrorBox message={`Last attempt failed: ${gate.error}`} context={llmContext} />
+    {/if}
+    {#if (error || gate?.state === "failed") && !stale && table.rows.length && !approved}
       <div class="keep">
-        <p>Your earlier scene table is still here, and it fits the voice. You can approve it now, with no new AI call, or plan again later.</p>
-        <button type="button" class="primary" disabled={busy} onclick={approve}>Approve this scene table</button>
+        <p>Your earlier scene table is still here, and it fits the voice. You can approve it now, with no new AI call.</p>
+        <button type="button" disabled={locked} onclick={approve}>Approve this scene table</button>
       </div>
     {/if}
 
     {#if stale}
-      <p class="warn">This scene table was made for an earlier voice, so it no longer fits. Click Plan again.</p>
+      <p class="warn">This scene table was made for an earlier voice, so it no longer fits. Plan again, with the AI or without it.</p>
     {:else if table.rows.length}
+      {#if gate?.mode === "default"}<p class="hint">This is the simple plan, made without AI. Plan again with the AI for livelier scenes.</p>{/if}
       <table>
         <caption class="help">What is said: the narration, sentence by sentence. Scene: how it is shown, its kind in grey; open the list to pick another of the same kind. On screen: the text in the picture, you can change it.</caption>
         <thead><tr><th>#</th><th>Time</th><th>What is said</th><th>Scene</th><th>On screen</th></tr></thead>
@@ -159,7 +184,7 @@
               <td class="said">{row.said}</td>
               <td>
                 {#if row.alternatives.length}
-                  <select value={row.component} disabled={busy} onchange={(e) => swap(row, (e.currentTarget as HTMLSelectElement).value)} aria-label="Scene {row.index + 1}">
+                  <select value={row.component} disabled={locked} onchange={(e) => swap(row, (e.currentTarget as HTMLSelectElement).value)} aria-label="Scene {row.index + 1}">
                     <option value={row.component}>{row.label}</option>
                     {#each row.alternatives as a}<option value={a.component}>{a.label}</option>{/each}
                   </select>
@@ -175,7 +200,7 @@
               </td>
               <td>
                 {#if row.mainVar}
-                  <input value={edits[row.index] ?? row.mainText ?? ""} disabled={busy} oninput={(e) => (edits[row.index] = (e.currentTarget as HTMLInputElement).value)} aria-label="Text of scene {row.index + 1}" />
+                  <input value={edits[row.index] ?? row.mainText ?? ""} disabled={locked} oninput={(e) => (edits[row.index] = (e.currentTarget as HTMLInputElement).value)} aria-label="Text of scene {row.index + 1}" />
                 {:else}
                   {row.shows}
                 {/if}
@@ -210,25 +235,34 @@
         </div>
       {/if}
       {#if table.gaps.length}<p class="hint">For {table.gaps.length} sentence{table.gaps.length > 1 ? "s" : ""} the AI would have liked a scene type the app does not have yet. This is noted in the project log.</p>{/if}
-
-      {#if error}<ErrorBox message={error} context={llmContext} />{/if}
-      <div class="actions">
-        <button type="button" disabled={busy || !dirty} onclick={save}>Save my edits</button>
-        {#if gate?.state === "approved"}
-          <span class="done">Approved. Next: 4. Review and render, below.</span>
-        {:else}
-          <button type="button" class="primary" disabled={busy} onclick={approve}>Approve scene table</button>
-        {/if}
-      </div>
     {/if}
+
+    <div class="actionbar">
+      {#if !table.rows.length || stale}
+        <span class="say">The AI plans every scene in about a minute. No AI at hand? The simple plan works without it.</span>
+        <button type="button" disabled={locked} onclick={simple}>Simple plan without AI</button>
+        <button type="button" class="primary" disabled={locked} onclick={plan}>Plan scenes (Recommended)</button>
+      {:else}
+        {#if approved && !dirty}
+          <span class="say"><b>Approved.</b> Next: {tabLabel(next)}.</span>
+        {:else}
+          <span class="say">{dirty ? "You changed some texts: they are saved when you approve." : "Look through the scenes. Happy with them? Approve them."}</span>
+        {/if}
+        <button type="button" disabled={locked} onclick={plan}>Plan again</button>
+        {#if dirty}<button type="button" disabled={locked} onclick={save}>Save my edits</button>{/if}
+        {#if approved && !dirty}
+          <button type="button" class="primary" onclick={() => goto(next)}>Go to {tabLabel(next)}</button>
+        {:else}
+          <button type="button" class="primary" disabled={locked} onclick={approve}>Approve scenes</button>
+        {/if}
+      {/if}
+    </div>
   {/if}
 </section>
 
 <style>
-  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  h2 { margin: 0; font-size: 17px; }
-  .actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; }
-  .grow { flex: 1; }
+  h2 { margin: 0 0 4px; font-size: 17px; }
+  .lead { margin: 0 0 12px; }
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
   th { text-align: left; font-weight: 600; color: var(--muted-foreground); padding: 6px; border-bottom: 1px solid var(--border); }
   td { padding: 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -239,19 +273,14 @@
   .help { caption-side: top; text-align: left; font-size: 12px; color: var(--muted-foreground); padding: 4px 0 8px; }
   .endtag { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #444; color: #fff; }
   .link { border: none; background: none; padding: 0 4px; color: var(--primary); text-decoration: underline; font-size: inherit; cursor: pointer; }
-  .done { font-weight: 600; color: var(--success, #1f7a3a); }
   td.said { max-width: 320px; }
   td select, td input { width: 100%; }
-  .keep { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--success-surface); border-radius: 8px; padding: 10px 14px; }
+  .keep { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--success-surface); border-radius: 8px; padding: 10px 14px; margin-top: 10px; }
   .keep p { margin: 0; }
   .note { opacity: 0.75; font-size: 12px; }
   .warn { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
   .warn p { margin: 2px 0; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
-  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
-  .pill.approved { background: var(--success-surface); color: var(--success); }
-  .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
-  .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
   .call { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
   .footage { display: inline-block; margin: 4px 4px 0 0; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #1a1a1a; color: #fff; }
   .call.cold { background: #2E6FE0; }

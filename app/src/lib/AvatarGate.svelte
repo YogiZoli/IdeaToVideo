@@ -1,35 +1,43 @@
 <script lang="ts">
-  // Gate 5, optional: an avatar says the opening and/or the closing, full
-  // screen, lip-synced to your own narration (DECISIONS 47, 61). Pick a look
-  // from your HeyGen account (your own avatars first), see the cost estimate
-  // and your balance, make the clips, then build again at 4 and render.
-  // Autopilot never does this: it costs HeyGen credits.
+  // Gate 5 in the runner, the Avatar tab in the app, optional: an avatar says
+  // the opening and/or the closing, lip-synced to your own narration
+  // (DECISIONS 47, 61). Pick a person and a look (LookPicker), see the cost
+  // estimate and your balance, make the clips, approve; or go on without an
+  // avatar. The list with its pictures is loaded in the background when the
+  // ONE Video opens (avatars.ts), so the tab is ready. Autopilot never adds
+  // an avatar: it costs HeyGen credits.
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { ask } from "@tauri-apps/plugin-dialog";
   import { openUrl } from "@tauri-apps/plugin-opener";
+  import { onDestroy } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
+  import Needs from "./Needs.svelte";
   import LayoutPicker from "./LayoutPicker.svelte";
-  import type { AvatarLayout } from "./api";
-  import type { AppState, Gate } from "./api";
+  import LookPicker, { type Group, type Look } from "./LookPicker.svelte";
+  import type { AvatarLayout, AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
-  import { onDestroy } from "svelte";
+  import { running } from "./work.svelte";
+  import { avatarLooks } from "./avatars";
+  import type { TabId } from "./tabs";
 
-  type Look = { id: string; name: string; type: string; gender: string | null; image: string | null; video: string | null };
-  type Group = { id: string; name: string; image: string | null; status: string; note: string | null; looks: Look[] };
   type Segment = { name: string; label: string; start: number; duration: number; file?: string };
   type Plan = { segments: Segment[]; current: { lookId: string; format?: string; layout?: AvatarLayout; note?: string | null; segments: Segment[] } | null; estimate: { low: number; high: number }; account: { kind?: string; remaining?: number | null; currency?: string | null; error?: string } | null };
 
-  let { app, dir, gate, scenesApproved, look = "blue-professional", changed }: { app: AppState; dir: string; gate?: Gate; scenesApproved: boolean; look?: string; changed: () => Promise<void> } = $props();
+  let { app, dir, gate, scenesApproved, look = "blue-professional", changed, goto }: { app: AppState; dir: string; gate?: Gate; scenesApproved: boolean; look?: string; changed: () => Promise<void>; goto: (t: TabId) => void } = $props();
 
   const hasKey = $derived(!!app.keys["heygen"]);
-  let open = $state(false);
+  const COMMANDS = ["make-avatar", "avatar-layout", "remove-avatar"];
+  const job = $derived(running(dir, COMMANDS));
+  let busy = $state(false);
+  const locked = $derived(busy || !!job);
+
   let own = $state<Group[]>([]);
   let stock = $state<Look[]>([]);
   let plan = $state<Plan | null>(null);
   let lookId = $state("");
   let which = $state<string[]>(["open", "close"]);
-  let busy = $state(false);
+  let loading = $state(false);
   let step = $state("");
   let error = $state("");
   let preview = $state<string | null>(null);
@@ -41,25 +49,18 @@
   const layoutChanged = $derived(!!current?.layout && (layout.style !== current.layout.style || layout.position !== current.layout.position || layout.size !== current.layout.size));
   const seconds = $derived((plan?.segments ?? []).filter((s) => which.includes(s.name)).reduce((n, s) => n + s.duration, 0));
   const scale = $derived(plan && plan.segments.length ? seconds / plan.segments.reduce((n, s) => n + s.duration, 0) : 1);
-
-  let command = $state("make-avatar");
-
-  // "Previously used" (per Identity, runner last-used): the look this brand
-  // used last is chosen; the lists open only on "Choose another".
-  let lastLook = $state<string | null>(null);
-  let chooseOther = $state(false);
   const allLooks = $derived([...own.flatMap((g) => g.looks), ...stock]);
   const chosenLook = $derived(allLooks.find((l) => l.id === lookId) ?? null);
-  const previous = $derived(!!lastLook && lookId === lastLook && !!chosenLook);
+  const approved = $derived(gate?.state === "approved");
+  const skipped = $derived(gate?.state === "skipped");
 
+  // "Previously used" (per Identity, runner last-used): the look this brand
+  // used last is chosen.
   async function start() {
-    open = true;
-    busy = true;
-    command = "avatar-looks";
+    loading = true;
     error = "";
-    step = "Loading your avatars and their pictures (faster next time)...";
     try {
-      ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen" }));
+      ({ own, stock } = await avatarLooks());
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
       let used: { lookId?: string; layout?: AvatarLayout } | undefined;
       try {
@@ -67,19 +68,19 @@
       } catch {
         used = undefined;
       }
-      const known = (id?: string | null) => !!id && [...own.flatMap((g) => g.looks), ...stock].some((l) => l.id === id);
-      lastLook = known(used?.lookId) ? used!.lookId! : null;
-      lookId = plan.current?.lookId ?? lastLook ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
+      const known = (id?: string | null) => !!id && allLooks.some((l) => l.id === id);
+      lookId = plan.current?.lookId ?? (known(used?.lookId) ? used!.lookId! : null) ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
       const a = app.config?.avatar;
       layout = { ...(plan.current?.layout ?? used?.layout ?? { style: a?.style ?? "cutout", position: a?.position ?? "bottom-right", size: a?.size ?? "medium" }) };
     } catch (e) {
       error = errorText(e);
     } finally {
-      busy = false;
-      step = "";
-      command = "make-avatar";
+      loading = false;
     }
   }
+  $effect(() => {
+    if (scenesApproved && hasKey) start();
+  });
 
   async function showPreview(l: Look) {
     if (!l.video) return;
@@ -98,9 +99,10 @@
   });
   onDestroy(() => unlisten.then((f) => f()));
 
+  let clips = $state<HTMLElement>();
   async function make() {
     const cost = plan ? `about $${(plan.estimate.low * scale).toFixed(2)} to $${(plan.estimate.high * scale).toFixed(2)}` : "a few dollars";
-    if (!(await ask(`Make ${Math.round(seconds)} seconds of avatar video on HeyGen? It costs ${cost} from your HeyGen API balance.`, { title: "Avatar", kind: "info" }))) return;
+    if (!(await ask(`${current ? "Make the avatar clips again? The ones you have now are replaced. " : ""}Make ${Math.round(seconds)} seconds of avatar video on HeyGen? It costs ${cost} from your HeyGen API balance.`, { title: "Avatar", kind: "info" }))) return;
     busy = true;
     error = "";
     step = "Starting...";
@@ -109,6 +111,7 @@
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
       stamp = Date.now();
       await changed();
+      setTimeout(() => clips?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     } catch (e) {
       error = errorText(e);
       await changed();
@@ -134,6 +137,7 @@
   }
 
   async function remove() {
+    if (!(await ask("Remove the avatar clips from this video? Making them again costs HeyGen credits.", { title: "Remove the avatar", kind: "warning" }))) return;
     busy = true;
     try {
       await runner("remove-avatar", { projectDir: dir });
@@ -146,12 +150,28 @@
     }
   }
 
+  async function skip() {
+    busy = true;
+    error = "";
+    try {
+      await runner("skip-gate", { projectDir: dir, gate: "avatar" });
+      await changed();
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      busy = false;
+    }
+  }
+
   async function approve() {
+    busy = true;
     try {
       await runner("approve-gate", { projectDir: dir, gate: "avatar" });
       await changed();
     } catch (e) {
       error = errorText(e);
+    } finally {
+      busy = false;
     }
   }
 
@@ -160,137 +180,89 @@
 </script>
 
 <section class="card">
-  <div class="head">
-    <h2>5. Avatar (optional)</h2>
-    {#if gate}<span class="pill {gate.state}">{gate.state}</span>{/if}
-  </div>
+  <h2>4. Avatar <span class="opt">optional</span></h2>
+  <p class="hint lead">An avatar can say the opening and the closing of your video, lip-synced to your narration. It costs HeyGen credits; you see the price first. Without it the video is complete. Your recorded CTA segments are separate: they are chosen on the Script tab.</p>
 
   {#if !scenesApproved}
-    <p class="hint">Approve the scene table first. The avatar is optional: without it the video is complete.</p>
+    <Needs text="The avatar clips are cut to the first and the last scene. Approve the scenes first." tab="scenes" {goto} />
   {:else if !hasKey}
-    <p class="hint">An avatar can say the opening and the closing of your video, in your own narration. It needs a HeyGen API key (Settings) and costs HeyGen credits. Without it the video is complete.</p>
-  {:else if !open}
-    <div class="actions">
-      <span class="hint grow">An avatar can say the opening and the closing, full screen, lip-synced to your narration. It costs HeyGen credits; you see the price first. Autopilot never adds it. Your recorded CTA segments are separate: they are chosen at 1. Script, Comment calls, and play there by themselves.</span>
-      <button type="button" onclick={start}>{current ? "Change the avatar" : "Add an avatar"}</button>
+    <p class="hint">An avatar needs a HeyGen API key (Settings). Without it, go on: the video is complete without an avatar.</p>
+    <div class="actionbar">
+      <span class="say">{skipped ? "Without an avatar. Next: 5. Preview." : "No HeyGen key: the video goes on without an avatar."}</span>
+      <button type="button" class="primary" disabled={locked} onclick={() => (skipped ? goto("preview") : skip())}>{skipped ? "Go to 5. Preview" : "Continue without an avatar"}</button>
     </div>
   {:else}
-    {#if busy}{#key command}<Progress {command} label={step || "Working"} />{/key}{/if}
+    {#if loading}<Progress command="avatar-looks" label="Loading your avatars and their pictures (faster next time)" reveal={false} />{/if}
+    {#if job === "make-avatar"}<Progress command="make-avatar" project={dir} label={step || "HeyGen is making the avatar clips"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "avatar", provider: "heygen" }} />{/if}
 
-    {#if previous && !chooseOther}
-      <div class="actions">
-        <span class="label">Avatar</span>
-        {#if chosenLook?.image}<img class="thumb" src={convertFileSrc(chosenLook.image)} alt="" />{/if}
-        <b class="grow">{chosenLook?.name}</b>
-        <span class="pill">previously used</span>
-        {#if chosenLook?.video}<button type="button" class="ghost" onclick={() => showPreview(chosenLook!)}>Preview</button>{/if}
-        <button type="button" class="ghost" disabled={busy} onclick={() => (chooseOther = true)}>Choose another</button>
-      </div>
-      <!-- svelte-ignore a11y_media_has_caption -->
-      {#if preview}<video controls autoplay src={preview}></video>{/if}
-    {:else if own.length || stock.length}
-      <div class="actions">
-        <span class="label grow">Your avatars</span>
-        <button type="button" class="ghost" onclick={() => openUrl("https://app.heygen.com/avatars")}>Open HeyGen</button>
-      </div>
-      <p class="hint">These come straight from your HeyGen account. Make or change avatars in HeyGen; they show up here.</p>
-      {#if !own.length}<p class="hint">This API key sees no avatar of your own. If you have avatars in the HeyGen app, the key probably belongs to another HeyGen workspace: make the API key in the workspace where your avatars are. Meanwhile you can pick a HeyGen stock avatar below.</p>{/if}
-      {#each own as g (g.id)}
-        <div class="group">
-          <div class="ghead">
-            {#if g.image}<img src={convertFileSrc(g.image)} alt="" />{/if}
-            <strong>{g.name}</strong>
-            {#if g.note}<span class="hint">({g.note})</span>{:else}<span class="hint">{g.looks.length} look{g.looks.length === 1 ? "" : "s"}</span>{/if}
-          </div>
-          {#each g.looks as l (l.id)}
-            <label class="row-look" class:on={lookId === l.id}>
-              <input type="radio" bind:group={lookId} value={l.id} disabled={busy} />
-              {#if l.image}<img src={convertFileSrc(l.image)} alt="" loading="lazy" />{/if}
-              <span class="grow">{l.name}</span>
-              {#if l.video}<button type="button" class="ghost" onclick={() => showPreview(l)}>Preview</button>{/if}
-            </label>
-          {/each}
+    {#if own.length || stock.length}
+      <div class="grid">
+        <div>
+          <div class="row"><span class="label grow">Who says it</span><button type="button" class="ghost" onclick={() => openUrl("https://app.heygen.com/avatars")}>Open HeyGen</button></div>
+          <LookPicker {own} {stock} bind:value={lookId} disabled={locked} preview={showPreview} />
+          <!-- svelte-ignore a11y_media_has_caption -->
+          {#if preview}<video controls autoplay src={preview}></video>{/if}
         </div>
-      {/each}
-      {#if stock.length}
-        <details>
-          <summary class="label">HeyGen stock avatars</summary>
-          <div class="looks">
-            {#each stock as l (l.id)}
-              <label class="look" class:on={lookId === l.id}>
-                <input type="radio" bind:group={lookId} value={l.id} disabled={busy} />
-                {#if l.image}<img src={convertFileSrc(l.image)} alt={l.name} loading="lazy" />{:else}<span class="noimg">{l.name}</span>{/if}
-                <span class="name">{l.name}</span>
-                {#if l.video}<button type="button" class="ghost" onclick={() => showPreview(l)}>Preview</button>{/if}
-              </label>
-            {/each}
+        {#if plan}
+          <div>
+            <span class="label">Where and how big</span>
+            <LayoutPicker bind:style={layout.style} bind:position={layout.position} bind:size={layout.size} disabled={locked} cutoutNote={current && current.format !== "webm" ? "The clips you have now are not transparent: a cut-out needs new clips." : ""} />
+            {#if layoutChanged}<button type="button" disabled={locked} onclick={applyLayout}>Use this place and size (no new clips, free)</button>{/if}
+            <span class="label">When it speaks</span>
+            <div class="row wrap">
+              {#each plan.segments as s}
+                <label class="choice"><input type="checkbox" bind:group={which} value={s.name} disabled={locked} /> {s.label}: {s.duration.toFixed(1)} s</label>
+              {/each}
+            </div>
+            <p class="hint">For {Math.round(seconds)} s: about ${(plan.estimate.low * scale).toFixed(2)} to ${(plan.estimate.high * scale).toFixed(2)}, depending on the avatar. {money(plan.account)}</p>
+            {#if current?.note}<p class="hint">{current.note}</p>{/if}
           </div>
-        </details>
-      {/if}
-      <!-- svelte-ignore a11y_media_has_caption -->
-      {#if preview}<video controls autoplay src={preview}></video>{/if}
-    {/if}
-
-    {#if plan}
-      <LayoutPicker bind:style={layout.style} bind:position={layout.position} bind:size={layout.size} disabled={busy} cutoutNote={current && current.format !== "webm" ? "The clips you have now are not transparent: a cut-out needs new clips." : ""} />
-      {#if current?.note}<p class="hint">{current.note}</p>{/if}
-      <div class="row">
-        {#each plan.segments as s}
-          <label class="choice"><input type="checkbox" bind:group={which} value={s.name} disabled={busy} /> {s.label}: {s.duration.toFixed(1)} s</label>
-        {/each}
-      </div>
-      <p class="hint">Estimate for {Math.round(seconds)} s: about ${(plan.estimate.low * scale).toFixed(2)} to ${(plan.estimate.high * scale).toFixed(2)}, depending on the avatar. {money(plan.account)}</p>
-      <div class="actions">
-        {#if current}<button type="button" class="ghost" disabled={busy} onclick={remove}>Remove the avatar</button>{/if}
-        {#if layoutChanged}<button type="button" disabled={busy} onclick={applyLayout}>Use this place and size (no new clips)</button>{/if}
-        <button type="button" class="primary" disabled={busy || !lookId || !which.length} onclick={make}>{current ? "Make the clips again" : "Make the avatar clips"}</button>
+        {/if}
       </div>
     {/if}
 
     {#if current}
-      <div class="clips">
+      <div class="clips" bind:this={clips}>
         {#each current.segments as s}
           <!-- svelte-ignore a11y_media_has_caption -->
           <div><span class="label">{s.label}</span><video controls src={convertFileSrc(`${dir}/${s.file}`) + `?t=${stamp}`}></video></div>
         {/each}
       </div>
-      <p class="hint">Next: build again at 4. Review and render, then render. The clips cover the first and the last scene.</p>
-      <div class="actions">
-        <button type="button" class="primary" disabled={busy || gate?.state === "approved"} onclick={approve}>{gate?.state === "approved" ? "Approved" : "Approve the avatar"}</button>
-      </div>
     {/if}
+
+    <div class="actionbar">
+      {#if approved}
+        <span class="say"><b>Approved.</b> Next: 5. Preview.</span>
+      {:else if skipped && !current}
+        <span class="say"><b>Without an avatar.</b> You can still add one. Next: 5. Preview.</span>
+      {:else if current}
+        <span class="say">Watch the clips. Happy with them? Approve them.</span>
+      {:else}
+        <span class="say">Pick who says it, then make the clips. Or go on without an avatar.</span>
+      {/if}
+      {#if current}<button type="button" class="ghost" disabled={locked} onclick={remove}>Remove the avatar</button>{/if}
+      {#if !current && !skipped && !approved}<button type="button" disabled={locked} onclick={skip}>Continue without an avatar</button>{/if}
+      <button type="button" class={current || skipped || approved ? "" : "primary"} disabled={locked || !lookId || !which.length || !plan} onclick={make}>{current ? "Make the clips again" : "Make the avatar clips"}</button>
+      {#if current && !approved}<button type="button" class="primary" disabled={locked} onclick={approve}>Approve the avatar</button>{/if}
+      {#if approved || (skipped && !current)}<button type="button" class="primary" onclick={() => goto("preview")}>Go to 5. Preview</button>{/if}
+    </div>
   {/if}
 </section>
 
 <style>
-  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  h2 { margin: 0; font-size: 17px; }
-  .actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; }
+  h2 { margin: 0 0 4px; font-size: 17px; }
+  .opt { font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
+  .lead { margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .wrap { flex-wrap: wrap; gap: 14px; margin-bottom: 6px; }
   .grow { flex: 1; }
-  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
   .choice { display: flex; gap: 6px; align-items: center; font-size: 14px; }
-  .looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; max-height: 420px; overflow: auto; }
-  .look { display: grid; gap: 4px; padding: 6px; border-radius: 8px; background: var(--muted); font-size: 12px; cursor: pointer; border: 2px solid transparent; }
-  .look.on { border-color: var(--primary); }
-  .look input { position: absolute; opacity: 0; }
-  .look img, .noimg { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: grid; place-items: center; background: var(--border); }
-  .name { font-weight: 600; }
-  .group { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; display: grid; gap: 6px; }
-  .ghead { display: flex; gap: 8px; align-items: center; }
-  .ghead img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
-  .row-look { display: flex; gap: 10px; align-items: center; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-  .row-look.on { background: var(--primary-surface); }
-  .row-look img { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
-  details { margin-top: 8px; }
-  .clips { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
+  .clips { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; scroll-margin-top: 10px; }
   .clips div { display: grid; gap: 4px; }
-  video { width: 100%; border-radius: 8px; margin-top: 8px; }
-  .label { font-weight: 600; font-size: 14px; }
+  video { width: 100%; max-height: 240px; border-radius: 8px; margin-top: 8px; background: #000; }
+  .label { display: block; font-weight: 600; font-size: 14px; margin: 8px 0 4px; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
-  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
-  .pill.approved { background: var(--success-surface); color: var(--success); }
-  .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
-  .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
-  .thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 </style>

@@ -165,7 +165,7 @@
     <Onboarding bind:config={draft} bind:keys save={saveFirst} done={take} newIdentity />
   </main>
 {:else}
-  <main>
+  <main class="shell">
     <nav class="brandbar">
       <span class="name"><img src="/icon.png" alt="" />{PRODUCT}</span>
       <IdentityMenu
@@ -183,6 +183,7 @@
     {#if notice}
       <div class="notice"><span>{notice}</span><button type="button" class="ghost" onclick={() => (notice = "")}>Close</button></div>
     {/if}
+    <div class="view">
     {#if view === "new-identity"}
       <Onboarding
         bind:config={draft}
@@ -207,10 +208,15 @@
         <Projects {app} {openProject} />
       {/key}
     {/if}
+    </div>
   </main>
 {/if}
 
 <style>
+  /* The top bar stays; each view scrolls in its own area, so a ONE Video's
+     tabs and its action bar fit one screen (DECISIONS 85). */
+  .shell { display: flex; flex-direction: column; height: 100vh; }
+  .view { flex: 1; min-height: 0; overflow: auto; }
   .center { display: grid; place-items: center; min-height: 100vh; }
   .brandbar { display: flex; gap: 6px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
   .brandbar { position: relative; }

@@ -44,6 +44,9 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("avatar-plan", Some(&["service"])),
     ("make-avatar", Some(&["service"])),
     ("remove-avatar", None),
+    ("skip-gate", None),
+    ("youtube-texts", Some(&["llm", "provider"])),
+    ("simple-scenes", None),
     ("avatar-layout", None),
     ("build-video", None),
     ("check-video", None),
@@ -284,8 +287,10 @@ pub fn run(
     })
 }
 
-pub fn progress_payload(command: &str, v: Value) -> Value {
-    json!({ "command": command, "progress": v })
+/// `project`: the ONE Video the job works on, so the UI shows the bar in the
+/// right video even after the view was closed and opened again.
+pub fn progress_payload(command: &str, project: Option<&str>, v: Value) -> Value {
+    json!({ "command": command, "project": project, "progress": v })
 }
 
 #[cfg(test)]

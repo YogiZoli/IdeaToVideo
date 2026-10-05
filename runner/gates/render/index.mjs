@@ -7,6 +7,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { runHyperframes, resolveBrowser } from "../../tools.mjs";
 import { percentOf } from "../../tools.mjs";
+
+// hyperframes' own percent moves in coarse stages (20% after two seconds of
+// setup, then 10% steps, frames end at 80%), so a bar fed with it said
+// "Finishing now" at the start and then stood still for minutes (Zoltan,
+// 2026-10-05). Every captured frame is printed ("Streaming frame 3817/3848"):
+// that is the real progress. Setup 0-3%, frames 3-95%, assembling 96%.
+export function renderPercent(line) {
+  const f = /frame\s+(\d+)\s*\/\s*(\d+)/i.exec(line);
+  if (f && Number(f[2]) > 0) return { percent: Math.min(95, Math.round(3 + (92 * Number(f[1])) / Number(f[2]))), frame: Number(f[1]), frames: Number(f[2]) };
+  if (/assembl/i.test(line)) return { percent: 96 };
+  if (/render complete/i.test(line)) return { percent: 100 };
+  const pct = percentOf(line);
+  // before the first frame only the setup stages count, kept small
+  return pct === null ? null : { percent: Math.min(3, Math.round(pct / 10)) };
+}
 import { duration } from "../../audio.mjs";
 
 // Local time, as the user reads the clock: video-20260930-1645.mp4
@@ -31,10 +46,10 @@ export async function renderVideo(projectDir, { env = process.env, quality = "st
     browser: browser.path,
     signal,
     onLine: (line) => {
-      const pct = percentOf(line);
-      if (pct !== null && pct !== last) {
-        last = pct;
-        onProgress({ step: "render", percent: pct });
+      const p = renderPercent(line);
+      if (p && p.percent > last) {
+        last = p.percent;
+        onProgress({ step: "render", ...p });
       }
     },
   });

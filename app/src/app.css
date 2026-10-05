@@ -91,3 +91,18 @@ button.link:hover:not(:disabled) { background: none; color: var(--link-hover); t
   padding: var(--space-7);
   box-shadow: var(--shadow-xs);
 }
+
+/* The one decision of a tab, always in view (Zoltan, 2026-10-05): a bar at
+   the bottom of the tab's scroll area, with the next step said in words on
+   the left and the main button on the right. */
+.actionbar {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: flex-end;
+  margin: var(--space-6) calc(-1 * var(--space-7)) calc(-1 * var(--space-7));
+  padding: var(--space-4) var(--space-7);
+  background: var(--surface);
+  border-top: var(--border-width) solid var(--border);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.actionbar .say { flex: 1; min-width: 200px; color: var(--muted-foreground); font-size: 13px; }
+.actionbar .say b { color: var(--foreground); }

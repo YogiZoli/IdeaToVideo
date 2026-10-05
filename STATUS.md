@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-05 este (CTA, szegmensek, B-roll, javítások)
+Frissítve: 2026-10-05 este (UI tabok folyamatban, DECISIONS 85-86)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -216,12 +216,22 @@ Kész (2026-09-30):
    **Eleven v4** választható (83). Tesztek: 188 Node, e2e 31/31.
    Jelenet-tábla a 8 perces teszt után (DECISIONS 84). Tesztek: 188 Node,
    43 Rust, e2e 31/31. Utolsó telepítő: commit 5984811 (2026-10-05 18:06).
-   **Következő (Zoltan sorrendje, új chatben):** 1. a UI szebbé tétele, 2.
-   újabb hibátlanítás; mindkettőre Zoltan kész üzenetet hoz. Később: stock
+   **Folyamatban: a UI szebbé tétele (DECISIONS 85, 86), még nincs kész.**
+   A ONE Video hat tabra bontva (Script, Voice and music, Scenes, Avatar,
+   Preview, Your video), központi munkalista (`app/src/lib/work.svelte.ts`),
+   pontosabb haladásjelző, kártyás hang- és kétlépcsős avatar-választó,
+   jelenet-javítás a Preview-ban, AI nélküli kiutak (saját script, Simple
+   plan), Your video tab (Download, felhő-mappa, YouTube Studio a
+   szövegekkel). A kód fordul (svelte-check 0 hiba, cargo check rendben,
+   runner 188 teszt zöld). Hátra: próba a `scripts/ui-mock`-ban 1100x620-ban
+   (`?stage=0..6`, `?slow=`, `?aifail=1`), Settings választói, új tesztek,
+   telepítő, Zoltan próbája. Ugyanebben a chatben folytatjuk.
+   Utána: 2. újabb hibátlanítás (Zoltan kész üzenetet hoz). Később: stock
    kereső a Pixabay ingyenes API-jával (a Pexels új kulcsot nem ad ki,
-   2026-10-05); az OpenArt most kimarad (Zoltan). Utána a fázis vége. Tesztek: 177 Node, 43 Rust, e2e
-   30/30. **Következő:** Zoltan próbája az új telepítővel; a PDT import és a
-   Translation Pack külön chatben a PDT repóban (a prompt a chat végén).
+   2026-10-05); az OpenArt most kimarad; élő előnézet renderelés nélkül
+   (K9 b, Zoltan még nem döntött); lokalizáció és fordítás (DECISIONS 86).
+   Utána a fázis vége. A PDT import és a Translation Pack külön chatben a
+   PDT repóban.
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
