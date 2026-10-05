@@ -57,6 +57,9 @@ jobs:
         with:
           workspaces: app/src-tauri
 
+      - name: Runner dependencies (the Anthropic SDK, pinned by runner/package-lock.json)
+        run: npm ci --prefix runner --no-audit --no-fund
+
       - name: Runner tests
         run: npm test
 
