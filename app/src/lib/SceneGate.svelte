@@ -21,7 +21,8 @@
     footage: string | null;
   };
   type Scene = { component: string; from: string; to?: string; vars: Record<string, unknown> };
-  type Table = { rows: Row[]; gaps: { at: string; need: string }[]; warnings: string[]; scenes?: Scene[] };
+  type Insert = { kind: "segment" | "end"; slot?: string; keyword?: string; temperature?: string; name?: string | null; start: number; seconds: number; after: number };
+  type Table = { rows: Row[]; gaps: { at: string; need: string }[]; warnings: string[]; scenes?: Scene[]; inserts?: Insert[] };
 
   let table = $state<Table>({ rows: [], gaps: [], warnings: [] });
   let edits = $state<Record<number, string>>({});
@@ -100,12 +101,24 @@
     try {
       await runner("approve-gate", { projectDir: dir, gate: "scenes" });
       await changed();
+      approvedNow = true;
+      // the next step is gate 4, further down: bring it into view
+      setTimeout(() => [...document.querySelectorAll("h2")].find((h) => h.textContent?.startsWith("4."))?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
     } catch (e) {
       error = errorText(e);
     } finally {
       busy = false;
     }
   }
+
+  let approvedNow = $state(false);
+  // "Scene 44: ..." in a note: jump to that row and mark it.
+  let marked = $state<number | null>(null);
+  function goTo(n: number) {
+    marked = n;
+    document.getElementById(`scene-row-${n}`)?.scrollIntoView({ block: "center" });
+  }
+  const sceneOf = (w: string) => Number(/^Scene (\d+):/.exec(w)?.[1] ?? 0) || null;
 
   const clock = (s: number | null) => (s === null ? "" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`);
 </script>
@@ -136,10 +149,12 @@
       <p class="warn">This scene table was made for an earlier voice, so it no longer fits. Click Plan again.</p>
     {:else if table.rows.length}
       <table>
-        <thead><tr><th>Time</th><th>What is said</th><th>Scene</th><th>On screen</th></tr></thead>
+        <caption class="help">What is said: the narration, sentence by sentence. Scene: how it is shown, its kind in grey; open the list to pick another of the same kind. On screen: the text in the picture, you can change it.</caption>
+        <thead><tr><th>#</th><th>Time</th><th>What is said</th><th>Scene</th><th>On screen</th></tr></thead>
         <tbody>
           {#each table.rows as row (row.index)}
-            <tr>
+            <tr id={`scene-row-${row.index + 1}`} class:marked={marked === row.index + 1}>
+              <td class="num">{row.index + 1}</td>
               <td class="time">{clock(row.start)}<br /><span class="hint">{row.duration} s</span></td>
               <td class="said">{row.said}</td>
               <td>
@@ -149,7 +164,7 @@
                     {#each row.alternatives as a}<option value={a.component}>{a.label}</option>{/each}
                   </select>
                 {:else}
-                  {row.label}
+                  {row.label} <span class="hint" title="There is no other scene of this kind to swap to.">(the only one of its kind)</span>
                 {/if}
                 {#if row.footage}<div class="footage">Your footage plays here</div>{/if}
                 {#if row.call}
@@ -166,6 +181,21 @@
                 {/if}
               </td>
             </tr>
+            {#each (table.inserts ?? []).filter((x) => x.after === row.index) as x (x.start)}
+              <tr class="insert">
+                <td></td>
+                <td class="time">{clock(x.start)}<br /><span class="hint">{Math.round(x.seconds * 10) / 10} s</span></td>
+                <td colspan="3">
+                  {#if x.kind === "segment"}
+                    <span class="call {x.temperature}">CTA segment: {x.keyword} ({x.temperature})</span>
+                    <span class="hint">{x.name ? `${x.name}: ` : ""}your own clip plays here, full frame, with its own sound. The narrator says no call here.</span>
+                  {:else}
+                    <span class="endtag">YouTube end screen</span>
+                    <span class="hint">The last picture holds and the music fades out; add your end screen elements in YouTube Studio.</span>
+                  {/if}
+                </td>
+              </tr>
+            {/each}
           {/each}
         </tbody>
       </table>
@@ -173,7 +203,9 @@
 
       {#if table.warnings.length}
         <div class="warn">
-          {#each table.warnings as w}<p>{w}</p>{/each}
+          {#each table.warnings as w}
+            <p>{w}{#if sceneOf(w)} <button type="button" class="link" onclick={() => goTo(sceneOf(w)!)}>Go to scene {sceneOf(w)}</button>{/if}</p>
+          {/each}
           <p class="note">Notes only: they do not stop the approval.</p>
         </div>
       {/if}
@@ -182,7 +214,11 @@
       {#if error}<ErrorBox message={error} context={llmContext} />{/if}
       <div class="actions">
         <button type="button" disabled={busy || !dirty} onclick={save}>Save my edits</button>
-        <button type="button" class="primary" disabled={busy || gate?.state === "approved"} onclick={approve}>{gate?.state === "approved" ? "Approved" : "Approve scene table"}</button>
+        {#if gate?.state === "approved"}
+          <span class="done">Approved. Next: 4. Review and render, below.</span>
+        {:else}
+          <button type="button" class="primary" disabled={busy} onclick={approve}>Approve scene table</button>
+        {/if}
       </div>
     {/if}
   {/if}
@@ -197,6 +233,13 @@
   th { text-align: left; font-weight: 600; color: var(--muted-foreground); padding: 6px; border-bottom: 1px solid var(--border); }
   td { padding: 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
   td.time { white-space: nowrap; }
+  td.num { color: var(--muted-foreground); width: 2em; }
+  tr.marked td { background: var(--primary-surface); }
+  tr.insert td { background: color-mix(in srgb, var(--muted) 60%, transparent); }
+  .help { caption-side: top; text-align: left; font-size: 12px; color: var(--muted-foreground); padding: 4px 0 8px; }
+  .endtag { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #444; color: #fff; }
+  .link { border: none; background: none; padding: 0 4px; color: var(--primary); text-decoration: underline; font-size: inherit; cursor: pointer; }
+  .done { font-weight: 600; color: var(--success, #1f7a3a); }
   td.said { max-width: 320px; }
   td select, td input { width: 100%; }
   .keep { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--success-surface); border-radius: 8px; padding: 10px 14px; }

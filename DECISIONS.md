@@ -766,3 +766,9 @@
     Multilingual v2 (tesztelt, alap) vagy Eleven v4 (`eleven_v4`, 2026-09-28,
     a legkifejezőbb); a brand megjegyzi. Az ElevenLabs a v4-nél a magyart
     még nem sorolja fel. A kipróbálás Zoltané (kulccsal).
+84. **Jelenet-tábla a 8 perces teszt után** (2026-10-05, `feedback/2026-10-05/NOTES.md`
+    harmadik rész): a CTA-szegmensek és a YouTube végképernyő saját sort kapnak
+    (`sceneRows` `inserts`); a sor hossza a jelenet saját ideje; sorszám és
+    "Go to scene N" a jegyzeteknél; az egyetlen fajta jelenet jelölve; a
+    jóváhagyás után a következő lépés kiírva; a csere csak az első jelenetet
+    nézi.

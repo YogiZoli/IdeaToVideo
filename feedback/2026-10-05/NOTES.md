@@ -33,3 +33,16 @@ Képek: `C:/Users/gdp/Downloads/IdeaToVideo feedback/cta-wizard/` (10 db). Napl�
 | 8 | 3 perc, 5-10 mp farok, mégis 1:35, és a 3 szegmens nem került be (audio-length-01) | a CTA-beállítást a régi telepítő mentette, mindhárom helyre "Narrator"-t írt; a script 265 szó lett | kész: a régi mentés "Narrator"-ja "auto"-nak számít; a script-prompt minimum szószámot kap, és a hosszra két külön javító kör jut |
 | 9 | Gemini 503, mit tegyen a user (gemini-overloaded-01, -02) | mindkét Flash modell túlterhelt volt | kész: harmadik tartalék modell (Flash Lite), a hibaüzenet megmondja, hogy várjon és nyomja meg újra |
 | 10 | "scene 15 lasts 1.854 s, under 2 s" a javítás után is (gemini-overloaded-03) | egy rövid utolsó mondat; a javító hívás nem vonta össze | kész: a gép magától összevonja a szomszédjával (CTA-jelenetbe soha) |
+
+## Harmadik kör (8 perces teszt, a 17:00-s telepítővel)
+
+Képek: `C:/Users/gdp/Downloads/IdeaToVideo feedback/teszt-8min/` (5 db). Napló:
+497 esemény, 3 hiba (egy sikertelen jelenet-csere).
+
+| # | Mit láttunk | Ok | Állapot |
+|---|---|---|---|
+| 1 | Nincsenek színes CTA-címkék (nem-volt-cta-badge) | mindhárom helyen a feltöltött szegmens szólt (GUIDE, COURSE, TRIGGER, a hangban benne vannak), a tábla ezt nem mutatta; az utolsó sor ezért 54 mp-esnek látszott | kész: a szegmensek és a YouTube végképernyő saját színes sort kapnak a helyükön (melyik klip, hány mp); a sorok hossza a jelenet saját ideje |
+| 2 | Nem kattintható, nem gördül le (nem kattintható 01-02) | az Emphasis, a Sketch és a Closing fajtából csak egy jelenet van, nincs mire cserélni | kész: "(the only one of its kind)" felirat, és a táblázat fölött magyarázat az oszlopokról |
+| 3 | "Scene 44" nem található, kellene link (odagorgeto-linkek) | a táblában nem volt sorszám | kész: sorszám-oszlop, és minden ilyen jegyzet mellett "Go to scene N" link, ami odaugrik és kiemeli a sort |
+| 4 | "Approve nem sikerült" (odagorgeto-linkek) | a jóváhagyás sikerült (10:47:13), de a halvány "Approved" gomb letiltottnak látszott, és nem volt jelezve a következő lépés | kész: "Approved. Next: 4. Review and render, below." és a lap odagördül a 4. kapuhoz |
+| 5 | A jelenet-csere hibája "scene 2: same component" | az AI egy helyett két jelenetet adott vissza | kész: csak az első jelenet számít |

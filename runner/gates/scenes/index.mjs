@@ -269,6 +269,24 @@ export function footageIssues(list, { sentences, calls = new Map(), clips = [] }
   return issues;
 }
 
+// The CTA segments and the end screen in the table (Zoltan, 2026-10-05: a
+// video whose three calls were all his clips showed no call at all): each
+// after the row it follows, with its keyword and clip name.
+export function insertRows(projectDir, times) {
+  let v;
+  let script = null;
+  try {
+    v = JSON.parse(fs.readFileSync(path.join(projectDir, "audio", "voice.json"), "utf8"));
+    script = readScript(projectDir);
+  } catch {
+    return [];
+  }
+  const after = (t) => times.reduce((k, x, i) => (x.start !== null && x.start <= t ? i : k), 0);
+  const rows = (v.inserts ?? []).map((g) => ({ kind: "segment", slot: g.slot, keyword: g.keyword, temperature: g.temperature, name: (script?.segmentCalls ?? []).find((c) => c.slot === g.slot)?.name ?? null, start: g.start, seconds: g.seconds, after: after(g.start) }));
+  if (v.endScreen) rows.push({ kind: "end", start: v.endScreen.start, seconds: v.endScreen.seconds, after: times.length - 1 });
+  return rows;
+}
+
 // The segments and the end-screen tail in the recorded voice (voice gate).
 export function gapsOf(projectDir) {
   try {
@@ -380,7 +398,9 @@ export async function refillScene({ llm, projectDir, index, component, env = pro
   const messages = buildMessages(data, catalog);
   messages[1].content += `\n\nThis is ONE scene of a longer video: answer with exactly one scene, from ${sc.from}${sc.to ? ` to ${sc.to}` : ""}, component ${component}. Ignore the rules about the first and the last scene.`;
   const total = r3(covered[covered.length - 1].end + 0.3);
-  const check = (a) => {
+  const check = (raw) => {
+    // one scene is asked for; a second one in the answer is not this scene's problem
+    const a = raw && Array.isArray(raw.scenes) ? { ...raw, scenes: raw.scenes.slice(0, 1) } : raw;
     const r = checkScenes(a, { sentences: covered, total, env, gaps: gapsOf(projectDir) });
     if (!r.issues.length && (a.scenes.length !== 1 || a.scenes[0].component !== component)) r.issues.push(`answer with exactly one scene using ${component}`);
     return r;
@@ -407,6 +427,8 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
     times = table.scenes.map(() => ({ start: null, duration: null }));
   }
   const ids = sentences.map((s) => s.id);
+  const gaps = gapsOf(projectDir);
+  const own = (i) => (times[i].duration === null ? null : r3(times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0)));
   const rows = table.scenes.map((sc, i) => {
     const meta = COMPONENTS[sc.component] ?? { role: null, label: sc.component, mainVar: null };
     return {
@@ -414,7 +436,7 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
       from: sc.from,
       to: sc.to ?? sc.from,
       start: times[i].start,
-      duration: times[i].duration,
+      duration: own(i),
       said: sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1).map((s) => s.text).join(" "),
       component: sc.component,
       label: meta.label,
@@ -430,5 +452,5 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
         .map(([c, m]) => ({ component: c, label: m.label })),
     };
   });
-  return { rows, gaps: table.gaps ?? [], warnings: table.warnings ?? [], scenes: table.scenes };
+  return { rows, gaps: table.gaps ?? [], warnings: table.warnings ?? [], scenes: table.scenes, inserts: insertRows(projectDir, times) };
 }
