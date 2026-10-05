@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-05 késő este (UI tabok kész, tálca, DECISIONS 85-87)
+Frissítve: 2026-10-05 éjjel (UI kör kész, DECISIONS 85-90)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -216,26 +216,27 @@ Kész (2026-09-30):
    **Eleven v4** választható (83). Tesztek: 188 Node, e2e 31/31.
    Jelenet-tábla a 8 perces teszt után (DECISIONS 84). Tesztek: 188 Node,
    43 Rust, e2e 31/31. Utolsó telepítő: commit 5984811 (2026-10-05 18:06).
-   **A UI szebbé tétele: kész, Zoltan próbájára vár** (DECISIONS 85-87).
-   A ONE Video hat tabon (Script, Voice and music, Scenes, Avatar, Preview,
-   Your video); központi munkalista (`app/src/lib/work.svelte.ts`), nincs
-   dupla indítás; pontosabb haladásjelző (render kockánként, javító körök);
-   kártyás hang- és kétlépcsős avatar-választó (a Settingsben is);
-   jelenet-javítás a Preview-ban ("Ask for a change"); AI nélküli kiutak
-   (saját script, Simple plan); Your video tab (Download, felhő-mappa,
-   YouTube Studio a címmel, leírással, tagekkel); az app a tálcán él, az X
-   nem lép ki (87); teljes ablakban indul. Tesztek: 197 Node, 43 Rust, e2e
-   33/33. Telepítő: commit 065e533 (2026-10-05 23:05). Képek:
-   `feedback/2026-10-05/ui-tabs/`. UI próba: `scripts/ui-mock`
-   (`?stage=0..6`, `?slow=`, `?aifail=1`).
-   **Következő ebben a chatben:** a humanizer (Zoltan kérése, kérdések H1-H4
-   a válaszára várnak), utána Zoltan további UI feature-jei.
-   Utána: 2. újabb hibátlanítás (Zoltan kész üzenetet hoz). Később: stock
-   kereső a Pixabay ingyenes API-jával (a Pexels új kulcsot nem ad ki,
-   2026-10-05); az OpenArt most kimarad; élő előnézet renderelés nélkül
-   (K9 b, Zoltan még nem döntött); lokalizáció és fordítás (DECISIONS 86).
-   Utána a fázis vége. A PDT import és a Translation Pack külön chatben a
-   PDT repóban.
+   **A UI kör kész, Zoltan próbájára vár** (2026-10-05, DECISIONS 85-90).
+   - A ONE Video hat tabon (Script, Voice and music, Scenes, Avatar,
+     Preview, Your video); központi munkalista, nincs dupla indítás;
+     pontosabb haladásjelző; kártyás hang- és kétlépcsős avatar-választó;
+     jelenet-javítás a Preview-ban; AI nélküli kiutak (saját script, Simple
+     plan); Your video tab (Download, felhő-mappa, YouTube Studio a
+     szövegekkel). DECISIONS 85-86.
+   - Az app a tálcán él, az X nem lép ki (87).
+   - Natural voice (humanizer) Off, Light, Strong, "Your own angle" (88).
+   - AI-modell és effort lépésenként (Script, Scenes, Small texts), Change a
+     tabokon; natív Claude csatlakozó az Anthropic SDK-val (89).
+   - Stock kereső: terv kész, a pilot után (90).
+   Tesztek: 204 Node, 43 Rust, e2e 33/33. Telepítő: commit 8ddcdd9
+   (2026-10-05 23:46, 99 MB). Képek: `feedback/2026-10-05/ui-tabs/`.
+   UI próba: `scripts/ui-mock` (`?stage=0..6`, `?slow=`, `?aifail=1`).
+   **Következő: hibátlanítás, új chatben** (a prompt a 2026-10-05-i chat
+   végén), utána ugyanott vagy külön a fázis lezárása.
+   Később: stock kereső (DECISIONS 90, a pilot után); az OpenArt kimarad;
+   élő előnézet renderelés nélkül (K9 b, Zoltan még nem döntött);
+   lokalizáció és fordítás (DECISIONS 86). A PDT import és a Translation
+   Pack külön chatben a PDT repóban.
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
