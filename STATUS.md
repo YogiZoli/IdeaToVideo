@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-05 (CTA varázsló kész: Comment Routing)
+Frissítve: 2026-10-05 este (CTA, szegmensek, B-roll, javítások)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -214,8 +214,12 @@ Kész (2026-09-30):
    kör (DECISIONS 81). **Saját felvétel-könyvtár (B-roll)** Identity-nként,
    AI-leírással, vágásponttól induló, váltakozó darabokkal (DECISIONS 82);
    **Eleven v4** választható (83). Tesztek: 188 Node, e2e 31/31.
-   **Következő:** stock kereső (Pexels és Pixabay, ingyenes kulcs, Zoltan
-   regisztrál), majd a fázis vége. Tesztek: 177 Node, 43 Rust, e2e
+   Jelenet-tábla a 8 perces teszt után (DECISIONS 84). Tesztek: 188 Node,
+   43 Rust, e2e 31/31. Utolsó telepítő: commit 5984811 (2026-10-05 18:06).
+   **Következő (Zoltan sorrendje, új chatben):** 1. a UI szebbé tétele, 2.
+   újabb hibátlanítás; mindkettőre Zoltan kész üzenetet hoz. Később: stock
+   kereső a Pixabay ingyenes API-jával (a Pexels új kulcsot nem ad ki,
+   2026-10-05); az OpenArt most kimarad (Zoltan). Utána a fázis vége. Tesztek: 177 Node, 43 Rust, e2e
    30/30. **Következő:** Zoltan próbája az új telepítővel; a PDT import és a
    Translation Pack külön chatben a PDT repóban (a prompt a chat végén).
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
