@@ -207,7 +207,8 @@ Kész (2026-09-30):
    gomb, DECISIONS 77), **újrahasznosítható CTA-szegmensek** (feltöltés vagy
    HeyGen, kulcsszóhoz kötve, legfeljebb 30 mp, helyenként Narrator vagy My
    segment, "previously selected") és a **végképernyő farok** (alap 20 mp,
-   DECISIONS 53 megvalósítva), DECISIONS 78. Tesztek: 177 Node, 43 Rust, e2e
+   DECISIONS 53 megvalósítva), DECISIONS 78; **"previously used" hang és
+   avatar** Identity-nként (DECISIONS 79). Tesztek: 177 Node, 43 Rust, e2e
    30/30. **Következő:** Zoltan próbája az új telepítővel; a PDT import és a
    Translation Pack külön chatben a PDT repóban (a prompt a chat végén).
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
