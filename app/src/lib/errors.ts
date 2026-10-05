@@ -6,6 +6,10 @@
 export function errorCode(message: string): string {
   const m = message.toLowerCase();
   const http = /http (\d{3})/.exec(m)?.[1];
+  if (m.startsWith("stopped by you") || m.startsWith("stopped before it started")) return "ITV-STOPPED";
+  if (m.includes("no sign of life")) return "ITV-STUCK";
+  if (m.startsWith("interrupted")) return "ITV-INTERRUPTED";
+  if (m.includes("internet connection may be down")) return "ITV-NET";
   if (m.includes("rejected the api key")) return "ITV-KEY-401";
   if (m.includes("no api key set")) return "ITV-KEY-NONE";
   if (m.includes("does not know this model")) return "ITV-LLM-404";

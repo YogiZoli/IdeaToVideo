@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { childEnv, hfHome, percentOf, managedBrowser, systemChromeCandidates, resolveBrowser, ensureBrowser, toolsStatus } from "./tools.mjs";
+import { childEnv, hfHome, percentOf, managedBrowser, systemChromeCandidates, resolveBrowser, ensureBrowser, toolsStatus, runHyperframes } from "./tools.mjs";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "itv-tools-"));
 const exe = process.platform === "win32" ? "chrome-headless-shell.exe" : "chrome-headless-shell";
@@ -81,4 +81,20 @@ test("tools status reports a missing engine, ffmpeg and browser plainly", () => 
   assert.equal(s.engine, null);
   assert.equal(s.ffmpeg, false);
   fs.rmSync(data, { recursive: true, force: true });
+});
+
+// 2026-10-06: an engine that hangs (a stuck browser) is stopped with a
+// sentence, it never runs forever.
+test("a silent engine is stopped after the idle time", async () => {
+  const engine = tmp();
+  const bin = path.join(engine, "node_modules", "hyperframes", "bin");
+  fs.mkdirSync(bin, { recursive: true });
+  fs.writeFileSync(path.join(bin, "hyperframes.mjs"), "console.log('starting'); setTimeout(() => {}, 60000);\n");
+  const env = { ...process.env, ITV_ENGINE_DIR: engine, ITV_DATA_DIR: tmp() };
+  const lines = [];
+  const t0 = Date.now();
+  await assert.rejects(runHyperframes(["render"], { env, idleMs: 1500, onLine: (l) => lines.push(l) }), /no sign of life.*hyperframes render/);
+  assert.ok(Date.now() - t0 < 15000);
+  assert.deepEqual(lines, ["starting"]);
+  fs.rmSync(engine, { recursive: true, force: true });
 });

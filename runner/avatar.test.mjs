@@ -82,6 +82,17 @@ test("wait: polls until completed, then downloads; a failure says why", async ()
   assert.equal(fs.readFileSync(r.file, "utf8"), "MP4DATA");
   const bad = fakeFetch([["/v3/videos/v2", json(200, { data: { status: "failed", failure_message: "avatar not ready" } })]]);
   await assert.rejects(heygen.waitAndDownload({ apiKey: KEY, id: "v2", out: path.join(dir, "x.mp4"), fetchImpl: bad, sleep: async () => {} }), /avatar not ready/);
+  // 2026-10-06: a dropped connection while HeyGen works (a laptop waking up)
+  // only means "ask again", it never gives up a clip already paid for
+  let m = 0;
+  const flaky = fakeFetch([
+    ["/v3/videos/v3", () => (++m <= 2 ? Promise.reject(new Error("fetch failed")) : m === 3 ? json(503, {}) : json(200, { data: { status: "completed", video_url: "https://files.heygen.ai/v1.mp4" } }))],
+    ["files.heygen.ai/v1.mp4", json(200, {})],
+  ]);
+  const seen = [];
+  const r3 = await heygen.waitAndDownload({ apiKey: KEY, id: "v3", out: path.join(dir, "close.mp4"), fetchImpl: flaky, sleep: async () => {}, onStatus: (s) => seen.push(s) });
+  assert.deepEqual(seen, ["waiting", "reconnecting", "reconnecting", "completed"]);
+  assert.equal(fs.readFileSync(r3.file, "utf8"), "MP4DATA");
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

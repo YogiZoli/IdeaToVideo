@@ -128,16 +128,33 @@ export function resolveBrowser(env = process.env) {
 
 // ---- running hyperframes ----------------------------------------------------------
 
+// No output from the engine for this long: it is stuck (a browser that hangs),
+// and it is stopped with a sentence instead of running forever (2026-10-06).
+// A render prints every frame; a check of a long video is the quietest step.
+export const ENGINE_IDLE_MS = 15 * 60000;
+
 // Runs the engine's hyperframes CLI with our node. Streams every output line to
 // onLine. Resolves { code, tail } (the last lines, for error messages).
-export function runHyperframes(args, { env = process.env, cwd, browser, onLine = () => {}, signal } = {}) {
+export function runHyperframes(args, { env = process.env, cwd, browser, onLine = () => {}, signal, idleMs = ENGINE_IDLE_MS } = {}) {
   const bin = hyperframesBin(env);
   if (!fs.existsSync(bin)) return Promise.reject(new Error(`The video engine is missing (${bin}). Reinstall the app.`));
   fs.mkdirSync(hfHome(env), { recursive: true });
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [bin, ...args], { cwd: cwd ?? engineDir(env), env: childEnv({ env, browser }), windowsHide: true, signal });
+    let stuck = false;
+    let timer = null;
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        stuck = true;
+        child.kill();
+      }, idleMs);
+      timer.unref?.();
+    };
+    arm();
     const tail = [];
     const take = (buf) => {
+      arm();
       for (const raw of buf.toString("utf8").split(/\r?\n|\r/)) {
         // eslint-disable-next-line no-control-regex
         const line = raw.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").trim();
@@ -149,8 +166,15 @@ export function runHyperframes(args, { env = process.env, cwd, browser, onLine =
     };
     child.stdout.on("data", take);
     child.stderr.on("data", take);
-    child.on("error", reject);
-    child.on("close", (code) => resolve({ code, tail: tail.join("\n") }));
+    child.on("error", (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (stuck) reject(new Error(`The video engine gave no sign of life for ${Math.round(idleMs / 60000)} minutes, so the app stopped it (hyperframes ${args[0]}). Press the button again; if it happens again, send the diagnostics (Settings, App, General).`));
+      else resolve({ code, tail: tail.join("\n") });
+    });
   });
 }
 

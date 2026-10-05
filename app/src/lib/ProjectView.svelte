@@ -19,7 +19,7 @@
   import { runner, errorText } from "./api";
   import { narratorProvider } from "./catalog";
   import { setScreen, log } from "./logger";
-  import { work, running, track, measure, startWork } from "./work.svelte";
+  import { work, running, track, measure, startWork, pilots } from "./work.svelte";
   import { TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
   import { avatarLooks } from "./avatars";
   import { llmFor } from "./llm";
@@ -34,7 +34,7 @@
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; publishFile?: string | null; comments?: string | null };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; gates: Record<string, Gate> };
+    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate> };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
@@ -70,9 +70,14 @@
         setScreen(`video/${name}`);
         log("video_state", { video: name, status: next.project.status, gates: states, autopilot: !!next.project.autopilot, hasVideo: !!next.latestVideo });
         active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen);
+        // a render that failed or was cut off before this view opened
+        if (next.project.render?.state === "failed" && !renderError) renderError = next.project.render.error ?? "The last render did not finish.";
         // the app works ahead, for free (K10 b): the avatar list and its
         // pictures load now, so the Avatar tab opens at once
         if (hasHeygen && next.project.gates.avatar?.state !== "approved") avatarLooks().catch(() => {});
+        // Autopilot was under way and got cut off (the window reloaded, the
+        // app was closed): it goes on by itself, and says so (2026-10-06)
+        if (next.project.autopilotRun && !pilots[dir]) resumePilot = true;
       } else if (before && !pilot) {
         const done = (g: string, s: Record<string, string>) => s[g] === "approved" || (g === "avatar" && s[g] === "skipped");
         for (const t of TABS) {
@@ -99,33 +104,67 @@
   // approved as soon as it is made, then the render. The same runner
   // commands as the buttons, one after the other; the tab of the step at
   // work is shown, with its own progress bar. Stops at the first error.
-  let pilot = $state("");
+  // project.json keeps a mark while it runs (autopilot-mark), so a run cut
+  // off by a reload or a closed app goes on when the ONE Video opens again;
+  // the app-wide `pilots` keeps a second one from starting meanwhile.
+  const pilot = $derived(pilots[dir] ?? "");
+  const setPilot = (label: string) => {
+    if (label) pilots[dir] = label;
+    else delete pilots[dir];
+  };
   let pilotError = $state("");
-  async function autopilot() {
-    if (!data) return;
+  let pilotNote = $state("");
+  let resumePilot = $state(false);
+  // a cut-off Autopilot waits for the step still running, then goes on
+  $effect(() => {
+    if (resumePilot && data && !anyJob && !pilots[dir]) {
+      resumePilot = false;
+      pilotNote = "Autopilot was cut off (the window reloaded or the app was closed), so it goes on from where it stopped. Stop any step to end it.";
+      log("autopilot_resumed", {});
+      autopilot(true);
+    }
+  });
+  // another view of this ONE Video runs the Autopilot: follow its steps
+  $effect(() => {
+    if (pilot) untrack(() => load());
+  });
+  async function autopilot(resumed = false) {
+    if (!data || pilots[dir]) return;
     pilotError = "";
+    if (!resumed) pilotNote = "";
     const gates = () => data!.project.gates;
     const approved = (g: string) => gates()[g]?.state === "approved";
-    if (["script", "voice", "scenes", "review"].every(approved) && data.latestVideo) {
-      pilotError = "Every step is done already. Render again on the Your video tab if you want a new file.";
+    // made, waiting for approval: approved as it is, never made again (and
+    // never paid twice) when a cut-off Autopilot goes on
+    const made = (g: string) => gates()[g]?.state === "pending";
+    const rendered = () => {
+      const r = data?.project.render;
+      return !!data?.latestVideo && r?.state === "done" && String(r.at ?? "") > String(gates().review?.at ?? "");
+    };
+    if (["script", "voice", "scenes", "review"].every(approved) && (rendered() || (!resumed && data.latestVideo))) {
+      if (resumed) await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
+      else pilotError = "Every step is done already. Render again on the Your video tab if you want a new file.";
       return;
     }
     const approveGate = async (gate: string) => {
       if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
       await load();
     };
+    setPilot("Starting");
     try {
+      await runner("autopilot-mark", { projectDir: dir, on: true });
       if (!approved("script")) {
         if (!data.scriptMarkdown) {
-          pilot = "Writing the script";
+          setPilot("Writing the script");
           show("script", "autopilot");
           await runner("write-script", { projectDir: dir, llm: llmFor(app.config, "script"), input: { topic: data.project.title, targetLengthMin: data.brief?.targetLengthMin ?? app.config?.defaults?.targetLengthMin ?? 8 }, channel: app.config!.channel });
           await load();
         }
         await approveGate("script");
       }
+      if (!approved("voice") && made("voice")) await approveGate("voice");
       if (!approved("voice")) {
-        pilot = "Reading the script aloud and mixing";
+        setPilot("Reading the script aloud and mixing");
         show("voice", "autopilot");
         const provider = narratorProvider(app.config?.narrator.provider);
         // Settings may hold a voice id or its name; the user's own voices come first
@@ -140,31 +179,38 @@
         await runner("make-voice", { projectDir: dir, narrator: { provider, voice }, music: null });
         // music (DECISIONS 62): ElevenLabs Music with a key, else none
         if (app.keys["elevenlabs"]) {
-          pilot = "Adding the background music";
+          setPilot("Adding the background music");
           await runner("make-music", { projectDir: dir, music: { provider: "elevenlabs" } });
         }
         await approveGate("voice");
       }
+      if (!approved("scenes") && made("scenes")) await approveGate("scenes");
       if (!approved("scenes")) {
-        pilot = "Planning the scenes";
+        setPilot("Planning the scenes");
         show("scenes", "autopilot");
         await runner("make-scenes", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
         await approveGate("scenes");
       }
+      if (!approved("review") && made("review")) await approveGate("review");
       if (!approved("review")) {
-        pilot = "Building the preview";
+        setPilot("Building the preview");
         show("preview", "autopilot");
         await runner("build-video", { projectDir: dir, look });
         await approveGate("review");
       }
-      pilot = "Rendering the video";
-      await render("standard");
-      if (renderError) throw new Error(renderError);
+      if (!rendered()) {
+        setPilot("Rendering the video");
+        await render("standard");
+        if (renderError) throw new Error(renderError);
+      }
+      await runner("autopilot-mark", { projectDir: dir, on: false });
+      pilotNote = "";
     } catch (e) {
       pilotError = `Autopilot stopped: ${errorText(e)}`;
-      await load();
+      await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
+      await load().catch(() => {});
     } finally {
-      pilot = "";
+      setPilot("");
     }
   }
   // The render belongs to the ONE Video, not to a tab: started from the
@@ -190,7 +236,7 @@
     <button type="button" class="ghost" onclick={back}>Back to the list</button>
     <h1 title={data?.project.title}>{data?.project.title ?? ""}</h1>
     {#if data}
-      <button type="button" disabled={!!pilot || anyJob} onclick={autopilot} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
+      <button type="button" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
       <button type="button" class="ghost" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
     {/if}
   </header>
@@ -210,6 +256,10 @@
       {/each}
     </nav>
     {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
+    {#if pilotNote && pilot}<p class="note">{pilotNote}</p>{/if}
+    {#if data.project.render?.state === "failed" && !running(dir, ["render-video"]) && active !== "video"}
+      <p class="note">The last render did not finish: {data.project.render.error ?? "no reason given"} <button type="button" class="link" onclick={() => show("video", "render-failed")}>Open Your video</button></p>
+    {/if}
 
     <div class="body" bind:this={body}>
       {#if active === "script"}
@@ -250,6 +300,7 @@
   /* no bottom padding: the action bar sticks to the very bottom edge */
   .body { min-height: 0; overflow: auto; padding: 4px 2px 0; scroll-padding-bottom: 90px; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
+  .note { margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--warning-surface); color: var(--warning-text); font-size: 13px; }
   @media (max-width: 980px) {
     .tab { padding: 6px 8px; font-size: 12px; }
   }

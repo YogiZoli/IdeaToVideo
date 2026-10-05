@@ -51,7 +51,7 @@ export function friendlyError(label, status, body) {
   if (status === 429) return `${label} quota ran out or the rate limit was hit. Wait a little, or switch provider in Settings.`;
   if (status === 404) return `${label} does not know this model. Check the model name in Settings.`;
   if (status === 400) return `${label} refused the request: ${String(body).slice(0, 300)}`;
-  if (status >= 500) return `${label} is overloaded or having problems right now (HTTP ${status}). The app already tried its other models. Wait a few minutes and press the button again; nothing is lost.`;
+  if (status >= 500) return `${label} is overloaded or having problems right now (HTTP ${status}). The app kept trying for about three minutes, on every model it has for ${label}. Wait a few minutes and press the button again; nothing is lost.`;
   return `${label} answered with HTTP ${status}.`;
 }
 
@@ -69,35 +69,47 @@ const report = (e) => {
   }
 };
 
-// One chat completion. Retries 429 and 5xx (and network errors) with
-// exponential backoff, 3 attempts in total (SPEC 5). Returns the text content.
+// When a service is overloaded, it usually is for a minute or two (Zoltan's
+// tests, 2026-10-05: Gemini 503 and 429 on every model at once). After every
+// model of the provider failed, the app waits and goes round again, these
+// many seconds, about three minutes in all, and says so on the bar. Only
+// then the user sees an error.
+export const ROUND_WAITS = [15, 30, 45, 60];
+
+// Overloaded (5xx), out of quota or rate-limited (429), or not reachable.
+const transient = (err) => err instanceof LlmError && (err.status >= 500 || err.status === 429 || (err.status === undefined && err.retryable));
+const why = (err) => (err.status ? `HTTP ${err.status}` : "no connection");
+
+// One chat completion. Each model gets 3 quick tries (chatOnce); a busy or
+// out-of-quota model hands over to the provider's other models (Gemini
+// counts the free quota per model, DECISIONS 72, K5); when all of them
+// failed, a wait (ROUND_WAITS) and another round. `patient: false` (a key
+// test) and `noFallback` answer at once.
 export async function chat(opts) {
-  try {
-    return await chatOnce(opts);
-  } catch (e) {
-    const p = PROVIDERS[opts.provider];
-    const used = opts.model || p?.model;
-    // Overloaded (5xx) or out of quota (429): the same request once on the
-    // provider's other model. Gemini counts the free quota per model, so the
-    // other one often still has room (DECISIONS 72, K5).
-    // Every other model of the provider in turn (Zoltan's test, 2026-10-05:
-    // both Flash models were overloaded at once).
-    const switchable = (err) => err instanceof LlmError && (err.status >= 500 || err.status === 429);
-    if (!switchable(e) || opts.noFallback) throw e;
-    let last = e;
-    let from = used;
-    for (const next of (p?.fallbackModels ?? []).filter((m) => m !== used)) {
-      report({ step: "fallback", provider: opts.provider, from, to: next, status: last.status });
-      opts.onFallback?.(next);
+  const p = PROVIDERS[opts.provider];
+  const first = opts.model || p?.model;
+  const models = [first, ...(opts.noFallback ? [] : (p?.fallbackModels ?? []).filter((m) => m !== first))];
+  const waits = opts.patient === false || opts.noFallback ? [] : ROUND_WAITS;
+  const sleep = opts.sleep ?? defaultSleep;
+  let last;
+  for (let round = 0; ; round++) {
+    for (let i = 0; i < models.length; i++) {
+      if (i > 0) {
+        report({ step: "fallback", provider: opts.provider, from: models[i - 1], to: models[i], status: last?.status });
+        opts.onFallback?.(models[i]);
+      }
       try {
-        return await chatOnce({ ...opts, model: next });
-      } catch (err) {
-        if (!switchable(err)) throw err;
-        last = err;
-        from = next;
+        return await chatOnce({ ...opts, model: models[i] });
+      } catch (e) {
+        // only a busy model hands over; a rejected key or request does not
+        if (!transient(e) || (i === 0 && round === 0 && opts.noFallback)) throw e;
+        last = e;
       }
     }
-    throw last;
+    if (round >= waits.length) throw last;
+    const label = p?.label ?? opts.provider;
+    report({ step: "retry", provider: opts.provider, status: last.status ?? "network", round: round + 1, of: waits.length, waitSeconds: waits[round], message: `${label} is busy (${why(last)}). Trying again in ${waits[round]} s, round ${round + 1} of ${waits.length}.` });
+    await sleep(waits[round] * 1000);
   }
 }
 
@@ -180,7 +192,7 @@ async function chatOnce({ provider, apiKey, model, effort = null, messages, json
 export async function testKey(opts) {
   // No tight max_tokens: reasoning models (Gemini 3.x) spend a small budget on
   // thinking and return empty content. A 200 already proves key and model.
-  await chat({ ...opts, messages: [{ role: "user", content: "Reply with the single word OK." }], allowEmpty: true, temperature: 0 });
+  await chat({ ...opts, messages: [{ role: "user", content: "Reply with the single word OK." }], allowEmpty: true, temperature: 0, patient: false });
   return { ok: true, message: `${PROVIDERS[opts.provider].label} key works.` };
 }
 

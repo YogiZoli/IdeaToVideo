@@ -10,6 +10,7 @@
 mod backup;
 mod brand;
 mod config;
+mod diagnostics;
 mod edition;
 mod identity;
 mod jobs;
@@ -19,7 +20,7 @@ mod runner;
 mod tray;
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
@@ -31,6 +32,19 @@ struct Core {
     jobs: jobs::Jobs,
     log: log::Log,
     notice: Mutex<Option<String>>,
+    /// Every runner run now, so Stop and quitting can end it with all it started.
+    runs: Mutex<Vec<Arc<runner::Control>>>,
+}
+
+impl Core {
+    /// Quitting: every run ends now, with its Chrome and ffmpeg.
+    fn stop_all(&self, reason: &str) {
+        if let Ok(runs) = self.runs.lock() {
+            for r in runs.iter() {
+                r.stop(reason);
+            }
+        }
+    }
 }
 
 /// One line in the local log from the core (log.rs).
@@ -120,10 +134,15 @@ async fn run_command(
         let (mut last_step, mut last_bucket) = (String::new(), -1i64);
         let mut on_progress = |v: Value| {
             let step = v.get("step").and_then(Value::as_str).unwrap_or("").to_string();
+            if step == "alive" {
+                // a heartbeat: for the UI's "last sign of life", never logged
+                let _ = app.emit("runner-progress", runner::progress_payload(&command, project.as_deref(), v));
+                return;
+            }
             let bucket = v.get("percent").and_then(Value::as_f64).map(|p| (p / 10.0) as i64);
-            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "repairing" | "estimate");
+            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "repairing" | "estimate" | "slept" | "resumed");
             if always || step != last_step || bucket.is_some_and(|b| b != last_bucket) {
-                let level = if matches!(step.as_str(), "retry" | "fallback" | "repairing") { "warn" } else { "info" };
+                let level = if matches!(step.as_str(), "retry" | "fallback" | "repairing" | "slept") { "warn" } else { "info" };
                 core.log.write("runner", level, "run_progress", json!({ "command": command, "progress": log::safe(&v) }), &secrets);
                 last_step = step;
                 if let Some(b) = bucket {
@@ -135,16 +154,22 @@ async fn run_command(
             }
             let _ = app.emit("runner-progress", runner::progress_payload(&command, project.as_deref(), v));
         };
-        let ticket = job.map(|(info, class)| {
+        let mut stopped_waiting = false;
+        let ticket = job.and_then(|(info, class)| {
             let t = core.jobs.start(info, class, &mut |message| {
                 on_progress(json!({ "event": "progress", "step": "waiting", "message": message }));
                 let _ = app.emit("jobs-changed", core.jobs.list());
                 tray::status(&app, None);
             });
+            stopped_waiting = t.is_none();
             let _ = app.emit("jobs-changed", core.jobs.list());
-                tray::status(&app, None);
+            tray::status(&app, None);
             t
         });
+        if stopped_waiting {
+            core.log.write("runner", "info", "run_stopped", json!({ "command": command, "while": "waiting" }), &secrets);
+            return Err("Stopped before it started.".to_string());
+        }
         // The computer must not fall asleep while a script is written, a voice
         // is read or a video renders (Zoltan, 2026-09-30). Held for exactly
         // as long as the runner works. On Windows the request belongs to the
@@ -157,16 +182,30 @@ async fn run_command(
             .app_reverse_domain("app.ideatovideo.desktop")
             .create()
             .ok();
-        let result = runner::run(&paths, &command, &request, api_key, &mut on_progress);
+        let control = Arc::new(runner::Control::new(ticket.as_ref().map(|t| t.id())));
+        if let Ok(mut runs) = core.runs.lock() {
+            runs.push(control.clone());
+        }
+        let mut diag = String::new();
+        let result = runner::run(&paths, &command, &request, api_key, &control, &mut diag, &mut on_progress);
+        if let Ok(mut runs) = core.runs.lock() {
+            runs.retain(|r| !Arc::ptr_eq(r, &control));
+        }
         let ms = started.elapsed().as_millis() as u64;
         match &result {
             Ok(v) => core.log.write("runner", "info", "run_end", json!({ "command": command, "ms": ms, "result": log::safe(v) }), &secrets),
-            Err(e) => core.log.write("runner", "error", "run_failed", json!({ "command": command, "ms": ms, "message": e }), &secrets),
+            Err(e) => core.log.write(
+                "runner",
+                "error",
+                "run_failed",
+                json!({ "command": command, "ms": ms, "message": e, "stopped": control.stopped().is_some(), "stderr": (!diag.is_empty()).then_some(&diag) }),
+                &secrets,
+            ),
         }
         if ticket.is_some() {
             drop(ticket);
             let _ = app.emit("jobs-changed", core.jobs.list());
-                tray::status(&app, None);
+            tray::status(&app, None);
         }
         result
     })
@@ -405,6 +444,30 @@ fn log_status(app: AppHandle) -> Value {
     app.state::<Core>().log.status()
 }
 
+/// Settings, App, General, "Export diagnostics": one zip to send when
+/// something went wrong (diagnostics.rs). No key is in it.
+#[tauri::command]
+fn export_diagnostics(app: AppHandle, path: String) -> Result<String, String> {
+    let mut out = PathBuf::from(path);
+    if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("zip".into()) {
+        out.set_extension("zip");
+    }
+    let cfg = load_app_config(&app).ok().flatten();
+    let root = projects_dir(&app, cfg.as_ref())?;
+    let logs = app.path().app_local_data_dir().ok().map(|d| d.join("logs"));
+    let about = format!(
+        "{} diagnostics\nVersion {} on {} {}\nMade {} (UTC)\n\nInside: the app's log (logs/), the settings without any key (settings/), and for every ONE Video its state, its log and the video engine's logs (videos/). No key, no audio, no video, no script text.\n",
+        edition::PRODUCT_NAME,
+        app.package_info().version,
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        log::now_ms(),
+    );
+    let n = diagnostics::export(&diagnostics::Sources { logs: logs.as_deref(), config_dir: &config_dir(&app)?, projects_root: &root, about }, &out)?;
+    note(&app, "info", "diagnostics_exported", json!({ "file": out, "files": n }));
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// Settings, App, General, "Delete logs": the only way logs go away.
 #[tauri::command]
 fn delete_logs(app: AppHandle) -> Result<Value, String> {
@@ -565,6 +628,27 @@ fn job_list(app: AppHandle) -> Value {
     app.state::<Core>().jobs.list()
 }
 
+/// "Stop" on a job: a waiting one leaves the queue, a running one ends with
+/// every process it started. What a paid service already made stays paid.
+#[tauri::command]
+fn stop_job(app: AppHandle, id: u64) -> Result<(), String> {
+    let core = app.state::<Core>();
+    let running = core.runs.lock().map(|r| r.iter().find(|c| c.job == Some(id)).cloned()).unwrap_or(None);
+    let found = match running {
+        Some(c) => {
+            c.stop("Stopped by you.");
+            true
+        }
+        None => core.jobs.cancel_waiting(id),
+    };
+    note(&app, "info", "job_stop", json!({ "job": id, "found": found }));
+    if found {
+        Ok(())
+    } else {
+        Err("That job has already finished.".into())
+    }
+}
+
 /// The one door to the runner: whitelisted command, paths checked, the key
 /// of the right Identity added, the job queued by its class.
 #[tauri::command]
@@ -613,6 +697,11 @@ async fn run_runner(app: AppHandle, command: String, mut request: Value) -> Resu
     }
     if let Some(id) = owner.as_deref() {
         request["identityDir"] = json!(runner::plain_path(identity::dir_of(&config_dir(&app)?, id)?));
+    }
+    // What really runs now: a gate left "running" in any other ONE Video was
+    // interrupted (the process ids the runner used before can be reused).
+    if matches!(command.as_str(), "load-project" | "list-projects") {
+        request["liveProjects"] = json!(app.state::<Core>().jobs.live_projects());
     }
     let app_only = request.get("keyScope").and_then(Value::as_str) == Some("app");
     let resolved = match &key_name {
@@ -949,6 +1038,7 @@ pub fn run() {
             key_status,
             delete_all_keys,
             job_list,
+            stop_job,
             run_runner,
             import_logo,
             export_brand,
@@ -964,6 +1054,7 @@ pub fn run() {
             cloud_folders,
             log_event,
             log_status,
+            export_diagnostics,
             delete_logs
         ])
         // the close button hides the window; the app keeps working in the tray
@@ -976,6 +1067,13 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
+            // Quitting ends every run with all it started (Windows does it
+            // too through the Job Objects; this covers macOS)
+            if let tauri::RunEvent::Exit = _event {
+                let core = _app.state::<Core>();
+                core.log.info("app_exit", json!({ "runs": core.runs.lock().map(|r| r.len()).unwrap_or(0) }));
+                core.stop_all("The app was closed.");
+            }
             // macOS: a click on the Dock icon opens the hidden window again
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = _event {

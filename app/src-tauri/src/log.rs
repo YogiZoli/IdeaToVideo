@@ -193,7 +193,7 @@ const PLAIN: &[&str] = &[
     "name", "folder", "status", "kind", "segment", "level", "event", "code", "step", "format", "version", "tier",
     "projectDir", "projectsDir", "projectsRoot", "backupRoot", "dir", "file", "path", "srt", "chaptersFile", "message",
     "error", "warning", "at", "createdAt", "youtubeUrl", "landingUrl", "logo", "identity", "activeIdentity", "music",
-    "reason", "label", "title",
+    "reason", "label", "title", "from", "to", "timing",
 ];
 
 /// A request or result made safe to log: identifiers, choices, paths, numbers

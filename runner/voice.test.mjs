@@ -9,6 +9,8 @@ import { narrationFromMarkdown, wordCount } from "./gates/voice/narration.mjs";
 import { wordsFromCharacters } from "./providers/tts/align.mjs";
 import { listVoices, speak, previewAllowed } from "./providers/tts/elevenlabs.mjs";
 import { parseIntegrated, joinFilter, musicGainDb, mixFilter, joinBlocks, mix, loudness, duration, PAUSE_SECONDS } from "./audio.mjs";
+import { makeVoice, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
+import { WAITS } from "./providers/retry.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const KEY = "el-test-0123456789abcdefghij";
@@ -213,10 +215,47 @@ test("gemini: one call per sentence, exact sentence times, key only in the heade
   assert.equal(r.words[3].end, 2.25);
 });
 
+// 2026-10-06: one busy answer used to fail the whole narration.
+test("a busy voice service is waited out, and a failed run keeps the parts already read", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-voice-retry-"));
+  fs.writeFileSync(path.join(dir, "script.md"), ["# T", "", "## OPEN", "", "First part.", "", "## 1. Two", "", "Second part.", ""].join("\n"));
+  const said = [];
+  let calls = 0;
+  let failSecond = true;
+  const provider = {
+    speak: async ({ text, onRetry }) => {
+      calls++;
+      if (text.startsWith("Second") && failSecond) {
+        onRetry?.({ attempt: 1, of: 7, waitSeconds: 3, status: 503, message: "busy" });
+        throw new Error("down for good");
+      }
+      return { audio: Buffer.from(`audio of ${text}`), words: [{ text, start: 0, end: 1, type: "word" }], ext: "mp3" };
+    },
+  };
+  VOICE_PROVIDERS.fake = provider;
+  try {
+    await assert.rejects(makeVoice({ projectDir: dir, narrator: { provider: "fake", voice: "v" }, apiKey: KEY, onProgress: (p) => said.push(p.step) }), /down for good/);
+    assert.ok(said.includes("retry"));
+    assert.equal(calls, 2);
+    // the second run reads only the part that failed
+    failSecond = false;
+    calls = 0;
+    await makeVoice({ projectDir: dir, narrator: { provider: "fake", voice: "v" }, apiKey: KEY }).catch(() => {});
+    assert.equal(calls, 1, "the first part came from the kept blocks");
+  } finally {
+    delete VOICE_PROVIDERS.fake;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("gemini: quota and key errors are plain and never show the key", async () => {
   const mk = (status) => async () => ({ ok: false, status, text: async () => JSON.stringify({ error: { message: `bad ${KEY}` } }) });
-  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: mk(429), text: "x." }), (e) => /free quota/.test(e.message) && !e.message.includes(KEY));
-  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: mk(403), text: "x." }), /rejected the API key/);
+  const waited = [];
+  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: mk(429), text: "x.", sleep: async (ms) => waited.push(ms) }), (e) => /free quota/.test(e.message) && !e.message.includes(KEY));
+  assert.equal(waited.length, WAITS.length, "a rate limit is waited out first");
+  waited.length = 0;
+  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: mk(403), text: "x.", sleep: async (ms) => waited.push(ms) }), /rejected the API key/);
+  assert.equal(waited.length, 0, "a refused key is not tried again");
   await assert.rejects(geminiSpeak({ apiKey: "", text: "x." }), /No API key set for Gemini/);
   assert.equal((await geminiVoices()).length, 30);
 });

@@ -13,6 +13,8 @@ import { spawn } from "node:child_process";
 import { sceneTimes, baseTheme } from "../build/assemble.mjs";
 import { duration, bins } from "../../audio.mjs";
 import * as heygen from "../../providers/avatar/heygen.mjs";
+import { patiently } from "../../providers/retry.mjs";
+import { createHash } from "node:crypto";
 
 export const SEGMENTS = { open: { label: "Opening", scene: "first" }, close: { label: "Closing", scene: "last" } };
 
@@ -79,6 +81,19 @@ export async function cutNarration(projectDir, { start, duration: seconds }, out
 
 const voBytes = (projectDir) => fs.statSync(path.join(projectDir, "audio", "vo.mp3")).size;
 
+const pendingFile = (projectDir) => path.join(avatarDir(projectDir), "pending.json");
+function readPending(projectDir) {
+  try {
+    return JSON.parse(fs.readFileSync(pendingFile(projectDir), "utf8"));
+  } catch {
+    return {};
+  }
+}
+function writePending(projectDir, pending) {
+  fs.mkdirSync(avatarDir(projectDir), { recursive: true });
+  fs.writeFileSync(pendingFile(projectDir), JSON.stringify(pending, null, 2) + "\n");
+}
+
 // Gate 5: make the clips. `which` = ["open", "close"] or one of them.
 export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", "close"], look, layout: wanted, env = process.env, fetchImpl = fetch, sleep, onProgress = () => {} }) {
   const layout = normalizeLayout(wanted);
@@ -90,34 +105,61 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
   if (!chosen.length) throw new Error("Choose the opening, the closing, or both.");
   const dir = avatarDir(projectDir);
   const background = baseTheme(look).bg;
+  const retry = { label: "HeyGen", onRetry: (x) => onProgress({ step: "retry", ...x }), ...(sleep ? { sleep } : {}) };
+  // Orders already placed (and paid) for exactly this clip: a run that failed
+  // or was stopped while HeyGen worked picks them up instead of ordering
+  // again (2026-10-06). avatar/pending.json, cleared when all clips are in.
+  const pending = readPending(projectDir);
   const jobs = [];
   for (const [i, seg] of chosen.entries()) {
     onProgress({ step: "upload", segment: seg.label, n: i + 1, of: chosen.length });
     const audio = await cutNarration(projectDir, seg, path.join(dir, `${seg.name}.mp3`), { env });
-    const assetId = await heygen.uploadAudio({ apiKey, file: audio, fetchImpl });
+    const key = createHash("sha256").update(JSON.stringify({ lookId, audio: createHash("sha256").update(fs.readFileSync(audio)).digest("hex"), background, style: layout.style })).digest("hex").slice(0, 32);
+    const before = pending[seg.name];
+    if (before?.key === key && before.id) {
+      if (before.note) note = before.note;
+      if (before.format === "mp4" && format === "webm") layout.style = "card";
+      jobs.push({ seg, id: before.id, format: before.format, reused: true });
+      continue;
+    }
+    const assetId = await patiently(() => heygen.uploadAudio({ apiKey, file: audio, fetchImpl }), retry);
     const title = `IdeaToVideo ${path.basename(projectDir)} ${seg.name}`;
     let id;
+    let fmt = format;
     try {
-      id = await heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", fetchImpl });
+      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", fetchImpl }), retry);
     } catch (e) {
       // an older look without background removal: a card instead, said plainly
       if (format !== "webm" || !heygen.noMatting(e)) throw e;
       format = "mp4";
+      fmt = "mp4";
       layout.style = "card";
       note = "This look has no background removal at HeyGen, so it is shown as a card instead of a cut-out.";
-      id = await heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, fetchImpl });
+      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, fetchImpl }), retry);
     }
-    jobs.push({ seg, id, format });
+    pending[seg.name] = { key, id, format: fmt, note, at: new Date().toISOString() };
+    writePending(projectDir, pending);
+    jobs.push({ seg, id, format: fmt });
   }
   const done = [];
   for (const f of fs.readdirSync(dir)) if (/^(open|close)\.(mp4|webm)$/.test(f)) fs.rmSync(path.join(dir, f), { force: true });
-  for (const [i, { seg, id, format: fmt }] of jobs.entries()) {
+  for (const [i, { seg, id, format: fmt, reused }] of jobs.entries()) {
     const out = path.join(dir, `${seg.name}.${fmt}`);
-    await heygen.waitAndDownload({ apiKey, id, out, fetchImpl, ...(sleep ? { sleep } : {}), onStatus: (status) => onProgress({ step: "heygen", segment: seg.label, status, n: i + 1, of: jobs.length }) });
-    done.push({ name: seg.name, label: seg.label, start: seg.start, duration: seg.duration, file: `avatar/${seg.name}.${fmt}`, videoId: id });
+    try {
+      await heygen.waitAndDownload({ apiKey, id, out, fetchImpl, ...(sleep ? { sleep } : {}), onStatus: (status) => onProgress({ step: "heygen", segment: seg.label, status, n: i + 1, of: jobs.length, ...(reused ? { reused: true } : {}) }) });
+    } catch (e) {
+      // HeyGen gave up on this order: the next run orders it again
+      if (/could not make the avatar clip/i.test(e.message)) {
+        delete pending[seg.name];
+        writePending(projectDir, pending);
+      }
+      throw e;
+    }
+    done.push({ name: seg.name, label: seg.label, start: seg.start, duration: seg.duration, file: `avatar/${seg.name}.${fmt}`, videoId: id, ...(reused ? { reused: true } : {}) });
   }
-  const record = { lookId, background, format, layout, note, voBytes: voBytes(projectDir), segments: done, at: new Date().toISOString() };
+  const record = { lookId, background, format: jobs.some((j) => j.format === "webm") ? "webm" : "mp4", layout, note, voBytes: voBytes(projectDir), segments: done, at: new Date().toISOString() };
   fs.writeFileSync(avatarJson(projectDir), JSON.stringify(record, null, 2) + "\n");
+  fs.rmSync(pendingFile(projectDir), { force: true });
   return record;
 }
 

@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-05 éjjel (UI kör kész, DECISIONS 85-90)
+Frissítve: 2026-10-06 (hibátlanítás: megbízható futás, DECISIONS 91)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -231,8 +231,21 @@ Kész (2026-09-30):
    Tesztek: 204 Node, 43 Rust, e2e 33/33. Telepítő: commit 8ddcdd9
    (2026-10-05 23:46, 99 MB). Képek: `feedback/2026-10-05/ui-tabs/`.
    UI próba: `scripts/ui-mock` (`?stage=0..6`, `?slow=`, `?aifail=1`).
-   **Következő: hibátlanítás, új chatben** (a prompt a 2026-10-05-i chat
-   végén), utána ugyanott vagy külön a fázis lezárása.
+   **Hibátlanítás: kész** (2026-10-06, DECISIONS 91), a cél a megbízható
+   futás és az átláthatóság. Stop gomb minden haladásjelzőn; folyamatfa
+   (Windows Job Object), így a Stop, az őrkutya és a kilépés a Chrome-ot és
+   az ffmpeg-et is leállítja; őrkutya (5 perc csend, a motornál 15 perc);
+   türelmes újrapróbálás (AI kb. 3 perc körökben, a sáv kiírja; hang és
+   HeyGen hívásonként); nincs dupla fizetés (megőrzött hangblokkok, HeyGen
+   megrendelések átvétele); két javító kör a scriptnél és a jelenet-táblánál,
+   az ízlésbeli eltérés csak figyelmeztetés; lépésenként kiírva, lecsukhatod-e
+   a gépet; alvás és csend jelzése; beragadt "Running" a mag tudása alapján;
+   Autopilot folytatás megszakadás után; render állapot a projektben;
+   felületi hibahatár; "Export diagnostics" zip. Tesztek: 211 Node, 46 Rust, e2e 33/33.
+   Zoltan próbájára vár a következő telepítővel.
+   **Következő: Zoltan próbája** (a napló: `node scripts/log-summary.mjs`),
+   utána a fázis lezárása (Mac build, STATUS, DECISIONS, SPEC, Drive tükör,
+   PR a main felé).
    Később: stock kereső (DECISIONS 90, a pilot után); az OpenArt kimarad;
    élő előnézet renderelés nélkül (K9 b, Zoltan még nem döntött);
    lokalizáció és fordítás (DECISIONS 86). A PDT import és a Translation

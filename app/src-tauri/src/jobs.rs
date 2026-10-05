@@ -38,6 +38,12 @@ const KEY_JOBS: &[&str] = &[
     "youtube-texts",
 ];
 
+/// Commands that set a gate of a ONE Video "running" while they work.
+const GATE_WORK: &[&str] = &[
+    "write-script", "make-voice", "set-music", "make-music", "make-scenes", "simple-scenes", "refill-scene", "make-avatar",
+    "avatar-layout", "build-video", "render-video",
+];
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Class {
     LocalHeavy,
@@ -70,6 +76,8 @@ struct Job {
     info: Info,
     class: Class,
     running: bool,
+    /// Stop was pressed while it waited: it leaves the queue without running.
+    cancelled: bool,
 }
 
 #[derive(Default)]
@@ -109,6 +117,12 @@ pub struct Ticket<'a> {
     id: u64,
 }
 
+impl Ticket<'_> {
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+}
+
 impl Drop for Ticket<'_> {
     fn drop(&mut self) {
         let mut s = self.jobs.state.lock().unwrap_or_else(|e| e.into_inner());
@@ -119,18 +133,24 @@ impl Drop for Ticket<'_> {
 
 impl Jobs {
     /// Registers a job and blocks until it may run. `waiting` is called once
-    /// with a sentence for the user when the job has to wait.
-    pub fn start(&self, info: Info, class: Class, waiting: &mut dyn FnMut(String)) -> Ticket<'_> {
+    /// with a sentence for the user when the job has to wait. None: Stop was
+    /// pressed while it waited.
+    pub fn start(&self, info: Info, class: Class, waiting: &mut dyn FnMut(String)) -> Option<Ticket<'_>> {
         self.start_with_limit(info, class, LOCAL_HEAVY_LIMIT, waiting)
     }
 
-    fn start_with_limit(&self, info: Info, class: Class, limit: usize, waiting: &mut dyn FnMut(String)) -> Ticket<'_> {
+    fn start_with_limit(&self, info: Info, class: Class, limit: usize, waiting: &mut dyn FnMut(String)) -> Option<Ticket<'_>> {
         let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
         s.next += 1;
         let id = s.next;
-        s.jobs.push(Job { id, info, class: class.clone(), running: false });
+        s.jobs.push(Job { id, info, class: class.clone(), running: false, cancelled: false });
         let mut told = false;
         loop {
+            if s.jobs.iter().any(|j| j.id == id && j.cancelled) {
+                s.jobs.retain(|j| j.id != id);
+                self.changed.notify_all();
+                return None;
+            }
             // first come, first served: an earlier waiter of the same kind goes first
             let earlier_waiting = s.jobs.iter().any(|j| j.id < id && !j.running && j.class == class && class != Class::Free);
             let blocked = match s.blocker(&class, limit) {
@@ -151,7 +171,23 @@ impl Jobs {
             j.running = true;
         }
         self.changed.notify_all();
-        Ticket { jobs: self, id }
+        Some(Ticket { jobs: self, id })
+    }
+
+    /// Stop on a job that still waits its turn. True if it was waiting.
+    pub fn cancel_waiting(&self, id: u64) -> bool {
+        let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(j) = s.jobs.iter_mut().find(|j| j.id == id && !j.running) else { return false };
+        j.cancelled = true;
+        self.changed.notify_all();
+        true
+    }
+
+    /// The ONE Videos a step really works on now (not a quick read): a gate
+    /// left "running" in a video that is not here was interrupted.
+    pub fn live_projects(&self) -> Vec<String> {
+        let s = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        s.jobs.iter().filter(|j| GATE_WORK.contains(&j.info.command.as_str())).filter_map(|j| j.info.project.clone()).collect()
     }
 
     /// Running and waiting jobs, for the "Jobs" list in the top bar.
@@ -234,10 +270,10 @@ mod tests {
     #[test]
     fn a_second_render_waits_but_a_script_does_not() {
         let jobs = Arc::new(Jobs::default());
-        let first = jobs.start(info("render-video", "/p/A"), Class::LocalHeavy, &mut |_| {});
+        let first = jobs.start(info("render-video", "/p/A"), Class::LocalHeavy, &mut |_| {}).unwrap();
         // a key job runs next to the render
         let mut told = Vec::new();
-        let script = jobs.start(info("write-script", "/p/C"), Class::Key("gemini@app".into()), &mut |m| told.push(m));
+        let script = jobs.start(info("write-script", "/p/C"), Class::Key("gemini@app".into()), &mut |m| told.push(m)).unwrap();
         assert!(told.is_empty());
         drop(script);
 
@@ -260,9 +296,9 @@ mod tests {
     #[test]
     fn one_key_one_job_but_two_keys_run_together() {
         let jobs = Arc::new(Jobs::default());
-        let a = jobs.start(info("make-voice", "/p/A"), Class::Key("elevenlabs@app".into()), &mut |_| {});
+        let a = jobs.start(info("make-voice", "/p/A"), Class::Key("elevenlabs@app".into()), &mut |_| {}).unwrap();
         let mut told = false;
-        let own = jobs.start(info("make-voice", "/p/B"), Class::Key("elevenlabs@vox".into()), &mut |_| told = true);
+        let own = jobs.start(info("make-voice", "/p/B"), Class::Key("elevenlabs@vox".into()), &mut |_| told = true).unwrap();
         assert!(!told, "an Identity with its own key does not wait");
         drop(own);
         let j2 = jobs.clone();
@@ -281,9 +317,30 @@ mod tests {
     #[test]
     fn busy_identities_are_known() {
         let jobs = Jobs::default();
-        let t = jobs.start(info("render-video", "/p/A"), Class::LocalHeavy, &mut |_| {});
+        let t = jobs.start(info("render-video", "/p/A"), Class::LocalHeavy, &mut |_| {}).unwrap();
+        assert_eq!(jobs.live_projects(), vec!["/p/A".to_string()]);
         assert!(jobs.busy_identities().contains("vox"));
         drop(t);
         assert!(jobs.busy_identities().is_empty());
+        assert!(jobs.live_projects().is_empty());
+    }
+
+    #[test]
+    fn a_waiting_job_can_be_stopped() {
+        let jobs = Arc::new(Jobs::default());
+        let first = jobs.start(info("render-video", "/p/A"), Class::LocalHeavy, &mut |_| {}).unwrap();
+        let j2 = jobs.clone();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let h = std::thread::spawn(move || {
+            let t = j2.start(info("render-video", "/p/B"), Class::LocalHeavy, &mut |_| {});
+            tx.send(t.is_none()).unwrap();
+        });
+        std::thread::sleep(Duration::from_millis(200));
+        let waiting = jobs.list().as_array().unwrap().iter().find(|j| j["state"] == "waiting").unwrap()["id"].as_u64().unwrap();
+        assert!(jobs.cancel_waiting(waiting));
+        assert!(rx.recv_timeout(Duration::from_secs(5)).unwrap(), "the stopped job never runs");
+        h.join().unwrap();
+        assert!(!jobs.cancel_waiting(first.id()), "a running job is stopped through its run, not here");
+        assert_eq!(jobs.list().as_array().unwrap().len(), 1);
     }
 }

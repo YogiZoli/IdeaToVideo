@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { redact } from "../llm.mjs";
+import { BusyError, busyStatus } from "../retry.mjs";
 
 const API = "https://api.heygen.com";
 
@@ -46,9 +47,10 @@ async function call(apiKey, pathname, { method = "GET", body, fetchImpl = fetch,
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
-    throw new Error(`Could not reach HeyGen: ${redact(e.message, apiKey)}`);
+    throw new BusyError(`Could not reach HeyGen: ${redact(e.message, apiKey)}`);
   }
   const text = redact(await res.text().catch(() => ""), apiKey);
+  if (!res.ok && busyStatus(res.status)) throw new BusyError(friendly(res.status, text), { status: res.status });
   if (!res.ok) throw new Error(friendly(res.status, text));
   let json;
   try {
@@ -157,21 +159,44 @@ export async function getVideo({ apiKey, id, fetchImpl }) {
 
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Polls until the video is ready, then downloads it to `out`.
+// Polls until the video is ready, then downloads it to `out`. HeyGen keeps
+// working while the connection drops (a laptop waking up, a Wi-Fi blip): such
+// an error only means "ask again later", until the time runs out, so a clip
+// already paid for is never given up because of one lost answer.
 export async function waitAndDownload({ apiKey, id, out, fetchImpl = fetch, sleep = defaultSleep, everyMs = 10000, timeoutMs = 30 * 60000, onStatus = () => {} }) {
   const t0 = Date.now();
+  let misses = 0;
   for (;;) {
-    const v = await getVideo({ apiKey, id, fetchImpl });
+    let v;
+    try {
+      v = await getVideo({ apiKey, id, fetchImpl });
+      misses = 0;
+    } catch (e) {
+      if (!e?.transient) throw e;
+      if (Date.now() - t0 > timeoutMs) throw new Error(`${e.message} The clip may still arrive in your HeyGen account; press the button again later and the app picks it up without a new order.`);
+      onStatus(++misses > 1 ? "reconnecting" : "waiting");
+      await sleep(everyMs);
+      continue;
+    }
     onStatus(v?.status);
     if (v?.status === "completed" && v.video_url) {
-      const res = await fetchImpl(v.video_url, { signal: AbortSignal.timeout(300000) });
-      if (!res.ok) throw new Error(`Could not download the avatar clip (HTTP ${res.status}).`);
+      let res;
+      for (let i = 0; ; i++) {
+        try {
+          res = await fetchImpl(v.video_url, { signal: AbortSignal.timeout(300000) });
+          if (res.ok) break;
+        } catch {
+          res = null;
+        }
+        if (i >= 4) throw new Error(`Could not download the avatar clip${res ? ` (HTTP ${res.status})` : ""}. It is ready in your HeyGen account; press the button again and the app downloads it without a new order.`);
+        await sleep(everyMs);
+      }
       fs.mkdirSync(path.dirname(out), { recursive: true });
       fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));
       return { file: out, seconds: v.duration ?? null };
     }
     if (v?.status === "failed") throw new Error(`HeyGen could not make the avatar clip: ${v.failure_message || v.failure_code || "no reason given"}.`);
-    if (Date.now() - t0 > timeoutMs) throw new Error("HeyGen is taking longer than 30 minutes. The clip may still arrive in your HeyGen account; try again later.");
+    if (Date.now() - t0 > timeoutMs) throw new Error("HeyGen is taking longer than 30 minutes. The clip may still arrive in your HeyGen account; press the button again later and the app picks it up without a new order.");
     await sleep(everyMs);
   }
 }

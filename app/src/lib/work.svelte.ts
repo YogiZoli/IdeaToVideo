@@ -19,6 +19,11 @@ const keyOf = (project: string | null | undefined, command: string) => `${norm(p
 
 export const work = $state<{ jobs: Job[]; tracks: Record<string, Track>; now: number }>({ jobs: [], tracks: {}, now: Date.now() });
 
+/** ONE Videos with Autopilot under way, and its current step in words, for
+ * every view (ProjectView). A view opened again sees it and does not start
+ * a second one. */
+export const pilots = $state<Record<string, string>>({});
+
 let started = false;
 /** Starts listening, once (the first view that needs it calls it). */
 export function startWork() {
@@ -50,6 +55,13 @@ function syncJobs(jobs: Job[]) {
 export function running(project: string | null | undefined, commands: string[]): string | null {
   const p = norm(project);
   return work.jobs.find((j) => commands.includes(j.command) && (!project || norm(j.project) === p))?.command ?? null;
+}
+
+/** The job of a command for a video (for Stop); without a video, the newest one. */
+export function jobOf(project: string | null | undefined, command: string): Job | null {
+  const p = norm(project);
+  const mine = work.jobs.filter((j) => j.command === command && (!project || norm(j.project) === p));
+  return mine.sort((a, b) => b.id - a.id)[0] ?? null;
 }
 
 /** The progress of a command for a video; without a video, the newest one. */

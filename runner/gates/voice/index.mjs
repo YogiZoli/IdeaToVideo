@@ -13,6 +13,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { narrationFromMarkdown, wordCount, speakable } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
@@ -35,7 +36,7 @@ export function musicPath(projectDir, rel) {
   return p;
 }
 
-export async function makeVoice({ projectDir, narrator, apiKey, music = null, language, env = process.env, fetchImpl, onProgress = () => {} }) {
+export async function makeVoice({ projectDir, narrator, apiKey, music = null, language, env = process.env, fetchImpl, sleep, onProgress = () => {} }) {
   const provider = VOICE_PROVIDERS[narrator?.provider];
   if (!provider) throw new Error(`This Narrator Voice is not available yet: ${narrator?.provider}. Choose ElevenLabs in Settings.`);
   const md = path.join(projectDir, "script.md");
@@ -47,23 +48,50 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
   const blockDir = path.join(audioDir, "blocks");
   fs.rmSync(blockDir, { recursive: true, force: true });
   fs.mkdirSync(blockDir, { recursive: true });
+  // Blocks a failed run already read (and paid for) are kept until the voice
+  // is done, so pressing the button again reads only the rest (2026-10-06).
+  // A finished voice clears them: "make the voice again" is a new reading.
+  const cacheDir = path.join(audioDir, "blocks-cache");
+  fs.mkdirSync(cacheDir, { recursive: true });
+  const model = narrator.provider === "elevenlabs" && ELEVEN_MODELS[narrator.model] ? narrator.model : null;
 
   const files = [];
   const blockWords = [];
+  let reused = 0;
   for (let i = 0; i < blocks.length; i++) {
     onProgress({ step: "voice", block: i + 1, of: blocks.length });
-    const r = await provider.speak({
-      apiKey,
-      fetchImpl,
+    const args = {
       voiceId: narrator.voice,
       // ElevenLabs only: Eleven v4 when chosen at gate 2 (2026-10-05), else its default
-      ...(narrator.provider === "elevenlabs" && ELEVEN_MODELS[narrator.model] ? { model: narrator.model } : {}),
+      ...(model ? { model } : {}),
       text: speakable(blocks[i].text),
       previousText: blocks[i - 1] && speakable(blocks[i - 1].text),
       nextText: blocks[i + 1] && speakable(blocks[i + 1].text),
       languageCode: language,
-      onSentence: (n, of) => onProgress({ step: "voice", block: i + 1, of: blocks.length, sentence: n, sentences: of }),
-    });
+    };
+    const key = createHash("sha256").update(JSON.stringify({ v: 1, provider: narrator.provider, ...args })).digest("hex").slice(0, 32);
+    const meta = path.join(cacheDir, `${key}.json`);
+    let r = null;
+    try {
+      const m = JSON.parse(fs.readFileSync(meta, "utf8"));
+      r = { audio: fs.readFileSync(path.join(cacheDir, `${key}.${m.ext}`)), words: m.words, ext: m.ext };
+      reused++;
+    } catch {
+      r = null;
+    }
+    if (!r) {
+      r = await provider.speak({
+        apiKey,
+        fetchImpl,
+        ...args,
+        onSentence: (n, of) => onProgress({ step: "voice", block: i + 1, of: blocks.length, sentence: n, sentences: of }),
+        onRetry: (x) => onProgress({ step: "retry", ...x }),
+        ...(sleep ? { sleep } : {}),
+      });
+      const ext = r.ext ?? "mp3";
+      fs.writeFileSync(path.join(cacheDir, `${key}.${ext}`), r.audio);
+      fs.writeFileSync(meta, JSON.stringify({ ext, words: r.words }));
+    }
     const f = path.join(blockDir, `${String(i + 1).padStart(2, "0")}.${r.ext ?? "mp3"}`);
     fs.writeFileSync(f, r.audio);
     files.push(f);
@@ -84,7 +112,8 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
   const m = await mix({ vo, bgm: music, out, env });
   const info = { provider: narrator.provider, voice: narrator.voice, blocks: blocks.length, words: wordCount(blocks), music: music ? path.basename(music) : null, ...m, inserts: placed, endScreen: tailAt };
   fs.writeFileSync(path.join(audioDir, "voice.json"), JSON.stringify(info, null, 2) + "\n");
-  return info;
+  fs.rmSync(cacheDir, { recursive: true, force: true });
+  return { ...info, reused };
 }
 
 const round3 = (x) => Math.round(x * 1000) / 1000;

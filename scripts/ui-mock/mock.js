@@ -20,14 +20,25 @@ const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.
 const listeners = {};
 window.__emit = (event, payload) => (listeners[event] ?? []).forEach((h) => window["_" + h]?.({ event, payload, id: 1 }));
 const LONG = { "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
+// ?quiet=1: no heartbeat (the bar's "no sign of life" line); ?slept=1: the
+// computer slept during the job; Stop (stop_job) ends a job with its reason.
+let nextJob = 10;
 async function longJob(command, request) {
-  const job = { id: Math.random(), command, identity: "my-identity", identityName: "My Identity", project: request.projectDir ?? null, state: "running" };
+  const job = { id: nextJob++, command, identity: "my-identity", identityName: "My Identity", project: request.projectDir ?? null, state: "running" };
   jobs.push(job);
   window.__emit("jobs-changed", [...jobs]);
   window.__emit("runner-progress", { command, project: job.project, progress: { step: "estimate", expectSeconds: LONG[command] } });
   const t0 = Date.now();
+  let beat = 0;
+  if (q.get("slept")) window.__emit("runner-progress", { command, project: job.project, progress: { step: "slept", seconds: 754 } });
   while (Date.now() - t0 < slow) {
     await new Promise((r) => setTimeout(r, 250));
+    if (job.stopped) {
+      jobs.splice(jobs.indexOf(job), 1);
+      window.__emit("jobs-changed", [...jobs]);
+      throw "Stopped by you.";
+    }
+    if (!q.get("quiet") && ++beat % 8 === 0) window.__emit("runner-progress", { command, project: job.project, progress: { step: "alive" } });
     const f = (Date.now() - t0) / slow;
     if (command === "render-video") window.__emit("runner-progress", { command, project: job.project, progress: { step: "render", percent: Math.round(3 + 92 * f), frame: Math.round(3848 * f), frames: 3848 } });
   }
@@ -150,6 +161,8 @@ window.__TAURI_INTERNALS__ = {
       case "delete_all_keys": core.keys.clear(); return null;
       case "key_status": { const s = state(); return { keys: s.keys, keySources: s.keySources }; }
       case "job_list": return jobs;
+      case "stop_job": { const j = jobs.find((x) => x.id === args.id); if (!j) throw "That job has already finished."; j.stopped = true; return null; }
+      case "export_diagnostics": return args.path;
       case "log_event": window.__log.push({ level: args.level, event: args.event, ...args.data }); return null;
       case "log_status": return state().log;
       case "delete_logs": return { ...state().log, files: 0, bytes: 0 };

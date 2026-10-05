@@ -146,6 +146,10 @@ export const deleteAllKeys = () => call<void>("delete_all_keys");
 /** forNew: the logo of an Identity that does not exist yet (setup, New Identity). */
 export const importLogo = (path: string, forNew = false, variant: "light" | "dark" = "light") => call<string>("import_logo", { path, forNew, variant });
 export const jobList = () => call<Job[]>("job_list");
+/** Stop: a waiting job leaves the queue, a running one ends with all it started. */
+export const stopJob = (id: number) => call<void>("stop_job", { id });
+/** Settings, App, General: one zip with the logs and every ONE Video's state, no keys. */
+export const exportDiagnostics = (path: string) => call<string>("export_diagnostics", { path });
 export const backupSettingsNow = () => call<number>("backup_settings_now");
 export const restoreSettings = (path: string) => call<RawState>("restore_settings", { path }).then(withConfig);
 export const cloudFolders = () => call<{ label: string; path: string }[]>("cloud_folders");

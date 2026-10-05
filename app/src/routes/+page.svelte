@@ -147,6 +147,11 @@
   // first run: the App settings and the first Identity, in one save
   const saveFirst = (c: Config) => saveSettings(appFromConfig(c, null), identityFromConfig(c, null, null));
   // New Identity: only the Identity; the core makes it the active one
+  // a page that broke while drawing (the boundary above): into the log, in full
+  function crashed(error: unknown) {
+    const e = error as { message?: string; stack?: string };
+    log("ui_crash", { message: errorText(error), stack: String(e?.stack ?? "").slice(0, 1500), view, project: projectDir }, "error");
+  }
   const saveNew = (c: Config) => saveSettings(null, identityFromConfig(cleanConfig(c), null, null));
 </script>
 
@@ -184,6 +189,9 @@
       <div class="notice"><span>{notice}</span><button type="button" class="ghost" onclick={() => (notice = "")}>Close</button></div>
     {/if}
     <div class="view">
+    <!-- A page that breaks while it draws never leaves a blank window: the
+         top bar stays, the user reads what happened and can go on (2026-10-06). -->
+    <svelte:boundary onerror={crashed}>
     {#if view === "new-identity"}
       <Onboarding
         bind:config={draft}
@@ -208,6 +216,18 @@
         <Projects {app} {openProject} />
       {/key}
     {/if}
+    {#snippet failed(error, reset)}
+      <div class="crash">
+        <h2>This page ran into a problem</h2>
+        <p>Nothing was lost: every job keeps running, and your ONE Videos are saved. Try the page again, or go back to the list.</p>
+        <p class="muted">{errorText(error)}</p>
+        <div class="row">
+          <button type="button" class="primary" onclick={reset}>Try again</button>
+          <button type="button" onclick={() => { projectDir = null; view = "projects"; reset(); }}>Back to the {ONE_VIDEO} list</button>
+        </div>
+      </div>
+    {/snippet}
+    </svelte:boundary>
     </div>
   </main>
 {/if}
@@ -228,5 +248,8 @@
   .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
   .muted { color: var(--muted-foreground); }
+  .crash { max-width: 640px; margin: 48px auto; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); display: grid; gap: 12px; }
+  .crash h2, .crash p { margin: 0; }
+  .crash .row { display: flex; gap: 10px; flex-wrap: wrap; }
   .bad { color: var(--danger-text); }
 </style>

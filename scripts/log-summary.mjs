@@ -69,11 +69,12 @@ export function describe(e) {
     case "run_start":
       return `run ${e.command}${e.job?.identityName ? ` [${e.job.identityName}]` : ""}${e.job?.project ? ` ${path.basename(e.job.project)}` : ""}`;
     case "run_progress":
-      return `  ${e.command}: ${e.progress?.step ?? "?"}${e.progress?.message ? ` ${cut(e.progress.message, 100)}` : ""}${e.progress?.status ? ` (HTTP ${e.progress.status})` : ""}${e.progress?.to ? ` -> ${e.progress.to}` : ""}${e.progress?.percent !== undefined ? ` ${Math.round(e.progress.percent)}%` : ""}`;
+      return `  ${e.command}: ${e.progress?.step ?? "?"}${e.progress?.message ? ` ${cut(e.progress.message, 100)}` : ""}${e.progress?.status ? ` (HTTP ${e.progress.status})` : ""}${e.progress?.to ? ` -> ${typeof e.progress.to === "string" ? e.progress.to : "the next model"}` : ""}${e.progress?.waitSeconds ? `, next try in ${e.progress.waitSeconds} s` : ""}${e.progress?.seconds && e.progress?.step === "slept" ? ` ${e.progress.seconds} s` : ""}${e.progress?.percent !== undefined ? ` ${Math.round(e.progress.percent)}%` : ""}`;
     case "run_end":
       return `done ${e.command} in ${(e.ms / 1000).toFixed(1)} s`;
     case "run_failed":
-      return `FAILED ${e.command} after ${(e.ms / 1000).toFixed(1)} s: ${cut(e.message, 200)}`;
+      return `FAILED ${e.command} after ${(e.ms / 1000).toFixed(1)} s${e.stopped ? " (stopped)" : ""}: ${cut(e.message, 200)}${e.stderr ? `
+               stderr: ${cut(e.stderr, 400)}` : ""}`;
     case "error_shown":
       return `ERROR on screen [${e.code}]: ${cut(e.message, 200)}${where}`;
     case "call":

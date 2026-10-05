@@ -47,6 +47,7 @@ import { cardFromTokens } from "./brand/tokens.mjs";
 import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gates/script/dictionary.mjs";
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
+import { friendlyMessage } from "./friendly.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -73,7 +74,39 @@ const jsonCount = (projectDir, f, key) => {
   }
 };
 
-const emit = (o) => process.stdout.write(JSON.stringify(o) + "\n");
+let answered = false;
+const emit = (o) => {
+  if (o.event === "result" || o.event === "error") answered = true;
+  process.stdout.write(JSON.stringify(o) + "\n");
+};
+
+// A step that changes no gate, logged in the ONE Video's log.txt when it fails.
+async function logged(projectDir, what, fn) {
+  try {
+    return await fn();
+  } catch (e) {
+    appendLog(projectDir, `${what} failed, ${e.message}`);
+    throw e;
+  }
+}
+
+// Signs of life (Zoltan, 2026-10-06: the user always knows the state). Every
+// 20 s an "alive" line, so the core's watchdog (runner.rs) knows this process
+// still works even while it waits minutes for a service; and a jump of the
+// clock means the computer slept (the lid was closed): the app says so
+// instead of leaving it to a guess.
+function heartbeat() {
+  let last = Date.now();
+  let ticks = 0;
+  const t = setInterval(() => {
+    const now = Date.now();
+    const gap = now - last;
+    last = now;
+    if (gap > 60000) emit({ event: "progress", step: "slept", seconds: Math.round(gap / 1000) });
+    if (++ticks % 4 === 0) emit({ event: "progress", step: "alive" });
+  }, 5000);
+  t.unref();
+}
 // LLM retries and model switches become progress lines (the app logs them).
 onLlmEvent((e) => emit({ event: "progress", ...e }));
 const key = () => process.env.STUDIO_API_KEY || "";
@@ -178,10 +211,12 @@ function edited(projectDir, gate) {
   return project;
 }
 
-// The project, with gates left "running" by a closed app marked failed (saved).
-function recovered(projectDir) {
+// The project, with gates left "running" by a closed app or a stopped step
+// marked failed (saved). `live`: the ONE Videos a step really runs in now,
+// from the app's core (jobs.rs); without it the process id decides.
+function recovered(projectDir, live = null) {
   const project = loadProject(projectDir);
-  const next = recoverInterrupted(project);
+  const next = recoverInterrupted(project, undefined, { dir: projectDir, live });
   if (next !== project) {
     saveProject(projectDir, next);
     appendLog(projectDir, "a step was interrupted (the app was closed), marked failed");
@@ -285,14 +320,14 @@ const commands = {
     return { id, dir };
   },
 
-  "list-projects": async ({ projectsDir }) => {
+  "list-projects": async ({ projectsDir, liveProjects = null }) => {
     if (!projectsDir || !fs.existsSync(projectsDir)) return { projects: [] };
     const projects = [];
     for (const name of fs.readdirSync(projectsDir)) {
       const dir = path.join(projectsDir, name);
       try {
-        const p = recovered(dir);
-        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates });
+        const p = recovered(dir, liveProjects);
+        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates, render: p.render ?? null, autopilotRun: !!p.autopilotRun });
       } catch {
         // not a project folder, or a broken one: skip it
       }
@@ -413,8 +448,8 @@ const commands = {
 
   "dictionary-check": async ({ projectDir, identityDir }) => ({ findings: dictionaryFindings(projectDir, identityDir) }),
 
-  "load-project": async ({ projectDir }) => {
-    const project = recovered(projectDir);
+  "load-project": async ({ projectDir, liveProjects = null }) => {
+    const project = recovered(projectDir, liveProjects);
     const md = path.join(projectDir, "script.md");
     return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, calls: scriptCalls(projectDir), latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir) };
   },
@@ -517,7 +552,7 @@ const commands = {
       }
       project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
-      appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS, ${table.sentences} sentences`);
+      appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS, ${table.sentences} sentences${info.reused ? `, ${info.reused} parts kept from the run before` : ""}`);
       rememberUsed(identityDir, { voice: { provider: narrator?.provider, voice: narrator?.voice, name: narrator?.name ?? null, model: narrator?.model ?? null } });
       return { info, gate: project.gates.voice, status: project.status };
     } catch (e) {
@@ -532,7 +567,7 @@ const commands = {
   // the approval of the voice start again.
   "set-music": async ({ projectDir, music }) => {
     appendLog(projectDir, `music: ${music?.kind}`);
-    const info = await timed("remix", 1, emit, () => setMusic({ projectDir, music, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    const info = await logged(projectDir, "music: mixing", () => timed("remix", 1, emit, () => setMusic({ projectDir, music, onProgress: (p) => emit({ event: "progress", ...p }) })));
     let project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "custom" });
     if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
     saveProject(projectDir, project);
@@ -545,7 +580,7 @@ const commands = {
 
   "make-music": async ({ projectDir, music }) => {
     appendLog(projectDir, "music: ElevenLabs Music");
-    const info = await timed("music-length", Math.max(30, videoSeconds(projectDir)), emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    const info = await logged(projectDir, "music: ElevenLabs Music", () => timed("music-length", Math.max(30, videoSeconds(projectDir)), emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) })));
     const project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
@@ -750,11 +785,24 @@ const commands = {
     }
   },
 
-  // The render, once, locally, after the contact sheet is approved.
+  // The render, once, locally, after the contact sheet is approved. Its
+  // state goes into project.json (running, done, failed), so a render that
+  // failed or was cut off is still seen after a restart.
   "render-video": async ({ projectDir, quality }) => {
     if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the preview first.");
-    appendLog(projectDir, "render: start");
-    const r = await timed("render", videoSeconds(projectDir), emit, () => renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) }));
+    const q = quality === "draft" || quality === "high" ? quality : "standard";
+    const mark = (render) => saveProject(projectDir, { ...loadProject(projectDir), render: { ...render, at: new Date().toISOString() } });
+    mark({ state: "running", pid: process.pid, quality: q });
+    appendLog(projectDir, `render: start (${q})`);
+    let r;
+    try {
+      r = await timed("render", videoSeconds(projectDir), emit, () => renderVideo(projectDir, { quality: q, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    } catch (e) {
+      mark({ state: "failed", quality: q, error: String(e.message).slice(0, 2000) });
+      appendLog(projectDir, `render: failed, ${e.message}`);
+      throw e;
+    }
+    mark({ state: "done", quality: q, file: r.file });
     appendLog(projectDir, `render: done, ${r.file}, ${r.seconds}s video in ${r.renderSeconds}s`);
     // Captions and chapters next to the video. A problem here never loses the
     // render: the video is there, the note says what is missing.
@@ -766,6 +814,17 @@ const commands = {
       appendLog(projectDir, `render: captions and chapters failed, ${e.message}`);
       return { ...r, extrasError: String(e.message) };
     }
+  },
+
+  // "Finish on Autopilot" under way (on) or over (off): the UI goes on with
+  // it when the ONE Video is opened again after an interruption.
+  "autopilot-mark": async ({ projectDir, on }) => {
+    const next = { ...loadProject(projectDir) };
+    if (on) next.autopilotRun = { at: new Date().toISOString() };
+    else delete next.autopilotRun;
+    saveProject(projectDir, next);
+    appendLog(projectDir, on ? "autopilot: on" : "autopilot: off");
+    return { autopilotRun: !!on };
   },
 
   // The optional avatar step, left out on purpose ("Continue without an
@@ -815,6 +874,14 @@ async function readStdin() {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+// Anything thrown outside the command's own await: a sentence for the user,
+// the details on stderr (the core puts them in the app's log).
+function lastResort(e) {
+  process.stderr.write(`${e?.stack ?? e}\n`);
+  if (!answered) emit({ event: "error", message: `Something unexpected went wrong inside the app (${String(e?.message ?? e).slice(0, 200)}). Press the button again; if it happens again, send the diagnostics (Settings, App, General).` });
+  process.exit(1);
+}
+
 async function main() {
   const name = process.argv[2];
   const cmd = commands[name];
@@ -832,14 +899,18 @@ async function main() {
       return 2;
     }
   }
+  heartbeat();
   try {
     if (req.identityDir && LOOK_COMMANDS.has(name)) req.look = lookOf(req);
     emit({ event: "result", data: await cmd(req) });
     return 0;
   } catch (e) {
-    emit({ event: "error", message: String(e.message) });
+    if (e?.stack) process.stderr.write(`${e.stack}\n`);
+    emit({ event: "error", message: friendlyMessage(e?.message ?? e) });
     return 1;
   }
 }
 
+process.on("uncaughtException", lastResort);
+process.on("unhandledRejection", lastResort);
 process.exitCode = await main();

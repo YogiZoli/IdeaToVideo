@@ -306,29 +306,37 @@ async function audioLength(projectDir, sentences, env) {
   }
 }
 
+// Issues about taste, not about a working video: the same scene type twice in
+// a row, a scene a little over the longest length. After the repairs they
+// become warnings the table shows, so the step never fails on them (Zoltan's
+// test, 2026-10-05: "same component as the scene before" failed the table).
+const SOFT = [/same component as the scene before/, /over \d+ s: split it/];
+export const isSoft = (issue) => SOFT.some((rx) => rx.test(issue));
+export const REPAIRS = 2;
+
 async function ask(llm, messages, check) {
+  const read = (text) => {
+    try {
+      const answer = extractJson(text);
+      return { answer, result: check(answer) };
+    } catch (e) {
+      return { answer: null, result: { issues: [`the answer was not valid JSON (${e.message})`], warnings: [] } };
+    }
+  };
   let text = await chat({ ...llm, messages, json: true, temperature: 0.4 });
-  let answer;
-  let result;
-  try {
-    answer = extractJson(text);
-    result = check(answer);
-  } catch (e) {
-    result = { issues: [`the answer was not valid JSON (${e.message})`], warnings: [] };
+  let { answer, result } = read(text);
+  for (let n = 1; n <= REPAIRS && result.issues.length; n++) {
+    llm.onProgress?.({ step: "repairing", round: n, of: REPAIRS, issues: result.issues.slice(0, 10) });
+    messages.push({ role: "assistant", content: text });
+    messages.push({ role: "user", content: `Fix these problems and answer with the corrected JSON object only:\n- ${result.issues.slice(0, 20).join("\n- ")}` });
+    text = await chat({ ...llm, messages, json: true, temperature: 0.2 });
+    ({ answer, result } = read(text));
   }
-  if (!result.issues.length) return { answer, result };
-  llm.onProgress?.({ step: "repairing", issues: result.issues.slice(0, 10) });
-  messages.push({ role: "assistant", content: text });
-  messages.push({ role: "user", content: `Fix these problems and answer with the corrected JSON object only:\n- ${result.issues.slice(0, 20).join("\n- ")}` });
-  text = await chat({ ...llm, messages, json: true, temperature: 0.2 });
-  try {
-    answer = extractJson(text);
-    result = check(answer);
-  } catch (e) {
-    result = { issues: [`the answer was not valid JSON (${e.message})`], warnings: [] };
+  if (result.issues.length && answer && result.issues.every(isSoft)) {
+    result = { ...result, issues: [], warnings: [...(result.warnings ?? []), ...result.issues.map((i) => `${i[0].toUpperCase()}${i.slice(1)} (left as it is).`)] };
   }
   if (result.issues.length) {
-    const err = new Error(`The scene table did not pass the checks after one repair: ${result.issues.slice(0, 5).join("; ")}`);
+    const err = new Error(`The scene table did not pass the checks after ${REPAIRS} repairs: ${result.issues.slice(0, 5).join("; ")}. Press Plan again, or use the Simple plan (no AI).`);
     err.issues = result.issues;
     throw err;
   }

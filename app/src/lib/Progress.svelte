@@ -14,9 +14,14 @@
   // AI call is repaired or tried again, and never claims 100% early.
   // When the bar appears it scrolls itself into view (Zoltan, 2026-10-05: "I
   // did not see that it was running").
+  // 2026-10-06 (reliability): a Stop button (a paid step says what stays
+  // paid), signs of life when a step is quiet, the sleep of the computer, and
+  // per step whether the lid may close.
   import { onMount } from "svelte";
-  import { costText, adviceText, clock } from "./progressInfo";
-  import { work, track, measure, startWork } from "./work.svelte";
+  import { costText, adviceText, lifeText, workPlace, clock } from "./progressInfo";
+  import { work, track, measure, startWork, jobOf } from "./work.svelte";
+  import { stopJob, errorText } from "./api";
+  import { log } from "./logger";
 
   // provider: the narrator provider, for what make-voice costs
   // project: the ONE Video the job belongs to (null: the newest of its kind)
@@ -30,6 +35,31 @@
 
   const t = $derived(track(project, command));
   const m = $derived(t ? measure(t, work.now) : null);
+  const life = $derived(t ? lifeText(t, work.now) : []);
+  const job = $derived(jobOf(project, command));
+
+  // Stop asks once for a step that spends money or credits
+  const paid = $derived(workPlace(command) !== "local");
+  let asking = $state(false);
+  let stopping = $state(false);
+  let stopError = $state("");
+  async function stop() {
+    if (!job) return;
+    if (paid && !asking) {
+      asking = true;
+      return;
+    }
+    asking = false;
+    stopping = true;
+    stopError = "";
+    log("stop_clicked", { command, job: job.id, state: job.state });
+    try {
+      await stopJob(job.id);
+    } catch (e) {
+      stopError = errorText(e);
+      stopping = false;
+    }
+  }
 
   const fmt = (s: number) => (s >= 90 ? `${Math.round(s / 60)} minutes` : s >= 60 ? "a minute" : `${Math.max(5, Math.round(s / 5) * 5)} seconds`);
   const status = $derived(
@@ -55,7 +85,20 @@
     <span class="hint">{t?.waiting ?? `${t?.phase ? `Now: ${t.phase}.` : "Working."} ${status}`}</span>
     <span class="hint clock">Running for {clock(m?.elapsed ?? 0)}</span>
   </div>
+  {#each life as line (line)}<p class="hint life">{line}</p>{/each}
   <p class="hint">{costText(command, provider)} {adviceText(command)}</p>
+  {#if job}
+    <div class="stop">
+      {#if asking}
+        <span class="hint">Stop it? {command === "make-avatar" ? "Clips HeyGen already started stay paid; pressing the button again later picks them up." : "What the service already did stays paid; the step can be started again."}</span>
+        <button type="button" class="danger" onclick={stop}>Stop now</button>
+        <button type="button" class="ghost" onclick={() => (asking = false)}>Keep going</button>
+      {:else}
+        <button type="button" class="ghost" disabled={stopping} onclick={stop}>{stopping ? "Stopping..." : job.state === "waiting" ? "Cancel" : "Stop"}</button>
+      {/if}
+      {#if stopError}<span class="hint">{stopError}</span>{/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -65,4 +108,6 @@
   .pct, .clock { font-variant-numeric: tabular-nums; white-space: nowrap; }
   progress { width: 100%; height: 10px; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
+  .life { color: var(--foreground); }
+  .stop { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 </style>

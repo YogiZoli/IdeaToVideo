@@ -77,19 +77,29 @@ export function setGate(project, gate, patch, now = new Date()) {
   return next;
 }
 
-// A gate left "running" by a runner that no longer exists (the app was closed
-// or crashed mid-step) would show "Running" forever. It becomes failed, so the
-// UI offers to run it again. A gate with no pid (older projects) counts as
-// interrupted too: a step that is really running always has one.
-export const INTERRUPTED = "Interrupted: the app was closed while this step was running. Run it again.";
-export function recoverInterrupted(project, alive = pidAlive) {
+// A gate left "running" by a runner that no longer exists (the app was
+// closed, crashed, or the step was stopped) would show "Running" forever. It
+// becomes failed, so the UI offers to run it again. `live`: the ONE Videos
+// the app's core knows a step really works on now (jobs.rs live_projects);
+// without it (tests, command line) the runner's process id decides, and a
+// gate with no pid (older projects) counts as interrupted too.
+export const INTERRUPTED = "Interrupted: this step stopped before it finished (it was stopped, it stopped answering, or the app was closed). Run it again; nothing else is lost.";
+const normPath = (p) => String(p).replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+const samePath = (a, b) => normPath(a) === normPath(b);
+export function recoverInterrupted(project, alive = pidAlive, { dir = null, live = null } = {}) {
+  const running = (gate) => (Array.isArray(live) && dir ? live.some((p) => samePath(p, dir)) : !!(gate.pid && alive(gate.pid)));
   let next = project;
   for (const g of GATES) {
     const gate = next.gates[g];
-    if (gate?.state === "running" && !(gate.pid && alive(gate.pid))) {
+    if (gate?.state === "running" && !running(gate)) {
       next = structuredClone(next);
       next.gates[g] = { state: "failed", ...(gate.mode ? { mode: gate.mode } : {}), at: gate.at ?? new Date().toISOString(), error: INTERRUPTED };
     }
+  }
+  if (next.render?.state === "running" && !running(next.render)) {
+    next = structuredClone(next);
+    next.render = { ...next.render, state: "failed", error: INTERRUPTED };
+    delete next.render.pid;
   }
   return next;
 }
@@ -116,18 +126,42 @@ export function readBrief(dir) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
+// The ONE Video's own log.txt. A log line never fails the step it describes.
 export function appendLog(dir, line) {
-  fs.appendFileSync(path.join(dir, "log.txt"), `${new Date().toISOString()} ${line}\n`);
+  try {
+    fs.appendFileSync(path.join(dir, "log.txt"), `${new Date().toISOString()} ${line}\n`);
+  } catch {
+    // the folder went away or is locked: the app's own log still has the step
+  }
 }
 
 // Write to a temp file, then rename: a crash never leaves a half-written file.
 export function writeJson(file, value) {
   writeAtomic(file, JSON.stringify(value, null, 2) + "\n");
 }
-export function writeAtomic(file, text) {
-  const tmp = `${file}.tmp`;
+// The temp name is this process's own, so two runners never share one; on
+// Windows a rename can briefly fail while a virus scanner, a cloud sync or
+// another reader holds the file, so it is tried again for about two seconds.
+const BUSY = new Set(["EPERM", "EBUSY", "EACCES", "ENOTEMPTY"]);
+let tmpSeq = 0;
+export function writeAtomic(file, text, { tries = 20, waitMs = 100 } = {}) {
+  const tmp = `${file}.${process.pid}-${++tmpSeq}.tmp`;
   fs.writeFileSync(tmp, text, "utf8");
-  fs.renameSync(tmp, file);
+  for (let i = 1; ; i++) {
+    try {
+      fs.renameSync(tmp, file);
+      return;
+    } catch (e) {
+      if (!BUSY.has(e.code) || i >= tries) {
+        fs.rmSync(tmp, { force: true });
+        throw e;
+      }
+      sleepSync(waitMs);
+    }
+  }
+}
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function stripUndefined(o) {

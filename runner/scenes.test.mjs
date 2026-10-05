@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMPONENTS, ROLES } from "./gates/scenes/roles.mjs";
-import { checkScenes, sentenceSections, makeScenes, refillScene, saveScenes, sceneRows, buildMessages, buildData, libraryCatalog } from "./gates/scenes/index.mjs";
+import { checkScenes, sentenceSections, makeScenes, refillScene, saveScenes, sceneRows, buildMessages, buildData, libraryCatalog, isSoft } from "./gates/scenes/index.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const KEY = "sk-test-0123456789abcdefghij";
@@ -132,11 +132,27 @@ test("make-scenes: one repair call, then scenes.json", async () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test("make-scenes fails after one repair", async () => {
+test("make-scenes fails after two repairs, and says what to do", async () => {
   const { dir, proj, env } = fixture();
   const f = fakeFetch([answer("not json at all")]);
-  await assert.rejects(makeScenes({ llm: llm(f), projectDir: proj, env }), /did not pass the checks after one repair/);
-  assert.equal(f.calls.length, 2);
+  await assert.rejects(makeScenes({ llm: llm(f), projectDir: proj, env }), /did not pass the checks after 2 repairs.*Simple plan/);
+  assert.equal(f.calls.length, 3);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// Zoltan's test, 2026-10-05: "same component as the scene before" failed a
+// table that was otherwise fine. A matter of taste is now a warning.
+test("only issues of taste left after the repairs: the table is kept, with warnings", async () => {
+  assert.equal(isSoft("scene 2: same component as the scene before (per-word-rise)"), true);
+  assert.equal(isSoft("scene 3 (S4 to S9) lasts 14.2 s, over 12 s: split it"), true);
+  assert.equal(isSoft("scene 2: unknown component x (use one from the LIBRARY)"), false);
+  const { dir, proj, env } = fixture();
+  const twice = { scenes: [GOOD.scenes[0], { from: "S3", component: "per-word-rise", vars: { text: "Eight in ten" } }, GOOD.scenes[2], GOOD.scenes[3]], gaps: [] };
+  const f = fakeFetch([answer(JSON.stringify(twice))]);
+  const r = await makeScenes({ llm: llm(f), projectDir: proj, env, language: "en" });
+  assert.equal(f.calls.length, 3, "both repairs were tried first");
+  assert.equal(r.scenes, 4);
+  assert.match(r.warnings.join(" "), /Scene 3: same component as the scene before \(per-word-rise\) \(left as it is\)/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

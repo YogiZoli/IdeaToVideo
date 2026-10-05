@@ -6,7 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validate, loadSchema } from "./schema/validate.mjs";
-import { chat, testKey, extractJson, redact, friendlyError, LlmError } from "./providers/llm.mjs";
+import { chat, testKey, extractJson, redact, friendlyError, LlmError, ROUND_WAITS, onLlmEvent } from "./providers/llm.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { buildData, buildMessages, styleIssues, checkScript, renderMarkdown, writeScript } from "./gates/script/index.mjs";
 import { suggestChannel, buildSuggestMessages } from "./gates/channel/index.mjs";
@@ -208,8 +208,11 @@ test("chat asks for a model when the provider has no default, and for a key", as
 
 test("network errors are retried and redacted", async () => {
   const f = fakeFetch([new Error(`connect failed for ${KEY}`)]);
-  await assert.rejects(chat({ provider: "grok", model: "grok-x", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), (e) => {
-    assert.equal(f.calls.length, 3);
+  const slept = [];
+  await assert.rejects(chat({ provider: "grok", model: "grok-x", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) }), (e) => {
+    // 3 quick tries, then a wait and another round, about three minutes in all
+    assert.equal(f.calls.length, 3 * (1 + ROUND_WAITS.length));
+    assert.deepEqual(slept.filter((ms) => ms >= 15000), ROUND_WAITS.map((s) => s * 1000));
     assert.ok(!e.message.includes(KEY));
     return true;
   });
@@ -426,6 +429,27 @@ test("Gemini overloaded after the retries: the same request once on the other Ge
   const all = fakeFetch(Array(9).fill({ status: 429 }));
   await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: all, sleep: noSleep }), /quota/);
   assert.deepEqual([...new Set(all.calls.map((c) => c.body.model))], ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"]);
+});
+
+// 2026-10-06: every Gemini model busy at once (Zoltan's test, 2026-10-05):
+// the app waits and goes round again, and says how long on the bar.
+test("all models busy: a wait, said on the bar, then another round", async () => {
+  const f = fakeFetch([...Array(9).fill({ status: 503, text: "" }), answer("after the wait")]);
+  const slept = [];
+  const said = [];
+  onLlmEvent((e) => said.push(e));
+  const text = await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) });
+  onLlmEvent(null);
+  assert.equal(text, "after the wait");
+  assert.equal(f.calls.at(-1).body.model, "gemini-3.5-flash");
+  const wait = said.find((e) => e.waitSeconds);
+  assert.equal(wait.waitSeconds, ROUND_WAITS[0]);
+  assert.match(wait.message, /Gemini is busy \(HTTP 503\)\. Trying again in 15 s/);
+  assert.ok(slept.includes(15000));
+  // a key test answers at once
+  const k = fakeFetch(Array(20).fill({ status: 503, text: "" }));
+  await assert.rejects(testKey({ provider: "deepseek", apiKey: KEY, fetchImpl: k, sleep: noSleep }), /overloaded/);
+  assert.equal(k.calls.length, 3);
 });
 
 // 2026-10-01: a gate left "running" by a closed app showed "Running" forever.

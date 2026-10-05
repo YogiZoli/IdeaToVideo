@@ -51,6 +51,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("build-video", None),
     ("check-video", None),
     ("render-video", None),
+    ("autopilot-mark", None),
     ("backup-project", None),
     ("backup-all", None),
     ("backup-estimate", None),
@@ -72,7 +73,6 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("cta-state", None),
     ("cta-check", None),
     ("cta-save", None),
-    ("cta-preview", None),
     ("footage-list", None),
     ("footage-add", None),
     ("footage-update", None),
@@ -211,15 +211,158 @@ fn handle_line(line: &str, on_progress: &mut dyn FnMut(Value)) -> Option<Result<
     }
 }
 
+/// No line from the runner for this long means it is stuck: it is stopped.
+/// The runner says "alive" every 20 s (main.mjs), even while it waits for a
+/// slow service, so only a frozen process stays silent this long.
+pub const SILENCE_SECS: u64 = 300;
+
+/// Every process one runner run starts: Node and everything Node starts (the
+/// render's Chrome, ffmpeg). Windows: a Job Object that kills them all when
+/// it is closed or terminated, also when the app itself ends. macOS and
+/// Linux: the runner's own process group.
+pub struct Tree {
+    #[cfg(windows)]
+    job: isize,
+    #[cfg(unix)]
+    pgid: i32,
+}
+
+impl Tree {
+    #[cfg(windows)]
+    fn of(child: &std::process::Child) -> Option<Tree> {
+        use std::os::windows::io::AsRawHandle;
+        use windows_sys::Win32::Foundation::CloseHandle;
+        use windows_sys::Win32::System::JobObjects::{
+            AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation, SetInformationJobObject,
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        };
+        // SAFETY: plain Win32 calls on a handle this function owns; the
+        // child's handle stays valid while `child` lives.
+        unsafe {
+            let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
+            if job.is_null() {
+                return None;
+            }
+            let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            let size = std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32;
+            let ok = SetInformationJobObject(job, JobObjectExtendedLimitInformation, &info as *const _ as *const _, size) != 0
+                && AssignProcessToJobObject(job, child.as_raw_handle() as _) != 0;
+            if !ok {
+                CloseHandle(job);
+                return None;
+            }
+            Some(Tree { job: job as isize })
+        }
+    }
+
+    #[cfg(unix)]
+    fn of(child: &std::process::Child) -> Option<Tree> {
+        Some(Tree { pgid: child.id() as i32 })
+    }
+
+    /// Ends every process of the run at once.
+    pub fn kill(&self) {
+        #[cfg(windows)]
+        // SAFETY: the job handle is open until Drop.
+        unsafe {
+            windows_sys::Win32::System::JobObjects::TerminateJobObject(self.job as _, 1);
+        }
+        #[cfg(unix)]
+        {
+            let _ = Command::new("kill").args(["-KILL", &format!("-{}", self.pgid)]).stderr(Stdio::null()).status();
+        }
+    }
+}
+
+impl Drop for Tree {
+    // The run is over: whatever it left behind (a Chrome that did not exit)
+    // goes with it.
+    fn drop(&mut self) {
+        #[cfg(windows)]
+        // SAFETY: closing the handle this Tree owns, once.
+        unsafe {
+            windows_sys::Win32::Foundation::CloseHandle(self.job as _);
+        }
+        #[cfg(unix)]
+        self.kill();
+    }
+}
+
+/// Stops one run from another thread: the Stop button, the watchdog, quitting.
+#[derive(Default)]
+pub struct Control {
+    /// The job id in the Jobs list (jobs.rs), for the Stop button.
+    pub job: Option<u64>,
+    stopped: std::sync::atomic::AtomicBool,
+    reason: std::sync::Mutex<Option<String>>,
+    tree: std::sync::Mutex<Option<Tree>>,
+}
+
+impl Control {
+    pub fn new(job: Option<u64>) -> Self {
+        Control { job, ..Default::default() }
+    }
+
+    /// Ends the run with `reason` as its error. The first reason wins.
+    pub fn stop(&self, reason: &str) {
+        if let Ok(mut r) = self.reason.lock() {
+            r.get_or_insert_with(|| reason.to_string());
+        }
+        self.stopped.store(true, std::sync::atomic::Ordering::SeqCst);
+        if let Ok(t) = self.tree.lock() {
+            if let Some(t) = t.as_ref() {
+                t.kill();
+            }
+        }
+    }
+
+    pub fn stopped(&self) -> Option<String> {
+        if !self.stopped.load(std::sync::atomic::Ordering::SeqCst) {
+            return None;
+        }
+        Some(self.reason.lock().ok().and_then(|r| r.clone()).unwrap_or_else(|| "Stopped.".into()))
+    }
+}
+
+/// The user's sentence for a run the watchdog ended.
+pub fn silence_text(command: &str) -> String {
+    format!(
+        "The step ({command}) gave no sign of life for {} minutes, so the app ended it. Nothing else is lost: press the button again to retry.",
+        SILENCE_SECS / 60
+    )
+}
+
 /// Runs one command to the end. Blocking: call it from a blocking task.
+/// `control` stops it from outside; `diag` gets the runner's own error
+/// output (stderr) for the local log, never for the user's eyes.
 pub fn run(
     paths: &Paths,
     command: &str,
     request: &Value,
     api_key: Option<String>,
+    control: &Control,
+    diag: &mut String,
     on_progress: &mut dyn FnMut(Value),
 ) -> Result<Value, String> {
+    run_with_silence(paths, command, request, api_key, control, diag, on_progress, SILENCE_SECS)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_with_silence(
+    paths: &Paths,
+    command: &str,
+    request: &Value,
+    api_key: Option<String>,
+    control: &Control,
+    diag: &mut String,
+    on_progress: &mut dyn FnMut(Value),
+    silence: u64,
+) -> Result<Value, String> {
     check_command(command)?;
+    if let Some(why) = control.stopped() {
+        return Err(why);
+    }
     let mut cmd = Command::new(&paths.node);
     cmd.arg(&paths.script)
         .arg(command)
@@ -256,12 +399,31 @@ pub fn run(
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
     let mut child = cmd.spawn().map_err(|e| format!("Could not start the runner: {e}"))?;
+    // Into the tree before the request goes in: the runner starts nothing
+    // before it has read its request.
+    if let Ok(mut t) = control.tree.lock() {
+        *t = Tree::of(&child);
+    }
+    // a Stop that came while the process was starting
+    if let Some(why) = control.stopped() {
+        control.stop(&why);
+    }
 
     let body = serde_json::to_vec(request).map_err(|e| e.to_string())?;
     {
         let mut stdin = child.stdin.take().ok_or("runner stdin")?;
-        stdin.write_all(&body).map_err(|e| format!("Could not talk to the runner: {e}"))?;
+        if let Err(e) = stdin.write_all(&body) {
+            let why = control.stopped();
+            control.stop("Stopped.");
+            let _ = child.wait();
+            return Err(why.unwrap_or_else(|| format!("Could not talk to the runner: {e}")));
+        }
     } // dropped: stdin closed, the runner starts
 
     let mut stderr = child.stderr.take().ok_or("runner stderr")?;
@@ -271,20 +433,47 @@ pub fn run(
         s
     });
 
-    let mut outcome = None;
+    // stdout on its own thread, so this one can watch the time
     let stdout = child.stdout.take().ok_or("runner stdout")?;
-    for line in BufReader::new(stdout).lines() {
-        let Ok(line) = line else { break };
-        if let Some(o) = handle_line(&line, on_progress) {
-            outcome = Some(o);
+    let (tx, rx) = std::sync::mpsc::channel::<String>();
+    let out_reader = std::thread::spawn(move || {
+        for line in BufReader::new(stdout).lines() {
+            let Ok(line) = line else { break };
+            if tx.send(line).is_err() {
+                break;
+            }
+        }
+    });
+
+    let mut outcome = None;
+    let mut last = std::time::Instant::now();
+    loop {
+        match rx.recv_timeout(std::time::Duration::from_millis(500)) {
+            Ok(line) => {
+                last = std::time::Instant::now();
+                if let Some(o) = handle_line(&line, on_progress) {
+                    outcome = Some(o);
+                }
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                if last.elapsed().as_secs() >= silence && control.stopped().is_none() {
+                    control.stop(&silence_text(command));
+                }
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
         }
     }
+    let _ = out_reader.join();
     let status = child.wait().map_err(|e| e.to_string())?;
     let err_text = err_reader.join().unwrap_or_default();
-    outcome.unwrap_or_else(|| {
-        let tail: String = err_text.chars().rev().take(800).collect::<Vec<_>>().into_iter().rev().collect();
-        Err(format!("The runner stopped without an answer ({status}). {}", tail.trim()))
-    })
+    let tail: String = err_text.chars().rev().take(2000).collect::<Vec<_>>().into_iter().rev().collect();
+    *diag = tail.trim().to_string();
+    match outcome {
+        Some(o) => o,
+        None => Err(control.stopped().unwrap_or_else(|| {
+            format!("The step ended unexpectedly ({status}). The details are in the app's log (Settings, App, General, Export diagnostics).")
+        })),
+    }
 }
 
 /// `project`: the ONE Video the job works on, so the UI shows the bar in the
@@ -360,7 +549,7 @@ mod tests {
         let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
         assert!(script.to_string_lossy().starts_with(r"\\?\"));
         let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None, engine: None, data: None };
-        assert!(run(&paths, "providers", &json!({}), None, &mut |_| {}).is_ok());
+        assert!(run(&paths, "providers", &json!({}), None, &Control::default(), &mut String::new(), &mut |_| {}).is_ok());
     }
 
     #[test]
@@ -401,9 +590,37 @@ mod tests {
     fn real_runner_roundtrip() {
         let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs");
         let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None, engine: None, data: None };
-        let r = run(&paths, "providers", &json!({}), None, &mut |_| {}).unwrap();
+        let r = run(&paths, "providers", &json!({}), None, &Control::default(), &mut String::new(), &mut |_| {}).unwrap();
         assert_eq!(r["providers"][0]["id"], "gemini");
-        let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &mut |_| {}).unwrap_err();
+        let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &Control::default(), &mut String::new(), &mut |_| {}).unwrap_err();
         assert!(e.contains("No API key"), "{e}");
+    }
+
+    // Stop ends the run at once, with its reason; the watchdog stops a
+    // runner that says nothing (here: a script that only sleeps).
+    #[test]
+    fn stop_and_silence_end_a_run() {
+        let dir = std::env::temp_dir().join(format!("itv-stop-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let script = dir.join("sleepy.mjs");
+        std::fs::write(&script, "setTimeout(() => {}, 60000);\n").unwrap();
+        let paths = Paths { node: PathBuf::from("node"), script: script.clone(), ffmpeg: None, engine: None, data: None };
+        let t0 = std::time::Instant::now();
+        let e = run_with_silence(&paths, "providers", &json!({}), None, &Control::default(), &mut String::new(), &mut |_| {}, 2).unwrap_err();
+        assert!(e.contains("no sign of life"), "{e}");
+        assert!(t0.elapsed().as_secs() < 20);
+
+        let control = std::sync::Arc::new(Control::new(Some(7)));
+        let c2 = control.clone();
+        let stopper = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(1500));
+            c2.stop("Stopped by you.");
+        });
+        let t0 = std::time::Instant::now();
+        let e = run(&paths, "providers", &json!({}), None, &control, &mut String::new(), &mut |_| {}).unwrap_err();
+        stopper.join().unwrap();
+        assert_eq!(e, "Stopped by you.");
+        assert!(t0.elapsed().as_secs() < 20);
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

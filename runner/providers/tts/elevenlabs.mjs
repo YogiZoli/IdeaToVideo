@@ -9,6 +9,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { redact } from "../llm.mjs";
 import { wordsFromCharacters } from "./align.mjs";
+import { BusyError, patiently, busyStatus } from "../retry.mjs";
 
 const BASE = "https://api.elevenlabs.io";
 export const DEFAULT_MODEL = "eleven_multilingual_v2";
@@ -26,7 +27,7 @@ async function call(path, { apiKey, fetchImpl = fetch, method = "GET", body, tim
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
-    throw new Error(`Could not reach ElevenLabs: ${redact(e.message, apiKey)}`);
+    throw new BusyError(`Could not reach ElevenLabs: ${redact(e.message, apiKey)}`);
   }
   if (res.ok) return res.json();
   const text = redact(await res.text().catch(() => ""), apiKey);
@@ -39,7 +40,11 @@ async function call(path, { apiKey, fetchImpl = fetch, method = "GET", body, tim
   }
   const why = reason ? ` (${reason})` : "";
   if (res.status === 401 || res.status === 403) throw new Error(`ElevenLabs rejected the API key${why}. Check the key and its permissions.`);
-  if (res.status === 429) throw new Error(`ElevenLabs quota or rate limit reached${why}. Wait, or check your ElevenLabs plan.`);
+  // 429 is a rate limit (too many at once) or a used-up plan (quota_exceeded):
+  // only the first is worth a wait
+  if (res.status === 429 && !/quota/i.test(reason)) throw new BusyError(`ElevenLabs rate limit reached${why}. The app waited about three minutes. Try again later.`, { status: 429 });
+  if (res.status === 429) throw new Error(`ElevenLabs quota reached${why}. Check your ElevenLabs plan.`);
+  if (busyStatus(res.status)) throw new BusyError(`ElevenLabs answered with HTTP ${res.status}${why}. The app kept trying for about three minutes. Try again later; the parts already read are kept.`, { status: res.status });
   throw new Error(`ElevenLabs answered with HTTP ${res.status}${why}. Try again later.`);
 }
 
@@ -74,13 +79,13 @@ export async function listVoices({ apiKey, fetchImpl }) {
 }
 
 // previous/next text keep the intonation continuous across blocks.
-export async function speak({ apiKey, fetchImpl, voiceId, text, previousText, nextText, model = DEFAULT_MODEL, settings = DEFAULT_SETTINGS, languageCode }) {
+export async function speak({ apiKey, fetchImpl, voiceId, text, previousText, nextText, model = DEFAULT_MODEL, settings = DEFAULT_SETTINGS, languageCode, onRetry, sleep }) {
   if (!voiceId) throw new Error("No ElevenLabs voice chosen. Pick one in Settings.");
   const body = { text, model_id: model, voice_settings: settings };
   if (previousText) body.previous_text = previousText;
   if (nextText) body.next_text = nextText;
   if (languageCode) body.language_code = languageCode;
-  const j = await call(`/v1/text-to-speech/${encodeURIComponent(voiceId)}/with-timestamps?output_format=mp3_44100_128`, { apiKey, fetchImpl, method: "POST", body });
+  const j = await patiently(() => call(`/v1/text-to-speech/${encodeURIComponent(voiceId)}/with-timestamps?output_format=mp3_44100_128`, { apiKey, fetchImpl, method: "POST", body }), { label: "ElevenLabs", onRetry, sleep });
   if (!j.audio_base64) throw new Error("ElevenLabs returned no audio.");
   const alignment = j.alignment ?? j.normalized_alignment;
   if (!alignment?.characters?.length) throw new Error("ElevenLabs returned no timing data.");

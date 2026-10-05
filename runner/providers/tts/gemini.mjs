@@ -11,6 +11,7 @@
 
 import { redact } from "../llm.mjs";
 import { closesSentence } from "../../timing/sentences.mjs";
+import { BusyError, patiently, busyStatus } from "../retry.mjs";
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
 export const DEFAULT_MODEL = "gemini-3.8-flash-tts";
@@ -95,6 +96,7 @@ export function wordsByCharacters(sentence, start, end) {
 }
 
 async function ttsOnce({ apiKey, fetchImpl = fetch, model, voice, style, text }) {
+  // a busy Gemini (5xx, 429) or a dropped connection: BusyError, tried again
   const content = { type: "text", text };
   if (style) content.annotations = [{ type: "speech_metadata", style }];
   const body = { model, input: [{ type: "user_input", content: [content] }], response_format: { type: "audio" }, generation_config: { speech_config: [{ voice }] } };
@@ -102,7 +104,7 @@ async function ttsOnce({ apiKey, fetchImpl = fetch, model, voice, style, text })
   try {
     res = await fetchImpl(ENDPOINT, { method: "POST", headers: { "x-goog-api-key": apiKey, "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(120000) });
   } catch (e) {
-    throw new Error(`Could not reach Gemini: ${redact(e.message, apiKey)}`);
+    throw new BusyError(`Could not reach Gemini: ${redact(e.message, apiKey)}`);
   }
   if (!res.ok) {
     const t = redact(await res.text().catch(() => ""), apiKey);
@@ -114,8 +116,9 @@ async function ttsOnce({ apiKey, fetchImpl = fetch, model, voice, style, text })
     }
     const why = msg ? ` (${msg})` : "";
     if (res.status === 401 || res.status === 403) throw new Error(`Gemini rejected the API key${why}. Check the key in Settings.`);
-    if (res.status === 429) throw new Error(`Gemini free quota or rate limit reached${why}. Wait a minute and try again, or use ElevenLabs.`);
+    if (res.status === 429) throw new BusyError(`Gemini free quota or rate limit reached${why}. The app waited about three minutes. Try again later, or use ElevenLabs.`, { status: 429 });
     if (res.status === 404) throw new Error(`Gemini does not know this voice model${why}.`);
+    if (busyStatus(res.status)) throw new BusyError(`Gemini answered with HTTP ${res.status}${why}. The app kept trying for about three minutes. Try again later; the parts already read are kept.`, { status: res.status });
     throw new Error(`Gemini answered with HTTP ${res.status}${why}. Try again later.`);
   }
   const j = await res.json();
@@ -124,7 +127,7 @@ async function ttsOnce({ apiKey, fetchImpl = fetch, model, voice, style, text })
   return parseWav(Buffer.from(audio.data, "base64"));
 }
 
-export async function speak({ apiKey, fetchImpl, voiceId, text, model = DEFAULT_MODEL, style = DEFAULT_STYLE, onSentence = () => {} }) {
+export async function speak({ apiKey, fetchImpl, voiceId, text, model = DEFAULT_MODEL, style = DEFAULT_STYLE, onSentence = () => {}, onRetry, sleep }) {
   if (!apiKey) throw new Error("No API key set for Gemini. Add it in Settings.");
   const voice = voiceId || "Kore";
   const sentences = splitSentences(text);
@@ -134,7 +137,7 @@ export async function speak({ apiKey, fetchImpl, voiceId, text, model = DEFAULT_
   let fmt = null;
   for (let i = 0; i < sentences.length; i++) {
     onSentence(i + 1, sentences.length);
-    const w = await ttsOnce({ apiKey, fetchImpl, model, voice, style, text: sentences[i] });
+    const w = await patiently(() => ttsOnce({ apiKey, fetchImpl, model, voice, style, text: sentences[i] }), { label: "Gemini", onRetry, sleep });
     if (!fmt) fmt = { channels: w.channels, rate: w.rate, bits: w.bits };
     if (w.rate !== fmt.rate || w.channels !== fmt.channels || w.bits !== fmt.bits) throw new Error("Gemini changed the audio format mid-way.");
     if (i > 0) {

@@ -24,6 +24,7 @@ export function phaseText(command: string, step: string | undefined): string | n
     render: "Recording the video frame by frame",
     browser: "Getting the video engine's browser",
     heygen: "HeyGen is making the avatar clips",
+    slept: "The computer was asleep",
     upload: "Sending the narration to HeyGen",
     previews: "Loading avatar pictures",
     backup: "Copying files into the backup folder",
@@ -58,11 +59,41 @@ export function costText(command: string, provider?: string): string {
   }
 }
 
-/** What the user may do meanwhile. */
+/** Where a step does its work: on this computer, with a service over a live
+ * connection, or at a service that keeps working without the app. */
+export function workPlace(command: string): "local" | "online" | "service" {
+  if (command === "make-avatar" || command === "segment-make") return "service";
+  if (["write-script", "make-scenes", "refill-scene", "make-voice", "make-music", "suggest-channel", "youtube-texts", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks"].includes(command)) return "online";
+  return "local";
+}
+
+/** What the user may do meanwhile, and whether the lid may close (Zoltan,
+ * 2026-10-06: always say if one has to wait and if the computer may sleep). */
 export function adviceText(command: string): string {
-  const where = command === "make-avatar" || command === "make-music" ? "The service works on it, and the app waits for the result and saves it" : "The app does this work on your computer";
   // the window may close: the app keeps working in the tray (DECISIONS 87)
-  return `You can close this window: the app keeps working in the corner of the taskbar. Do not put the computer to sleep or close the lid: ${where}, so the step stops if the computer sleeps. The app keeps the computer awake by itself while it works.`;
+  const window = "You can close this window: the app keeps working in the corner of the taskbar.";
+  switch (workPlace(command)) {
+    case "service":
+      return `${window} You may close the lid: HeyGen makes the clips on its own computers. When you open yours again, the app picks them up; if the step stopped meanwhile, press the button again and nothing is ordered twice.`;
+    case "online":
+      return `${window} Keep the computer awake and the lid open until this is done: the app is talking to the service, and a sleeping computer drops the connection. If that happens, press the button again${command === "make-voice" ? "; the parts already read are kept" : ""}.`;
+    default:
+      return `${window} Keep the computer awake and the lid open until this is done: the work runs on this computer and stops while it sleeps. The app keeps the computer from falling asleep by itself, but closing the lid still puts it to sleep.`;
+  }
+}
+
+/** The lines about signs of life under a bar: no news for a while, the
+ * computer slept, a service is busy. Empty when all is normal. */
+export function lifeText(t: Track, now: number): string[] {
+  const out: string[] = [];
+  if (t.slept > 0) out.push(`The computer slept for ${span(t.slept)} during this step, so the step paused; the clock counts that time too.`);
+  const quiet = (now - t.lastEvent) / 1000;
+  const alive = t.alive === null ? null : (now - t.alive) / 1000;
+  if (!t.waiting && quiet > 60) {
+    if (alive !== null && alive < 45) out.push(`No news for ${span(quiet)}, but it is alive: the app checked ${Math.round(alive)} s ago. Some steps are quiet for a while.`);
+    else out.push(`No sign of life for ${span(alive ?? quiet)}. If it stays like this for 5 minutes, the app stops it by itself and says so; you can also press Stop.`);
+  }
+  return out;
 }
 
 /** Percent from time alone. Past the estimate it keeps creeping toward 99
@@ -72,6 +103,12 @@ export function percentByTime(elapsed: number, expect: number | null): number {
   const r = elapsed / expect;
   if (r <= 1) return 95 * r;
   return 95 + 4 * (1 - Math.exp(-(r - 1)));
+}
+
+/** "12 min 34 s", "45 s" */
+export function span(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return s >= 60 ? `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ""}` : `${s} s`;
 }
 
 /** "1:05" style clock. */
@@ -101,13 +138,19 @@ export type Track = {
   phase: string | null;
   waiting: string | null;
   last: Record<string, unknown>;
+  /** when the last real event came (not a heartbeat) */
+  lastEvent: number;
+  /** when the runner last said it is alive (runner/main.mjs heartbeat) */
+  alive: number | null;
+  /** seconds the computer slept during the step */
+  slept: number;
 };
 
 const BUILD_FLOORS: Record<string, number> = { build: 0, lint: 5, check: 12, snapshots: 72, sheet: 95 };
 const VOICE_TAIL: Record<string, number> = { joining: 92, mixing: 95, sentences: 99 };
 
 export function fresh(command: string, project: string | null): Track {
-  return { command, project, started: Date.now(), expect: null, base: null, real: null, realFrom: null, floor: 0, phase: null, waiting: null, last: {} };
+  return { command, project, started: Date.now(), expect: null, base: null, real: null, realFrom: null, floor: 0, phase: null, waiting: null, last: {}, lastEvent: Date.now(), alive: null, slept: 0 };
 }
 
 function setReal(t: Track, value: number) {
@@ -118,6 +161,16 @@ function setReal(t: Track, value: number) {
 /** One runner progress event into its track. Exported for the tests. */
 export function apply(t: Track, s: Record<string, unknown>) {
   const command = t.command;
+  if (s.step === "alive") {
+    t.alive = Date.now();
+    return;
+  }
+  t.lastEvent = Date.now();
+  t.alive = Date.now();
+  if (s.step === "slept" && typeof s.seconds === "number") {
+    t.slept += s.seconds;
+    return;
+  }
   t.last = s;
   if (s.step === "waiting" && typeof s.message === "string") {
     t.waiting = s.message;
@@ -127,7 +180,9 @@ export function apply(t: Track, s: Record<string, unknown>) {
     t.waiting = null;
     t.started = Date.now();
   }
-  const said = phaseText(command, typeof s.step === "string" ? s.step : undefined);
+  // a busy service says itself how long it waits ("Gemini is busy (HTTP
+  // 503). Trying again in 20 s, round 1 of 4.")
+  const said = s.step === "retry" && typeof s.message === "string" ? s.message : phaseText(command, typeof s.step === "string" ? s.step : undefined);
   if (said) t.phase = said;
   if (s.step === "estimate" && typeof s.expectSeconds === "number") {
     t.expect = s.expectSeconds;
@@ -143,7 +198,7 @@ export function apply(t: Track, s: Record<string, unknown>) {
   // 2026-10-05: a script with four repairs took 131 s against 60).
   if (t.base) {
     if (s.step === "repairing" || s.step === "fallback") t.expect = (t.expect ?? t.base) + t.base * 0.8;
-    if (s.step === "retry") t.expect = (t.expect ?? t.base) + 8;
+    if (s.step === "retry") t.expect = (t.expect ?? t.base) + (typeof s.waitSeconds === "number" ? s.waitSeconds + 5 : 8);
   }
   if (command === "render-video" && typeof s.percent === "number") setReal(t, s.percent);
   if (command === "make-voice") {

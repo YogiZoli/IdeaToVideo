@@ -929,3 +929,65 @@
     - a jelenet-tervező onnan úgy használja, mint a saját felvételt;
     - a publish.json `credits` mezőt kap (forrás, szerző, licenc);
     - kulcs nélkül a gomb nem látszik, az onboardingba nem kerül új lépés.
+91. **Megbízható futás és átláthatóság** (Zoltan, 2026-10-06, a hibátlanítás:
+    "sose jelenjen meg váratlan hiba, mindig tudja a user, mi a státusz,
+    várnia kell-e, lecsukhatja-e a gépet; ha valami történt vagy épp semmi,
+    ki tudjuk nyomozni"). Zoltan a hét kérdésre a javaslatokat fogadta el.
+    - **Folyamatfa:** minden runner-futás egy Windows Job Objectben (macOS:
+      saját folyamatcsoport). A Stop, az őrkutya és a kilépés a Node mellett
+      a render Chrome-ját és az ffmpeg-et is leállítja; korábban kilépés után
+      ezek gazdátlanul tovább futottak.
+    - **Stop gomb** minden haladásjelzőn. A várakozó munka kikerül a sorból,
+      a futó leáll mindenével. Fizetős lépésnél (AI, hang, zene, HeyGen) egy
+      megerősítés mondja meg, mi marad kifizetve. A leállítás nem hiba: szürke
+      dobozban "Stopped by you." (ITV-STOPPED).
+    - **Őrkutya:** a runner 20 mp-enként életjelet ad; 5 perc csend után a mag
+      leállítja ("gave no sign of life", ITV-STUCK). A videómotor 15 percnyi
+      kimenet nélküli állás után áll le (egy render minden kockát kiír).
+    - **Türelmes újrapróbálás:** AI: modellenként 3 gyors próba, a többi
+      modell, majd várakozás és új kör (15, 30, 45, 60 mp, kb. 3 perc), a sáv
+      kiírja ("Gemini is busy (HTTP 503). Trying again in 30 s"). A "Test key"
+      nem vár. Hang (Gemini TTS mondatonként, ElevenLabs blokkonként) és HeyGen:
+      hívásonként kb. 3 perc türelem. Egy elutasított kulcs vagy kérés nem
+      próbálkozik újra.
+    - **Nincs dupla fizetés:** a hang kész blokkjai egy elbukott futás után
+      megmaradnak (`audio/blocks-cache/`), egy kész hang törli őket (az
+      "újra" új felolvasás). A HeyGen megrendelt videóinak azonosítója
+      `avatar/pending.json`-ba kerül, az újrafuttatás átveszi őket; a
+      lekérdezés kibírja a hálózati kiesést (ébredő laptop) a 30 perces
+      határig.
+    - **Javító körök:** a script és a jelenet-tábla legfeljebb két javító
+      hívást kap (SPEC 5: egy volt). A jelenet-táblánál ami a javítások után
+      csak ízlés (ugyanaz a komponens egymás után, 12 mp-nél hosszabb jelenet),
+      az figyelmeztetés, nem hiba. A hibaüzenet megmondja a kiutat (Simple
+      plan, saját script).
+    - **Lecsukás, lépésenként** (a sáv alján): HeyGen avatar: le lehet csukni,
+      a HeyGen a saját gépein dolgozik, az app ébredéskor átveszi; AI, hang,
+      zene: nyitva kell maradnia, mert élő kapcsolat; render, build: nyitva,
+      mert a gépen fut. A runner észreveszi, ha a gép aludt ("The computer
+      slept for 12 min"), és ha egy lépés 60 mp-nél tovább csendes ("No news
+      for 2 min, but it is alive" vagy "No sign of life").
+    - **Beragadt "Running":** a Rust mag átadja, min dolgozik valóban
+      (`liveProjects`); a régi PID-ellenőrzés csak tartalék (Windows
+      újrahasznosítja a PID-eket). Az üzenet: "Interrupted: this step stopped
+      before it finished".
+    - **Autopilot folytatás:** `project.json` `autopilotRun` jelzője; ha a
+      felület újratölt vagy az app bezárul, a videó megnyitásakor magától
+      folytatja, és kiírja. Ami kész és jóváhagyásra vár, azt jóváhagyja, nem
+      csinálja újra; egyszerre csak egy fut.
+    - **Render állapot** a `project.json`-ban (`render`: running, done,
+      failed), így egy elbukott render újraindítás után is látszik. A render,
+      a zene és a zenecsere kudarca a videó `log.txt`-jébe is bekerül.
+    - **Hibák emberi nyelven:** a runner minden váratlan hibát elkap (a
+      részlet a stderr-en a naplóba, a user egy mondatot lát); a "fetch
+      failed" mellé: "The internet connection may be down". A felület egy
+      hibahatárt kapott: ha egy oldal rajzolás közben elbukik, nem fehér
+      képernyő jön, hanem "This page ran into a problem", "Try again" és
+      "Back to the list" gombbal, naplózva (`ui_crash`).
+    - **Export diagnostics** (Settings, App, General): egy zip a naplóval
+      (30 nap), a beállításokkal és minden ONE Video `project.json`-jával,
+      `log.txt`-jével és a motor naplóival. Kulcs, hang, videó és script
+      szöveg nincs benne. A naplóban mostantól a modellnevek (from, to) is
+      olvashatók, és egy elbukott futásnál a runner stderr-je.
+    - **Windows fájlzár:** a `project.json` egyedi ideiglenes fájllal és kb. 2
+      mp-es újrapróbálással íródik (vírusirtó, felhő-szinkron).

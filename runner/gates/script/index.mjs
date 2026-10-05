@@ -183,25 +183,25 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
   } catch (e) {
     issues = [`the answer was not valid JSON (${e.message})`];
   }
-  if (issues.length) {
-    // one repair call (SPEC 5), with the exact problems listed
-    onProgress({ step: "repairing", issues: issues.slice(0, 10) });
+  // Up to two repair calls (SPEC 5 had one; 2026-10-06: a second one turns
+  // most failed scripts into good ones), with the exact problems listed.
+  for (let n = 1; n <= 2 && issues.length; n++) {
+    onProgress({ step: "repairing", round: n, of: 2, issues: issues.slice(0, 10) });
     messages.push({ role: "assistant", content: text });
     messages.push({ role: "user", content: `Fix these problems and answer with the corrected JSON object only:\n- ${issues.slice(0, 20).join("\n- ")}` });
     text = await chat({ ...llm, messages, json: true });
     try {
       script = extractJson(text);
+      // the length is asked for again below; after a repair it never fails the script
       issues = checkScript(script, data);
     } catch (e) {
       issues = [`the answer was not valid JSON (${e.message})`];
     }
-    // The length is asked for once more, but a script that is only too short
-    // or too long after the repair is kept: the gate shows its real length.
-    if (issues.length) {
-      const err = new Error(`The script did not pass the checks after one repair: ${issues.slice(0, 5).join("; ")}`);
-      err.issues = issues;
-      throw err;
-    }
+  }
+  if (issues.length) {
+    const err = new Error(`The script did not pass the checks after two repairs: ${issues.slice(0, 5).join("; ")}. Press Write again, or paste your own script.`);
+    err.issues = issues;
+    throw err;
   }
   // The length, up to two more times on its own (Zoltan's second test: 265
   // words for 3 minutes after the first repair). A longer answer is kept

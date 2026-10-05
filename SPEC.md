@@ -192,6 +192,11 @@ Projects/<Identity mappája>/2026-09-24_how-to-start/   (2026-10-01 óta, DECISI
 `Rendered`, `Done`. Kapu `state`: `todo`, `running`, `pending` (jóváhagyásra
 vár), `approved`, `skipped`, `failed`. `mode`: `recommended`, `default`, `custom`.
 
+Két további, opcionális mező (DECISIONS 91): `render` (`running`, `done`,
+`failed`, idővel, minőséggel, a hiba szövegével), hogy egy elbukott vagy
+megszakadt render újraindítás után is látszódjon; és `autopilotRun`, amíg a
+"Finish on Autopilot" fut, hogy egy megszakadt Autopilot folytatódjon.
+
 ### 4.5 Video Brief Card (`brief.json`, séma v1)
 
 ```json
@@ -234,11 +239,17 @@ indításkor a "Test key" egy rövid hívással ellenőriz.
 Prompt-sablonok a `runner/gates/*/prompt.md` fájlokban, a kánonból levezetve
 (script: Ownership Framework + Brand Voice + Audience; jelenet-tábla: CATALOG.md
 + MOTION szabályok + max 6 szó). A válasz minden LLM kapunál **JSON**, séma
-szerint validálva; ha nem valid, egy javító hívás, utána hiba a UI-ban.
+szerint validálva; ha nem valid, legfeljebb két javító hívás (DECISIONS 91),
+utána hiba a UI-ban. A jelenet-táblánál a csak ízlésbeli eltérés (ugyanaz a
+komponens kétszer egymás után, egy kicsit hosszabb jelenet) a javítások után
+figyelmeztetés, nem hiba.
 
-Hibakezelés: 429 (kvóta) és 5xx esetén exponenciális visszalépés, 3 próba,
-utána érthető üzenet ("A Gemini ingyenes kvóta elfogyott. Várj, vagy válts
-szolgáltatót a Settings-ben.").
+Hibakezelés (DECISIONS 91): 429 (kvóta), 5xx és hálózati hiba esetén
+modellenként 3 gyors próba, utána a szolgáltató többi modellje, és ha mind
+foglalt, várakozás és új kör (15, 30, 45, 60 mp, összesen kb. 3 perc). A
+várakozást a haladásjelző kiírja ("Gemini is busy (HTTP 503). Trying again in
+30 s, round 2 of 4."). Csak utána érthető üzenet. A "Test key" nem vár. A hang
+(Gemini TTS, ElevenLabs) és a HeyGen ugyanígy türelmes (kb. 3 perc hívásonként).
 
 ## 6. A menet megvalósítása
 
@@ -265,7 +276,28 @@ alakítva.
 
 **Megszakítás és folytatás:** a `project.json` a forrás. Az app újraindítás
 után a legutolsó nem `approved` kapunál folytat. Egy kapu újrafuttatása
-érvényteleníti a későbbi kapukat.
+érvényteleníti a későbbi kapukat. Egy `running` kapu, amin a Rust mag szerint
+már nem dolgozik semmi (`liveProjects`), `failed` lesz "Interrupted" üzenettel.
+A megszakadt Autopilot a videó megnyitásakor magától folytatódik; ami már
+elkészült és jóváhagyásra vár, azt jóváhagyja, nem csinálja újra.
+
+**Megbízható futás (DECISIONS 91):**
+- Minden runner-futás egy folyamatfában (Windows Job Object, macOS
+  folyamatcsoport): a Stop, az őrkutya és a kilépés a Chrome-ot és az
+  ffmpeg-et is leállítja.
+- A runner 20 mp-enként életjelet ad; 5 percnyi csend után a mag leállítja.
+  A videómotor (hyperframes) 15 percnyi kimenet nélküli állás után leáll.
+- A runner észreveszi, ha a gép aludt (óraugrás), és kiírja.
+- A hang kész blokkjai egy elbukott futás után megmaradnak
+  (`audio/blocks-cache/`), az újrafuttatás csak a hiányzót olvassa fel.
+- A HeyGen megrendelt videóinak azonosítója `avatar/pending.json`-ba kerül;
+  egy elbukott vagy leállított futás újraindítva átveszi őket, nem rendel
+  újra.
+- A `project.json` írása egyedi ideiglenes fájllal és rövid újrapróbálással
+  (Windows fájlzár).
+- Settings, App, General, "Export diagnostics": egy zip a naplóval, a
+  beállításokkal és minden ONE Video állapotával, kulcs, hang, videó és
+  script szöveg nélkül.
 
 ## 7. Integrációk
 
