@@ -205,3 +205,33 @@ App:
   video").
 - `SceneGate`: a CTA-jelenet jelölése, csere nélkül.
 - UI próba: `scripts/ui-mock` (`cta-state.json`).
+
+## Újrahasznosítható szegmensek: megbeszélés (2026-10-05)
+
+Zoltan kérése: egyszer felvett, legfeljebb 30 mp-es klipek (például teljes
+képernyős avatar: "Comment GUIDE below"), kulcsszóhoz kötve, eleje, közepe
+vagy vége helyre, duplikáció nélkül, a per-videó avatarral nem ütközve,
+"previously selected" emlékezéssel, Identity-nként (csatorna, avatar).
+
+Claude javaslata:
+- Egy helyet vagy a narrátor tölt ki (CTA-mondat és `cta-close` jelenet),
+  vagy a saját szegmens, soha nem mindkettő. Helyenként: Off, Narrator, My
+  segment. Ha szegmens van ott, a script arra a helyre nem ír CTA-mondatot.
+- A szegmens a kulcsszaván keresztül választható: a helyre választott
+  kulcsszóhoz tartozó szegmensek jelennek meg, így a klipben elhangzó és a
+  hely kulcsszava nem térhet el.
+- Szegmens-könyvtár Identity-nként: fájl (MP4), kulcsszó (kötelező), név,
+  legfeljebb 30 mp. Kulcsszavanként legfeljebb 3, a több közül alapból a
+  legrégebben használt (váltakozás).
+- Beszúrás szakaszhatáron: eleje = az OPEN után, közepe = a legértékesebb
+  szakasz után, vége = az OWN után. A narráció ott szünetel, a klip a saját
+  hangjával szól, a zene halkabban megy tovább. A per-videó avatar csak a
+  narráció alatt látszik, a szegmens alatt nem, így nem ütköznek.
+- Forrás: feltöltött MP4, vagy az appban HeyGennel készítve (a user
+  kulcsával, kreditbe kerül).
+- Hiány a régi döntéshez képest: a YouTube végképernyő (DECISIONS 53, alap
+  20 mp) nincs megvalósítva, a videó az utolsó mondattal véget ér. Javaslat:
+  a végére 20 mp-es farok (az utolsó jelenet vagy a vége-szegmens tart, a
+  zene lecseng).
+
+Kérdések (S1-S8) és Zoltan válaszai: a 2026-10-05-i chatben.
