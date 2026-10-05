@@ -903,3 +903,29 @@
     (Zoltan: elég, ha a saját kulcsával használhatja). A Claude Pro és Gemini
     Pro előfizetés nem API kulcs; ingyen tesztelni a Gemini API ingyenes
     keretével és az OpenRouter ingyenes modelljeivel lehet.
+90. **Stock kereső: a pilot után, terv** (Zoltan, 2026-10-05). Még nem épül;
+    a pilot (3. fázis) dönti el, hiányzik-e a kezdő usernek a valódi kép.
+    Cél: B-roll annak, akinek nincs saját felvétele (a "diavetítésszerű"
+    visszajelzés, `feedback/2026-10-05/NOTES.md` 9). A saját
+    felvétel-könyvtár (DECISIONS 82) már kész, a stock arra épül.
+    Miért nem a HeyGen: az API-ján nincs stock videó keresés (csak hang és
+    zene); a szerkesztőjében lévő stock az appból nem érhető el.
+    Források (kutatás 2026-10-05): ingyenes, API-val, kereskedelmi célra,
+    forrásmegjelölés nélkül: **Pixabay** (4,3 millió kép, videó, zene; kulcs
+    ingyen), **Coverr** (fejlesztői API, ingyenes, a próba-alkalmazás havi
+    1000 hívás), **Pexels** (ingyenes, de 2026-10-05-én új kulcsot nem adott
+    ki; akinek van, használhatja). Fizetős, saját kulccsal később: Storyblocks
+    (egyedi ár), Shutterstock, Vecteezy. Mixkit és Videvo: nincs nyilvános API.
+    Javasolt felépítés:
+    - egy közös "stock source" réteg a runnerben (keresés, előnézet, letöltés,
+      licenc és szerző), forrásonként egy kis illesztő; elsőnek Pixabay és
+      Coverr, a Pexels annak, akinek van kulcsa;
+    - Settings, Identity, Footage: "Add from stock" kereső a meglévő
+      kártyás választóval (LookPicker mintája), előnézettel; a kiválasztott
+      klip a saját könyvtárba kerül, a forrással és a licenccel együtt;
+    - a Scenes tabon opcionális "Find clips for this video": az AI a script
+      szakaszaiból keresőszavakat javasol, a user választ, soha nem tölt le
+      magától;
+    - a jelenet-tervező onnan úgy használja, mint a saját felvételt;
+    - a publish.json `credits` mezőt kap (forrás, szerző, licenc);
+    - kulcs nélkül a gomb nem látszik, az onboardingba nem kerül új lépés.
