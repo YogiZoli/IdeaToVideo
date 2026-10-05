@@ -20,6 +20,10 @@ import { joinBlocks, mix, duration, clipAudio, silence } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
 
 export const VOICE_PROVIDERS = { elevenlabs, gemini };
+// The ElevenLabs models gate 2 offers. v2 is the tested default (timing,
+// joined blocks); Eleven v4 (2026-09-28) reads tone and pacing from the text,
+// and ElevenLabs does not list Hungarian among its languages yet.
+export const ELEVEN_MODELS = { eleven_multilingual_v2: "Multilingual v2 (tested)", eleven_v4: "Eleven v4 (newest, most expressive)" };
 
 // The music file sits in the project (the Rust core's import_music copies it
 // to audio/music.<ext>). Only that relative name comes in, never a free path.
@@ -52,6 +56,8 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
       apiKey,
       fetchImpl,
       voiceId: narrator.voice,
+      // ElevenLabs only: Eleven v4 when chosen at gate 2 (2026-10-05), else its default
+      ...(narrator.provider === "elevenlabs" && ELEVEN_MODELS[narrator.model] ? { model: narrator.model } : {}),
       text: speakable(blocks[i].text),
       previousText: blocks[i - 1] && speakable(blocks[i - 1].text),
       nextText: blocks[i + 1] && speakable(blocks[i + 1].text),

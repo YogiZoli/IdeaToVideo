@@ -728,6 +728,32 @@ fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<Stri
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// "Add footage" (Settings, Identity, Footage): copies the video the user
+/// picked into the active Identity's footage folder under a temporary name;
+/// the runner (footage-add) measures it, finds its cuts and keeps it.
+#[tauri::command]
+fn import_footage(app: AppHandle, path: String) -> Result<String, String> {
+    let src = PathBuf::from(&path);
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .filter(|e| ["mp4", "mov", "webm", "m4v"].contains(&e.as_str()))
+        .ok_or("Footage must be a video file (MP4, MOV, WebM).")?;
+    let size = std::fs::metadata(&src).map_err(|_| "Video file not found.")?.len();
+    if size > 4 * 1024 * 1024 * 1024 {
+        return Err("The video file is larger than 4 GB. Cut it into parts.".into());
+    }
+    let id = active_id(&app)?.ok_or("No Identity yet.")?;
+    let dir = identity::dir_of(&config_dir(&app)?, &id)?.join("footage");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("clip").chars().filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_' || *c == ' ').take(60).collect::<String>();
+    let name = format!("incoming-{stamp}{stem}.{ext}");
+    std::fs::copy(&src, dir.join(&name)).map_err(|e| format!("Could not copy the video: {e}"))?;
+    Ok(name)
+}
+
 /// "Upload a segment" (CTA wizard): copies the video the user picked into the
 /// active Identity's segments folder under a temporary name; the runner
 /// (segment-add) checks its length and keyword and keeps or deletes it.
@@ -883,6 +909,7 @@ pub fn run() {
             import_music,
             export_publish,
             import_segment,
+            import_footage,
             backup_settings_now,
             restore_settings,
             cloud_folders,

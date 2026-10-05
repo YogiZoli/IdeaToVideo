@@ -55,6 +55,9 @@
   // "Previously used" (per Identity, runner last-used): the voice this brand
   // used last is chosen, and the list opens only on "Choose another".
   let lastVoice = $state<string | null>(null);
+  // ElevenLabs model (runner ELEVEN_MODELS): v2 tested, v4 newest.
+  const ELEVEN_MODELS: Record<string, string> = { eleven_multilingual_v2: "Multilingual v2 (tested)", eleven_v4: "Eleven v4 (newest, most expressive)" };
+  let voiceModel = $state("eleven_multilingual_v2");
   let chooseOther = $state(false);
   const previous = $derived(!!lastVoice && voiceId === lastVoice);
 
@@ -64,7 +67,8 @@
       const r = await runner<{ voices: Voice[] }>("list-voices", { narrator: { provider } });
       voices = r.voices;
       try {
-        const used = (await runner<{ used: { voice?: { provider: string; voice: string } } }>("last-used", {})).used.voice;
+        const used = (await runner<{ used: { voice?: { provider: string; voice: string; model?: string | null } } }>("last-used", {})).used.voice;
+        if (used?.provider === provider && used.model && ELEVEN_MODELS[used.model]) voiceModel = used.model;
         if (used?.provider === provider && voices.some((v) => v.id === used.voice)) {
           lastVoice = used.voice;
           voiceId = used.voice;
@@ -143,7 +147,7 @@
     step = "Starting...";
     let ok = false;
     try {
-      const r = await runner<{ info: Info }>("make-voice", { projectDir: dir, narrator: { provider, voice: voiceId, name: voices.find((v) => v.id === voiceId)?.name ?? null }, music: null });
+      const r = await runner<{ info: Info }>("make-voice", { projectDir: dir, narrator: { provider, voice: voiceId, name: voices.find((v) => v.id === voiceId)?.name ?? null, ...(provider === "elevenlabs" ? { model: voiceModel } : {}) }, music: null });
       madeInfo = r.info;
       stamp = Date.now();
       ok = true;
@@ -231,6 +235,15 @@
       <button type="button" onclick={playSample} disabled={!voiceId || sampling}>{sampling ? "Loading..." : "Play sample"}</button>
       {#if previous}<span class="pill">previously used</span>{/if}
     </div>
+    {/if}
+    {#if provider === "elevenlabs"}
+      <div class="row">
+        <label for="vmodel">Voice model</label>
+        <select id="vmodel" bind:value={voiceModel} disabled={busy}>
+          {#each Object.entries(ELEVEN_MODELS) as [id, label] (id)}<option value={id}>{label}</option>{/each}
+        </select>
+        {#if voiceModel === "eleven_v4"}<span class="hint">More expressive. ElevenLabs does not list Hungarian for v4 yet; for a Hungarian video use v2. Your clones work with both.</span>{/if}
+      </div>
     {/if}
     {#if sample}<audio controls autoplay src={sample}></audio>{/if}
 

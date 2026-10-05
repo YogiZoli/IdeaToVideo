@@ -18,6 +18,7 @@
     component: string; label: string; roleLabel: string; mainVar: string | null; mainText: string | null; shows: string;
     alternatives: { component: string; label: string }[];
     call: { slot: string; keyword: string; temperature: string } | null;
+    footage: string | null;
   };
   type Scene = { component: string; from: string; to?: string; vars: Record<string, unknown> };
   type Table = { rows: Row[]; gaps: { at: string; need: string }[]; warnings: string[]; scenes?: Scene[] };
@@ -150,6 +151,7 @@
                 {:else}
                   {row.label}
                 {/if}
+                {#if row.footage}<div class="footage">Your footage plays here</div>{/if}
                 {#if row.call}
                   <div class="call {row.call.temperature}">Comment call: {row.call.keyword} ({row.call.temperature})</div>
                 {:else}
@@ -208,6 +210,7 @@
   .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
   .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
   .call { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
+  .footage { display: inline-block; margin: 4px 4px 0 0; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #1a1a1a; color: #fff; }
   .call.cold { background: #2E6FE0; }
   .call.warm { background: #E5A400; color: #1a1a1a; }
   .call.hot { background: #D92D20; }

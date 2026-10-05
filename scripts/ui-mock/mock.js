@@ -152,6 +152,8 @@ window.__TAURI_INTERNALS__ = {
         // The CTA wizard (cta-state.json from prepare.mjs).
         if (args.command === "cta-state") { const c = await (await fetch("/cta-state.json")).json(); return { ...c, profile: ctaProfile }; }
         // "Previously used" voice and avatar of the Identity (runner last-used).
+        // The Identity's footage (runner footage-list).
+        if (args.command === "footage-list") return { mode: "scene", dir: "/preview", maxSeconds: 600, modes: { scene: "Its own scene: only the footage, full frame", background: "Behind the words: the footage, darkened, with the scene's short text on it" }, clips: [{ id: "f1", file: "f1.mp4", name: "office walk", description: "A person walks through a bright office with a laptop.", seconds: 74.2, shots: [0, 12.5, 31, 47.2], stills: [], source: "upload", used: [{ project: "a", start: 0, end: 6 }], createdAt: "2026-10-05" }, { id: "f2", file: "f2.mp4", name: "city timelapse", description: "", seconds: 31, shots: [0], stills: [], source: "upload", used: [], createdAt: "2026-10-05" }] };
         if (args.command === "last-used") return { used: { voice: { provider: "elevenlabs", voice: "v1", name: "Zoltan BD" } } };
         if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }
         if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }

@@ -36,7 +36,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { prepareBuild, buildDir, TRANSITIONS_FILE, COVERED_FILE } from "./index.mjs";
 import { engineDir } from "../../tools.mjs";
-import { duration } from "../../audio.mjs";
+import { duration, ffmpegRun } from "../../audio.mjs";
+import { choosePiece, markPieces } from "../../footage/library.mjs";
 import { avatarClips } from "../avatar/index.mjs";
 import { cardForPreset, cardTheme, cardFamilies, fixContrast } from "../../brand/card.mjs";
 import { TEMPERATURES } from "../../cta/catalog.mjs";
@@ -380,6 +381,45 @@ export function avatarStyle(layout = {}, width = 1920, height = 1080) {
 export const segmentVideo = (g) =>
   `    <video id="segment-${g.slot}" src="${g.file}" muted data-volume="0" data-start="${g.start}" data-duration="${g.seconds}" data-track-index="5" style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:6"></video>`;
 
+// The footage pieces of a table: each entry (from, to: sentence ids, clip)
+// lasts from its first sentence to the start of the sentence after its last
+// one (at most 0.6 s after the last word: a segment or the end screen after
+// it is not footage time). The piece of the clip comes from choosePiece.
+export function footagePlan(table, sentences, lib, project) {
+  if (!lib?.clips?.length || !table.footage?.length) return [];
+  const ids = new Map(sentences.map((s, i) => [s.id, i]));
+  const out = [];
+  for (const f of table.footage) {
+    const clip = lib.clips.find((c) => c.id === f.clip);
+    const a = ids.get(f.from);
+    const b = ids.get(f.to ?? f.from);
+    if (!clip || a === undefined || b === undefined) continue;
+    const start = sentences[a].start;
+    const end = Math.min(sentences[b + 1]?.start ?? Infinity, sentences[b].end + 0.6);
+    const seconds = Math.round((end - start) * 1000) / 1000;
+    const piece = choosePiece(clip, seconds, { project });
+    out.push({ clip: clip.id, src: path.join(lib.dir, clip.file), start, end, from: piece.start, to: piece.end, loop: piece.loop });
+  }
+  return out;
+}
+
+// The piece, cut, fitted to the frame (cover), without sound.
+async function cutPiece(f, out, { width, height, env }) {
+  const seconds = Math.round((f.end - f.start) * 1000) / 1000;
+  await ffmpegRun([...(f.loop ? ["-stream_loop", "-1"] : []), "-ss", String(f.from), "-i", f.src, "-t", String(seconds), "-an", "-vf", `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},fps=30`, "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", out], env);
+}
+
+// A footage piece on the page. "scene": over the scenes (the scene under it
+// is not seen), below the avatar and the segments. "background": under the
+// scenes, whose ground turns see-through there, with a veil of the
+// background colour so the scene's text stays readable.
+export function footageVideo(f, mode) {
+  const at = `data-start="${f.start}" data-duration="${Math.round((f.end - f.start) * 1000) / 1000}"`;
+  const video = `    <video id="footage-${f.n}" src="${f.file}" muted data-volume="0" ${at} data-track-index="6" style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:${mode === "scene" ? 4 : 0}"></video>`;
+  if (mode === "scene") return video;
+  return `${video}\n    <div id="footage-veil-${f.n}" class="clip" ${at} data-track-index="7" style="position:absolute;inset:0;background:var(--itv-bg);opacity:0.55;z-index:0"></div>`;
+}
+
 // The segments the voice gate placed (audio/voice.json inserts).
 export function segmentClips(projectDir) {
   let v;
@@ -417,7 +457,7 @@ const hostHtml = (m, width, height, motion) => {
 };
 const NL = "\n";
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], language = "en", title = "Video", fontCss = "", motion = null }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null }) {
   const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
   const ground = motion?.backgrounds?.length
     ? motion.backgrounds
@@ -471,8 +511,8 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
   </head>
   <body>
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
-${ground}
-${hosts}
+${ground}${footageMode === "background" ? footage.map((f) => "\n" + footageVideo(f, "background")).join("") : ""}
+${hosts}${footageMode === "background" ? "" : footage.map((f) => "\n" + footageVideo(f, "scene")).join("")}
 ${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
     </div>
@@ -585,9 +625,12 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const bgPieces = mp?.background.component ? backgroundPieces(total) : [];
   const bgComponent = bgPieces.length ? loadComponent(mp.background.component, { env }) : null;
   // With a background under them, the scenes' own grounds are see-through.
+  // The user's own footage under its sentences (DECISIONS 82).
+  const footage = footagePlan(table, sentences, look.footage, path.basename(projectDir));
+  const underFootage = (n) => look.footage?.mode === "background" && footage.some((f) => f.start < times[n].start + times[n].duration && f.end > times[n].start);
   const fitted = scenes.map((sc, n) => {
     const html = widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component);
-    return bgComponent ? transparentGround(html).html : html;
+    return bgComponent || underFootage(n) ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
   const segments = segmentClips(projectDir);
@@ -635,13 +678,21 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.mkdirSync(path.join(out, "segments"), { recursive: true });
     fs.copyFileSync(path.join(projectDir, g.file), path.join(out, g.file));
   }
-  if (segments.length) fs.writeFileSync(path.join(out, COVERED_FILE), JSON.stringify(segments.map((g) => ({ at: g.start, seconds: g.seconds })), null, 2) + "\n");
+  for (const [k, f] of footage.entries()) {
+    fs.mkdirSync(path.join(out, "footage"), { recursive: true });
+    f.file = `footage/f-${k + 1}.mp4`;
+    await cutPiece(f, path.join(out, f.file), { width, height, env });
+  }
+  if (footage.length) markPieces(path.dirname(look.footage.dir), path.basename(projectDir), footage.map((f) => ({ clip: f.clip, start: f.from, end: f.to })));
+  // What the check cannot judge: a scene under a full-frame clip.
+  const covered = [...segments.map((g) => ({ at: g.start, seconds: g.seconds })), ...footage.map((f) => ({ at: f.start, seconds: Math.round((f.end - f.start) * 1000) / 1000 }))];
+  if (covered.length) fs.writeFileSync(path.join(out, COVERED_FILE), JSON.stringify(covered, null, 2) + "\n");
   const motionPart = mp ? { lines: mp.lines, shader: mp.shader, backgrounds } : null;
   if (mp) {
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, language, title, fontCss: fonts.css, motion: motionPart }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart }));
   return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [] };
 }
 

@@ -37,6 +37,8 @@ import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendM
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
 import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi, endScreenOf, loadLast, saveLast } from "./cta/profile.mjs";
 import { segmentVoice, segmentVideo } from "./cta/make.mjs";
+import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
+import { describeClip } from "./footage/describe.mjs";
 import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
 import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "./cta/catalog.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
@@ -81,7 +83,7 @@ const key = () => process.env.STUDIO_API_KEY || "";
 function lookOf({ identityDir, look }) {
   if (!identityDir) return look;
   const { card } = loadCard(identityDir);
-  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion: motionOf(identityDir) };
+  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion: motionOf(identityDir), footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
 }
 
 // The Identity's Motion profile, or null (motion/profile.mjs). A broken file
@@ -370,6 +372,15 @@ const commands = {
   // The Identity's segments (cta/segments.mjs). An upload is copied into
   // <identity>/segments by the Rust core (import_segment) first; this checks
   // and registers it.
+  // The Identity's own footage (footage/library.mjs, DECISIONS 82). An upload
+  // is copied into <identity>/footage by the Rust core (import_footage) first.
+  "footage-list": async ({ identityDir }) => ({ ...loadLibrary(identityDir), dir: footageDir(identityDir), modes: FOOTAGE_MODES, maxSeconds: MAX_CLIP_SECONDS }),
+  "footage-add": async ({ identityDir, file, name, description }) => ({ clip: await addClip({ identityDir, file, name, description }) }),
+  "footage-update": async ({ identityDir, id, name, description }) => ({ clip: updateClip(identityDir, id, { name, description }) }),
+  "footage-remove": async ({ identityDir, id }) => removeClip(identityDir, id),
+  "footage-mode": async ({ identityDir, mode }) => setFootageMode(identityDir, mode),
+  "footage-describe": async ({ identityDir, id, llm }) => ({ clip: await describeClip({ identityDir, id, llm: { provider: llm.provider, model: llm.model, apiKey: key() } }) }),
+
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
   "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, perKeyword: SEGMENTS_PER_KEYWORD }),
@@ -495,7 +506,7 @@ const commands = {
       project = setGate(loadProject(projectDir), "voice", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `voice: done, ${info.seconds}s, ${info.finalLufs} LUFS, ${table.sentences} sentences`);
-      rememberUsed(identityDir, { voice: { provider: narrator?.provider, voice: narrator?.voice, name: narrator?.name ?? null } });
+      rememberUsed(identityDir, { voice: { provider: narrator?.provider, voice: narrator?.voice, name: narrator?.name ?? null, model: narrator?.model ?? null } });
       return { info, gate: project.gates.voice, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "voice", { state: "failed", error: String(e.message).slice(0, 2000) }));
@@ -545,6 +556,7 @@ const commands = {
           name,
           themeIsLight: isLightLook(look),
           off: offOf(look),
+          footage: typeof look === "object" ? look?.footage ?? null : null,
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );

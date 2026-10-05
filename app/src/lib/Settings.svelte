@@ -28,6 +28,7 @@
   import MotionPage from "./motion/MotionPage.svelte";
   import CtaWizard from "./cta/CtaWizard.svelte";
   import CtaPage from "./cta/CtaPage.svelte";
+  import FootagePage from "./footage/FootagePage.svelte";
   import { ensureFonts } from "./brand/fontsDom";
   import { runner, exportBrand, importBrand } from "./api";
   import type { BrandState, BrandCard } from "./api";
@@ -258,7 +259,7 @@
         <p class="for">{page.group === "app" ? "Settings for all Identities" : `Settings for: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      {#if pageId !== "look" && pageId !== "dictionary" && pageId !== "motion" && pageId !== "cta"}
+      {#if pageId !== "look" && pageId !== "dictionary" && pageId !== "motion" && pageId !== "cta" && pageId !== "footage"}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
@@ -351,6 +352,8 @@
       <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
     {:else if pageId === "cta"}
       <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
+    {:else if pageId === "footage"}
+      <FootagePage {app} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
     {:else if pageId === "identity-ai"}

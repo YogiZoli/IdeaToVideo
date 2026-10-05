@@ -742,3 +742,27 @@
     kap" szöveg; a régi mentések "Narrator"-ja "auto" (`modesV`); a script
     minimum szószámot kap és a hosszra két javító kört; a Gemini tartalék
     harmadik modellel (Flash Lite); a 2 mp alatti jelenetet a gép összevonja.
+82. **Saját felvétel-könyvtár (B-roll) Identity-nként** (Zoltan, 2026-10-05,
+    B1-B3): Settings, Identity, Footage. A klip némán szól, a hang végig a
+    narrátoré. Eldöntve:
+    - **B1**: minden klipnek leírása van (mi látható rajta); a jelenet-tervező
+      ezt párosítja a mondatokkal. Feltöltéskor az AI a klip három
+      állóképéből magától megírja (a user AI-kulcsával), a user átírhatja.
+    - **B2**: alapból "Its own scene" (csak a felvétel, teljes képen);
+      választható "Behind the words" (a felvétel a jelenet alatt, a háttér
+      színével halványítva, a jelenet szövege rajta).
+    - **B3**: egy hosszú klipből minden videó más darabot kap: a darab mindig
+      egy vágásnál kezdődik (ffmpeg jelenet-felismerés), és a legkevésbé
+      használt részt választja; a használat videónként tárolva, újrabuildnél
+      nem duplázódik. A rövid klip ismétlődik.
+    - A tervező legfeljebb minden negyedik mondat alá tesz felvételt, CTA-
+      mondat alá soha; a `scenes.json` `footage` listája. Legfeljebb 200 klip,
+      klipenként 10 perc.
+    - Kutatás (2026-10-05): a HeyGen API-n nincs stock-videó keresés (csak hang
+      és zene, `GET /v3/audio/sounds`), ezért a stock kereső Pexels és Pixabay
+      ingyenes kulccsal jön (a Getty fizetős); az OpenArt csak MCP-n érhető el
+      (OAuth), sima API nincs, az appba nem köthető be.
+83. **Eleven v4 választható** (2026-10-05): a 2. kapuban "Voice model":
+    Multilingual v2 (tesztelt, alap) vagy Eleven v4 (`eleven_v4`, 2026-09-28,
+    a legkifejezőbb); a brand megjegyzi. Az ElevenLabs a v4-nél a magyart
+    még nem sorolja fel. A kipróbálás Zoltané (kulccsal).

@@ -18,6 +18,7 @@ import { narrationFromMarkdown } from "../voice/narration.mjs";
 import { duration } from "../../audio.mjs";
 import { ROLES, COMPONENTS, roleOf } from "./roles.mjs";
 import { CALL_FIELDS } from "../script/index.mjs";
+import { catalogForPlanner } from "../../footage/library.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -242,6 +243,32 @@ export function joinShort(answer, { sentences, total, calls = new Map(), gaps = 
   return { ...answer, scenes: out };
 }
 
+// The user's own footage (footage/library.mjs, DECISIONS 82): the planner may
+// lay a clip under one sentence or a few, matching what the clip shows to
+// what is said. Never under a comment call, never two at once, never a clip
+// it was not given.
+export function footageIssues(list, { sentences, calls = new Map(), clips = [] }) {
+  if (list === undefined || list === null) return [];
+  if (!Array.isArray(list)) return ["footage must be an array"];
+  if (!clips.length && list.length) return ["there is no footage: leave footage empty"];
+  const ids = new Map(sentences.map((s, i) => [s.id, i]));
+  const known = new Set(clips.map((c) => c.id));
+  const issues = [];
+  let last = -1;
+  list.forEach((f, n) => {
+    const at = `footage ${n + 1}`;
+    if (!f || typeof f !== "object") return issues.push(`${at}: not an object`);
+    if (!known.has(f.clip)) return issues.push(`${at}: unknown clip ${f.clip} (use an id from DATA footage)`);
+    const from = ids.get(f.from);
+    const to = ids.get(f.to ?? f.from);
+    if (from === undefined || to === undefined || to < from) return issues.push(`${at}: from and to must be sentence ids in order`);
+    if (from <= last) issues.push(`${at}: overlaps the footage before it`);
+    for (let i = from; i <= to; i++) if (calls.has(sentences[i].id)) issues.push(`${at}: ${sentences[i].id} is a comment call, it keeps its own scene`);
+    last = to;
+  });
+  return issues;
+}
+
 // The segments and the end-screen tail in the recorded voice (voice gate).
 export function gapsOf(projectDir) {
   try {
@@ -295,7 +322,7 @@ const withCalls = (scenes, calls) =>
   scenes.map((sc) => {
     const call = calls.get(sc.from);
     const { call: _old, ...rest } = sc;
-    return call && sc.component === "cta-close" ? { ...rest, call } : rest;
+    return call && sc.component === "cta-close" ? { ...rest, vars: { ...(rest.vars ?? {}), button_label: call.keyword }, call } : rest;
   });
 
 export function writeTable(projectDir, table) {
@@ -303,18 +330,23 @@ export function writeTable(projectDir, table) {
 }
 
 // Gate 3, Recommended. llm = { provider, apiKey, model, fetchImpl?, sleep? }.
-export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], onProgress = () => {} }) {
+export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, onProgress = () => {} }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
   const catalog = libraryCatalog({ env, off });
   const calls = callSentences(readScript(projectDir), sentences);
   const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language, calls });
+  const clips = footage ? catalogForPlanner(footage) : [];
+  if (clips.length) data.footage = clips;
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir) }));
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => {
+    const r = checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir) });
+    return { ...r, issues: [...r.issues, ...footageIssues(a?.footage, { sentences, calls, clips })] };
+  });
   const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
   const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
-  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.map(clean), calls), gaps, warnings: result.warnings });
+  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.map(clean), calls), ...(clips.length && answer.footage?.length ? { footage: answer.footage.map((f) => ({ from: f.from, ...(f.to && f.to !== f.from ? { to: f.to } : {}), clip: f.clip })) } : {}), gaps, warnings: result.warnings });
   return { scenes: joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.length, gaps, warnings: result.warnings };
 }
 
@@ -392,6 +424,7 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
       mainText: meta.mainVar ? (sc.vars?.[meta.mainVar] ?? null) : null,
       shows: onScreen(sc.component, sc.vars).map((l) => l.text).join(" / "),
       call: sc.call ?? null,
+      footage: (table.footage ?? []).find((f) => ids.indexOf(f.from) <= ids.indexOf(sc.to ?? sc.from) && ids.indexOf(f.to ?? f.from) >= ids.indexOf(sc.from))?.clip ?? null,
       alternatives: Object.entries(COMPONENTS)
         .filter(([c, m]) => !sc.call && m.role === meta.role && c !== sc.component && !off.includes(c) && !m.retired)
         .map(([c, m]) => ({ component: c, label: m.label })),

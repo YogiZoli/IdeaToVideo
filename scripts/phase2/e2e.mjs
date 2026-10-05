@@ -159,6 +159,19 @@ fs.mkdirSync(identityDir, { recursive: true });
 const fontCache = path.join(hfHome(env), ".cache", "hyperframes", "fonts");
 const cached = () => (fs.existsSync(fontCache) ? fs.readdirSync(fontCache, { recursive: true }).sort().join("|") : "");
 const cacheBefore = cached();
+// The Identity's own footage (DECISIONS 82): a clip in its library, laid
+// under S2 in the scene table; the build cuts its piece, muted, full frame.
+{
+  const lib = path.join(identityDir, "footage");
+  fs.mkdirSync(lib, { recursive: true });
+  const r = spawnSync(env.HYPERFRAMES_FFMPEG_PATH, ["-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=1280x720:rate=30:duration=20", "-f", "lavfi", "-i", "sine=duration=20", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", path.join(lib, "incoming-1office.mp4")]);
+  if (r.status !== 0) check("footage fixture", false, String(r.stderr));
+  const { addClip, updateClip } = await import("../../runner/footage/library.mjs");
+  const clip = await addClip({ identityDir, file: "incoming-1office.mp4", env });
+  updateClip(identityDir, clip.id, { description: "Someone works on a laptop in an office." });
+  const table = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8"));
+  fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify({ ...table, footage: [{ from: "S2", clip: clip.id }] }, null, 2));
+}
 // A CTA segment (DECISIONS 78), as the voice gate leaves it: its clip in the
 // project, its place in audio/voice.json. The build mounts it muted, full frame.
 {
@@ -170,7 +183,8 @@ const cacheBefore = cached();
 const built = runner("build-video", { projectDir: dir, identityDir, look: "blue-professional" });
 {
   const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
-  check("CTA: the segment is in the build, muted, full frame", /<video id="segment-middle" src="segments\/middle.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "segments", "middle.mp4")));
+  check("footage: a muted piece of the clip under S2", /<video id="footage-1" src="footage\/f-1.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "footage", "f-1.mp4")));
+  check("CTA: the segment is in the build, muted, full frame",/<video id="segment-middle" src="segments\/middle.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "segments", "middle.mp4")));
 }
 {
   const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";

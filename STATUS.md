@@ -210,8 +210,12 @@ Kész (2026-09-30):
    DECISIONS 53 megvalósítva), DECISIONS 78; **"previously used" hang és
    avatar** Identity-nként (DECISIONS 79); Zoltan próbája után javítva
    (DECISIONS 80, `feedback/2026-10-05/NOTES.md`): üres állóképek, kilógó
-   CTA-sor, script hossza, szegmens "auto", elemek a kimondáskor. Nyitott:
-   B-roll. Tesztek: 177 Node, 43 Rust, e2e
+   CTA-sor, script hossza, szegmens "auto", elemek a kimondáskor; második
+   kör (DECISIONS 81). **Saját felvétel-könyvtár (B-roll)** Identity-nként,
+   AI-leírással, vágásponttól induló, váltakozó darabokkal (DECISIONS 82);
+   **Eleven v4** választható (83). Tesztek: 188 Node, e2e 31/31.
+   **Következő:** stock kereső (Pexels és Pixabay, ingyenes kulcs, Zoltan
+   regisztrál), majd a fázis vége. Tesztek: 177 Node, 43 Rust, e2e
    30/30. **Következő:** Zoltan próbája az új telepítővel; a PDT import és a
    Translation Pack külön chatben a PDT repóban (a prompt a chat végén).
 6. ~~Mentés (Backup)~~: kész, lásd 2b.

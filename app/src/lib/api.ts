@@ -175,6 +175,7 @@ export type GalleryLook = { id: string; label: string; group: string; card: Bran
 export type BrandState = { card: BrandCard; own: boolean; presets: GalleryLook[]; styleNote: string; fonts: ShippedFont[]; contrast: ContrastRow[]; fontsDir: string; brandDir: string | null };
 export const HYPERFRAMES_GROUP = "HyperFrames presets";
 export const exportBrand = (path: string) => call<string>("export_brand", { path });
+export const importFootage = (path: string) => call<string>("import_footage", { path });
 export const importSegment = (path: string) => call<string>("import_segment", { path });
 export const exportPublish = (file: string, path: string) => call<string>("export_publish", { file, path });
 export const importBrand = (path: string) => call<BrandCard>("import_brand", { path });
@@ -234,6 +235,10 @@ export type CtaState = {
   last: CtaProfile | null;
   segments: CtaSegment[];
 };
+
+// The Identity's own footage (runner/footage/library.mjs).
+export type FootageClip = { id: string; file: string; name: string; description: string; seconds: number; shots: number[]; stills: string[]; source: string; used: { project: string; start: number; end: number }[]; createdAt: string };
+export type FootageState = { mode: "scene" | "background"; clips: FootageClip[]; dir: string; modes: Record<string, string>; maxSeconds: number };
 
 export type DictFinding = { kind: "banned" | "spelling"; term: string; found: string; instead?: string; where: string };
 
