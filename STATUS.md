@@ -202,9 +202,14 @@ Kész (2026-09-30):
    (K10). logo-brand-close kivezetve. Javítva még: a videó fő színe mindig
    olvasható (DECISIONS 76, Zoltan halvány rózsaszín jelenete). Tesztek: 171
    Node, e2e (a CTA-jelenettel).
-   **Következő, Zoltan két kész promptja:** (a) visszatérő szegmensek,
-   (b) pinned comment és `comment-keywords.txt`. Plusz a nyitott kérdés: a
-   publikálási átadás a PDT-nek (Claude javaslata a 2026-10-05-i chat végén).
+   Ugyanebben a chatben még (2026-10-05): **publikálási adatok** a videó
+   mellett (`publish.json`, séma `itv-publish/1`, és `comments.txt`, Export
+   gomb, DECISIONS 77), **újrahasznosítható CTA-szegmensek** (feltöltés vagy
+   HeyGen, kulcsszóhoz kötve, legfeljebb 30 mp, helyenként Narrator vagy My
+   segment, "previously selected") és a **végképernyő farok** (alap 20 mp,
+   DECISIONS 53 megvalósítva), DECISIONS 78. Tesztek: 177 Node, 43 Rust, e2e
+   30/30. **Következő:** Zoltan próbája az új telepítővel; a PDT import és a
+   Translation Pack külön chatben a PDT repóban (a prompt a chat végén).
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
 Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
@@ -234,8 +239,8 @@ Stratégia (nem az IdeaToVideo kódja, de a suite iránya): a Drive
 5. ~~A logo-brand-close~~: kivezetve (DECISIONS 75). Nyitott: a Brand
    varázsló "név a képernyőn" lépése eddig ezt mutatta a videó végén; most
    a név a videóban nem jelenik meg. Kell-e helyette valami?
-6. A publikálási adatok átadása a PDT-nek (fejezetek, átirat, CTA-k,
-   végképernyő): Claude javaslata a 2026-10-05-i chatben, Zoltan dönt.
+6. ~~A publikálási adatok átadása~~: kész az IdeaToVideo oldalon (DECISIONS
+   77); a PDT import, a Translation Pack és később az API a PDT repóban.
 
 ## Hogyan indul egy új session
 
