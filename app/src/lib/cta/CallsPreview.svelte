@@ -3,19 +3,23 @@
   // where they sit on the video's timeline, roughly what the narrator says, and
   // a still of each call scene in the Identity's colours (cta-close: the call
   // line, the keyword on a button in its temperature). No render, no key.
-  import type { CtaSlot, CtaState } from "../api";
+  import type { CtaMode, CtaSegment, CtaSlot, CtaState } from "../api";
 
   let {
     options,
     look,
     slots,
     on,
+    modes = { start: "narrator", middle: "narrator", end: "narrator" },
+    segments = [],
     offers,
   }: {
     options: CtaState["options"];
     look: CtaState["look"];
     slots: Record<CtaSlot, string | null>;
     on: Record<CtaSlot, boolean>;
+    modes?: Record<CtaSlot, CtaMode>;
+    segments?: CtaSegment[];
     offers: Record<string, string>;
   } = $props();
 
@@ -25,7 +29,8 @@
       .filter((s) => on[s] && slots[s])
       .map((s) => {
         const info = options.keywords.find((k) => k.keyword === slots[s])!;
-        return { slot: s, keyword: info.keyword, temperature: info.temperature, says: offers[info.keyword]?.trim() || info.gets };
+        const segs = segments.filter((g) => g.keyword === info.keyword);
+        return { slot: s, keyword: info.keyword, temperature: info.temperature, says: offers[info.keyword]?.trim() || info.gets, segment: modes[s] === "segment" && segs.length ? segs : null };
       }),
   );
 </script>
@@ -46,14 +51,18 @@
   <h2>Roughly what the narrator says</h2>
   <ul class="says">
     {#each calls as c (c.slot)}
-      <li><b>{options.slots[c.slot].label}:</b> Comment {c.keyword} below and I'll send you {c.says}.</li>
+      {#if c.segment}
+        <li><b>{options.slots[c.slot].label}:</b> your segment plays ({c.segment.map((g) => g.name).join(" or ")}); the narrator says no call here.</li>
+      {:else}
+        <li><b>{options.slots[c.slot].label}:</b> Comment {c.keyword} below and I'll send you {c.says}.</li>
+      {/if}
     {/each}
   </ul>
   <p class="hint">The AI writes the real sentence in your video's language, around your topic. The keyword always stays in capitals, as it is.</p>
 
   <h2>On screen while the call is spoken</h2>
   <div class="stills">
-    {#each calls as c (c.slot)}
+    {#each calls.filter((c) => !c.segment) as c (c.slot)}
       <figure>
         <div class="frame" style={`background: ${look.bg}; color: ${look.fg}; font-family: ${look.font}`}>
           <span class="line">Comment {c.keyword} below</span>

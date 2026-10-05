@@ -2,10 +2,11 @@
   // VideoCalls: gate 1's comment calls for one ONE Video (docs/wizards/cta.md).
   // By default the Identity's (Settings, Identity, CTA); "Change for this
   // video" sets this video's own, which goes into the next Write script.
-  // `own` is null while the Identity's calls apply. `used` is what the
-  // current script was written with.
+  // `own` is null while the Identity's calls apply. A new video starts from
+  // the previous video's choice ("previously selected", cta-last.json).
+  // `used` is what the current script was written with.
   import { onMount } from "svelte";
-  import type { CtaProfile, CtaSlot, CtaState } from "../api";
+  import type { CtaMode, CtaProfile, CtaSlot, CtaState } from "../api";
   import { runner } from "../api";
   import { log } from "../logger";
   import CallsEditor from "./CallsEditor.svelte";
@@ -25,10 +26,17 @@
   let editing = $state(false);
   let slots = $state<Record<CtaSlot, string | null>>({ start: null, middle: null, end: null });
   let on = $state<Record<CtaSlot, boolean>>({ start: false, middle: false, end: false });
+  let modes = $state<Record<CtaSlot, CtaMode>>({ start: "narrator", middle: "narrator", end: "narrator" });
+  let segmentIds = $state<Partial<Record<CtaSlot, string | null>>>({});
+  let previous = $state(false);
 
   onMount(async () => {
     try {
       st = await runner<CtaState>("cta-state", {});
+      if (!own && !used && st.last) {
+        own = { ...st.last, endScreen: (st.profile ?? st.start).endScreen };
+        previous = true;
+      }
     } catch {
       st = null; // the gate still works with the Identity's calls; the runner reports a broken file at Write script
     }
@@ -41,17 +49,27 @@
     for (const s of SLOT_IDS) {
       slots[s] = current!.slots[s];
       on[s] = current!.slots[s] !== null;
+      modes[s] = current!.modes?.[s] ?? "narrator";
+      segmentIds[s] = current!.segmentIds?.[s] ?? null;
     }
     editing = true;
   }
   const complete = $derived(SLOT_IDS.every((s) => !on[s] || slots[s]));
   function apply() {
-    own = { slots: Object.fromEntries(SLOT_IDS.map((s) => [s, on[s] ? slots[s] : null])) as Record<CtaSlot, string | null>, offers: { ...(identity?.offers ?? {}) } };
+    own = {
+      slots: Object.fromEntries(SLOT_IDS.map((s) => [s, on[s] ? slots[s] : null])) as Record<CtaSlot, string | null>,
+      modes: { ...modes },
+      segmentIds: Object.fromEntries(SLOT_IDS.filter((s) => segmentIds[s]).map((s) => [s, segmentIds[s]])),
+      offers: { ...(identity?.offers ?? {}) },
+      endScreen: identity?.endScreen ?? 20,
+    };
+    previous = false;
     editing = false;
     log("choice_changed", { field: "Comment calls for this video", value: SLOT_IDS.map((s) => own!.slots[s] ?? "-").join(" ") });
   }
   function reset() {
     own = null;
+    previous = false;
     editing = false;
   }
   const temp = (k: string) => st!.options.temperatures[st!.options.keywords.find((x) => x.keyword === k)?.temperature ?? "cold"];
@@ -62,11 +80,11 @@
     <span class="label">Comment calls</span>
     {#each SLOT_IDS.filter((s) => current.slots[s]) as s (s)}
       {@const t = temp(current.slots[s]!)}
-      <span class="chip" style={`--dot: ${t.dot}; --on-dot: ${t.label === "Warm" ? "#1a1a1a" : "#ffffff"}`}>{st.options.slots[s].label}: {current.slots[s]}</span>
+      <span class="chip" style={`--dot: ${t.dot}; --on-dot: ${t.label === "Warm" ? "#1a1a1a" : "#ffffff"}`}>{st.options.slots[s].label}: {current.slots[s]}{current.modes?.[s] === "segment" ? " (segment)" : ""}</span>
     {:else}
       <span class="hint">none</span>
     {/each}
-    <span class="hint">{own ? "for this video" : "from Settings, Identity, CTA"}</span>
+    <span class="hint">{previous ? "previously selected" : own ? "for this video" : "from Settings, Identity, CTA"}</span>
     <span class="spacer"></span>
     {#if !editing}
       <button type="button" class="ghost" {disabled} onclick={edit}>Change for this video</button>
@@ -78,7 +96,7 @@
   {/if}
   {#if editing}
     <div class="box">
-      <CallsEditor options={st.options} bind:slots bind:on compact />
+      <CallsEditor options={st.options} bind:slots bind:on bind:modes bind:segmentIds segments={st.segments} chooseSegment compact />
       <div class="row">
         <button type="button" class="primary" disabled={!complete} onclick={apply}>Use for this video</button>
         <button type="button" onclick={() => (editing = false)}>Cancel</button>

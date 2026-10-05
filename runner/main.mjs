@@ -35,7 +35,9 @@ import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
 import { brandPreview, previewDir } from "./brand/preview.mjs";
 import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendMood, wizardOptions } from "./motion/profile.mjs";
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
-import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi } from "./cta/profile.mjs";
+import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi, endScreenOf, loadLast, saveLast } from "./cta/profile.mjs";
+import { segmentVoice, segmentVideo } from "./cta/make.mjs";
+import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
 import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "./cta/catalog.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
 import { cardFromTokens } from "./brand/tokens.mjs";
@@ -94,13 +96,33 @@ function motionOf(identityDir) {
 // The comment calls of a ONE Video: its own choice at gate 1 (`own`), else
 // the Identity's CTA profile, else the method's default (cta/profile.mjs).
 function ctaOf(identityDir, own) {
-  if (own) return videoPlan({ own });
+  if (own) return videoPlan({ identityDir, own });
   loadCtaChecked(identityDir);
   return videoPlan({ identityDir });
 }
 function ctaLook(identityDir) {
   const theme = identityDir ? cardTheme(loadCard(identityDir).card, categories()) : baseTheme("blue-professional");
   return { bg: theme.bg, fg: theme.fg, font: theme["font-display"], buttons: Object.fromEntries(Object.keys(TEMPERATURES).map((t) => [t, callColor({ temperature: t }, theme)])) };
+}
+// The segments a script uses, copied into the ONE Video (segments/<place>.<ext>)
+// so the project stands on its own (backups, another computer). Marks them
+// used, and remembers this video's calls as "previously selected".
+function takeSegments(projectDir, identityDir, plan, own) {
+  const dir = path.join(projectDir, "segments");
+  fs.rmSync(dir, { recursive: true, force: true });
+  const segmentCalls = plan.filter((c) => c.mode === "segment").map((c) => {
+    fs.mkdirSync(dir, { recursive: true });
+    const file = `segments/${c.slot}${path.extname(c.segment.file)}`;
+    fs.copyFileSync(path.join(segmentsDir(identityDir), c.segment.file), path.join(projectDir, file));
+    return { slot: c.slot, keyword: c.keyword, temperature: c.temperature, gets: c.offer || c.gets, segmentId: c.segment.id, name: c.segment.name, file, seconds: c.segment.seconds };
+  });
+  const endScreen = identityDir ? endScreenOf(identityDir, own) : 0;
+  if (identityDir) {
+    markUsed(identityDir, segmentCalls.map((c) => c.segmentId));
+    const base = own ?? loadCta(identityDir) ?? defaultCta();
+    saveLast(identityDir, { ...base, segmentIds: Object.fromEntries(segmentCalls.map((c) => [c.slot, c.segmentId])), endScreen });
+  }
+  return { segmentCalls, endScreen };
 }
 function loadCtaChecked(identityDir) {
   try {
@@ -150,7 +172,10 @@ function recovered(projectDir) {
 // or one written before the CTA wizard).
 function scriptCalls(projectDir) {
   try {
-    return JSON.parse(fs.readFileSync(path.join(projectDir, "script.json"), "utf8")).commentCalls ?? null;
+    const s = JSON.parse(fs.readFileSync(path.join(projectDir, "script.json"), "utf8"));
+    if (!s.commentCalls && !s.segmentCalls) return null;
+    const order = ["start", "middle", "end"];
+    return [...(s.commentCalls ?? []), ...(s.segmentCalls ?? []).map((c) => ({ slot: c.slot, keyword: c.keyword, temperature: c.temperature, segment: true }))].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
   } catch {
     return null;
   }
@@ -315,12 +340,27 @@ const commands = {
     start: defaultCta(),
     options: { keywords: catalogForUi(), temperatures: TEMPERATURES, slots: SLOTS, placesForCount: PLACES_FOR_COUNT },
     look: ctaLook(identityDir),
+    last: identityDir ? loadLast(identityDir) : null,
+    segments: identityDir ? loadSegments(identityDir) : [],
   }),
   "cta-save": async ({ identityDir, profile }) => {
     if (!identityDir) throw new Error("No Identity to save the CTA profile for.");
     return { profile: saveCta(identityDir, profile) };
   },
   "cta-check": async ({ profile }) => ({ profile: normalizeCta(profile) }),
+
+  // The Identity's segments (cta/segments.mjs). An upload is copied into
+  // <identity>/segments by the Rust core (import_segment) first; this checks
+  // and registers it.
+  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, perKeyword: SEGMENTS_PER_KEYWORD }),
+  "segment-add": async ({ identityDir, file, keyword, name }) => ({ segment: await addSegment({ identityDir, file, keyword, name, source: "upload" }) }),
+  "segment-remove": async ({ identityDir, id }) => removeSegment(identityDir, id),
+  // A segment made in the app: the narrator reads the sentence (its key),
+  // then HeyGen makes the avatar video on it (the HeyGen key).
+  "segment-voice": async ({ identityDir, narrator, text, language }) => segmentVoice({ identityDir, narrator, apiKey: key(), text, language }),
+  "segment-make": async ({ identityDir, lookId, audio, keyword, name }) => ({
+    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  }),
 
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
 
@@ -345,13 +385,16 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
     try {
+      const plan = ctaOf(identityDir, input.cta);
       const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
         writeScript({
           llm: { provider: llm.provider, model: llm.model, apiKey: key() },
-          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: ctaOf(identityDir, input.cta) },
+          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );
+      Object.assign(res.script, takeSegments(projectDir, identityDir, plan, input.cta));
+      for (const c of plan) if (c.note) appendLog(projectDir, `script: ${c.note}`);
       writeJson(path.join(projectDir, "script.json"), res.script);
       writeAtomic(path.join(projectDir, "script.md"), res.markdown);
       project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });

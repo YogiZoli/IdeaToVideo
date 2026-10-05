@@ -31,22 +31,34 @@ export function transitionWindows(out) {
   return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : [];
 }
 
+// The CTA segments of a build (assemble.mjs writes them): [{ at, seconds }].
+// A full-frame clip hides the scene under it, so nothing the check sees in
+// that scene there is on screen (DECISIONS 78).
+export const COVERED_FILE = "covered.json";
+export function coveredWindows(out) {
+  const f = path.join(out, COVERED_FILE);
+  return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : [];
+}
+
 // The errors of a `hyperframes check --json` report that count. During a
 // scene change two scenes are on screen on purpose (a shader transition keeps
 // both fully visible while the engine blends them), so a layout finding seen
 // only inside a change window is not a problem of either scene.
 const LAYERING = new Set(["content_overlap", "text_occluded"]);
-export function countedErrors(report, windows = []) {
-  const inside = (f) => {
+export function countedErrors(report, windows = [], covered = []) {
+  const within = (list) => (f) => {
     const from = f.firstSeen ?? f.time;
     const to = f.lastSeen ?? f.time;
-    return typeof from === "number" && windows.some((w) => from >= w.at - 0.01 && to <= w.at + w.seconds + 0.05);
+    return typeof from === "number" && list.some((w) => from >= w.at - 0.01 && to <= w.at + w.seconds + 0.05);
   };
+  const inside = within(windows);
+  const hidden = within(covered);
   const errors = [];
   for (const section of ["lint", "runtime", "layout", "motion", "contrast"]) {
     for (const f of report?.[section]?.findings ?? []) {
       if (f.severity !== "error") continue;
       if (section === "layout" && LAYERING.has(f.code) && inside(f)) continue;
+      if (["layout", "contrast", "motion"].includes(section) && hidden(f) && !/segment-/.test(f.selector ?? "")) continue;
       errors.push({ section, ...f });
     }
   }
@@ -66,7 +78,8 @@ export async function lintAndCheck(projectDir, { env = process.env, onProgress =
   if (lint.code !== 0) throw new Error(`hyperframes lint found problems: ${lastLines(lint.tail)}`);
   onProgress({ step: "check" });
   const windows = transitionWindows(out);
-  if (!windows.length) {
+  const covered = coveredWindows(out);
+  if (!windows.length && !covered.length) {
     const r = await runHyperframes(["check"], { env, cwd: out, browser: browser.path });
     fs.writeFileSync(path.join(out, "check.log"), r.tail + "\n");
     if (r.code !== 0) throw new Error(`hyperframes check found problems: ${lastLines(r.tail)}`);
@@ -85,7 +98,7 @@ export async function lintAndCheck(projectDir, { env = process.env, onProgress =
     fs.writeFileSync(path.join(out, "check.log"), r.tail + "\n");
     throw new Error(`hyperframes check gave no readable report: ${lastLines(r.tail)}`);
   }
-  const errors = countedErrors(report, windows);
+  const errors = countedErrors(report, windows, covered);
   fs.writeFileSync(path.join(out, "check.log"), JSON.stringify({ errors, report }, null, 2) + "\n");
   if (errors.length) {
     const what = errors.slice(0, 3).map((e) => `${e.section} ${e.code ?? ""} ${e.selector ?? ""} at ${e.time ?? "?"} s: ${e.message}`);

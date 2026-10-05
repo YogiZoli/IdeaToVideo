@@ -164,7 +164,29 @@
               "number",
               "null"
             ]
+          },
+          "via": {
+            "enum": [
+              "narrator",
+              "segment"
+            ]
           }
+        }
+      }
+    },
+    "endScreen": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "start": {
+          "type": "number",
+          "minimum": 0
+        },
+        "seconds": {
+          "type": "number",
+          "minimum": 0
         }
       }
     }

@@ -43,10 +43,18 @@ export function buildPublish(projectDir, videoFile, { language = "en", total, ch
       keyword: c.keyword,
       temperature: c.temperature,
       gets: c.offer || c.gets || null,
+      via: "narrator",
       start: s ? s.start : null,
       end: s ? s.end : null,
     };
   });
+  // The places a segment filled, where the voice gate put them.
+  const voice = readJson(projectDir, path.join("audio", "voice.json")) ?? {};
+  for (const g of voice.inserts ?? []) {
+    const sc = (script?.segmentCalls ?? []).find((x) => x.slot === g.slot);
+    calls.push({ slot: g.slot, keyword: g.keyword, temperature: g.temperature, gets: sc?.gets ?? null, via: "segment", start: g.start, end: g.end });
+  }
+  calls.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
   const pub = script?.publishing ?? {};
   return {
     schema: PUBLISH_SCHEMA,
@@ -64,6 +72,8 @@ export function buildPublish(projectDir, videoFile, { language = "en", total, ch
     // The recorded sentences with their times (measured on the voice).
     sentences: sentences.map((s) => ({ start: s.start, end: s.end, text: s.text })),
     commentCalls: calls,
+    // Where YouTube's end screen goes: the silent tail after the last call.
+    endScreen: voice.endScreen ?? null,
   };
 }
 

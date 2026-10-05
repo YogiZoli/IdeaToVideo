@@ -133,7 +133,7 @@ function onScreen(component, vars = {}) {
 
 // Every problem with a planned table, as sentences the repair call can act on.
 // `warnings` do not fail the gate; the UI shows them.
-export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map() }) {
+export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map(), gaps = [] }) {
   const issues = [];
   const warnings = [];
   const scenes = answer?.scenes;
@@ -188,7 +188,9 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
   scenes.forEach((sc, i) => {
     const from = index.get(sc.from);
     const to = index.get(sc.to ?? sc.from);
-    const d = times[i].duration;
+    // A segment or the end-screen tail plays over the scene before it: that
+    // time is not the scene's own (DECISIONS 78).
+    const d = r3(times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0));
     if (d < MIN_SECONDS && scenes.length > 1 && !calls.has(sc.from)) issues.push(`scene ${i + 1} (${sc.from}) lasts ${d} s, under ${MIN_SECONDS} s: join it with a neighbour`);
     if (d > MAX_SECONDS && to > from) issues.push(`scene ${i + 1} (${sc.from} to ${sc.to}) lasts ${d} s, over ${MAX_SECONDS} s: split it`);
     // Numbers on screen should be numbers the voice says. Written-out numbers
@@ -206,6 +208,16 @@ function readJson(projectDir, f, what) {
   const p = path.join(projectDir, f);
   if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet.`);
   return JSON.parse(fs.readFileSync(p, "utf8"));
+}
+
+// The segments and the end-screen tail in the recorded voice (voice gate).
+export function gapsOf(projectDir) {
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(projectDir, "audio", "voice.json"), "utf8"));
+    return [...(v.inserts ?? []).map((x) => ({ start: x.start, end: x.end })), ...(v.endScreen ? [{ start: v.endScreen.start, end: v.endScreen.start + v.endScreen.seconds }] : [])];
+  } catch {
+    return [];
+  }
 }
 
 async function audioLength(projectDir, sentences, env) {
@@ -267,7 +279,7 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   const calls = callSentences(readScript(projectDir), sentences);
   const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language, calls });
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env, off, calls }));
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => checkScenes(a, { sentences, total, env, off, calls, gaps: gapsOf(projectDir) }));
   const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
   const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
   writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(answer.scenes.map(clean), calls), gaps, warnings: result.warnings });
@@ -279,7 +291,7 @@ export async function saveScenes({ projectDir, scenes, env = process.env }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
   const total = await audioLength(projectDir, sentences, env);
   const calls = callSentences(readScript(projectDir), sentences);
-  const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env, calls });
+  const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env, calls, gaps: gapsOf(projectDir) });
   if (issues.length) throw new Error(`The scene table has problems: ${issues.slice(0, 5).join("; ")}`);
   const current = readJson(projectDir, "scenes.json", "scene table");
   writeTable(projectDir, { ...current, scenes: withCalls(scenes.map(clean), calls), warnings });
@@ -305,7 +317,7 @@ export async function refillScene({ llm, projectDir, index, component, env = pro
   messages[1].content += `\n\nThis is ONE scene of a longer video: answer with exactly one scene, from ${sc.from}${sc.to ? ` to ${sc.to}` : ""}, component ${component}. Ignore the rules about the first and the last scene.`;
   const total = r3(covered[covered.length - 1].end + 0.3);
   const check = (a) => {
-    const r = checkScenes(a, { sentences: covered, total, env });
+    const r = checkScenes(a, { sentences: covered, total, env, gaps: gapsOf(projectDir) });
     if (!r.issues.length && (a.scenes.length !== 1 || a.scenes[0].component !== component)) r.issues.push(`answer with exactly one scene using ${component}`);
     return r;
   };

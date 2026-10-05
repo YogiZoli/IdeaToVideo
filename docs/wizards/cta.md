@@ -234,4 +234,26 @@ Claude javaslata:
   a végére 20 mp-es farok (az utolsó jelenet vagy a vége-szegmens tart, a
   zene lecseng).
 
-Kérdések (S1-S8) és Zoltan válaszai: a 2026-10-05-i chatben.
+Zoltan válaszai (2026-10-05): S1 igen (szakaszhatár), S2 igen (legfeljebb 3,
+váltakozva), S3 igen ("previously selected"), S4 mindkettő (feltöltés, hogy a
+HeyGen kredit elfogyása se állítson meg semmit, és HeyGen az appban), S5
+igen, a legegyszerűbb megvalósítás, S6 nincs külön javasolt hely, a feltöltött
+és a generált szegmens ugyanúgy kezelt, S7 igen (a farok más, mint a
+vége-CTA), S8 előbb a szegmens, utána a farok. DECISIONS 78.
+
+Megvalósítás:
+- `runner/cta/segments.mjs` (könyvtár, legfeljebb 30 mp és 3 kulcsszavanként,
+  váltakozás), `runner/cta/make.mjs` (HeyGen: `segment-voice`, majd
+  `segment-make`), `runner/cta/profile.mjs` (`modes`, `segmentIds`,
+  `endScreen`, `cta-last.json`), Rust `import_segment`.
+- Script kapu: a szegmenses helyre nincs CTA-mondat; `script.json`
+  `segmentCalls` (a klip a projekt `segments/` mappájába másolva) és
+  `endScreen`.
+- Hang kapu: `insertAfter`, a szegmens hangja és a farok csendje a blokkok
+  közé; `voice.json` `inserts` és `endScreen`.
+- Jelenet kapu: `gapsOf`, a hosszellenőrzés nem számolja őket.
+- Build: `segmentClips`, néma teljes képes videó a 5. sávon; `covered.json`.
+- App: `SegmentsManager` (Settings, Identity, CTA), végképernyő-választó,
+  `CallsEditor` Narrator vagy My segment, az 1. kapuban a szegmens kiválasztása.
+- Tesztek: `runner/segments.test.mjs` (5), az e2e-ben egy szegmens a buildben
+  és a renderben.

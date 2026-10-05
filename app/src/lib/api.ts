@@ -175,6 +175,7 @@ export type GalleryLook = { id: string; label: string; group: string; card: Bran
 export type BrandState = { card: BrandCard; own: boolean; presets: GalleryLook[]; styleNote: string; fonts: ShippedFont[]; contrast: ContrastRow[]; fontsDir: string; brandDir: string | null };
 export const HYPERFRAMES_GROUP = "HyperFrames presets";
 export const exportBrand = (path: string) => call<string>("export_brand", { path });
+export const importSegment = (path: string) => call<string>("import_segment", { path });
 export const exportPublish = (file: string, path: string) => call<string>("export_publish", { file, path });
 export const importBrand = (path: string) => call<BrandCard>("import_brand", { path });
 export const readTokensFile = (path: string) => call<string>("read_tokens_file", { path });
@@ -214,12 +215,24 @@ export type MotionPreview = { file: string; seconds: number; renderSeconds: numb
 export type CtaSlot = "start" | "middle" | "end";
 export type CtaKeyword = { keyword: string; temperature: "cold" | "warm" | "hot"; gets: string };
 export type CtaTemperature = { label: string; meaning: string; dot: string; surface: string; text: string };
-export type CtaProfile = { schema?: string; updatedAt?: string; slots: Record<CtaSlot, string | null>; offers: Record<string, string> };
+export type CtaMode = "narrator" | "segment";
+export type CtaProfile = {
+  schema?: string;
+  updatedAt?: string;
+  slots: Record<CtaSlot, string | null>;
+  modes?: Record<CtaSlot, CtaMode>;
+  segmentIds?: Partial<Record<CtaSlot, string | null>>;
+  offers: Record<string, string>;
+  endScreen?: 0 | 5 | 10 | 15 | 20;
+};
+export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen"; createdAt: string; lastUsedAt: string | null };
 export type CtaState = {
   profile: CtaProfile | null;
   start: CtaProfile;
   options: { keywords: CtaKeyword[]; temperatures: Record<string, CtaTemperature>; slots: Record<CtaSlot, { label: string; hint: string }>; placesForCount: Record<string, CtaSlot[]> };
   look: { bg: string; fg: string; font: string; buttons: Record<string, string> };
+  last: CtaProfile | null;
+  segments: CtaSegment[];
 };
 
 export type DictFinding = { kind: "banned" | "spelling"; term: string; found: string; instead?: string; where: string };

@@ -350,7 +350,7 @@
     {:else if pageId === "motion"}
       <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
     {:else if pageId === "cta"}
-      <CtaPage refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
+      <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
     {:else if pageId === "identity-ai"}

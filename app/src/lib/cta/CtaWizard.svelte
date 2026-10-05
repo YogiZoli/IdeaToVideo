@@ -7,7 +7,7 @@
   // comments and keeps no link. Saved as <identity>/cta.json; every ONE Video
   // of the Identity inherits it and may set its own at gate 1.
   import { onMount } from "svelte";
-  import type { AppState, CtaProfile, CtaSlot, CtaState } from "../api";
+  import type { AppState, CtaMode, CtaProfile, CtaSlot, CtaState } from "../api";
   import { runner, errorText } from "../api";
   import { log } from "../logger";
   import WizardShell from "../wizard/WizardShell.svelte";
@@ -27,6 +27,7 @@
   let st = $state<CtaState | null>(null);
   let slots = $state<Record<CtaSlot, string | null>>({ start: null, middle: null, end: null });
   let on = $state<Record<CtaSlot, boolean>>({ start: true, middle: true, end: true });
+  let modes = $state<Record<CtaSlot, CtaMode>>({ start: "narrator", middle: "narrator", end: "narrator" });
   let offers = $state<Record<string, string>>({});
   let step = $state(0);
   let busy = $state(false);
@@ -43,6 +44,7 @@
         for (const s of SLOT_IDS) {
           slots[s] = st.profile.slots[s];
           on[s] = st.profile.slots[s] !== null;
+          modes[s] = st.profile.modes?.[s] ?? "narrator";
         }
         offers = { ...st.profile.offers };
       }
@@ -68,7 +70,7 @@
     busy = true;
     error = "";
     try {
-      const profile = { slots: Object.fromEntries(SLOT_IDS.map((s) => [s, on[s] ? slots[s] : null])), offers: $state.snapshot(offers) };
+      const profile = { slots: Object.fromEntries(SLOT_IDS.map((s) => [s, on[s] ? slots[s] : null])), modes: $state.snapshot(modes), offers: $state.snapshot(offers), endScreen: st!.profile?.endScreen ?? st!.start.endScreen };
       const r = await runner<{ profile: CtaProfile }>("cta-save", { profile });
       log("cta_saved", { calls: SLOT_IDS.filter((s) => r.profile.slots[s]).length, start: r.profile.slots.start, middle: r.profile.slots.middle, end: r.profile.slots.end, offers: Object.keys(r.profile.offers).length });
       onsaved(r.profile);
@@ -94,7 +96,8 @@
       <div class="row">
         <button type="button" onclick={useDefault}>Use the method: GUIDE, COURSE, TRIGGER</button>
       </div>
-      <CallsEditor options={st.options} bind:slots bind:on />
+      <CallsEditor options={st.options} bind:slots bind:on bind:modes segments={st.segments} />
+      {#if !st.segments.length}<p class="hint">Recorded a call once, for example with your avatar? Add it in Settings, Identity, CTA, at Your segments: then a place can play it instead of the narrator.</p>{/if}
       <p class="hint">Someone has to answer the keyword comments with the link, by hand or with a tool. The video never shows or says a link for them.</p>
     {:else if step === 1}
       <p class="lead">What does a viewer get for each keyword? In your words, short. The narrator says it in the call. Leave it empty for the general wording.</p>
@@ -111,7 +114,7 @@
         </label>
       {/each}
     {:else}
-      <CallsPreview options={st.options} look={st.look} {slots} {on} {offers} />
+      <CallsPreview options={st.options} look={st.look} {slots} {on} {modes} segments={st.segments} {offers} />
       <p class="hint">Save to use these calls in every new script of this Identity. A single video can change them at gate 1.</p>
     {/if}
   </WizardShell>

@@ -34,7 +34,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { prepareBuild, buildDir, TRANSITIONS_FILE } from "./index.mjs";
+import { prepareBuild, buildDir, TRANSITIONS_FILE, COVERED_FILE } from "./index.mjs";
 import { engineDir } from "../../tools.mjs";
 import { duration } from "../../audio.mjs";
 import { avatarClips } from "../avatar/index.mjs";
@@ -319,6 +319,26 @@ export function avatarStyle(layout = {}, width = 1920, height = 1080) {
   return `position:absolute;${place};width:${w}px;height:${h}px;object-fit:cover;${shape};z-index:5`;
 }
 
+// A comment-call segment (cta/segments.mjs, DECISIONS 78): the whole frame,
+// muted (its sound is already in vo_bgm.mp3, the voice gate put it there),
+// above the scenes and the avatar, for exactly its own length.
+export const segmentVideo = (g) =>
+  `    <video id="segment-${g.slot}" src="${g.file}" muted data-volume="0" data-start="${g.start}" data-duration="${g.seconds}" data-track-index="5" style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:6"></video>`;
+
+// The segments the voice gate placed (audio/voice.json inserts).
+export function segmentClips(projectDir) {
+  let v;
+  try {
+    v = JSON.parse(fs.readFileSync(path.join(projectDir, "audio", "voice.json"), "utf8"));
+  } catch {
+    return [];
+  }
+  return (v.inserts ?? []).map((g) => {
+    if (!fs.existsSync(path.join(projectDir, g.file))) throw new Error(`The segment ${g.file} is missing. Write the script and make the voice again.`);
+    return { slot: g.slot, file: g.file, start: g.start, seconds: g.seconds };
+  });
+}
+
 export const avatarVideo = (a, width = 1920, height = 1080) =>
   `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="${avatarStyle(a.layout, width, height)}"></video>`;
 
@@ -342,7 +362,7 @@ const hostHtml = (m, width, height, motion) => {
 };
 const NL = "\n";
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], language = "en", title = "Video", fontCss = "", motion = null }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], language = "en", title = "Video", fontCss = "", motion = null }) {
   const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
   const ground = motion?.backgrounds?.length
     ? motion.backgrounds
@@ -398,7 +418,7 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
 ${ground}
 ${hosts}
-${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}
+${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
     </div>
     <script>
@@ -509,6 +529,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     return bgComponent ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
+  const segments = segmentClips(projectDir);
 
   const { out } = prepareBuild(projectDir, { env });
   fs.mkdirSync(path.join(out, "compositions", "components"), { recursive: true });
@@ -549,12 +570,17 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.mkdirSync(path.join(out, "avatar"), { recursive: true });
     fs.copyFileSync(path.join(projectDir, a.file), path.join(out, a.file));
   }
+  for (const g of segments) {
+    fs.mkdirSync(path.join(out, "segments"), { recursive: true });
+    fs.copyFileSync(path.join(projectDir, g.file), path.join(out, g.file));
+  }
+  if (segments.length) fs.writeFileSync(path.join(out, COVERED_FILE), JSON.stringify(segments.map((g) => ({ at: g.start, seconds: g.seconds })), null, 2) + "\n");
   const motionPart = mp ? { lines: mp.lines, shader: mp.shader, backgrounds } : null;
   if (mp) {
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, language, title, fontCss: fonts.css, motion: motionPart }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, language, title, fontCss: fonts.css, motion: motionPart }));
   return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [] };
 }
 

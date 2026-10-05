@@ -15,6 +15,27 @@
         "end": { "$ref": "#/definitions/keyword" }
       }
     },
+    "modes": {
+      "$comment": "Per place: the narrator says the call, or one of the Identity's segments plays it (cta/segments.mjs).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": { "enum": ["narrator", "segment"] },
+        "middle": { "enum": ["narrator", "segment"] },
+        "end": { "enum": ["narrator", "segment"] }
+      }
+    },
+    "segmentIds": {
+      "$comment": "A ONE Video's own pick per place; without one the least recently used segment of the keyword.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": ["string", "null"], "maxLength": 40 },
+        "middle": { "type": ["string", "null"], "maxLength": 40 },
+        "end": { "type": ["string", "null"], "maxLength": 40 }
+      }
+    },
+    "endScreen": { "enum": [0, 5, 10, 15, 20] },
     "offers": {
       "type": "object",
       "additionalProperties": { "type": "string", "maxLength": 200 }

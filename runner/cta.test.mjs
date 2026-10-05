@@ -188,7 +188,7 @@ test("publish.json and comments.txt: facts for the publishing tool, valid agains
   assert.deepEqual(validate(pub, loadSchema("itv-publish")), []);
   assert.equal(pub.video.title, "Own your audience");
   assert.equal(pub.landingUrl, "https://x.example/start");
-  assert.deepEqual(pub.commentCalls, [{ slot: "start", keyword: "GUIDE", temperature: "cold", gets: "the free checklist", start: 6.2, end: 7.6 }]);
+  assert.deepEqual(pub.commentCalls, [{ slot: "start", keyword: "GUIDE", temperature: "cold", gets: "the free checklist", via: "narrator", start: 6.2, end: 7.6 }]);
   assert.equal(pub.script[0].heading, "OPEN");
   assert.equal(pub.sentences.length, 4);
   assert.match(r.comments, /GUIDE {2}\(Cold, at 0:06\) {2}viewer gets: the free checklist/);

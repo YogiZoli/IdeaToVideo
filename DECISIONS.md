@@ -684,3 +684,33 @@
     kapuban (a Rust `export_publish` csak ezt a fájlt, csak a projektmappából
     másolja), és "Copy comment keywords". A séma a közös nyelv a PDT felé: ma
     fájl, később egy API-hívás törzse; csak bővül, törő változás új verzió.
+78. **Újrahasznosítható CTA-szegmensek és a végképernyő farok** (Zoltan,
+    2026-10-05, S1-S8; `docs/wizards/cta.md`). Eldöntve:
+    - **Egy hely, egy hang**: egy CTA-helyet vagy a narrátor tölt ki
+      (CTA-mondat és `cta-close` jelenet), vagy a saját szegmens, soha nem
+      mindkettő. Ahol szegmens szól, a script oda nem ír CTA-mondatot.
+    - **A kulcsszó a kapocs**: minden szegmens egy kulcsszóé (kötelező), a
+      helyen csak a hely kulcsszavának szegmensei választhatók.
+    - **Könyvtár Identity-nként** (`<identity>/segments/`), legfeljebb 30 mp,
+      kulcsszavanként legfeljebb 3; több közül alapból a legrégebben
+      használt jön (váltakozás), az 1. kapuban kiválasztható.
+    - **Forrás**: feltöltött videó (kulcs és költség nélkül, hogy a HeyGen
+      kredit elfogyása se állítsa meg a publikálást), vagy az appban: a
+      narrátor felolvassa a mondatot, a HeyGen teljes képes avatar-videót
+      készít rá. A hely ugyanaz, bármelyik forrásból jön.
+    - **Beszúrás szakaszhatáron**: eleje az OPEN után, közepe a
+      legértékesebb szakasz után, vége az OWN után. A szegmens hangja a
+      hangsávba kerül a narráció blokkjai közé, a zene ugyanúgy szól alatta
+      (a legegyszerűbb megoldás); a klip a buildben néma, teljes képes, a
+      jelenetek fölött. A szegmens a projektbe másolódik (mentés, másik gép).
+    - **"Previously selected"**: egy új videó 1. kapuja a legutóbbi videó
+      választásával indul (`cta-last.json`).
+    - **Végképernyő farok** (a DECISIONS 53 megvalósítása): a vége-CTA után
+      N mp csend, az utolsó kép kitart, a zene lecseng; alap 20 mp, a
+      Settings, Identity, CTA oldalon 0, 5, 10, 15 vagy 20. A farok más,
+      mint a vége-CTA: a YouTube rakja alá a saját elemeit.
+    - **Ellenőrzés**: a jelenetek hosszába nem számít a szegmens és a farok
+      ideje; a HyperFrames check a szegmens alatt rejtett jelenet
+      találatait nem számolja (`covered.json`).
+    - A `publish.json` a szegmenses CTA-kat is tartalmazza (`via`), és a
+      végképernyő kezdetét.

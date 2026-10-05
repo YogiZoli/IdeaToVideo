@@ -61,7 +61,7 @@ const recommended = recommendMood(card);
   // The CTA wizard's data (runner/main.mjs cta-state), on the mock's card.
   const theme = cardTheme(card);
   const look = { bg: theme.bg, fg: theme.fg, font: theme["font-display"], buttons: Object.fromEntries(Object.keys(TEMPERATURES).map((t) => [t, callColor({ temperature: t }, theme)])) };
-  fs.writeFileSync(path.join(out, "cta-state.json"), JSON.stringify({ profile: null, start: ctaDefault(), options: { keywords: catalogForUi(), temperatures: TEMPERATURES, slots: SLOTS, placesForCount: PLACES_FOR_COUNT }, look }));
+  fs.writeFileSync(path.join(out, "cta-state.json"), JSON.stringify({ profile: null, start: ctaDefault(), options: { keywords: catalogForUi(), temperatures: TEMPERATURES, slots: SLOTS, placesForCount: PLACES_FOR_COUNT }, look, last: null, segments: [{ id: "a1b2c3d4e5", keyword: "GUIDE", name: "GUIDE with my avatar", file: "a1b2c3d4e5.mp4", seconds: 9.4, source: "heygen", createdAt: "2026-10-05T10:00:00Z", lastUsedAt: null }] }));
 }
 fs.writeFileSync(path.join(out, "motion-state.json"), JSON.stringify({ profile: null, recommended, start: profileFromMood(recommended.mood), light: card.appearance === "light", options: wizardOptions() }));
 const dataDir = process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop");

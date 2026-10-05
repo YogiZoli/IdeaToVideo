@@ -151,6 +151,7 @@ window.__TAURI_INTERNALS__ = {
         // video is the last real one, if prepare.mjs found it).
         // The CTA wizard (cta-state.json from prepare.mjs).
         if (args.command === "cta-state") { const c = await (await fetch("/cta-state.json")).json(); return { ...c, profile: ctaProfile }; }
+        if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }
         if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }
         if (args.command === "motion-state") { const m = await (await fetch("/motion-state.json")).json(); return { ...m, profile: motionProfile }; }
         if (args.command === "motion-save") { motionProfile = { ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: motionProfile }; }

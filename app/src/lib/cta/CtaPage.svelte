@@ -2,11 +2,28 @@
   // CtaPage: Settings, Identity, CTA. The comment calls of the Identity's
   // videos and the way into the CTA wizard (docs/wizards/cta.md).
   import { onMount } from "svelte";
-  import type { CtaState, CtaSlot } from "../api";
+  import type { AppState, CtaState, CtaSlot } from "../api";
   import { runner, errorText } from "../api";
+  import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
+  import SegmentsManager from "./SegmentsManager.svelte";
 
-  let { onopen, refresh = 0 }: { onopen: () => void; refresh?: number } = $props();
+  let { app, onopen, refresh = 0 }: { app: AppState; onopen: () => void; refresh?: number } = $props();
+
+  // YouTube's end screen (DECISIONS 53): seconds left after the last call,
+  // set here, not in the wizard.
+  let endSaved = $state("");
+  async function setEndScreen(value: number) {
+    try {
+      const base = st!.profile ?? st!.start;
+      await runner("cta-save", { profile: { ...$state.snapshot(base), endScreen: value } });
+      log("choice_changed", { field: "End screen seconds", value: String(value) });
+      endSaved = "Saved.";
+      await load();
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
 
   let st = $state<CtaState | null>(null);
   let error = $state("");
@@ -27,7 +44,7 @@
   const summary = (p: CtaState["start"]) =>
     SLOT_IDS.filter((s) => p.slots[s]).map((s) => {
       const k = st!.options.keywords.find((x) => x.keyword === p.slots[s])!;
-      return `${st!.options.slots[s].label}: ${k.keyword} (${st!.options.temperatures[k.temperature].label.toLowerCase()})`;
+      return `${st!.options.slots[s].label}: ${k.keyword} (${st!.options.temperatures[k.temperature].label.toLowerCase()})${p.modes?.[s] === "segment" ? ", your segment" : ""}`;
     });
 </script>
 
@@ -51,6 +68,20 @@
   <p class="hint">Every new script of this Identity uses them. A single video can change them at gate 1.</p>
   <div class="row"><button type="button" class="primary" onclick={onopen}>Open CTA wizard</button></div>
 </section>
+
+{#if st}
+  <section class="card">
+    <h2>YouTube end screen</h2>
+    <p class="hint">Seconds left at the end of every video, after the last call, for the end screen elements you add in YouTube Studio (subscribe, next video). The last picture holds and the music fades out.</p>
+    <label class="row">
+      <select value={String((st.profile ?? st.start).endScreen ?? 20)} onchange={(e) => setEndScreen(Number(e.currentTarget.value))}>
+        {#each [0, 5, 10, 15, 20] as v (v)}<option value={String(v)}>{v === 0 ? "No end screen" : `${v} seconds${v === 20 ? " (recommended)" : ""}`}</option>{/each}
+      </select>
+      {#if endSaved}<span class="hint">{endSaved}</span>{/if}
+    </label>
+  </section>
+  <SegmentsManager {app} options={st.options} bind:segments={st.segments} />
+{/if}
 
 <style>
   .row { display: flex; gap: 8px; }

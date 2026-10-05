@@ -16,7 +16,7 @@ import path from "node:path";
 import { narrationFromMarkdown, wordCount, speakable } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
-import { joinBlocks, mix, duration } from "../../audio.mjs";
+import { joinBlocks, mix, duration, clipAudio, silence } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
 
 export const VOICE_PROVIDERS = { elevenlabs, gemini };
@@ -66,19 +66,65 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
 
   onProgress({ step: "joining" });
   const vo = path.join(audioDir, "vo.mp3");
-  const { offsets } = await joinBlocks(files, vo, { env });
-  const words = blockWords.flatMap((ws, i) => ws.map((w) => ({ ...w, start: round3(w.start + offsets[i]), end: round3(w.end + offsets[i]) })));
+  const { items, blockAt, inserts, tail } = await withInserts({ projectDir, blocks, files, audioDir, env });
+  const { offsets } = await joinBlocks(items, vo, { env });
+  const words = blockWords.flatMap((ws, i) => ws.map((w) => ({ ...w, start: round3(w.start + offsets[blockAt[i]]), end: round3(w.end + offsets[blockAt[i]]) })));
+  const placed = inserts.map((x) => ({ ...x.call, start: offsets[x.at], end: round3(offsets[x.at] + x.seconds) }));
+  const tailAt = tail ? { start: offsets[tail.at], seconds: tail.seconds } : null;
   fs.writeFileSync(path.join(audioDir, "stt.json"), JSON.stringify({ words }, null, 2) + "\n");
 
   onProgress({ step: "mixing" });
   const out = path.join(audioDir, "vo_bgm.mp3");
   const m = await mix({ vo, bgm: music, out, env });
-  const info = { provider: narrator.provider, voice: narrator.voice, blocks: blocks.length, words: wordCount(blocks), music: music ? path.basename(music) : null, ...m };
+  const info = { provider: narrator.provider, voice: narrator.voice, blocks: blocks.length, words: wordCount(blocks), music: music ? path.basename(music) : null, ...m, inserts: placed, endScreen: tailAt };
   fs.writeFileSync(path.join(audioDir, "voice.json"), JSON.stringify(info, null, 2) + "\n");
   return info;
 }
 
 const round3 = (x) => Math.round(x * 1000) / 1000;
+
+// The comment-call segments and the end-screen tail (docs/wizards/cta.md,
+// DECISIONS 78), as extra pieces between the narration blocks: a segment's
+// own sound goes in after its section (start: after OPEN, middle: after the
+// highest-value section, end: after OWN), and the tail, silence for YouTube's
+// end screen, last. The music runs on under all of them like under the voice.
+export function insertAfter(blocks, script) {
+  const n = blocks.length;
+  const open = blocks.findIndex((b) => /^open$/i.test(b.heading));
+  const hv = (script?.sections ?? []).findIndex((x) => x.highestValue);
+  const mid = hv >= 0 ? blocks.findIndex((b) => b.heading.startsWith(`${hv + 1}.`)) : -1;
+  return { start: open >= 0 ? open : 0, middle: mid >= 0 ? mid : Math.floor((n - 1) / 2), end: n - 1 };
+}
+
+// The pieces to join, where each narration block sits among them, and where
+// the segments and the tail sit.
+async function withInserts({ projectDir, blocks, files, audioDir, env }) {
+  const sj = path.join(projectDir, "script.json");
+  const script = fs.existsSync(sj) ? JSON.parse(fs.readFileSync(sj, "utf8")) : null;
+  const after = insertAfter(blocks, script);
+  const items = [];
+  const blockAt = [];
+  const inserts = [];
+  let tail = null;
+  for (let i = 0; i < files.length; i++) {
+    blockAt.push(items.length);
+    items.push(files[i]);
+    for (const call of script?.segmentCalls ?? []) {
+      if (after[call.slot] !== i) continue;
+      const clip = path.join(projectDir, call.file);
+      if (!fs.existsSync(clip)) throw new Error(`The segment for ${call.keyword} is missing from the project. Write the script again at gate 1.`);
+      const a = await clipAudio(clip, path.join(audioDir, `segment-${call.slot}.mp3`), env);
+      inserts.push({ at: items.length, seconds: a.seconds, call: { slot: call.slot, keyword: call.keyword, temperature: call.temperature, file: call.file, seconds: a.seconds } });
+      items.push(a.file);
+    }
+  }
+  const seconds = Number(script?.endScreen) || 0;
+  if (seconds > 0) {
+    tail = { at: items.length, seconds };
+    items.push(await silence(seconds, path.join(audioDir, "end-screen.mp3"), env));
+  }
+  return { items, blockAt, inserts, tail };
+}
 
 // A short sample in the content language, for voices without a ready-made
 // preview (Gemini). Cached by voice and language.

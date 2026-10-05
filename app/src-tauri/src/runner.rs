@@ -70,6 +70,11 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("cta-check", None),
     ("cta-save", None),
     ("cta-preview", None),
+    ("segments-list", None),
+    ("segment-add", None),
+    ("segment-remove", None),
+    ("segment-voice", Some(&["narrator", "provider"])),
+    ("segment-make", Some(&["service"])),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

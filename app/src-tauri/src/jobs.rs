@@ -32,6 +32,8 @@ const KEY_JOBS: &[&str] = &[
     "make-scenes",
     "refill-scene",
     "make-avatar",
+    "segment-voice",
+    "segment-make",
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -188,6 +190,7 @@ fn waiting_text(j: &Job) -> String {
         "make-music" => "the music",
         "make-scenes" | "refill-scene" => "the scene plan",
         "make-avatar" => "the avatar clips",
+        "segment-voice" | "segment-make" => "a CTA segment",
         _ => "another job",
     };
     let video = j

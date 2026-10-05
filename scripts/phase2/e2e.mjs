@@ -159,7 +159,19 @@ fs.mkdirSync(identityDir, { recursive: true });
 const fontCache = path.join(hfHome(env), ".cache", "hyperframes", "fonts");
 const cached = () => (fs.existsSync(fontCache) ? fs.readdirSync(fontCache, { recursive: true }).sort().join("|") : "");
 const cacheBefore = cached();
+// A CTA segment (DECISIONS 78), as the voice gate leaves it: its clip in the
+// project, its place in audio/voice.json. The build mounts it muted, full frame.
+{
+  fs.mkdirSync(path.join(dir, "segments"), { recursive: true });
+  const r = spawnSync(env.HYPERFRAMES_FFMPEG_PATH, ["-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=640x360:rate=30:duration=3", "-c:v", "libx264", "-pix_fmt", "yuv420p", path.join(dir, "segments", "middle.mp4")]);
+  if (r.status !== 0) check("segment fixture", false, String(r.stderr));
+  fs.writeFileSync(path.join(dir, "audio", "voice.json"), JSON.stringify({ inserts: [{ slot: "middle", keyword: "COURSE", temperature: "warm", file: "segments/middle.mp4", seconds: 3, start: 8, end: 11 }], endScreen: null }));
+}
 const built = runner("build-video", { projectDir: dir, identityDir, look: "blue-professional" });
+{
+  const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
+  check("CTA: the segment is in the build, muted, full frame", /<video id="segment-middle" src="segments\/middle.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "segments", "middle.mp4")));
+}
 {
   const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
   check("brand: the build uses the card (Bebas Neue, local file)", /@font-face \{ font-family: 'Bebas Neue'/.test(html) && /--itv-bg: #f5f0e8/.test(html) && fs.existsSync(path.join(dir, "build", "fonts", "bebas-neue")));

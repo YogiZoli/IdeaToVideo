@@ -2,21 +2,33 @@
   // CallsEditor: how many comment calls a video has, where they sit, and the
   // keyword of each (docs/wizards/cta.md). Used by the CTA wizard and, per
   // video, at gate 1. `on` says which places have a call; a place that is on
-  // but has no keyword yet makes its keywords pulse.
-  import type { CtaSlot, CtaState } from "../api";
+  // but has no keyword yet makes its keywords pulse. Where the keyword has
+  // segments of the Identity, the place is said by the narrator or played by
+  // a segment (`modes`), never both; `chooseSegment` (gate 1) also picks
+  // which one, else the least recently used comes next.
+  import type { CtaMode, CtaSegment, CtaSlot, CtaState } from "../api";
   import KeywordPicker from "./KeywordPicker.svelte";
 
   let {
     options,
     slots = $bindable(),
     on = $bindable(),
+    modes = $bindable(),
+    segmentIds = $bindable(),
+    segments = [],
+    chooseSegment = false,
     compact = false,
   }: {
     options: CtaState["options"];
     slots: Record<CtaSlot, string | null>;
     on: Record<CtaSlot, boolean>;
+    modes: Record<CtaSlot, CtaMode>;
+    segmentIds?: Partial<Record<CtaSlot, string | null>>;
+    segments?: CtaSegment[];
+    chooseSegment?: boolean;
     compact?: boolean;
   } = $props();
+  const segsOf = (k: string | null) => segments.filter((g) => g.keyword === k);
 
   const SLOT_IDS: CtaSlot[] = ["start", "middle", "end"];
   const count = $derived(SLOT_IDS.filter((s) => on[s]).length);
@@ -39,6 +51,7 @@
   // still needs a keyword opens.
   let timer: ReturnType<typeof setTimeout> | null = null;
   function pick(s: CtaSlot, k: string) {
+    if (slots[s] !== k && segmentIds) segmentIds[s] = null;
     slots[s] = k;
     open = s;
     if (timer) clearTimeout(timer);
@@ -69,6 +82,20 @@
           {#if on[s]}
             <button type="button" class="chip" class:empty={!slots[s]} onclick={() => (open = s)}>{slots[s] ? `${slots[s]} (${t?.label})` : "Pick a keyword"}</button>
           {/if}
+          {#if on[s] && slots[s] && segsOf(slots[s]).length}
+            <div class="mode" role="radiogroup" aria-label="Who says the {options.slots[s].label.toLowerCase()} call">
+              <label><input type="radio" name="mode-{s}" checked={modes[s] !== "segment"} onchange={() => (modes[s] = "narrator")} /> Narrator</label>
+              <label><input type="radio" name="mode-{s}" checked={modes[s] === "segment"} onchange={() => (modes[s] = "segment")} /> My segment ({segsOf(slots[s]).length})</label>
+            </div>
+            {#if modes[s] === "segment" && chooseSegment && segmentIds && segsOf(slots[s]).length > 1}
+              <select value={segmentIds[s] ?? ""} onchange={(e) => (segmentIds![s] = e.currentTarget.value || null)} aria-label="Which segment">
+                <option value="">Next in turn</option>
+                {#each segsOf(slots[s]) as g (g.id)}<option value={g.id}>{g.name} ({g.seconds} s)</option>{/each}
+              </select>
+            {/if}
+          {:else if on[s] && slots[s] && modes[s] === "segment"}
+            <span class="hint">No segment for {slots[s]} yet: the narrator says it.</span>
+          {/if}
           {#if !compact}<span class="hint">{options.slots[s].hint}</span>{/if}
         </div>
       {/each}
@@ -92,6 +119,8 @@
   .place.open { outline: 2px solid var(--dot, var(--primary)); }
   .place.off { opacity: 0.6; }
   .check { display: flex; gap: 6px; align-items: center; }
+  .mode { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; }
+  .mode label { display: flex; gap: 4px; align-items: center; }
   .chip { justify-self: start; padding: 2px 10px; border-radius: 999px; border: 2px solid var(--dot, var(--border)); background: var(--dot, transparent); color: var(--on-dot, #fff); font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; }
   .chip.empty { background: none; color: inherit; border-style: dashed; font-family: inherit; font-weight: 400; }
   .for { margin: 4px 0 0; font-weight: 600; }

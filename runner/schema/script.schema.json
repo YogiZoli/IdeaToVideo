@@ -50,6 +50,13 @@
         }
       }
     },
+    "segmentCalls": {
+      "$comment": "Written by the runner: the places a segment fills (cta/segments.mjs), its clip copied into the project. The script has no call there.",
+      "type": "array",
+      "maxItems": 3,
+      "items": { "type": "object", "required": ["slot", "keyword", "file", "seconds"] }
+    },
+    "endScreen": { "type": "number", "minimum": 0, "maximum": 20 },
     "publishing": {
       "$comment": "Written by the runner, not the LLM: what the publishing data needs from gate 1 (gates/render/publish.mjs).",
       "type": "object"

@@ -5,25 +5,34 @@
 //
 //   { "schema": "cta-profile/1", "updatedAt": "...",
 //     "slots": { "start": "GUIDE", "middle": null, "end": "TRIGGER" },
-//     "offers": { "GUIDE": "the 7 step YouTube checklist" } }
+//     "modes": { "start": "segment", "end": "narrator" },
+//     "offers": { "GUIDE": "the 7 step YouTube checklist" },
+//     "endScreen": 20 }
 //
 // slots: which keyword is said where, null = no call there. Any keyword may
 // sit in any place, and the same one may repeat (one cold video, three times
-// GUIDE). offers: what the viewer gets for a keyword, in the user's words;
-// without one the script says the catalog's "gets". Treated as data, never as
+// GUIDE). modes: the narrator says the call (default), or one of the
+// Identity's segments plays it (segments.mjs), never both. segmentIds: a
+// video's own pick of segment per place. offers: what the viewer gets for a
+// keyword, in the user's words; without one the script says the catalog's
+// "gets". endScreen: seconds left at the end for YouTube's end screen
+// (DECISIONS 53: 20 by default, 5 to 20, 0 = none). Treated as data, never as
 // instructions (SPEC 9).
 
 import fs from "node:fs";
 import path from "node:path";
 import { validate, loadSchema } from "../schema/validate.mjs";
 import { KEYWORDS, SLOT_IDS, DEFAULT_SLOTS, keywordInfo } from "./catalog.mjs";
+import { loadSegments, pickSegment } from "./segments.mjs";
 
 export const CTA_SCHEMA = "cta-profile/1";
 export const CTA_FILE = "cta.json";
+export const LAST_FILE = "cta-last.json";
 export const OFFER_MAX = 80;
+export const END_SCREEN_DEFAULT = 20;
 
 export const ctaPath = (identityDir) => path.join(identityDir, CTA_FILE);
-export const defaultProfile = () => ({ schema: CTA_SCHEMA, slots: { ...DEFAULT_SLOTS }, offers: {} });
+export const defaultProfile = () => ({ schema: CTA_SCHEMA, slots: { ...DEFAULT_SLOTS }, modes: { start: "narrator", middle: "narrator", end: "narrator" }, offers: {}, endScreen: END_SCREEN_DEFAULT });
 
 // Everything a profile may say, checked; returns the clean profile or throws
 // one readable sentence per problem. Offers of keywords no place uses are
@@ -33,10 +42,14 @@ export function normalizeProfile(input) {
   const errors = validate({ schema: CTA_SCHEMA, ...input }, loadSchema("cta-profile"));
   if (errors.length) throw new Error(`The CTA profile is not valid: ${errors.slice(0, 4).join("; ")}`);
   const slots = {};
+  const modes = {};
+  const segmentIds = {};
   for (const id of SLOT_IDS) {
     const v = input.slots?.[id] ?? null;
     if (v !== null && !keywordInfo(v)) throw new Error(`Unknown keyword at ${id}: ${v}. Pick one of the 15.`);
     slots[id] = v === null ? null : keywordInfo(v).keyword;
+    modes[id] = input.modes?.[id] === "segment" ? "segment" : "narrator";
+    if (input.segmentIds?.[id]) segmentIds[id] = input.segmentIds[id];
   }
   const offers = {};
   for (const [k, text] of Object.entries(input.offers ?? {})) {
@@ -45,7 +58,15 @@ export function normalizeProfile(input) {
     const clean = String(text).replace(/\s+/g, " ").trim();
     if (clean) offers[info.keyword] = clean.slice(0, OFFER_MAX);
   }
-  return { schema: CTA_SCHEMA, ...(input.updatedAt ? { updatedAt: input.updatedAt } : {}), slots, offers };
+  return {
+    schema: CTA_SCHEMA,
+    ...(input.updatedAt ? { updatedAt: input.updatedAt } : {}),
+    slots,
+    modes,
+    ...(Object.keys(segmentIds).length ? { segmentIds } : {}),
+    offers,
+    endScreen: input.endScreen ?? END_SCREEN_DEFAULT,
+  };
 }
 
 // The saved profile, or null when the Identity has none (the default applies).
@@ -55,30 +76,54 @@ export function loadProfile(identityDir) {
   return normalizeProfile(JSON.parse(fs.readFileSync(p, "utf8")));
 }
 
+function writeJson(p, data) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(`${p}.tmp`, JSON.stringify(data, null, 2) + "\n");
+  fs.renameSync(`${p}.tmp`, p);
+}
+
 export function saveProfile(identityDir, input) {
   const profile = { ...normalizeProfile(input), updatedAt: new Date().toISOString() };
-  fs.mkdirSync(identityDir, { recursive: true });
-  const p = ctaPath(identityDir);
-  fs.writeFileSync(`${p}.tmp`, JSON.stringify(profile, null, 2) + "\n");
-  fs.renameSync(`${p}.tmp`, p);
+  writeJson(ctaPath(identityDir), profile);
   return profile;
 }
 
+// "Previously selected": the calls of the Identity's last written script,
+// so the next video's gate 1 starts from them.
+export function loadLast(identityDir) {
+  const p = identityDir && path.join(identityDir, LAST_FILE);
+  if (!p || !fs.existsSync(p)) return null;
+  try {
+    return normalizeProfile(JSON.parse(fs.readFileSync(p, "utf8")));
+  } catch {
+    return null;
+  }
+}
+export const saveLast = (identityDir, profile) => writeJson(path.join(identityDir, LAST_FILE), normalizeProfile(profile));
+
 // What a video says, in order: one entry per place that has a keyword.
-//   [{ slot, keyword, temperature, gets, offer }]
-export function ctaPlan(profile) {
+//   [{ slot, keyword, temperature, gets, offer, mode, segment }]
+// A place set to "segment" whose keyword has no segment (yet) falls back to
+// the narrator, with a note; `segments` is the Identity's library.
+export function ctaPlan(profile, segments = []) {
   const p = profile ?? defaultProfile();
   return SLOT_IDS.filter((id) => p.slots?.[id]).map((slot) => {
     const info = keywordInfo(p.slots[slot]);
-    return { slot, keyword: info.keyword, temperature: info.temperature, gets: info.gets, offer: p.offers?.[info.keyword] ?? null };
+    const base = { slot, keyword: info.keyword, temperature: info.temperature, gets: info.gets, offer: p.offers?.[info.keyword] ?? null, mode: "narrator", segment: null };
+    if (p.modes?.[slot] !== "segment") return base;
+    const seg = pickSegment(segments, info.keyword, p.segmentIds?.[slot] ?? null);
+    return seg ? { ...base, mode: "segment", segment: seg } : { ...base, note: `No segment for ${info.keyword} yet, so the narrator says it.` };
   });
 }
 
 // The plan a ONE Video uses: its own choice at gate 1, else the Identity's
 // profile, else the default.
 export function videoPlan({ identityDir, own = null } = {}) {
-  if (own) return ctaPlan(normalizeProfile(own));
-  return ctaPlan(loadProfile(identityDir));
+  const segments = identityDir ? loadSegments(identityDir) : [];
+  if (own) return ctaPlan(normalizeProfile(own), segments);
+  return ctaPlan(loadProfile(identityDir), segments);
 }
+
+export const endScreenOf = (identityDir, own = null) => (own ? normalizeProfile(own) : (loadProfile(identityDir) ?? defaultProfile())).endScreen;
 
 export const catalogForUi = () => KEYWORDS.map((k) => ({ ...k }));

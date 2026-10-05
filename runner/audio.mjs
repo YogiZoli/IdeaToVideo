@@ -136,3 +136,26 @@ export async function mix({ vo, bgm, out, env = process.env }) {
   }
   return { seconds: Math.round(seconds * 100) / 100, voLufs, bgmLufs: bgmLufs ?? null, musicGainDb: gainDb ?? null, finalLufs };
 }
+
+// ffmpeg with the app's usual quiet flags (the CTA segments use it).
+export async function ffmpegRun(args, env = process.env) {
+  const { ffmpeg } = bins(env);
+  return run(ffmpeg, ["-y", "-hide_banner", "-v", "error", ...args]);
+}
+
+// N seconds of silence (the end-screen tail, a segment without sound).
+export async function silence(seconds, out, env = process.env) {
+  await ffmpegRun(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", String(seconds), "-c:a", "libmp3lame", "-b:a", "192k", out], env);
+  return out;
+}
+
+// The sound of a video clip as mp3; silence of its length when it has none.
+export async function clipAudio(video, out, env = process.env) {
+  const seconds = await duration(video, env);
+  try {
+    await ffmpegRun(["-i", video, "-vn", "-ac", "2", "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "192k", "-t", String(seconds), out], env);
+  } catch {
+    await silence(seconds, out, env);
+  }
+  return { file: out, seconds: Math.round(seconds * 1000) / 1000 };
+}

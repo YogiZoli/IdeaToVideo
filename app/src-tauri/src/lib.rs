@@ -728,6 +728,31 @@ fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<Stri
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// "Upload a segment" (CTA wizard): copies the video the user picked into the
+/// active Identity's segments folder under a temporary name; the runner
+/// (segment-add) checks its length and keyword and keeps or deletes it.
+#[tauri::command]
+fn import_segment(app: AppHandle, path: String) -> Result<String, String> {
+    let src = PathBuf::from(&path);
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .filter(|e| ["mp4", "mov", "webm", "m4v"].contains(&e.as_str()))
+        .ok_or("A segment must be a video file (MP4, MOV, WebM).")?;
+    let size = std::fs::metadata(&src).map_err(|_| "Video file not found.")?.len();
+    if size > 500 * 1024 * 1024 {
+        return Err("The video file is larger than 500 MB. A segment is at most 30 seconds.".into());
+    }
+    let id = active_id(&app)?.ok_or("No Identity yet.")?;
+    let dir = identity::dir_of(&config_dir(&app)?, &id)?.join("segments");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let name = format!("incoming-{stamp}.{ext}");
+    std::fs::copy(&src, dir.join(&name)).map_err(|e| format!("Could not copy the video: {e}"))?;
+    Ok(name)
+}
+
 /// "Export publishing data": copies a rendered video's <video>.publish.json
 /// (runner/gates/render/publish.mjs) to where the user chose. Only that kind
 /// of file, only from inside the projects folder.
@@ -857,6 +882,7 @@ pub fn run() {
             read_tokens_file,
             import_music,
             export_publish,
+            import_segment,
             backup_settings_now,
             restore_settings,
             cloud_folders,
