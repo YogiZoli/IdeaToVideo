@@ -175,6 +175,7 @@ export type GalleryLook = { id: string; label: string; group: string; card: Bran
 export type BrandState = { card: BrandCard; own: boolean; presets: GalleryLook[]; styleNote: string; fonts: ShippedFont[]; contrast: ContrastRow[]; fontsDir: string; brandDir: string | null };
 export const HYPERFRAMES_GROUP = "HyperFrames presets";
 export const exportBrand = (path: string) => call<string>("export_brand", { path });
+export const exportPublish = (file: string, path: string) => call<string>("export_publish", { file, path });
 export const importBrand = (path: string) => call<BrandCard>("import_brand", { path });
 export const readTokensFile = (path: string) => call<string>("read_tokens_file", { path });
 export type Still = { scene: number; at: number; file: string };

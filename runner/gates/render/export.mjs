@@ -5,11 +5,13 @@
 //
 //   out/video-<stamp>.srt           upload it in YouTube Studio as subtitles
 //   out/video-<stamp>.chapters.txt  paste it into the video description
+//   out/video-<stamp>.publish.json  and .comments.txt (publish.mjs)
 
 import fs from "node:fs";
 import path from "node:path";
 import { closesSentence } from "../../timing/sentences.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
+import { writePublish } from "./publish.mjs";
 
 export const MAX_LINE = 42; // characters per caption line (a common broadcast limit)
 export const MAX_CUE_SECONDS = 5;
@@ -85,7 +87,7 @@ export function chapters(sentences, sections, total, language = "en") {
 }
 
 // Writes both files next to the video; returns what the UI shows.
-export function writeExtras(projectDir, videoFile, { language = "en", total } = {}) {
+export function writeExtras(projectDir, videoFile, { language = "en", total, appVersion = null, project = {} } = {}) {
   const base = videoFile.replace(/\.mp4$/i, "");
   const words = JSON.parse(fs.readFileSync(path.join(projectDir, "words.json"), "utf8"));
   const sentences = JSON.parse(fs.readFileSync(path.join(projectDir, "sentences.json"), "utf8"));
@@ -94,5 +96,6 @@ export function writeExtras(projectDir, videoFile, { language = "en", total } = 
   fs.writeFileSync(`${base}.srt`, toSrt(captionCues(words)));
   const ch = chapters(sentences, sentenceSections(md, sentences), total ?? sentences[sentences.length - 1]?.end ?? 0, language);
   fs.writeFileSync(`${base}.chapters.txt`, ch.text + "\n");
-  return { srt: `${base}.srt`, chaptersFile: `${base}.chapters.txt`, chapters: ch.text, chaptersNote: ch.note };
+  const pub = writePublish(projectDir, videoFile, { language, total, chapters: ch.chapters, chaptersText: ch.text, appVersion, project });
+  return { srt: `${base}.srt`, chaptersFile: `${base}.chapters.txt`, chapters: ch.text, chaptersNote: ch.note, ...pub };
 }

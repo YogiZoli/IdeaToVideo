@@ -171,3 +171,27 @@ test("main.mjs: cta-state, cta-check and cta-save through the protocol", () => {
   assert.match(run("cta-state", { identityDir: dir }).message, /The CTA profile cannot be used/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("publish.json and comments.txt: facts for the publishing tool, valid against itv-publish/1", async () => {
+  const { writeExtras } = await import("./gates/render/export.mjs");
+  const { validate, loadSchema } = await import("./schema/validate.mjs");
+  const dir = tmp();
+  const script = { ...goodScript(), commentCalls: [{ slot: "start", keyword: "GUIDE", temperature: "cold", gets: "a free guide", offer: "the free checklist" }], publishing: { searchKeyword: "own your audience", landingUrl: "https://x.example/start", nextVideo: null, playlist: null } };
+  fs.writeFileSync(path.join(dir, "script.json"), JSON.stringify(script));
+  fs.writeFileSync(path.join(dir, "sentences.json"), JSON.stringify(sentences));
+  fs.writeFileSync(path.join(dir, "words.json"), JSON.stringify(sentences.flatMap((s) => s.text.split(" ").map((w, i, a) => ({ text: w, start: s.start + (s.dur * i) / a.length, end: s.start + (s.dur * (i + 1)) / a.length })))));
+  fs.writeFileSync(path.join(dir, "script.md"), "# T\n\n## OPEN\n\nYour followers are rented. You will learn three steps to own them. Comment GUIDE below and I'll send you the free checklist.\n\n## 1. Rented\n\nThis guide shows why followers are rented, and an email list is owned.\n");
+  fs.mkdirSync(path.join(dir, "out"));
+  const video = path.join(dir, "out", "video-1.mp4");
+  const r = writeExtras(dir, video, { language: "en", total: 12.5, project: { title: "Own your audience" } });
+  const pub = JSON.parse(fs.readFileSync(r.publishFile, "utf8"));
+  assert.deepEqual(validate(pub, loadSchema("itv-publish")), []);
+  assert.equal(pub.video.title, "Own your audience");
+  assert.equal(pub.landingUrl, "https://x.example/start");
+  assert.deepEqual(pub.commentCalls, [{ slot: "start", keyword: "GUIDE", temperature: "cold", gets: "the free checklist", start: 6.2, end: 7.6 }]);
+  assert.equal(pub.script[0].heading, "OPEN");
+  assert.equal(pub.sentences.length, 4);
+  assert.match(r.comments, /GUIDE {2}\(Cold, at 0:06\) {2}viewer gets: the free checklist/);
+  assert.match(fs.readFileSync(r.commentsFile, "utf8"), /Landing page: https:\/\/x.example\/start/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});

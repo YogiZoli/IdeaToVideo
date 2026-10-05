@@ -728,6 +728,26 @@ fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<Stri
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// "Export publishing data": copies a rendered video's <video>.publish.json
+/// (runner/gates/render/publish.mjs) to where the user chose. Only that kind
+/// of file, only from inside the projects folder.
+#[tauri::command]
+fn export_publish(app: AppHandle, file: String, path: String) -> Result<String, String> {
+    let cfg = load_app_config(&app)?;
+    let root = projects_dir(&app, cfg.as_ref())?;
+    runner::check_paths(&json!({ "projectDir": file }), &root, &[])?;
+    if !file.to_ascii_lowercase().ends_with(".publish.json") {
+        return Err("Only the publishing data of a video can be exported here.".into());
+    }
+    let mut out = PathBuf::from(path);
+    if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("json".into()) {
+        out.set_extension("json");
+    }
+    std::fs::copy(&file, &out).map_err(|e| format!("Could not save the publishing data: {e}"))?;
+    note(&app, "info", "publish_exported", json!({ "file": out }));
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// Copies a music file the user picked into the project (audio/music.<ext>),
 /// returns that relative name for the voice gate. The runner never gets a
 /// path outside the projects folder.
@@ -836,6 +856,7 @@ pub fn run() {
             import_brand,
             read_tokens_file,
             import_music,
+            export_publish,
             backup_settings_now,
             restore_settings,
             cloud_folders,

@@ -183,6 +183,8 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
       throw err;
     }
   }
-  if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature }));
+  if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature, gets: c.gets ?? null, offer: c.offer ?? null }));
+  // For the publishing data next to the video (gates/render/publish.mjs).
+  script.publishing = { searchKeyword: data.keyword, landingUrl: input.brief?.cta?.landingUrl || input.channel?.landingUrl || null, nextVideo: data.nextVideo, playlist: data.playlist?.title ?? data.playlist?.name ?? null };
   return { script, markdown: renderMarkdown(script), words: wordCount(script), data };
 }

@@ -174,7 +174,20 @@ function latestVideo(projectDir) {
   const file = path.join(out, mp4);
   const base = file.replace(/\.mp4$/, "");
   const chapters = fs.existsSync(`${base}.chapters.txt`) ? fs.readFileSync(`${base}.chapters.txt`, "utf8").trim() : null;
-  return { file, chapters, srt: fs.existsSync(`${base}.srt`) ? `${base}.srt` : null };
+  let calls = null;
+  try {
+    calls = JSON.parse(fs.readFileSync(`${base}.publish.json`, "utf8")).commentCalls;
+  } catch {
+    // rendered before the publishing data existed
+  }
+  return {
+    file,
+    chapters,
+    srt: fs.existsSync(`${base}.srt`) ? `${base}.srt` : null,
+    publishFile: fs.existsSync(`${base}.publish.json`) ? `${base}.publish.json` : null,
+    comments: fs.existsSync(`${base}.comments.txt`) ? fs.readFileSync(`${base}.comments.txt`, "utf8") : null,
+    calls,
+  };
 }
 
 const commands = {
@@ -636,7 +649,7 @@ const commands = {
     // Captions and chapters next to the video. A problem here never loses the
     // render: the video is there, the note says what is missing.
     try {
-      const extras = writeExtras(projectDir, r.file, { language: loadProject(projectDir).language, total: r.seconds });
+      const extras = writeExtras(projectDir, r.file, { language: loadProject(projectDir).language, total: r.seconds, project: loadProject(projectDir) });
       appendLog(projectDir, `render: captions and chapters written${extras.chaptersNote ? `, ${extras.chaptersNote}` : ""}`);
       return { ...r, ...extras };
     } catch (e) {

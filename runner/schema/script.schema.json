@@ -44,9 +44,15 @@
         "properties": {
           "slot": { "enum": ["start", "middle", "end"] },
           "keyword": { "type": "string", "pattern": "^[A-Z]{2,12}$" },
-          "temperature": { "enum": ["cold", "warm", "hot"] }
+          "temperature": { "enum": ["cold", "warm", "hot"] },
+          "gets": { "type": ["string", "null"] },
+          "offer": { "type": ["string", "null"] }
         }
       }
+    },
+    "publishing": {
+      "$comment": "Written by the runner, not the LLM: what the publishing data needs from gate 1 (gates/render/publish.mjs).",
+      "type": "object"
     },
     "own": {
       "type": "object",

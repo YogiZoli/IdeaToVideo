@@ -10,10 +10,12 @@
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
   import type { Gate } from "./api";
-  import { runner, onProgress, errorText } from "./api";
+  import { runner, onProgress, errorText, exportPublish } from "./api";
+  import { save as saveDialog } from "@tauri-apps/plugin-dialog";
+  import { log } from "./logger";
 
   type Still = { scene: number; at: number; file: string };
-  type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string };
+  type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; publishFile?: string | null; comments?: string | null };
   let { dir, gate, scenesApproved, latest, stills = [], look = "blue-professional", changed }: { dir: string; gate?: Gate; scenesApproved: boolean; latest?: Video | null; stills?: Still[]; look?: string; changed: () => Promise<void> } = $props();
 
   let open = $state<number | null>(null); // index of the enlarged still
@@ -47,6 +49,29 @@
     await navigator.clipboard.writeText(video.chapters);
     copied = true;
     setTimeout(() => (copied = false), 2000);
+  }
+
+  // The publishing data (runner/gates/render/publish.mjs): saved next to the
+  // video anyway; Export puts a copy where the user wants it.
+  let exported = $state("");
+  async function exportData() {
+    if (!video?.publishFile) return;
+    const name = video.publishFile.split(/[\\/]/).pop()!;
+    const path = await saveDialog({ defaultPath: name, filters: [{ name: "Publishing data", extensions: ["json"] }] });
+    if (typeof path !== "string") return;
+    try {
+      exported = `Saved: ${await exportPublish(video.publishFile, path)}`;
+      log("publish_exported", {});
+    } catch (e) {
+      exported = errorText(e);
+    }
+  }
+  let copiedComments = $state(false);
+  async function copyComments() {
+    if (!video?.comments) return;
+    await navigator.clipboard.writeText(video.comments);
+    copiedComments = true;
+    setTimeout(() => (copiedComments = false), 2000);
   }
 
   const built = $derived(gate?.state === "pending" || gate?.state === "approved");
@@ -169,8 +194,16 @@
         {/if}
         {#if video.srt}<p class="hint">Captions are saved next to the video as an .srt file. Upload it in YouTube Studio, at Subtitles.</p>{/if}
         {#if video.extrasError}<p class="hint">Captions and chapters could not be made: {video.extrasError}</p>{/if}
+        {#if video.comments}
+          <span class="label">Comment keywords (reply to these comments with the matching link)</span>
+          <pre class="chapters">{video.comments}</pre>
+        {/if}
+        {#if video.publishFile}<p class="hint">The publishing data (chapters, script, captions, comment keywords with their times, landing page) is saved next to the video for your publishing tool.</p>{/if}
+        {#if exported}<p class="hint">{exported}</p>{/if}
         <div class="actions">
           {#if video.chapters}<button type="button" onclick={copyChapters}>{copied ? "Copied" : "Copy chapters"}</button>{/if}
+          {#if video.comments}<button type="button" onclick={copyComments}>{copiedComments ? "Copied" : "Copy comment keywords"}</button>{/if}
+          {#if video.publishFile}<button type="button" onclick={exportData}>Export publishing data</button>{/if}
           <button type="button" onclick={() => revealItemInDir(video.file)}>Show in folder</button>
         </div>
       {/if}

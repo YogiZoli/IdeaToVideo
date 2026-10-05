@@ -673,3 +673,14 @@
     alatt van a háttéren (Zoltan próbája: #fe90e8 a #fffdf5-ön, 1,99:1), a
     videó egy sötétebb változatot kap (`cardTheme`); a kártyán az eredeti
     marad. Oka: a komponensek egész mondatokat írnak `--brand` színnel.
+77. **Publikálási adatok a videó mellett** (Zoltan, 2026-10-05): render után
+    `<video>.publish.json` (séma `itv-publish/1`,
+    `runner/schema/itv-publish.schema.json`) és `<video>.comments.txt`. Csak
+    tények, amiket az app pontosan tud: fejezetek a hang idejéből, a script
+    szó szerint, a felvett mondatok idővel, a komment-CTA-k kulcsszóval,
+    hőmérséklettel és időponttal, a landing URL, a keresési kulcsszó, a
+    következő videó. Cím, leírás, tag nem (az a publikáló eszköz dolga, nincs
+    duplikáció). Nem teljesen csendes: "Export publishing data" gomb a 4.
+    kapuban (a Rust `export_publish` csak ezt a fájlt, csak a projektmappából
+    másolja), és "Copy comment keywords". A séma a közös nyelv a PDT felé: ma
+    fájl, később egy API-hívás törzse; csak bővül, törő változás új verzió.
