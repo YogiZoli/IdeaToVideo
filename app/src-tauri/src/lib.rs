@@ -16,6 +16,7 @@ mod jobs;
 mod keys;
 mod log;
 mod runner;
+mod tray;
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -127,6 +128,9 @@ async fn run_command(
                 last_step = step;
                 if let Some(b) = bucket {
                     last_bucket = b;
+                    if command == "render-video" {
+                        tray::status(&app, Some(b * 10));
+                    }
                 }
             }
             let _ = app.emit("runner-progress", runner::progress_payload(&command, project.as_deref(), v));
@@ -135,8 +139,10 @@ async fn run_command(
             let t = core.jobs.start(info, class, &mut |message| {
                 on_progress(json!({ "event": "progress", "step": "waiting", "message": message }));
                 let _ = app.emit("jobs-changed", core.jobs.list());
+                tray::status(&app, None);
             });
             let _ = app.emit("jobs-changed", core.jobs.list());
+                tray::status(&app, None);
             t
         });
         // The computer must not fall asleep while a script is written, a voice
@@ -160,6 +166,7 @@ async fn run_command(
         if ticket.is_some() {
             drop(ticket);
             let _ = app.emit("jobs-changed", core.jobs.list());
+                tray::status(&app, None);
         }
         result
     })
@@ -894,6 +901,9 @@ fn migrate_to_identities(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // one app: starting it again while it sits in the tray brings the
+        // window back instead of a second copy (DECISIONS 87)
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| tray::show(app)))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(Core::default())
@@ -909,6 +919,8 @@ pub fn run() {
                 "product": edition::PRODUCT_NAME,
                 "tier": edition::tier().name(),
             }));
+            tray::setup(app)?;
+            let h = app.handle();
             migrate_from_studio(h);
             migrate_to_identities(h);
             if let Ok(dir) = h.path().app_config_dir() {
@@ -954,6 +966,20 @@ pub fn run() {
             log_status,
             delete_logs
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        // the close button hides the window; the app keeps working in the tray
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                tray::on_close(window);
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, _event| {
+            // macOS: a click on the Dock icon opens the hidden window again
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = _event {
+                tray::show(_app);
+            }
+        });
 }

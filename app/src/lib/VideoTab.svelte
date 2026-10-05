@@ -183,7 +183,7 @@
 
     <div class="actionbar">
       {#if rendering}
-        <span class="say">Rendering. You can look at the other tabs meanwhile; keep the app open.</span>
+        <span class="say">Rendering. You can look at the other tabs, or close the window: the app keeps working in the corner of the taskbar.</span>
       {:else if video}
         <span class="say"><b>Your video is ready.</b> Download it or upload it.</span>
       {:else}

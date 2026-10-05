@@ -833,12 +833,12 @@
       mondott, utána percekig állt); a javító és újrapróbáló AI-körök növelik
       a becsült időt; a zene becslése a videó hosszából (eddig mindig 20 mp
       volt, valójában 95).
-    Állapot (2026-10-05 este): **még nincs kész.** Kód kész és típushiba
-    nélkül fordul: tabok, munkalista, haladásjelző, Script, Voice, Scenes,
-    Avatar, Preview, Your video, `simple-scenes`, `skip-gate`,
-    `refill-scene request`, `youtube-texts`, `export_video`. Hátra: a UI
-    próbája a böngészős próbakörnyezetben 1100x620-ban, a Settings avatar- és
-    hangválasztója az új választókra, tesztek, telepítő, Zoltan próbája.
+    Állapot (2026-10-05 késő este): **kész, Zoltan próbájára vár.** Tabok,
+    munkalista, haladásjelző, a hat tab, a Settings választói is kártyásak,
+    `simple-scenes`, `skip-gate`, `refill-scene request`, `youtube-texts`,
+    `export_video`, az app teljes ablakban indul. Próba a böngészős
+    próbakörnyezetben 1100x620-ban (képek: `feedback/2026-10-05/ui-tabs/`).
+    Tesztek: 197 Node, 43 Rust, e2e 33/33.
 86. **YouTube szövegek a kész videó mellett is** (Zoltan, 2026-10-05, K8): a
     DECISIONS 77 eddig a címet, a leírást és a tageket csak a PDT-nek hagyta.
     Mostantól a 6. tabon is: runner `youtube-texts`, az AI három cím-ötletet,
@@ -847,3 +847,13 @@
     `out/video-<stamp>.youtube.json`. Nem duplikáció: a PDT a sajátját
     csinálja. A lokalizáció és a fordítás (YouTube API, napi 10000 egység
     kvóta, egy teljes fordítás kb. 400) később, Zoltan most nem kéri.
+87. **Az app a tálcán él, mint a Claude** (Zoltan, 2026-10-05, A változat):
+    az ablak X gombja nem lép ki, csak elrejti az ablakot; az app és minden
+    futó munka (render, hang, avatar) megy tovább. Tálca-ikon (Windows: a
+    tálca sarka, macOS: a menüsor): kattintásra visszajön az ablak, a
+    menüje "Open" és "Quit"; a Quit futó munkánál rákérdez, mert leállítja.
+    Az első elrejtéskor egy üzenet megmondja, hová lett az app. A tooltip
+    mondja, mi fut (a rendernél százalékkal). Egy példány: újraindításkor a
+    meglévő ablak jön elő (`tauri-plugin-single-instance`). macOS-en a Dock
+    ikon is visszahozza. Hang nincs. A gép alvása vagy a lefedett laptop így
+    is leállítja a munkát. Kód: `app/src-tauri/src/tray.rs`.

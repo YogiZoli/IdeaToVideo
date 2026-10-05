@@ -60,7 +60,8 @@ export function costText(command: string, provider?: string): string {
 /** What the user may do meanwhile. */
 export function adviceText(command: string): string {
   const where = command === "make-avatar" || command === "make-music" ? "The service works on it, and the app waits for the result and saves it" : "The app does this work on your computer";
-  return `Keep the app open and do not put the computer to sleep or close the lid. ${where}, so the step stops if the computer sleeps. The app keeps the computer awake by itself while it works. You can use other programs meanwhile.`;
+  // the window may close: the app keeps working in the tray (DECISIONS 87)
+  return `You can close this window: the app keeps working in the corner of the taskbar. Do not put the computer to sleep or close the lid: ${where}, so the step stops if the computer sleeps. The app keeps the computer awake by itself while it works.`;
 }
 
 /** Percent from time alone. Past the estimate it keeps creeping toward 99

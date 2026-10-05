@@ -143,7 +143,7 @@ check("gate 3: scene table planned, one repair", planned.scenes === 5 && llmCall
   const copy = `${dir}-simple`;
   fs.cpSync(dir, copy, { recursive: true });
   const s = runner("simple-scenes", { projectDir: copy, look: "blue-professional" });
-  check("gate 3: the simple plan without AI passes the checks", s.event === "result" && s.data.scenes > 0 && loadProject(copy).gates.scenes.mode === "default", s.event === "result" ? `${s.data.scenes} scenes` : s.message);
+  check("gate 3: the simple plan without AI passes the checks", s.event === "result" && s.data.rows.length > 0 && loadProject(copy).gates.scenes.mode === "default", s.event === "result" ? `${s.data.rows.length} scenes` : s.message);
   const k = runner("skip-gate", { projectDir: copy, gate: "avatar" });
   check("avatar: left out on purpose", k.event === "result" && loadProject(copy).gates.avatar.state === "skipped");
   fs.rmSync(copy, { recursive: true, force: true });
