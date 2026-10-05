@@ -132,6 +132,17 @@ export function commentCallIssues(script, calls) {
   return issues;
 }
 
+// The length the user set (Zoltan's test, 2026-10-05: 3 minutes asked, 318
+// words written, about 2 minutes). Within 85 to 120 percent of the target
+// passes; otherwise the repair call is told how many words to add or cut.
+export function lengthIssues(script, data) {
+  const target = Math.round((data.targetLengthMin || 8) * WORDS_PER_MINUTE);
+  const words = wordCount(script);
+  if (words < target * 0.85) return [`the script has ${words} spoken words, too short for ${data.targetLengthMin} minutes: write about ${target} words (at least ${Math.round(target * 0.85)}), with more substance in the TEACH sections, not padding`];
+  if (words > target * 1.2) return [`the script has ${words} spoken words, too long for ${data.targetLengthMin} minutes: cut it to about ${target} words`];
+  return [];
+}
+
 export function wordCount(script) {
   return spokenFields(script).reduce((n, [, t]) => n + t.split(/\s+/).filter(Boolean).length, 0);
 }
@@ -161,7 +172,7 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
   let issues;
   try {
     script = extractJson(text);
-    issues = checkScript(script, data);
+    issues = [...checkScript(script, data), ...lengthIssues(script, data)];
   } catch (e) {
     issues = [`the answer was not valid JSON (${e.message})`];
   }
@@ -177,6 +188,8 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
     } catch (e) {
       issues = [`the answer was not valid JSON (${e.message})`];
     }
+    // The length is asked for once more, but a script that is only too short
+    // or too long after the repair is kept: the gate shows its real length.
     if (issues.length) {
       const err = new Error(`The script did not pass the checks after one repair: ${issues.slice(0, 5).join("; ")}`);
       err.issues = issues;

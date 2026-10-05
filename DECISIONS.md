@@ -724,3 +724,13 @@
     futhat párhuzamosan más hanggal és avatarral; egy brand később bármikor
     válthat. Az Identity export és Duplicate a teljes mappát viszi, ezzel
     együtt.
+80. **Javítások Zoltan 2026-10-05-i próbája után** (`feedback/2026-10-05/NOTES.md`):
+    a kontakt lap a kamera-keret nélküli lapról készül (a keret üres
+    pillanatképeket adott); a `cta-close` sora a buildben 0,68 em
+    betűszélességgel méreteződik (a registry fájl változatlan); a script
+    hossza 85-120% a kért percekhez, egy javító hívással; a CTA-hely alapból
+    "auto" (a szegmens szól, ha a kulcsszóhoz van); a lista-komponensek elemei
+    a kimondásukkor jelennek meg (`cues` a szóidőkből); a jelenet-tervező
+    listát, rajzot és kiemelést kér a sima kulcsmondat helyett; a fejezetek
+    és a kulcsszavak a 4. kapuban összecsukva, a publikálási adatban. Nyitott:
+    B-roll (valódi felvétel vagy kép), Zoltan dönt.

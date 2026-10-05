@@ -44,7 +44,7 @@
   const summary = (p: CtaState["start"]) =>
     SLOT_IDS.filter((s) => p.slots[s]).map((s) => {
       const k = st!.options.keywords.find((x) => x.keyword === p.slots[s])!;
-      return `${st!.options.slots[s].label}: ${k.keyword} (${st!.options.temperatures[k.temperature].label.toLowerCase()})${p.modes?.[s] === "segment" ? ", your segment" : ""}`;
+      return `${st!.options.slots[s].label}: ${k.keyword} (${st!.options.temperatures[k.temperature].label.toLowerCase()})${p.modes?.[s] !== "narrator" && st!.segments.some((g) => g.keyword === k.keyword) ? ", your segment plays" : ""}`;
     });
 </script>
 

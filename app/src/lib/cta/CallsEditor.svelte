@@ -29,6 +29,10 @@
     compact?: boolean;
   } = $props();
   const segsOf = (k: string | null) => segments.filter((g) => g.keyword === k);
+  // Which keywords have the Identity's segments: shown on the cards.
+  const marks = $derived(Object.fromEntries([...new Set(segments.map((g) => g.keyword))].map((k) => [k, `${segsOf(k).length} clip${segsOf(k).length === 1 ? "" : "s"}`])));
+  const segKeywords = $derived([...new Set(segments.map((g) => g.keyword))]);
+  const playsSegment = (s: CtaSlot) => modes[s] === "segment" || (modes[s] !== "narrator" && segsOf(slots[s]).length > 0);
 
   const SLOT_IDS: CtaSlot[] = ["start", "middle", "end"];
   const count = $derived(SLOT_IDS.filter((s) => on[s]).length);
@@ -84,17 +88,17 @@
           {/if}
           {#if on[s] && slots[s] && segsOf(slots[s]).length}
             <div class="mode" role="radiogroup" aria-label="Who says the {options.slots[s].label.toLowerCase()} call">
-              <label><input type="radio" name="mode-{s}" checked={modes[s] !== "segment"} onchange={() => (modes[s] = "narrator")} /> Narrator</label>
-              <label><input type="radio" name="mode-{s}" checked={modes[s] === "segment"} onchange={() => (modes[s] = "segment")} /> My segment ({segsOf(slots[s]).length})</label>
+              <label><input type="radio" name="mode-{s}" checked={!playsSegment(s)} onchange={() => (modes[s] = "narrator")} /> Narrator</label>
+              <label><input type="radio" name="mode-{s}" checked={playsSegment(s)} onchange={() => (modes[s] = "segment")} /> My segment ({segsOf(slots[s]).length})</label>
             </div>
-            {#if modes[s] === "segment" && chooseSegment && segmentIds && segsOf(slots[s]).length > 1}
+            {#if playsSegment(s) && chooseSegment && segmentIds && segsOf(slots[s]).length > 1}
               <select value={segmentIds[s] ?? ""} onchange={(e) => (segmentIds![s] = e.currentTarget.value || null)} aria-label="Which segment">
                 <option value="">Next in turn</option>
                 {#each segsOf(slots[s]) as g (g.id)}<option value={g.id}>{g.name} ({g.seconds} s)</option>{/each}
               </select>
             {/if}
-          {:else if on[s] && slots[s] && modes[s] === "segment"}
-            <span class="hint">No segment for {slots[s]} yet: the narrator says it.</span>
+          {:else if on[s] && slots[s] && segKeywords.length}
+            <span class="hint">No segment for {slots[s]}: the narrator says it. Your segments are for {segKeywords.join(", ")}.</span>
           {/if}
           {#if !compact}<span class="hint">{options.slots[s].hint}</span>{/if}
         </div>
@@ -102,7 +106,7 @@
     </div>
     {#if shown}
       <p class="for">Keyword for the {options.slots[shown].label.toLowerCase()}:</p>
-      <KeywordPicker keywords={options.keywords} temperatures={options.temperatures} value={slots[shown]} {compact} onpick={(k) => pick(shown!, k)} />
+      <KeywordPicker keywords={options.keywords} temperatures={options.temperatures} value={slots[shown]} {compact} {marks} onpick={(k) => pick(shown!, k)} />
     {/if}
   {/if}
 </div>

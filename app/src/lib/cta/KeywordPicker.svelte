@@ -11,12 +11,14 @@
     temperatures,
     value = null,
     compact = false,
+    marks = {},
     onpick,
   }: {
     keywords: CtaKeyword[];
     temperatures: Record<string, CtaTemperature>;
     value?: string | null;
     compact?: boolean;
+    marks?: Record<string, string>;
     onpick: (keyword: string) => void;
   } = $props();
 
@@ -35,6 +37,7 @@
           <button type="button" role="radio" aria-checked={value === k.keyword} class="kw" class:chosen={value === k.keyword} onclick={() => onpick(k.keyword)}>
             <span class="word">{k.keyword}</span>
             {#if !compact}<span class="gets">{k.gets}</span>{/if}
+            {#if marks[k.keyword]}<span class="mark">{marks[k.keyword]}</span>{/if}
           </button>
         {/each}
       </div>
@@ -58,6 +61,7 @@
   .kw:focus-visible { outline: 2px solid var(--dot); outline-offset: 2px; }
   .word { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; font-size: 15px; }
   .gets { font-size: 12px; color: #444; }
+  .mark { justify-self: start; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: #1a1a1a; color: #fff; }
   .kw.chosen { background: var(--dot); border-color: var(--dot); color: var(--on-dot); animation: breathe 2.4s ease-in-out infinite; }
   .kw.chosen .gets { color: var(--on-dot); }
   .waiting .kw { animation: pulse 1.8s ease-in-out infinite; }

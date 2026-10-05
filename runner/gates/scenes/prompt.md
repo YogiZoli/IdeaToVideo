@@ -24,8 +24,13 @@ decoration.
   action_line is 2 to 4 words of that sentence that ask for the comment and
   contain the keyword exactly as given, in capital letters; button_label is
   the keyword. When DATA has comment calls, cta-close is used for them only.
-- Never the same component in two scenes in a row. Mix the roles, most scenes
-  are key lines or emphasis.
+- Never the same component in two scenes in a row. Mix the roles.
+- Keep the picture moving with the voice, never a slideshow of headlines:
+  when a sentence names two or more things, use a list (their items appear
+  as the voice says them); when it explains an idea, use the whiteboard
+  sketch (aim for one in every section where a simple drawing fits); when one
+  word carries the point, mark it (emphasis). Use a plain key line only where
+  none of these fits, and never more than two key lines in a row.
 
 ## On-screen text
 

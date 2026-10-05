@@ -16,13 +16,13 @@
       }
     },
     "modes": {
-      "$comment": "Per place: the narrator says the call, or one of the Identity's segments plays it (cta/segments.mjs).",
+      "$comment": "Per place: the narrator says the call, or one of the Identity's segments plays it (cta/segments.mjs); auto (the default): a segment when the keyword has one.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "start": { "enum": ["narrator", "segment"] },
-        "middle": { "enum": ["narrator", "segment"] },
-        "end": { "enum": ["narrator", "segment"] }
+        "start": { "enum": ["narrator", "segment", "auto"] },
+        "middle": { "enum": ["narrator", "segment", "auto"] },
+        "end": { "enum": ["narrator", "segment", "auto"] }
       }
     },
     "segmentIds": {

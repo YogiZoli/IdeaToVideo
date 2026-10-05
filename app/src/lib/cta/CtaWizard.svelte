@@ -27,7 +27,7 @@
   let st = $state<CtaState | null>(null);
   let slots = $state<Record<CtaSlot, string | null>>({ start: null, middle: null, end: null });
   let on = $state<Record<CtaSlot, boolean>>({ start: true, middle: true, end: true });
-  let modes = $state<Record<CtaSlot, CtaMode>>({ start: "narrator", middle: "narrator", end: "narrator" });
+  let modes = $state<Record<CtaSlot, CtaMode>>({ start: "auto", middle: "auto", end: "auto" });
   let offers = $state<Record<string, string>>({});
   let step = $state(0);
   let busy = $state(false);
@@ -44,7 +44,7 @@
         for (const s of SLOT_IDS) {
           slots[s] = st.profile.slots[s];
           on[s] = st.profile.slots[s] !== null;
-          modes[s] = st.profile.modes?.[s] ?? "narrator";
+          modes[s] = st.profile.modes?.[s] ?? "auto";
         }
         offers = { ...st.profile.offers };
       }

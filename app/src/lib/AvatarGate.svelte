@@ -171,7 +171,7 @@
     <p class="hint">An avatar can say the opening and the closing of your video, in your own narration. It needs a HeyGen API key (Settings) and costs HeyGen credits. Without it the video is complete.</p>
   {:else if !open}
     <div class="actions">
-      <span class="hint grow">An avatar can say the opening and the closing, full screen, lip-synced to your narration. It costs HeyGen credits; you see the price first. Autopilot never adds it.</span>
+      <span class="hint grow">An avatar can say the opening and the closing, full screen, lip-synced to your narration. It costs HeyGen credits; you see the price first. Autopilot never adds it. Your recorded CTA segments are separate: they are chosen at 1. Script, Comment calls, and play there by themselves.</span>
       <button type="button" onclick={start}>{current ? "Change the avatar" : "Add an avatar"}</button>
     </div>
   {:else}

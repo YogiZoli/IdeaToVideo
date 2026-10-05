@@ -26,6 +26,14 @@ export function landedTimes(mounts) {
   });
 }
 
+// The page without the camera: each scene out of its wrapper, the camera
+// tweens gone. Everything else, the timing included, stays as built.
+export function withoutCamera(html) {
+  return html
+    .replace(/<div id="cam-\d+" class="itv-cam"[^>]*>\s*(<div id="scene-[\s\S]*?<\/div>)\s*<\/div>/g, "$1")
+    .replace(/^[ \t]*tl\.fromTo\("#cam-[^\n]*\n/gm, "");
+}
+
 // The scenes as the built index.html mounts them.
 export function mountsOf(html) {
   return [...html.matchAll(/id="scene-(\d+)"[^>]*data-start="([\d.]+)" data-duration="([\d.]+)"/g)].map((m) => ({ n: Number(m[1]), start: Number(m[2]), duration: Number(m[3]) }));
@@ -62,7 +70,19 @@ export async function contactSheet(projectDir, { env = process.env, onProgress =
   fs.rmSync(shots, { recursive: true, force: true });
   fs.mkdirSync(shots, { recursive: true });
   onProgress({ step: "snapshots", frames: mounts.length });
-  const r = await runHyperframes(["snapshot", "-o", shots, "--at", landedTimes(mounts).join(","), "--no-end", "--describe", "false"], { env, cwd: buildDir(projectDir), browser: browser.path });
+  // The camera wrappers (Motion profile) keep `hyperframes snapshot` from
+  // seeking the scenes inside them: the stills came out empty, only the
+  // background (Zoltan's test, 2026-10-05; the render was fine). The stills
+  // are taken without the wrappers; the camera only moves a few pixels.
+  const index = path.join(buildDir(projectDir), "index.html");
+  const stillHtml = withoutCamera(html);
+  if (stillHtml !== html) fs.writeFileSync(index, stillHtml);
+  let r;
+  try {
+    r = await runHyperframes(["snapshot", "-o", shots, "--at", landedTimes(mounts).join(","), "--no-end", "--describe", "false"], { env, cwd: buildDir(projectDir), browser: browser.path });
+  } finally {
+    if (stillHtml !== html) fs.writeFileSync(index, html);
+  }
   fs.writeFileSync(path.join(review, "snapshot.log"), r.tail + "\n");
   if (r.code !== 0) throw new Error(`The snapshots failed: ${r.tail.split("\n").slice(-4).join(" ")}`);
   const pngs = fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort(byNumber);

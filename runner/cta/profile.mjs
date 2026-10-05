@@ -32,7 +32,7 @@ export const OFFER_MAX = 80;
 export const END_SCREEN_DEFAULT = 20;
 
 export const ctaPath = (identityDir) => path.join(identityDir, CTA_FILE);
-export const defaultProfile = () => ({ schema: CTA_SCHEMA, slots: { ...DEFAULT_SLOTS }, modes: { start: "narrator", middle: "narrator", end: "narrator" }, offers: {}, endScreen: END_SCREEN_DEFAULT });
+export const defaultProfile = () => ({ schema: CTA_SCHEMA, slots: { ...DEFAULT_SLOTS }, modes: { start: "auto", middle: "auto", end: "auto" }, offers: {}, endScreen: END_SCREEN_DEFAULT });
 
 // Everything a profile may say, checked; returns the clean profile or throws
 // one readable sentence per problem. Offers of keywords no place uses are
@@ -48,7 +48,9 @@ export function normalizeProfile(input) {
     const v = input.slots?.[id] ?? null;
     if (v !== null && !keywordInfo(v)) throw new Error(`Unknown keyword at ${id}: ${v}. Pick one of the 15.`);
     slots[id] = v === null ? null : keywordInfo(v).keyword;
-    modes[id] = input.modes?.[id] === "segment" ? "segment" : "narrator";
+    // auto (default): your segment when the keyword has one (Zoltan's test,
+    // 2026-10-05: three uploaded segments, none used).
+    modes[id] = ["segment", "narrator"].includes(input.modes?.[id]) ? input.modes[id] : "auto";
     if (input.segmentIds?.[id]) segmentIds[id] = input.segmentIds[id];
   }
   const offers = {};
@@ -110,9 +112,11 @@ export function ctaPlan(profile, segments = []) {
   return SLOT_IDS.filter((id) => p.slots?.[id]).map((slot) => {
     const info = keywordInfo(p.slots[slot]);
     const base = { slot, keyword: info.keyword, temperature: info.temperature, gets: info.gets, offer: p.offers?.[info.keyword] ?? null, mode: "narrator", segment: null };
-    if (p.modes?.[slot] !== "segment") return base;
+    const mode = p.modes?.[slot] ?? "auto";
+    if (mode === "narrator") return base;
     const seg = pickSegment(segments, info.keyword, p.segmentIds?.[slot] ?? null);
-    return seg ? { ...base, mode: "segment", segment: seg } : { ...base, note: `No segment for ${info.keyword} yet, so the narrator says it.` };
+    if (seg) return { ...base, mode: "segment", segment: seg };
+    return mode === "segment" ? { ...base, note: `No segment for ${info.keyword} yet, so the narrator says it.` } : base;
   });
 }
 

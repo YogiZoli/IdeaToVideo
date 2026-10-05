@@ -26,7 +26,7 @@
   let editing = $state(false);
   let slots = $state<Record<CtaSlot, string | null>>({ start: null, middle: null, end: null });
   let on = $state<Record<CtaSlot, boolean>>({ start: false, middle: false, end: false });
-  let modes = $state<Record<CtaSlot, CtaMode>>({ start: "narrator", middle: "narrator", end: "narrator" });
+  let modes = $state<Record<CtaSlot, CtaMode>>({ start: "auto", middle: "auto", end: "auto" });
   let segmentIds = $state<Partial<Record<CtaSlot, string | null>>>({});
   let previous = $state(false);
 
@@ -49,7 +49,7 @@
     for (const s of SLOT_IDS) {
       slots[s] = current!.slots[s];
       on[s] = current!.slots[s] !== null;
-      modes[s] = current!.modes?.[s] ?? "narrator";
+      modes[s] = current!.modes?.[s] ?? "auto";
       segmentIds[s] = current!.segmentIds?.[s] ?? null;
     }
     editing = true;
@@ -80,7 +80,7 @@
     <span class="label">Comment calls</span>
     {#each SLOT_IDS.filter((s) => current.slots[s]) as s (s)}
       {@const t = temp(current.slots[s]!)}
-      <span class="chip" style={`--dot: ${t.dot}; --on-dot: ${t.label === "Warm" ? "#1a1a1a" : "#ffffff"}`}>{st.options.slots[s].label}: {current.slots[s]}{current.modes?.[s] === "segment" ? " (segment)" : ""}</span>
+      <span class="chip" style={`--dot: ${t.dot}; --on-dot: ${t.label === "Warm" ? "#1a1a1a" : "#ffffff"}`}>{st.options.slots[s].label}: {current.slots[s]}{current.modes?.[s] !== "narrator" && st.segments.some((g) => g.keyword === current.slots[s]) ? " (your segment)" : ""}</span>
     {:else}
       <span class="hint">none</span>
     {/each}

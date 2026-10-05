@@ -105,6 +105,19 @@ export function fitDuration(html, name, seconds) {
 // "-clip" layer); that rule, and only its background, is overridden, so the
 // background shows through and everything else stays as authored (text,
 // cards and shadows keep using --bg). Returns the selectors it changed.
+// cta-close sizes its line from the character count with a 0.47 em advance
+// per letter, made for average display faces. A heavy brand face in capitals
+// is about 0.68 em, so "Comment CHECKLIST below" ran off both edges (Zoltan's
+// test, 2026-10-05). The copy in the build counts 0.68: wide faces fit,
+// narrow ones are a little smaller. The registry file itself is untouched.
+export const CTA_ADVANCE = 0.68;
+export function widerFit(html, component) {
+  if (component !== "cta-close") return html;
+  const out = html.replace("actionCharacters * 0.47", `actionCharacters * ${CTA_ADVANCE}`);
+  if (out === html) throw new Error("cta-close changed upstream: its line fit could not be adjusted. Update assemble.mjs widerFit.");
+  return out;
+}
+
 export function transparentGround(html) {
   const grounds = [];
   for (const m of html.matchAll(/(^|[\s}])(#root|\.[A-Za-z0-9_-]+-clip)\s*\{([^{}]*)\}/g)) {
@@ -257,6 +270,48 @@ export function mountTheme(vars = {}) {
   if (accent !== undefined && !(accent in ACCENT_TOKEN)) throw new Error(`Unknown accent: ${accent}.`);
   const style = THEME_KEYS.map((k) => `--${k}: var(--itv-${k === "brand" && accent ? ACCENT_TOKEN[accent] : k})`).join("; ");
   return { vars: rest, style };
+}
+
+// Speech-timed reveals (Zoltan, 2026-10-05: "every scene feels like a
+// slideshow"). Three library components take `cues`, seconds from the scene's
+// start: grid-card-assemble (one per item), constellation-hub (one per node),
+// kinetic-type-swap (one per swap, the first option shows from the start).
+// Each cue is when the voice says the item's first word (words.json); the
+// AI never sets them. An item the voice does not say: the grid keeps its own
+// cascade for it, the other two keep their even spread for the whole scene.
+const CUE_LISTS = { "grid-card-assemble": { from: "items", skip: 0, blanks: true }, "constellation-hub": { from: "nodes", skip: 0, blanks: false }, "kinetic-type-swap": { from: "options", skip: 1, blanks: false } };
+const norm = (w) => String(w).toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "");
+
+export function readWords(projectDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(projectDir, "words.json"), "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+export function speechCues(sc, words, start, end) {
+  const spec = CUE_LISTS[sc.component];
+  if (!spec || sc.vars?.cues || typeof sc.vars?.[spec.from] !== "string") return null;
+  const items = sc.vars[spec.from].split(",").map((x) => x.trim()).filter(Boolean).slice(spec.skip);
+  const said = words.filter((w) => w.start >= start - 0.05 && w.start < end);
+  let from = 0;
+  const cues = items.map((item) => {
+    const first = norm(item.split(/\s+/)[0]);
+    if (!first) return null;
+    const stem = first.slice(0, Math.max(3, Math.min(first.length, 5)));
+    for (let k = from; k < said.length; k++) {
+      const w = norm(said[k].text);
+      if (w === first || (w.length >= 3 && w.startsWith(stem))) {
+        from = k + 1;
+        return Math.max(0.2, Math.round((said[k].start - start) * 100) / 100);
+      }
+    }
+    return null;
+  });
+  if (!cues.some((c) => c !== null)) return null;
+  if (!spec.blanks && cues.includes(null)) return null;
+  return cues.map((c) => (c === null ? "" : String(c))).join(",");
 }
 
 // A comment call's button wears its lead temperature (cta/catalog.mjs), made
@@ -505,6 +560,12 @@ export async function assemble(projectDir, { env = process.env, total, language,
   if (total === undefined) total = await duration(path.join(projectDir, "audio", "vo_bgm.mp3"), env);
   total = Math.round(total * 1000) / 1000;
   const times = sceneTimes(scenes, sentences, total);
+  // List items appear when the voice says them (their `cues`), not all at once.
+  const spoken = readWords(projectDir);
+  scenes.forEach((sc, n) => {
+    const c = speechCues(sc, spoken, times[n].start, times[n].start + times[n].duration);
+    if (c) sc.vars = { ...(sc.vars ?? {}), cues: c };
+  });
 
   const mp = profile
     ? motionPlan(profile, {
@@ -525,7 +586,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const bgComponent = bgPieces.length ? loadComponent(mp.background.component, { env }) : null;
   // With a background under them, the scenes' own grounds are see-through.
   const fitted = scenes.map((sc, n) => {
-    const html = fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n)));
+    const html = widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component);
     return bgComponent ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice

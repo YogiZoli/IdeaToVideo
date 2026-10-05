@@ -15,7 +15,15 @@
   import { runner, onProgress, errorText, importMusic } from "./api";
   import { narratorProvider } from "./catalog";
 
-  type Info = { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number };
+  type Info = { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number; inserts?: { keyword: string; seconds: number }[]; endScreen?: { seconds: number } | null };
+  // The length in parts: the narration, the CTA segments, the end screen.
+  const parts = (i: Info) => {
+    const seg = (i.inserts ?? []).reduce((t, x) => t + x.seconds, 0);
+    const end = i.endScreen?.seconds ?? 0;
+    const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+    if (!seg && !end) return `${clock(i.seconds)}`;
+    return `${clock(i.seconds)} in all: narration ${clock(i.seconds - seg - end)}${seg ? `, your CTA segments ${Math.round(seg)} s` : ""}${end ? `, end screen ${end} s` : ""}`;
+  };
   type Voice = { id: string; name: string; own?: boolean; gender: string | null; accent: string | null; description: string | null; previewUrl: string | null; languages: string[] };
 
   let { app, dir, gate, scriptApproved, voiceInfo = null, changed }: { app: AppState; dir: string; gate?: Gate; scriptApproved: boolean; voiceInfo?: Info | null; changed: () => Promise<void> } = $props();
@@ -250,7 +258,7 @@
         <div><span class="label">With music (this is what you approve)</span><audio controls src={mixSrc}></audio></div>
         <div><span class="label">Narration only</span><audio controls src={voSrc}></audio></div>
       </div>
-      {#if info}<p class="hint">{info.seconds} s, {info.words} words, final {info.finalLufs} LUFS. Music: {info.musicLabel ?? (info.music ? info.music : "none")}{info.musicGainDb !== null && info.musicGainDb !== undefined ? `, ${info.musicGainDb} dB` : ""}.</p>{/if}
+      {#if info}<p class="hint">{parts(info)}. {info.words} words, final {info.finalLufs} LUFS. Music: {info.musicLabel ?? (info.music ? info.music : "none")}{info.musicGainDb !== null && info.musicGainDb !== undefined ? `, ${info.musicGainDb} dB` : ""}.</p>{/if}
       <div class="actions">
         <button type="button" disabled={busy} onclick={applyMusic}>Use the selected music</button>
         <button type="button" class="primary" disabled={busy || gate?.state === "approved"} onclick={approve}>{gate?.state === "approved" ? "Approved" : "Approve voice and music"}</button>

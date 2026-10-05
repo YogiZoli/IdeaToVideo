@@ -187,25 +187,34 @@
         {#if video.renderSeconds}<p class="good">Done: {video.seconds} s of video in {video.renderSeconds} s.</p>{:else}<p class="good">Your latest video:</p>{/if}
         <!-- svelte-ignore a11y_media_has_caption -->
         <video controls src={convertFileSrc(video.file)}></video>
-        {#if video.chapters}
-          <span class="label">YouTube chapters (paste them into the description)</span>
-          <pre class="chapters">{video.chapters}</pre>
-          {#if video.chaptersNote}<p class="hint">{video.chaptersNote}</p>{/if}
-        {/if}
-        {#if video.srt}<p class="hint">Captions are saved next to the video as an .srt file. Upload it in YouTube Studio, at Subtitles.</p>{/if}
         {#if video.extrasError}<p class="hint">Captions and chapters could not be made: {video.extrasError}</p>{/if}
-        {#if video.comments}
-          <span class="label">Comment keywords (reply to these comments with the matching link)</span>
-          <pre class="chapters">{video.comments}</pre>
-        {/if}
-        {#if video.publishFile}<p class="hint">The publishing data (chapters, script, captions, comment keywords with their times, landing page) is saved next to the video for your publishing tool.</p>{/if}
+        <!-- Chapters and comment keywords belong to publishing (the publishing
+             tool, the comment-reply tool), so they are not on this page: they
+             wait in the publishing data, one click away (Zoltan, 2026-10-05). -->
+        {#if video.publishFile}<p class="hint">Next to the video: the captions (.srt) and the publishing data for your publishing tool and your comment-reply tool (chapters with times, the script, the comment keywords with their times, your landing page).</p>{/if}
         {#if exported}<p class="hint">{exported}</p>{/if}
         <div class="actions">
-          {#if video.chapters}<button type="button" onclick={copyChapters}>{copied ? "Copied" : "Copy chapters"}</button>{/if}
-          {#if video.comments}<button type="button" onclick={copyComments}>{copiedComments ? "Copied" : "Copy comment keywords"}</button>{/if}
-          {#if video.publishFile}<button type="button" onclick={exportData}>Export publishing data</button>{/if}
+          {#if video.publishFile}<button type="button" class="primary" onclick={exportData}>Export publishing data</button>{/if}
           <button type="button" onclick={() => revealItemInDir(video.file)}>Show in folder</button>
         </div>
+        {#if video.chapters || video.comments}
+          <details class="inside">
+            <summary>What is in the publishing data</summary>
+            {#if video.chapters}
+              <span class="label">YouTube chapters</span>
+              <pre class="chapters">{video.chapters}</pre>
+              {#if video.chaptersNote}<p class="hint">{video.chaptersNote}</p>{/if}
+            {/if}
+            {#if video.comments}
+              <span class="label">Comment keywords</span>
+              <pre class="chapters">{video.comments}</pre>
+            {/if}
+            <div class="actions">
+              {#if video.chapters}<button type="button" onclick={copyChapters}>{copied ? "Copied" : "Copy chapters"}</button>{/if}
+              {#if video.comments}<button type="button" onclick={copyComments}>{copiedComments ? "Copied" : "Copy comment keywords"}</button>{/if}
+            </div>
+          </details>
+        {/if}
       {/if}
     {/if}
   {/if}
@@ -251,4 +260,6 @@
   .pill.approved { background: var(--success-surface); color: var(--success); }
   .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
   .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
+  .inside { margin-top: 8px; }
+  .inside summary { cursor: pointer; color: var(--muted-foreground); font-size: 13px; }
 </style>

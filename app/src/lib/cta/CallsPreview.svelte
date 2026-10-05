@@ -10,7 +10,7 @@
     look,
     slots,
     on,
-    modes = { start: "narrator", middle: "narrator", end: "narrator" },
+    modes = { start: "auto", middle: "auto", end: "auto" },
     segments = [],
     offers,
   }: {
@@ -30,7 +30,7 @@
       .map((s) => {
         const info = options.keywords.find((k) => k.keyword === slots[s])!;
         const segs = segments.filter((g) => g.keyword === info.keyword);
-        return { slot: s, keyword: info.keyword, temperature: info.temperature, says: offers[info.keyword]?.trim() || info.gets, segment: modes[s] === "segment" && segs.length ? segs : null };
+        return { slot: s, keyword: info.keyword, temperature: info.temperature, says: offers[info.keyword]?.trim() || info.gets, segment: modes[s] !== "narrator" && segs.length ? segs : null };
       }),
   );
 </script>
