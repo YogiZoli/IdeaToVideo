@@ -8,6 +8,7 @@ export function phaseText(command: string, step: string | undefined): string | n
   const s = step ?? "";
   const table: Record<string, string> = {
     writing: "The AI is writing the script",
+    humanizing: "Making it sound like a person talking",
     planning: "The AI is planning the scenes",
     repairing: "Fixing what the AI returned",
     voice: "Reading the script aloud",

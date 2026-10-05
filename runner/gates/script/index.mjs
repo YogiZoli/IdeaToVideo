@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chat, extractJson } from "../../providers/llm.mjs";
 import { validate, loadSchema } from "../../schema/validate.mjs";
+import { humanizeScript, LEVELS } from "./humanize.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WORDS_PER_MINUTE = 150;
@@ -17,7 +18,9 @@ const WORDS_PER_MINUTE = 150;
 // only calls the narration makes. The landing page link goes into the YouTube
 // description, never into the narration or on screen (Zoltan, 2026-10-05,
 // CTA K10), so `cta` is always null now; the field stays for old scripts.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [] }) {
+// angle: the creator's own story, opinion or example for this video (gate 1,
+// "Your own angle", optional; DECISIONS 88).
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null }) {
   const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
   const cta = null;
   const data = {
@@ -36,6 +39,8 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     targetLengthMin: targetLengthMin || brief.targetLengthMin || 8,
   };
   if (calls.length) data.commentCalls = calls;
+  const own = String(angle ?? "").trim().slice(0, 1500);
+  if (own) data.ownAngle = own;
   // The Identity's dictionary (dictionary.mjs dictionaryData), only when it has entries.
   if (dictionary) data.dictionary = dictionary;
   if (!data.topic) throw new Error("A topic or a brief title is needed to write a script.");
@@ -214,8 +219,13 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
       break; // keep the script that passed
     }
   }
+  // The optional natural-voice pass (humanize.mjs, DECISIONS 88): the video's
+  // own choice, else the Identity's, else off.
+  const level = LEVELS.includes(input.humanize) ? input.humanize : LEVELS.includes(input.channel?.humanize) ? input.channel.humanize : "off";
+  let humanizeNote = null;
+  if (level !== "off") ({ script, note: humanizeNote } = await humanizeScript({ llm, script, data, level, ownAngle: data.ownAngle ?? null, onProgress }));
   if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature, gets: c.gets ?? null, offer: c.offer ?? null }));
   // For the publishing data next to the video (gates/render/publish.mjs).
   script.publishing = { searchKeyword: data.keyword, landingUrl: input.brief?.cta?.landingUrl || input.channel?.landingUrl || null, nextVideo: data.nextVideo, playlist: data.playlist?.title ?? data.playlist?.name ?? null };
-  return { script, markdown: renderMarkdown(script), words: wordCount(script), data };
+  return { script, markdown: renderMarkdown(script), words: wordCount(script), data, humanize: level, humanizeNote };
 }

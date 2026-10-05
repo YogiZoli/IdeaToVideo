@@ -443,8 +443,9 @@ const commands = {
       if (res.script.title && !project.title) project.title = res.script.title;
       saveProject(projectDir, project);
       const findings = checkAll(dict, spokenFields(res.script).map(([where, text]) => [`script ${where}`, text]));
+      if (res.humanize !== "off") appendLog(projectDir, `script: natural voice ${res.humanize}${res.humanizeNote ? `, ${res.humanizeNote}` : ""}`);
       appendLog(projectDir, `script: done, ${res.words} words${findings.length ? `, ${findings.length} dictionary findings` : ""}`);
-      return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status, dictionary: findings };
+      return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status, dictionary: findings, humanize: res.humanize, humanizeNote: res.humanizeNote };
     } catch (e) {
       const failed = setGate(loadProject(projectDir), "script", { state: "failed", error: String(e.message).slice(0, 2000) });
       saveProject(projectDir, failed);

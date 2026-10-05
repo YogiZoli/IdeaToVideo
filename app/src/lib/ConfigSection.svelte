@@ -4,6 +4,7 @@
   // (setup) or the active Identity's own (Settings, Identity pages).
   // newIdentity: the Identity does not exist yet (setup, New Identity), so a
   // logo waits in a holding folder until it is saved.
+  import HumanizeSlider from "./HumanizeSlider.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import type { Config, KeyScope } from "./api";
   import { importLogo, errorText } from "./api";
@@ -79,6 +80,7 @@
   <div class="field">
     <label for="bv">Brand Voice</label>
     <textarea id="bv" rows="5" bind:value={config.channel.brandVoice} placeholder="Example: calm, direct, practical. Short sentences. No hype words."></textarea>
+    <HumanizeSlider bind:value={config.channel.humanize} />
   </div>
 {:else if id === "profile"}
   <div class="field">

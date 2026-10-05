@@ -9,6 +9,7 @@
   import Progress from "./Progress.svelte";
   import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import VideoCalls from "./cta/VideoCalls.svelte";
+  import HumanizeSlider from "./HumanizeSlider.svelte";
   import type { AppState, Gate, CtaProfile, CtaSlot } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { running } from "./work.svelte";
@@ -80,6 +81,11 @@
     }
   }
 
+  // Optional (DECISIONS 88): the creator's own story or opinion for this
+  // video, and the natural-voice pass, the Identity's level unless changed.
+  let angle = $state("");
+  let humanize = $state<"off" | "light" | "strong">(untrack(() => app.config?.channel.humanize ?? "off"));
+
   // This video's own comment calls, null = the Identity's.
   let ownCalls = $state<CtaProfile | null>(null);
 
@@ -91,13 +97,13 @@
     notice = "";
     step = "Starting...";
     try {
-      const r = await runner<{ words: number }>("write-script", {
+      const r = await runner<{ words: number; humanizeNote?: string | null }>("write-script", {
         projectDir: dir,
         llm: app.config!.llm,
-        input: { topic: title, targetLengthMin: length, ...(keyword ? { keyword } : {}), ...(ownCalls ? { cta: $state.snapshot(ownCalls) } : {}) },
+        input: { topic: title, targetLengthMin: length, humanize, ...(angle.trim() ? { angle: angle.trim() } : {}), ...(keyword ? { keyword } : {}), ...(ownCalls ? { cta: $state.snapshot(ownCalls) } : {}) },
         channel: app.config!.channel,
       });
-      notice = `Script ready, ${r.words} words. Read it, change what you like, then approve it below.`;
+      notice = `Script ready, ${r.words} words. Read it, change what you like, then approve it below.${r.humanizeNote ? ` ${r.humanizeNote}` : ""}`;
       await changed();
       setTimeout(() => result?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (e) {
@@ -153,6 +159,13 @@
   </div>
 
   <VideoCalls bind:own={ownCalls} used={calls} disabled={locked} />
+
+  <details class="angle">
+    <summary>Your own angle and natural voice <span class="hint">(optional{angle.trim() ? ", angle added" : ""}{humanize !== "off" ? `, natural voice ${humanize}` : ""})</span></summary>
+    <label for="angle" class="label">Your own angle</label>
+    <textarea id="angle" rows="3" bind:value={angle} disabled={locked} placeholder="A story, an opinion or an example of yours for this topic, in a few sentences. The AI builds the script around it. Leave it empty if you like."></textarea>
+    <HumanizeSlider bind:value={humanize} id="humanize-video" disabled={locked} compact />
+  </details>
 
   {#if canVidiq}
     <div class="controls">
@@ -228,6 +241,9 @@
   .controls input { width: 70px; }
   .grow { flex: 1; }
   .kwbox { max-height: 240px; overflow: auto; }
+  .angle { margin: 4px 0 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; }
+  .angle summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  .angle textarea { width: 100%; height: auto; min-height: 70px; font-family: inherit; font-size: 14px; }
   .kw { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 6px; }
   .kw th { text-align: left; color: var(--muted-foreground); font-weight: 600; padding: 4px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
   .kw td { padding: 4px; border-bottom: 1px solid var(--border); }

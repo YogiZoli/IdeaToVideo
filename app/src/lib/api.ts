@@ -41,6 +41,8 @@ export type Config = {
     landingUrl?: string | null;
     ctaText?: string | null;
     contentLanguage?: string;
+    /** The natural-voice pass after the script (DECISIONS 88), off by default. */
+    humanize?: "off" | "light" | "strong";
   };
   narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
   avatar?: { enabled: boolean; lookId?: string | null; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };

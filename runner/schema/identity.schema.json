@@ -37,7 +37,8 @@
         "youtubeUrl": {"type": ["string", "null"], "maxLength": 500},
         "landingUrl": {"type": ["string", "null"], "maxLength": 1000},
         "ctaText": {"type": ["string", "null"], "maxLength": 200},
-        "contentLanguage": {"type": "string", "minLength": 2, "maxLength": 10}
+        "contentLanguage": {"type": "string", "minLength": 2, "maxLength": 10},
+        "humanize": {"enum": ["off", "light", "strong"]}
       }
     },
     "narrator": {

@@ -83,6 +83,14 @@ the data has no keyword, ignore this.
 - Follow the brand voice from the data. Write for the audience from the data.
 - Write everything in the content language from the data. The field names stay English.
 
+## Your own angle
+
+When the data has "ownAngle", it is the creator's own story, opinion or
+example for this video, in their words. Build the script around it: tell it in
+the first person where it fits best (often the OPEN or the highest-value
+section), keep its facts exactly, and never add details it does not give.
+When the data has no ownAngle, ignore this.
+
 ## Dictionary
 
 When the data has a "dictionary", follow it everywhere in the script:

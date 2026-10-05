@@ -857,3 +857,23 @@
     meglévő ablak jön elő (`tauri-plugin-single-instance`). macOS-en a Dock
     ikon is visszahozza. Hang nincs. A gép alvása vagy a lefedett laptop így
     is leállítja a munkát. Kód: `app/src-tauri/src/tray.rs`.
+88. **Natural voice (humanizer) a script után** (Zoltan, 2026-10-05, H1-H4).
+    Kutatás (2026-10-05): a YouTube 2026 júliusától "Inauthentic Content"
+    néven nem engedi pénzt keresni a generikus, sablonos, tömegből gyártott
+    tartalommal, a felkavaró tartalommal és az érzékeny témáról beszélő
+    AI-personával; az AI-eszköz használata rendben van, ha van valódi emberi
+    hozzáadott érték. A scriptet nem AI-detektor méri. Ezért a humanizer egy
+    szerkesztői kör: kiírja a gépies mintákat (töltelékszavak, mindig hármas
+    felsorolás, "nemcsak X, hanem Y", egyforma mondathossz), élőbeszédszerű
+    ritmust ad; Strongnál személyes, beszélt hangot (te és én, kérdés a
+    nézőnek, konkrét példa, csak a meglévő tényekből). Az app nem ígéri, hogy
+    bármilyen szűrőn átmegy. Eldöntve:
+    - **H1** csúszka három állással: Off, Light, Strong.
+    - **H2** Identity-nként a Settings Brand Voice oldalán, videónként a
+      Script tabon felülírható.
+    - **H3** "Your own angle": opcionális, lenyíló mező a Script tabon (saját
+      történet, vélemény, példa), üresen hagyható; az AI erre építi a scriptet.
+    - **H4** alapállás Off (minden kör egy plusz AI-hívás).
+    Csak a kimondott mezőket írja át (szerkezet, kulcsszavak maradnak), utána
+    ugyanazok az ellenőrzések; ha egy javító kör után sem megy át, az első
+    script marad, és az app megmondja. Kód: `runner/gates/script/humanize.mjs`.
