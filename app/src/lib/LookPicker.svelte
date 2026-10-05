@@ -53,7 +53,7 @@
   <div class="box">
     {#if tab === "own" && !person}
       {#each own as g (g.id)}
-        <button type="button" class="card" class:sel={chosenGroup?.id === g.id} onclick={() => (person = g)}>
+        <button type="button" class="tile" class:sel={chosenGroup?.id === g.id} onclick={() => (person = g)}>
           {#if img(g.image ?? g.looks[0]?.image ?? null)}<img src={img(g.image ?? g.looks[0]?.image ?? null)} alt="" loading="lazy" />{:else}<span class="noimg">{g.name.slice(0, 1)}</span>{/if}
           <span class="n">{g.name}</span>
           <span class="d">{g.note ?? `${g.looks.length} look${g.looks.length === 1 ? "" : "s"}`}</span>
@@ -63,7 +63,7 @@
       {/each}
     {:else}
       {#each tab === "own" ? person!.looks : stockShown as l (l.id)}
-        <div class="card look" class:sel={value === l.id}>
+        <div class="tile look" class:sel={value === l.id}>
           <button type="button" class="pick" {disabled} onclick={() => (value = l.id)} aria-pressed={value === l.id}>
             {#if img(l.image)}<img src={img(l.image)} alt="" loading="lazy" />{:else}<span class="noimg">{l.name.slice(0, 1)}</span>{/if}
             <span class="n">{l.name}</span>
@@ -87,12 +87,16 @@
   .seg button.on { background: var(--primary-surface); color: var(--primary-surface-foreground); }
   .crumb { margin: 0; font-size: 13px; color: var(--muted-foreground); }
   .link { border: none; background: none; padding: 0; min-height: 0; color: var(--primary); text-decoration: underline; font-size: inherit; font-weight: 400; }
-  .box { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; height: 250px; overflow: auto; padding: 2px; align-content: start; }
-  .card { display: grid; gap: 2px; justify-items: start; text-align: left; padding: 6px; min-height: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-weight: 400; }
-  .card.sel { border: 2px solid var(--primary); background: var(--primary-surface); }
-  .card img, .noimg { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--muted); display: grid; place-items: center; font-size: 22px; font-weight: 700; color: var(--muted-foreground); }
+  /* rows as tall as their tiles; the box scrolls (an overflow:hidden tile let the rows shrink) */
+  .box { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); grid-auto-rows: max-content; gap: 8px; height: 250px; overflow: auto; padding: 2px; align-content: start; }
+  /* flex columns, not grid: a grid row sized itself before the picture's
+     height was known and the name slipped under the next button */
+  .tile { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; text-align: left; padding: 6px; min-height: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-weight: 400; }
+  .tile.sel { border: 2px solid var(--primary); background: var(--primary-surface); }
+  /* a fixed height: a percent-based square was sized after the grid row and hid the name */
+  .tile img, .noimg { width: 100%; height: 110px; flex: none; object-fit: cover; border-radius: 6px; background: var(--muted); display: grid; place-items: center; font-size: 22px; font-weight: 700; color: var(--muted-foreground); }
   .look { padding: 0; overflow: hidden; }
-  .pick { display: grid; gap: 2px; justify-items: start; width: 100%; padding: 6px; min-height: 0; border: none; background: none; text-align: left; font-weight: 400; }
+  .pick { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; width: 100%; padding: 6px; min-height: 0; border: none; background: none; text-align: left; font-weight: 400; }
   .pv { width: 100%; min-height: 30px; padding: 2px; border: none; border-top: 1px solid var(--border); border-radius: 0; background: none; font-size: 12px; }
   .n { font-weight: 600; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .d { font-size: 12px; color: var(--muted-foreground); }

@@ -141,7 +141,7 @@ export function removeAvatar(projectDir) {
 export function avatarClips(projectDir) {
   const a = currentAvatar(projectDir);
   if (!a?.segments?.length) return [];
-  if (a.voBytes !== voBytes(projectDir)) throw new Error("The avatar clips were made for an earlier voice. Make them again at 5. Avatar, or remove them there.");
-  for (const s of a.segments) if (!fs.existsSync(path.join(projectDir, s.file))) throw new Error(`The avatar clip ${s.file} is missing. Make it again at 5. Avatar.`);
+  if (a.voBytes !== voBytes(projectDir)) throw new Error("The avatar clips were made for an earlier voice. Make them again on the 4. Avatar tab, or remove them there.");
+  for (const s of a.segments) if (!fs.existsSync(path.join(projectDir, s.file))) throw new Error(`The avatar clip ${s.file} is missing. Make it again on the 4. Avatar tab.`);
   return a.segments.map((s) => ({ ...s, layout: normalizeLayout(a.layout ?? { style: "full" }) }));
 }

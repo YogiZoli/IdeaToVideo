@@ -31,9 +31,9 @@ test("build-video and render-video wait for the gate before them", () => {
     return JSON.parse(r.stdout.trim().split("\n").at(-1));
   };
   assert.match(run("build-video").message, /Approve the scene table first/);
-  assert.match(run("render-video").message, /Approve the contact sheet first/);
+  assert.match(run("render-video").message, /Approve the preview first/);
   saveProject(proj, setGate(loadProject(proj), "review", { state: "pending" }));
-  assert.match(run("render-video").message, /Approve the contact sheet first/);
+  assert.match(run("render-video").message, /Approve the preview first/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

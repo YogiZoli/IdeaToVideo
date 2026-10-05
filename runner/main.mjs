@@ -751,7 +751,7 @@ const commands = {
 
   // The render, once, locally, after the contact sheet is approved.
   "render-video": async ({ projectDir, quality }) => {
-    if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the contact sheet first.");
+    if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the preview first.");
     appendLog(projectDir, "render: start");
     const r = await timed("render", videoSeconds(projectDir), emit, () => renderVideo(projectDir, { quality: quality === "draft" || quality === "high" ? quality : "standard", onProgress: (p) => emit({ event: "progress", ...p }) }));
     appendLog(projectDir, `render: done, ${r.file}, ${r.seconds}s video in ${r.renderSeconds}s`);

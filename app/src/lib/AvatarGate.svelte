@@ -181,7 +181,7 @@
 
 <section class="card">
   <h2>4. Avatar <span class="opt">optional</span></h2>
-  <p class="hint lead">An avatar can say the opening and the closing of your video, lip-synced to your narration. It costs HeyGen credits; you see the price first. Without it the video is complete. Your recorded CTA segments are separate: they are chosen on the Script tab.</p>
+  <p class="hint lead">An avatar can say the opening and the closing, lip-synced to your narration. It costs HeyGen credits; you see the price first. Without it the video is complete.</p>
 
   {#if !scenesApproved}
     <Needs text="The avatar clips are cut to the first and the last scene. Approve the scenes first." tab="scenes" {goto} />
@@ -199,7 +199,7 @@
     {#if own.length || stock.length}
       <div class="grid">
         <div>
-          <div class="row"><span class="label grow">Who says it</span><button type="button" class="ghost" onclick={() => openUrl("https://app.heygen.com/avatars")}>Open HeyGen</button></div>
+          <div class="row"><span class="label grow">Who says it</span><button type="button" class="link" onclick={() => openUrl("https://app.heygen.com/avatars")}>Make or change avatars in HeyGen</button></div>
           <LookPicker {own} {stock} bind:value={lookId} disabled={locked} preview={showPreview} />
           <!-- svelte-ignore a11y_media_has_caption -->
           {#if preview}<video controls autoplay src={preview}></video>{/if}
@@ -254,8 +254,8 @@
   h2 { margin: 0 0 4px; font-size: 17px; }
   .opt { font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
   .lead { margin: 0 0 12px; }
-  .grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; align-items: start; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  /* the picker on top, full width; place, size and timing under it */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .wrap { flex-wrap: wrap; gap: 14px; margin-bottom: 6px; }
   .grow { flex: 1; }

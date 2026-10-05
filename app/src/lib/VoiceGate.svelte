@@ -228,7 +228,7 @@
         <label class="choice"><input type="radio" bind:group={kind} value="elevenlabs" disabled={!hasEleven} /> Made for this video by ElevenLabs Music{hasEleven ? (usd !== null ? `, about $${usd.toFixed(2)}` : "") : " (needs an ElevenLabs key)"}</label>
         {#if kind === "elevenlabs"}
           <textarea rows="2" bind:value={prompt} aria-label="What the music should sound like"></textarea>
-          <p class="hint">The mood in English. Instrumental only. Commercial use needs a paid ElevenLabs plan.</p>
+          <p class="hint">The mood, in English. Commercial use needs a paid ElevenLabs plan.</p>
         {/if}
         <label class="choice"><input type="radio" bind:group={kind} value="file" disabled={!ownFile} /> My own file{ownFile ? `: ${ownFile.replace("audio/", "")}` : ""}</label>
         <div><button type="button" onclick={chooseMusic}>Choose a music file</button></div>
@@ -276,7 +276,9 @@
   .label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
   .music { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: grid; gap: 8px; margin: 0; }
   .choice { display: flex; gap: 8px; align-items: center; font-size: 14px; }
-  .music textarea { width: 100%; font-size: 13px; }
+  .music textarea { width: 100%; font-size: 13px; min-height: 0; height: 56px; padding: 6px 10px; }
+  .music { gap: 4px; }
+  .music button { min-height: 36px; padding: 4px 12px; font-size: 13px; }
   .players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; scroll-margin-top: 10px; }
   .players div { display: grid; gap: 4px; }
   audio { width: 100%; }

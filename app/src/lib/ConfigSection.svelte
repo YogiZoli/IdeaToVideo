@@ -136,7 +136,7 @@
   {#if config.avatar?.enabled}
     <AvatarPicker bind:lookId={config.avatar!.lookId} keySet={!!keys.heygen} />
     <LayoutPicker bind:style={config.avatar!.style} bind:position={config.avatar!.position} bind:size={config.avatar!.size} />
-    <p class="hint">The default for new videos. You can change it for each video at 5. Avatar.</p>
+    <p class="hint">The default for new videos. You can change it for each video on its 4. Avatar tab.</p>
   {/if}
 {:else if id === "vidiq"}
   <KeyField name="vidiq" label="vidIQ" scope={keyScope} keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />

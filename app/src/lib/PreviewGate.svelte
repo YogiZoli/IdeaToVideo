@@ -298,11 +298,12 @@
   .still img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; }
   .lightbox { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; }
   .backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / 0.75); border: 0; border-radius: 0; cursor: zoom-out; }
-  .sheet { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; width: min(96vw, 1300px); max-height: 94vh; }
+  .sheet { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; width: min(96vw, 1300px); max-height: 94vh; min-width: 0; }
   figure { margin: 0; display: grid; gap: 8px; align-content: center; }
   figure img { width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
   figcaption { display: flex; gap: 8px; align-items: center; justify-content: center; color: white; }
-  aside { background: var(--surface); border-radius: 10px; padding: 12px 14px; overflow: auto; display: grid; gap: 6px; align-content: start; }
+  aside { background: var(--surface); border-radius: 10px; padding: 12px 14px; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-content: start; min-width: 0; }
+  aside textarea, aside select { width: 100%; min-width: 0; }
   .ahead { display: flex; justify-content: space-between; align-items: center; }
   .said { margin: 0; font-style: italic; }
   .row { display: flex; gap: 6px; }

@@ -73,7 +73,7 @@
   </div>
   <div class="box">
     {#each shown as v (v.id)}
-      <div class="card" class:sel={v.id === value}>
+      <div class="tile" class:sel={v.id === value}>
         <button type="button" class="pick" {disabled} onclick={() => (value = v.id)} aria-pressed={v.id === value}>
           <span class="n">{v.name}</span>
           <span class="d">{detail(v) || (v.own ? "Your voice" : "")}</span>
@@ -97,9 +97,9 @@
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; padding: 2px; }
   .seg button { min-height: 34px; border: none; background: none; padding: 4px 12px; font-size: 13px; }
   .seg button.on { background: var(--primary-surface); color: var(--primary-surface-foreground); }
-  .box { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; max-height: 220px; overflow: auto; padding: 2px; align-content: start; }
-  .card { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
-  .card.sel { border: 2px solid var(--primary); background: var(--primary-surface); }
+  .box { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); grid-auto-rows: max-content; gap: 8px; max-height: 220px; overflow: auto; padding: 2px; align-content: start; }
+  .tile { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+  .tile.sel { border: 2px solid var(--primary); background: var(--primary-surface); }
   .pick { flex: 1; min-width: 0; display: grid; justify-items: start; gap: 0; border: none; background: none; padding: 8px 10px; min-height: 0; text-align: left; }
   .pick .n { font-weight: 600; font-size: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pick .d { font-weight: 400; font-size: 12px; color: var(--muted-foreground); }

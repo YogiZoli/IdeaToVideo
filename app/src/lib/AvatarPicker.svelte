@@ -1,13 +1,14 @@
 <script lang="ts">
-  // The default avatar look for new videos (Settings), from the user's own
-  // HeyGen avatars (characters and their looks), then HeyGen's stock looks.
-  // Names only, no pictures, so it loads fast; the avatar step shows the
-  // pictures and previews.
-  import { openUrl } from "@tauri-apps/plugin-opener";
-  import { runner, errorText } from "./api";
+  // The default avatar look for new videos (Settings), with the same picker
+  // as the Avatar tab (LookPicker, DECISIONS 85): first the person, then the
+  // look; the user's own avatars and HeyGen's stock ones on two tabs. The
+  // list with its pictures is loaded once per app run (avatars.ts).
+  import { convertFileSrc } from "@tauri-apps/api/core";
+  import { errorText, runner } from "./api";
+  import { avatarLooks } from "./avatars";
+  import LookPicker, { type Group, type Look } from "./LookPicker.svelte";
+  import Progress from "./Progress.svelte";
 
-  type Look = { id: string; name: string };
-  type Group = { id: string; name: string; note: string | null; looks: Look[] };
   // no fallback on the bindable (see VoicePicker): lookId starts undefined
   let { lookId = $bindable(), keySet }: { lookId?: string | null; keySet: boolean } = $props();
 
@@ -15,14 +16,13 @@
   let stock = $state<Look[]>([]);
   let loading = $state(false);
   let error = $state("");
+  let preview = $state<string | null>(null);
 
   async function load() {
     loading = true;
     error = "";
     try {
-      ({ own, stock } = await runner<{ own: Group[]; stock: Look[] }>("avatar-looks", { service: "heygen", previews: false }));
-      const all = [...own.flatMap((g) => g.looks), ...stock];
-      if (!all.some((l) => l.id === lookId)) lookId = own.flatMap((g) => g.looks)[0]?.id ?? "";
+      ({ own, stock } = await avatarLooks());
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -32,37 +32,40 @@
   $effect(() => {
     if (keySet) load();
   });
+
+  async function showPreview(l: Look) {
+    if (!l.video) return;
+    try {
+      preview = convertFileSrc((await runner<{ file: string }>("avatar-preview", { url: l.video })).file);
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
 </script>
 
 <div class="field">
-  <label for="avatar-look">Default avatar</label>
+  <span class="label">Default avatar</span>
   {#if !keySet}
     <p class="hint">Save your HeyGen key above, then your avatars appear here.</p>
   {:else if loading}
-    <p class="hint">Loading your HeyGen avatars...</p>
+    <Progress command="avatar-looks" label="Loading your HeyGen avatars and their pictures (faster next time)" reveal={false} />
   {:else}
+    <LookPicker {own} {stock} bind:value={lookId} preview={showPreview} />
+    <!-- svelte-ignore a11y_media_has_caption -->
+    {#if preview}<video controls autoplay src={preview}></video>{/if}
     <div class="row">
-      <select id="avatar-look" value={lookId ?? ""} onchange={(e) => (lookId = (e.currentTarget as HTMLSelectElement).value || null)}>
-        <option value="">Choose at the avatar step of each video</option>
-        {#each own as g}
-          <optgroup label={`${g.name}${g.note ? ` (${g.note})` : ""}`}>{#each g.looks as l}<option value={l.id}>{l.name}</option>{/each}</optgroup>
-        {/each}
-        {#if stock.length}
-          <optgroup label="HeyGen stock avatars">{#each stock as l}<option value={l.id}>{l.name}</option>{/each}</optgroup>
-        {/if}
-      </select>
-      <button type="button" class="ghost" onclick={() => openUrl("https://app.heygen.com/avatars")}>Open HeyGen</button>
+      {#if lookId}<button type="button" class="ghost" onclick={() => (lookId = null)}>No default: choose for each video</button>{/if}
     </div>
-    {#if !own.length}<p class="hint">This key sees no avatar of your own. If you have avatars in the HeyGen app, make the API key in the workspace where they are.</p>{/if}
-    <p class="hint">Your own avatars come straight from your HeyGen account, grouped by character. Make or change them in HeyGen.</p>
+    <p class="hint">Used for new videos; you can still change it on the Avatar tab of each video. Make or change avatars in HeyGen: they show up here.</p>
   {/if}
   {#if error}<p class="bad">{error}</p>{/if}
 </div>
 
 <style>
   .field { display: grid; gap: 6px; margin: 10px 0 14px; }
+  .label { font-weight: 600; }
   .row { display: flex; gap: 8px; }
-  .row select { flex: 1; }
+  video { width: 100%; max-height: 240px; border-radius: 8px; background: #000; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
   .bad { color: var(--danger-text); font-size: 13px; margin: 0; }
 </style>

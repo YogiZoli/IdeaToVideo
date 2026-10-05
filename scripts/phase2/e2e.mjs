@@ -137,6 +137,17 @@ check("gate 3: scene table planned, one repair", planned.scenes === 5 && llmCall
   const last = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8")).scenes.at(-1);
   check("CTA: the comment call scene shows its keyword", last.call?.keyword === "START" && last.vars.button_label === "START", JSON.stringify(last.call));
 }
+// Without AI (DECISIONS 85 K2): the simple plan on a copy passes the same
+// checks, and the avatar can be left out on purpose.
+{
+  const copy = `${dir}-simple`;
+  fs.cpSync(dir, copy, { recursive: true });
+  const s = runner("simple-scenes", { projectDir: copy, look: "blue-professional" });
+  check("gate 3: the simple plan without AI passes the checks", s.event === "result" && s.data.scenes > 0 && loadProject(copy).gates.scenes.mode === "default", s.event === "result" ? `${s.data.scenes} scenes` : s.message);
+  const k = runner("skip-gate", { projectDir: copy, gate: "avatar" });
+  check("avatar: left out on purpose", k.event === "result" && loadProject(copy).gates.avatar.state === "skipped");
+  fs.rmSync(copy, { recursive: true, force: true });
+}
 check("gate 3: approved", runner("approve-gate", { projectDir: dir, gate: "scenes" }).event === "result");
 
 // Gate 4: build, lint + check, stills.

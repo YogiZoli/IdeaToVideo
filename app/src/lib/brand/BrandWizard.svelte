@@ -380,7 +380,7 @@
       {#if report.some((r) => !r.ok)}
         <p class="bad">Some text may be hard to read. The Colors screen can fix it with one click.</p>
       {/if}
-      <p class="hint">Save keeps this look for every new video of this Identity. A video that is already built keeps its look until you build it again at 4. Review and render.</p>
+      <p class="hint">Save keeps this look for every new video of this Identity. A video that is already built keeps its look until you build its preview again (5. Preview).</p>
     {/if}
   </WizardShell>
 {/if}

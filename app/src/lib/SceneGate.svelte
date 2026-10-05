@@ -156,7 +156,7 @@
       {#if current === "make-scenes"}
         <div class="keep">
           <p>No AI right now? Make a simple plan without it: plainer scenes, but your video can go on. You can plan with the AI again later.</p>
-          <button type="button" class="primary" disabled={locked} onclick={simple}>Simple plan without AI</button>
+          <button type="button" disabled={locked} onclick={simple}>Simple plan without AI</button>
         </div>
       {/if}
     {:else if gate?.state === "failed" && gate.error}

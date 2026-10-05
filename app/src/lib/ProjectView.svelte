@@ -245,7 +245,8 @@
   /* the tab on screen: raised, joined to the page under it */
   .tab.open { box-shadow: 0 3px 0 0 var(--foreground); opacity: 1; }
   .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--primary); transition: width 0.5s linear; }
-  .body { min-height: 0; overflow: auto; padding: 4px 2px 20px; scroll-padding-bottom: 90px; }
+  /* no bottom padding: the action bar sticks to the very bottom edge */
+  .body { min-height: 0; overflow: auto; padding: 4px 2px 0; scroll-padding-bottom: 90px; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
   @media (max-width: 980px) {
     .tab { padding: 6px 8px; font-size: 12px; }
