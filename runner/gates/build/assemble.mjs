@@ -119,6 +119,16 @@ export function widerFit(html, component) {
   return out;
 }
 
+// Tight tracking is drawn for the registry's own fonts (Inter and the like);
+// with a heavy, wide display face the user picks in the Brand wizard the
+// letters run into each other (Zoltan, 2026-10-06, Archivo Black in
+// headline-slam at -0.5cqw). The build copy never tracks tighter than
+// -0.01em; positive tracking (small caps labels) is left as it is.
+export const MIN_TRACKING = "-0.01em";
+export function trackingFit(html) {
+  return html.replace(/letter-spacing:\s*-\s*(\d*\.?\d+)(em|cqw|cqh|px|rem)/g, (m, v) => (Number(v) === 0 ? m : `letter-spacing: ${MIN_TRACKING}`));
+}
+
 export function transparentGround(html) {
   const grounds = [];
   for (const m of html.matchAll(/(^|[\s}])(#root|\.[A-Za-z0-9_-]+-clip)\s*\{([^{}]*)\}/g)) {
@@ -312,6 +322,10 @@ export function speechCues(sc, words, start, end) {
   });
   if (!cues.some((c) => c !== null)) return null;
   if (!spec.blanks && cues.includes(null)) return null;
+  // The first one is on screen from the start (Zoltan, 2026-10-06: an empty
+  // frame for 3 s while the voice led up to the first item); the rest still
+  // come in as they are said.
+  if (spec.skip === 0 && cues[0] !== null && cues[0] > 0.2) cues[0] = 0.2;
   return cues.map((c) => (c === null ? "" : String(c))).join(",");
 }
 
@@ -629,7 +643,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const footage = footagePlan(table, sentences, look.footage, path.basename(projectDir));
   const underFootage = (n) => look.footage?.mode === "background" && footage.some((f) => f.start < times[n].start + times[n].duration && f.end > times[n].start);
   const fitted = scenes.map((sc, n) => {
-    const html = widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component);
+    const html = trackingFit(widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component));
     return bgComponent || underFootage(n) ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice

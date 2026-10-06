@@ -8,6 +8,12 @@
 // no TTS are needed: this measures the assembler and the engine, not a voice.
 //
 // Usage: node scripts/phase2/pilot.mjs --work <dir> [--no-render] [--theme dark|light]
+//
+// The sampler (phase 3, PRD 14.5): --preset <id,id,...|all> themes the same
+// video with HyperFrames frame presets the way the app does (the preset's
+// Brand Identity Card and its local fonts) instead of the fixed themes. Every
+// planned component once, plus a Hungarian line for the accents (PRD 7).
+// --out <dir> copies each contact sheet there as <preset>.png.
 // Needs the built engine, library and ffmpeg (scripts/fetch-*.mjs) and the
 // render browser (tools-status / browser-ensure).
 
@@ -16,7 +22,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { assemble, BLUE_PROFESSIONAL } from "../../runner/gates/build/assemble.mjs";
+import { assemble, BLUE_PROFESSIONAL, libraryDir } from "../../runner/gates/build/assemble.mjs";
 import { lintAndCheck } from "../../runner/gates/build/index.mjs";
 import { renderVideo } from "../../runner/gates/render/index.mjs";
 import { resolveBrowser, ffmpegPaths } from "../../runner/tools.mjs";
@@ -29,6 +35,8 @@ const { values: args } = parseArgs({
     render: { type: "boolean", default: true },
     "no-render": { type: "boolean", default: false },
     theme: { type: "string" },
+    preset: { type: "string" },
+    out: { type: "string" },
   },
 });
 if (!args.work) {
@@ -60,6 +68,12 @@ const LINES = [
   ["cta-close", "Start your first video today.", { action_line: "Start your first video", button_label: "Open the app" }],
   ["logo-brand-close", "See you in the next one.", { wordmark: "IDEA TO VIDEO", tagline: "From a thought to a film", url: "example.com" }],
 ];
+// The sampler: without the retired closing (DECISIONS 75, the planner no
+// longer picks it), and with a line in Hungarian long accents before the call.
+if (args.preset) {
+  LINES.splice(LINES.findIndex(([c]) => c === "logo-brand-close"), 1);
+  LINES.splice(LINES.findIndex(([c]) => c === "cta-close"), 0, ["per-word-rise", "Győződj meg róla, hogy működik.", { text: "ŐSZINTE SZÓ, GYŰJTSD ŐKET" }]);
+}
 const GAP = 0.35;
 const sentences = [];
 let t = 0.2;
@@ -102,8 +116,14 @@ if (!browser) {
 }
 console.log(`browser: ${browser.source}, ${sentences.length} sentences, ${TOTAL} s`);
 
-for (const name of args.theme ? [args.theme] : Object.keys(THEMES)) {
-  console.log(`theme ${name}`);
+const presets = args.preset === "all"
+  ? Object.keys(JSON.parse(fs.readFileSync(path.join(libraryDir(env), "presets", "MAP.json"), "utf8"))).filter((k) => !k.startsWith("$"))
+  : args.preset ? args.preset.split(",") : null;
+if (args.out) fs.mkdirSync(path.resolve(args.out), { recursive: true });
+const results = [];
+
+for (const name of presets ?? (args.theme ? [args.theme] : Object.keys(THEMES))) {
+  console.log(`${presets ? "preset" : "theme"} ${name}`);
   const dir = path.join(path.resolve(args.work), `pilot-${name}`);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, "audio"), { recursive: true });
@@ -119,15 +139,24 @@ for (const name of args.theme ? [args.theme] : Object.keys(THEMES)) {
   const part = (a, b) => LINES.slice(a, b).map(([, t]) => t).join(" ");
   fs.writeFileSync(path.join(dir, "script.md"), `# Pilot\n\n## OPEN\n\n${part(0, third)}\n\n## 1. The library\n\n${part(third, 2 * third)}\n\n## OWN\n\n${part(2 * third)}\n`);
   const scenes =LINES.map(([component, , vars], i) => ({ component, from: `S${i + 1}`, vars }));
-  fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify({ theme: THEMES[name], scenes }, null, 2) + "\n");
+  fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify(presets ? { scenes } : { theme: THEMES[name], scenes }, null, 2) + "\n");
 
-  const built = await timed("assemble", () => assemble(dir, { env, total: TOTAL, title: `Pilot ${name}` }));
+  const row = { name, assemble: false, check: null, sheet: null, render: null };
+  results.push(row);
+  const built = await timed("assemble", () => assemble(dir, { env, total: TOTAL, title: `Pilot ${name}`, ...(presets ? { look: name } : {}) }));
   if (!built) continue;
-  await timed("lint + check", () => lintAndCheck(dir, { env }));
+  row.assemble = true;
+  row.check = (await timed("lint + check", () => lintAndCheck(dir, { env }))) ? "ok" : "failed";
 
-  await timed("snapshots + contact sheet", () => contactSheet(dir, { env }));
+  const sheet = await timed("snapshots + contact sheet", () => contactSheet(dir, { env }));
+  if (sheet && args.out) {
+    row.sheet = path.join(path.resolve(args.out), `${name}.png`);
+    fs.copyFileSync(sheet.sheet, row.sheet);
+  }
   if (args.render && !args["no-render"]) {
     const r = await timed("render", () => renderVideo(dir, { env }));
     if (r) console.log(`  video: ${r.file}, ${r.seconds} s, rendered in ${r.renderSeconds} s`);
+    row.render = r ? r.file : "failed";
   }
 }
+if (presets) console.log(JSON.stringify(results, null, 2));

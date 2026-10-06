@@ -320,6 +320,7 @@
         <h2>About</h2>
         <p>{PRODUCT} {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
         <p>Design styles from open-design (Apache-2.0): colors, corners and shapes only. Style names describe a look only; not affiliated with or endorsed by the brands named. Fonts: SIL Open Font License (OFL-1.1), via fontsource.</p>
+        <p>Also shipped: Node.js (MIT) and FFmpeg (GPL-3.0, a separate program; its source: git.ffmpeg.org and github.com/BtbN/FFmpeg-Builds). The full list with every license: THIRD-PARTY-NOTICES.md in the app's program folder.</p>
         <p>No support, no installation help.</p>
       </section>
       <LogCard initial={app.log} />

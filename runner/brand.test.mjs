@@ -313,3 +313,10 @@ test("cardTheme: a main colour that fails 3:1 is darkened for the video only", (
   card.colors.primary = "#1d4f9c";
   assert.equal(cardTheme(card).brand, "#1d4f9c", "a passing colour is unchanged");
 });
+
+test("every preset's accent colours read on its background, 3:1 (sampler, 2026-10-06)", () => {
+  for (const id of ["blue-professional", "biennale-yellow", "blockframe", "broadside", "capsule", "cartesian", "cobalt-grid", "code-editorial", "coral", "creative-mode", "editorial-forest"]) {
+    const t = cardTheme(cardForPreset(id));
+    for (const k of ["brand", "accent", "accent-2"]) assert.ok(contrast(t[k], t.bg) >= 3, `${id} ${k} ${t[k]} on ${t.bg}`);
+  }
+});

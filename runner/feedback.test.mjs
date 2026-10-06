@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { speechCues, widerFit, CTA_ADVANCE, loadComponent } from "./gates/build/assemble.mjs";
+import { speechCues, widerFit, trackingFit, CTA_ADVANCE, loadComponent } from "./gates/build/assemble.mjs";
 import { withoutCamera, mountsOf } from "./gates/review/index.mjs";
 import { lengthIssues } from "./gates/script/index.mjs";
 import { ctaPlan, normalizeProfile } from "./cta/profile.mjs";
@@ -44,6 +44,7 @@ test("speech cues: list items appear when the voice says them", () => {
   assert.equal(speechCues({ component: "grid-card-assemble", vars: { items: "Write,Edit,Publish" } }, words, 10, 14), "0.2,,1.4", "the grid keeps its cascade for an unsaid item");
   assert.equal(speechCues({ component: "constellation-hub", vars: { nodes: "Write,Edit" } }, words, 10, 14), null, "the hub keeps its spread unless every node is said");
   assert.equal(speechCues({ component: "kinetic-type-swap", vars: { options: "Plan,Record,Publish" } }, words, 10, 14), "0.7,1.4", "the first option shows from the start");
+  assert.equal(speechCues({ component: "grid-card-assemble", vars: { items: "Record,Publish" } }, words, 10, 14), "0.2,1.4", "the first card is there from the start, never an empty frame (2026-10-06)");
   assert.equal(speechCues({ component: "per-word-rise", vars: { text: "x" } }, words, 10, 14), null);
   assert.equal(speechCues({ component: "grid-card-assemble", vars: { items: "Later" } }, words, 10, 14), null, "only words inside the scene");
   assert.equal(speechCues({ component: "grid-card-assemble", vars: { items: "Write", cues: "1" } }, words, 10, 14), null, "a set cue stays");
@@ -77,4 +78,11 @@ test("a scene under 2 s of its own joins its neighbour instead of failing the ta
   assert.deepEqual(joinShort(a, { sentences, total: 31.2, gaps }).scenes.map((s) => `${s.from}-${s.to ?? s.from}`), ["S1-S1", "S2-S3"]);
   const call = new Map([["S2", { keyword: "GUIDE" }]]);
   assert.deepEqual(joinShort(a, { sentences, total: 31.2, gaps, calls: call }).scenes.length, 3, "never into a comment call scene, and no other neighbour");
+});
+
+test("tracking: never tighter than -0.01em in the build copy, positive tracking and the registry file untouched (2026-10-06)", () => {
+  assert.equal(trackingFit("h1{letter-spacing: -0.5cqw} b{letter-spacing:-0.045em} i{letter-spacing: 0.3em} u{letter-spacing: 0}"), "h1{letter-spacing: -0.01em} b{letter-spacing: -0.01em} i{letter-spacing: 0.3em} u{letter-spacing: 0}");
+  const slam = loadComponent("headline-slam").html;
+  assert.match(slam, /letter-spacing: -0\.5cqw/, "the registry file keeps its own value");
+  assert.doesNotMatch(trackingFit(slam), /letter-spacing:\s*-0\.5cqw/);
 });

@@ -1204,4 +1204,29 @@
       kulcsszóé, a kulcsszó a kapocs, kulcsszavanként legfeljebb 3, váltakozva.
     Tesztek: 233 Node (2 új a motorokra és az importra, 1 a szövegre), cargo
     test zöld.
+102. **Sampler, licenclista, updater kulcs, javítások Zoltan esti videója
+    után** (2026-10-06, `docs/pilot/sampler.md`, `feedback/2026-10-06/NOTES.md`):
+    - **Sampler (PRD 14.5):** `scripts/phase2/pilot.mjs --preset all`, a 11
+      HyperFrames preset, 13 komponens és egy magyar ékezetes sor: mind a 11
+      build és check 0 hiba, az ékezetek jók. Talált hiba: a második és
+      harmadik szín nem volt olvashatóra igazítva (sárga kiemelt szó krémen).
+      Javítva: `cardTheme` mindhárom színt 3:1-re igazítja (teszt).
+    - **Betűköz:** a build-másolat soha nem szorosabb -0.01em-nél (`trackingFit`),
+      mert a registry szoros betűköze a user vastag betűjével összeér (Zoltan
+      videója: Archivo Black, headline-slam). A registry fájl érintetlen.
+    - **Nincs üres kép a kimondásra váró listánál:** a grid-card-assemble és a
+      constellation-hub első eleme a jelenet elején megjelenik, a többi a
+      kimondáskor (Zoltan: 3 mp üres kép).
+    - **THIRD-PARTY-NOTICES.md** (`scripts/notices.mjs`, a lockfájlokból, a
+      Rust crate-ekből és a csomagolt részekből), a telepítőbe kerül, az About
+      oldal hivatkozik rá, és kiírja a Node.js és az FFmpeg (GPL-3.0, külön
+      program, a forrás helye) sorát (DECISIONS 43 teljesítve).
+    - **Updater kulcspár** (Zoltan kérte): a nyilvános kulcs a repóba kerül az
+      updater beállításakor; a privát kulcs és a jelszava csak
+      `C:/Users/gdp/ITV-updater-key` alatt, onnan Zoltan a jelszókezelőjébe
+      teszi, és a mappát törli. Repóba, logba, chatbe nem került.
+    - Nyitott, Zoltan döntésére (lásd a NOTES-ot): ikonkönyvtár a rajzokhoz (a
+      HyperFrames registryben nincs ikonkészlet, csak két ikon-mozgás elem), a
+      kimondott szó kiemelése, élénkebb jelenetek, és a CTA-szegmens, nyitó és
+      záró klip közös modellje.
 
