@@ -243,7 +243,7 @@ Kész (2026-09-30):
    a gépet; alvás és csend jelzése; beragadt "Running" a mag tudása alapján;
    Autopilot folytatás megszakadás után; render állapot a projektben;
    felületi hibahatár; "Export diagnostics" zip. Tesztek: 210 Node, 47 Rust, e2e 33/33.
-   Telepítő: commit afc0118 (2026-10-06 00:45, 99 MB), Zoltan próbájára vár.
+   Telepítő: commit c105d15 (2026-10-06, a checkinnel, 99 MB), Zoltan próbájára vár.
    **Következő: Zoltan próbája** (a napló: `node scripts/log-summary.mjs`),
    utána a fázis lezárása (Mac build, STATUS, DECISIONS, SPEC, Drive tükör,
    PR a main felé).
