@@ -36,23 +36,26 @@ test("the lid: closed for HeyGen, open for the rest", async () => {
   assert.match(adviceText("render-video"), /lid open.*runs on this computer/);
 });
 
-test("signs of life: quiet but alive, silent, slept, and a busy service", async () => {
-  const { fresh, apply, lifeText, measure } = await import("../../app/src/lib/progressInfo.ts");
+test("the check-in: working, waiting for a service, seems stuck; the sleep; a busy service", async () => {
+  const { fresh, apply, lifeText, pulseText, measure } = await import("../../app/src/lib/progressInfo.ts");
   const t = fresh("make-scenes", "C:/P/x");
   apply(t, { step: "estimate", expectSeconds: 30 });
-  const now = Date.now();
+  let now = Date.now();
   assert.deepEqual(lifeText(t, now), []);
-  t.lastEvent = now - 120000;
-  t.alive = now - 10000;
-  assert.match(lifeText(t, now)[0], /No news for 2 min, but it is alive/);
-  t.alive = now - 200000;
-  assert.match(lifeText(t, now)[0], /No sign of life for 3 min 20 s.*5 minutes/);
+  assert.equal(pulseText(t, now), "");
+  apply(t, { step: "pulse", state: "waiting", busy: false, quiet: 120 });
+  t.lastEvent = Date.now() - 120000;
+  now = Date.now();
+  assert.match(pulseText(t, now), /^Checked 0 s ago: waiting for the service$/);
+  assert.match(lifeText(t, now)[0], /Waiting for the service: no answer for 2 min yet/);
+  apply(t, { step: "pulse", state: "working", busy: true });
+  assert.match(lifeText(t, Date.now())[0], /No new step for 2 min, but it is busy/);
+  apply(t, { step: "pulse", state: "stuck" });
+  apply(t, { step: "stalled" });
+  assert.match(lifeText(t, Date.now())[0], /seems stuck.*press Stop/);
+  assert.ok(Date.now() - t.lastEvent >= 120000, "check-ins are not news");
   apply(t, { step: "slept", seconds: 720 });
   assert.match(lifeText(t, Date.now())[0], /slept for 12 min during/);
-  // a heartbeat changes nothing but the time of life
-  const before = { ...t };
-  apply(t, { step: "alive" });
-  assert.equal(t.phase, before.phase);
   // a busy service says how long it waits, and the estimate grows by it
   apply(t, { step: "retry", waitSeconds: 30, message: "Gemini is busy (HTTP 503). Trying again in 30 s, round 2 of 4." });
   assert.match(t.phase, /Trying again in 30 s/);

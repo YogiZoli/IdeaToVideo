@@ -82,17 +82,30 @@ export function adviceText(command: string): string {
   }
 }
 
-/** The lines about signs of life under a bar: no news for a while, the
- * computer slept, a service is busy. Empty when all is normal. */
+/** The check-in (runner.rs, every 15 s): is the step working, waiting for
+ * a service, or does it seem stuck. Only the state, in words (Zoltan,
+ * 2026-10-06: the status is enough, not what it uses). */
+export type PulseState = "working" | "waiting" | "stuck";
+const PULSE_WORDS: Record<PulseState, string> = { working: "working", waiting: "waiting for the service", stuck: "seems stuck" };
+
+/** "Checked 8 s ago: working", or "" before the first check-in. */
+export function pulseText(t: Track, now: number): string {
+  if (!t.pulse || t.waiting) return "";
+  return `Checked ${span((now - t.pulse.at) / 1000)} ago: ${PULSE_WORDS[t.pulse.state]}`;
+}
+
+/** The lines under a bar when something is not plain: the computer slept,
+ * a step is quiet for a while, or it seems stuck. Nothing is ever stopped
+ * by the app; the user decides. Empty when all is normal. */
 export function lifeText(t: Track, now: number): string[] {
   const out: string[] = [];
   if (t.slept > 0) out.push(`The computer slept for ${span(t.slept)} during this step, so the step paused; the clock counts that time too.`);
+  if (t.waiting) return out;
   const quiet = (now - t.lastEvent) / 1000;
-  const alive = t.alive === null ? null : (now - t.alive) / 1000;
-  if (!t.waiting && quiet > 60) {
-    if (alive !== null && alive < 45) out.push(`No news for ${span(quiet)}, but it is alive: the app checked ${Math.round(alive)} s ago. Some steps are quiet for a while.`);
-    else out.push(`No sign of life for ${span(alive ?? quiet)}. If it stays like this for 5 minutes, the app stops it by itself and says so; you can also press Stop.`);
-  }
+  const state = t.pulse?.state;
+  if (state === "stuck") out.push(`This step seems stuck: nothing has moved for ${quiet >= 600 ? span(quiet) : "10 min"}, no work and no news. You can wait, it goes on as long as it runs, or press Stop.`);
+  else if (quiet > 60 && state === "working") out.push(`No new step for ${span(quiet)}, but it is busy working on it.`);
+  else if (quiet > 60 && state === "waiting") out.push(`Waiting for the service: no answer for ${span(quiet)} yet. The app is still connected and checks every 15 s.`);
   return out;
 }
 
@@ -144,13 +157,15 @@ export type Track = {
   alive: number | null;
   /** seconds the computer slept during the step */
   slept: number;
+  /** the last check-in of the core (runner.rs) */
+  pulse: { state: PulseState; at: number } | null;
 };
 
 const BUILD_FLOORS: Record<string, number> = { build: 0, lint: 5, check: 12, snapshots: 72, sheet: 95 };
 const VOICE_TAIL: Record<string, number> = { joining: 92, mixing: 95, sentences: 99 };
 
 export function fresh(command: string, project: string | null): Track {
-  return { command, project, started: Date.now(), expect: null, base: null, real: null, realFrom: null, floor: 0, phase: null, waiting: null, last: {}, lastEvent: Date.now(), alive: null, slept: 0 };
+  return { command, project, started: Date.now(), expect: null, base: null, real: null, realFrom: null, floor: 0, phase: null, waiting: null, last: {}, lastEvent: Date.now(), alive: null, slept: 0, pulse: null };
 }
 
 function setReal(t: Track, value: number) {
@@ -165,6 +180,12 @@ export function apply(t: Track, s: Record<string, unknown>) {
     t.alive = Date.now();
     return;
   }
+  if (s.step === "pulse" && (s.state === "working" || s.state === "waiting" || s.state === "stuck")) {
+    t.pulse = { state: s.state, at: Date.now() };
+    return;
+  }
+  // the core's log marks for a stuck step and a moving one: not news
+  if (s.step === "stalled" || s.step === "moving") return;
   t.lastEvent = Date.now();
   t.alive = Date.now();
   if (s.step === "slept" && typeof s.seconds === "number") {

@@ -211,10 +211,21 @@ fn handle_line(line: &str, on_progress: &mut dyn FnMut(Value)) -> Option<Result<
     }
 }
 
-/// No line from the runner for this long means it is stuck: it is stopped.
-/// The runner says "alive" every 20 s (main.mjs), even while it waits for a
-/// slow service, so only a frozen process stays silent this long.
-pub const SILENCE_SECS: u64 = 300;
+/// The check-in (Zoltan, 2026-10-06: look first, never stop a step unseen).
+/// Every PULSE_SECS the core looks at the run: is the runner still talking
+/// (it says "alive" every 20 s, main.mjs), and does any of its processes
+/// work (CPU time of the whole tree grows). The UI shows the state in words;
+/// nothing is ever stopped by it, only the user's Stop does that.
+pub const PULSE_SECS: u64 = 15;
+/// No news, no work, this long: the UI says the step seems stuck and offers
+/// Stop. A step waiting for a service (AI, voice, HeyGen) does no work while
+/// it waits, so "no work" only counts for steps on this computer.
+pub const STALL_SECS: u64 = 600;
+/// The steps that do their work on this computer.
+const LOCAL_WORK: &[&str] = &[
+    "build-video", "check-video", "render-video", "avatar-layout", "brand-preview", "motion-preview", "set-music", "simple-scenes",
+    "backup-project", "backup-all", "restore-project", "browser-ensure",
+];
 
 /// Every process one runner run starts: Node and everything Node starts (the
 /// render's Chrome, ffmpeg). Windows: a Job Object that kills them all when
@@ -259,6 +270,34 @@ impl Tree {
     #[cfg(unix)]
     fn of(child: &std::process::Child) -> Option<Tree> {
         Some(Tree { pgid: child.id() as i32 })
+    }
+
+    /// CPU seconds every process of the run used so far (the ones that ended
+    /// too), the measure of "is it working".
+    #[cfg(windows)]
+    pub fn cpu_seconds(&self) -> Option<f64> {
+        use windows_sys::Win32::System::JobObjects::{JobObjectBasicAccountingInformation, QueryInformationJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION};
+        // SAFETY: a query on the job handle this Tree owns, into a local struct.
+        unsafe {
+            let mut info: JOBOBJECT_BASIC_ACCOUNTING_INFORMATION = std::mem::zeroed();
+            let size = std::mem::size_of::<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>() as u32;
+            let ok = QueryInformationJobObject(self.job as _, JobObjectBasicAccountingInformation, &mut info as *mut _ as *mut _, size, std::ptr::null_mut()) != 0;
+            ok.then(|| (info.TotalUserTime + info.TotalKernelTime) as f64 / 10_000_000.0)
+        }
+    }
+
+    #[cfg(unix)]
+    pub fn cpu_seconds(&self) -> Option<f64> {
+        let out = Command::new("ps").args(["-A", "-o", "pgid=,time="]).stderr(Stdio::null()).output().ok()?;
+        let text = String::from_utf8_lossy(&out.stdout);
+        let mut total = 0.0;
+        for line in text.lines() {
+            let mut it = line.split_whitespace();
+            if it.next().and_then(|g| g.parse::<i32>().ok()) == Some(self.pgid) {
+                total += it.next().map(ps_time).unwrap_or(0.0);
+            }
+        }
+        Some(total)
     }
 
     /// Ends every process of the run at once.
@@ -325,12 +364,24 @@ impl Control {
     }
 }
 
-/// The user's sentence for a run the watchdog ended.
-pub fn silence_text(command: &str) -> String {
-    format!(
-        "The step ({command}) gave no sign of life for {} minutes, so the app ended it. Nothing else is lost: press the button again to retry.",
-        SILENCE_SECS / 60
-    )
+/// "[[dd-]hh:]mm:ss[.cc]" from ps, in seconds.
+#[cfg(unix)]
+fn ps_time(t: &str) -> f64 {
+    let (days, rest) = t.split_once('-').map(|(d, r)| (d.parse::<f64>().unwrap_or(0.0), r)).unwrap_or((0.0, t));
+    let secs = rest.split(':').fold(0.0, |acc, p| acc * 60.0 + p.parse::<f64>().unwrap_or(0.0));
+    days * 86400.0 + secs
+}
+
+/// The state of a run at a check-in, for the UI: working, waiting (for a
+/// service, which is normal), or stuck (nothing at all for STALL_SECS).
+pub fn pulse_state(local: bool, quiet: u64, idle: u64, busy: bool, stall: u64) -> &'static str {
+    if quiet >= stall || (local && idle >= stall) {
+        "stuck"
+    } else if busy || quiet < PULSE_SECS * 4 {
+        "working"
+    } else {
+        "waiting"
+    }
 }
 
 /// Runs one command to the end. Blocking: call it from a blocking task.
@@ -345,11 +396,11 @@ pub fn run(
     diag: &mut String,
     on_progress: &mut dyn FnMut(Value),
 ) -> Result<Value, String> {
-    run_with_silence(paths, command, request, api_key, control, diag, on_progress, SILENCE_SECS)
+    run_with(paths, command, request, api_key, control, diag, on_progress, (PULSE_SECS, STALL_SECS))
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_with_silence(
+fn run_with(
     paths: &Paths,
     command: &str,
     request: &Value,
@@ -357,7 +408,7 @@ fn run_with_silence(
     control: &Control,
     diag: &mut String,
     on_progress: &mut dyn FnMut(Value),
-    silence: u64,
+    (pulse_secs, stall): (u64, u64),
 ) -> Result<Value, String> {
     check_command(command)?;
     if let Some(why) = control.stopped() {
@@ -446,21 +497,43 @@ fn run_with_silence(
     });
 
     let mut outcome = None;
-    let mut last = std::time::Instant::now();
+    let local = LOCAL_WORK.contains(&command);
+    let now = std::time::Instant::now;
+    // last line of any kind (heartbeat too), last real step, last CPU work
+    let (mut heard, mut news, mut worked, mut pulsed) = (now(), now(), now(), now());
+    let mut cpu = None::<f64>;
+    let mut stuck = false;
     loop {
         match rx.recv_timeout(std::time::Duration::from_millis(500)) {
             Ok(line) => {
-                last = std::time::Instant::now();
+                heard = now();
+                if !line.contains("\"step\":\"alive\"") {
+                    news = now();
+                }
                 if let Some(o) = handle_line(&line, on_progress) {
                     outcome = Some(o);
                 }
             }
-            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-                if last.elapsed().as_secs() >= silence && control.stopped().is_none() {
-                    control.stop(&silence_text(command));
-                }
-            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
             Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+        if pulsed.elapsed().as_secs() < pulse_secs {
+            continue;
+        }
+        pulsed = now();
+        // the check-in: is any process of the run working?
+        let used = control.tree.lock().ok().and_then(|t| t.as_ref().and_then(Tree::cpu_seconds));
+        let busy = matches!((cpu, used), (Some(a), Some(b)) if b - a >= 0.01 * pulse_secs as f64);
+        if busy || (used.is_some() && cpu.is_none()) {
+            worked = now();
+        }
+        cpu = used.or(cpu);
+        let state = pulse_state(local, heard.elapsed().as_secs(), worked.elapsed().as_secs().min(news.elapsed().as_secs()), busy, stall);
+        on_progress(json!({ "event": "progress", "step": "pulse", "state": state, "busy": busy, "quiet": news.elapsed().as_secs() }));
+        // once into the log when it looks stuck, and once when it moves again
+        if (state == "stuck") != stuck {
+            stuck = state == "stuck";
+            on_progress(json!({ "event": "progress", "step": if stuck { "stalled" } else { "moving" }, "quiet": news.elapsed().as_secs(), "local": local }));
         }
     }
     let _ = out_reader.join();
@@ -596,31 +669,46 @@ mod tests {
         assert!(e.contains("No API key"), "{e}");
     }
 
-    // Stop ends the run at once, with its reason; the watchdog stops a
-    // runner that says nothing (here: a script that only sleeps).
+    // Stop ends the run at once, with its reason. A runner that says nothing
+    // is never stopped by the app: the check-in reports it stuck, the user
+    // decides (Zoltan, 2026-10-06).
     #[test]
-    fn stop_and_silence_end_a_run() {
+    fn a_silent_run_is_reported_not_stopped_and_stop_ends_it() {
         let dir = std::env::temp_dir().join(format!("itv-stop-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let script = dir.join("sleepy.mjs");
         std::fs::write(&script, "setTimeout(() => {}, 60000);\n").unwrap();
         let paths = Paths { node: PathBuf::from("node"), script: script.clone(), ffmpeg: None, engine: None, data: None };
-        let t0 = std::time::Instant::now();
-        let e = run_with_silence(&paths, "providers", &json!({}), None, &Control::default(), &mut String::new(), &mut |_| {}, 2).unwrap_err();
-        assert!(e.contains("no sign of life"), "{e}");
-        assert!(t0.elapsed().as_secs() < 20);
-
         let control = std::sync::Arc::new(Control::new(Some(7)));
         let c2 = control.clone();
-        let stopper = std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(1500));
-            c2.stop("Stopped by you.");
+        let (tx, rx) = std::sync::mpsc::channel::<Value>();
+        let runner = std::thread::spawn(move || {
+            let tx = std::sync::Mutex::new(tx);
+            run_with(&paths, "render-video", &json!({}), None, &c2, &mut String::new(), &mut |v| { let _ = tx.lock().unwrap().send(v); }, (1, 3))
         });
         let t0 = std::time::Instant::now();
-        let e = run(&paths, "providers", &json!({}), None, &control, &mut String::new(), &mut |_| {}).unwrap_err();
-        stopper.join().unwrap();
-        assert_eq!(e, "Stopped by you.");
-        assert!(t0.elapsed().as_secs() < 20);
+        let mut said = Vec::new();
+        while t0.elapsed().as_secs() < 20 && !said.iter().any(|v: &Value| v["step"] == "stalled") {
+            if let Ok(v) = rx.recv_timeout(std::time::Duration::from_millis(200)) {
+                said.push(v);
+            }
+        }
+        assert!(said.iter().any(|v| v["step"] == "pulse"), "check-ins: {said:?}");
+        assert!(said.iter().any(|v| v["step"] == "stalled"), "reported stuck: {said:?}");
+        assert!(!runner.is_finished(), "never stopped by the app");
+        control.stop("Stopped by you.");
+        assert_eq!(runner.join().unwrap().unwrap_err(), "Stopped by you.");
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn pulse_states() {
+        // a busy render is working, a quiet AI call is waiting, a dead quiet
+        // local step or a runner that says nothing at all is stuck
+        assert_eq!(pulse_state(true, 5, 0, true, 600), "working");
+        assert_eq!(pulse_state(false, 20, 900, false, 600), "working");
+        assert_eq!(pulse_state(false, 70, 900, false, 600), "waiting");
+        assert_eq!(pulse_state(true, 70, 900, false, 600), "stuck");
+        assert_eq!(pulse_state(false, 700, 900, false, 600), "stuck");
     }
 }

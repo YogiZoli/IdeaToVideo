@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { childEnv, hfHome, percentOf, managedBrowser, systemChromeCandidates, resolveBrowser, ensureBrowser, toolsStatus, runHyperframes } from "./tools.mjs";
+import { childEnv, hfHome, percentOf, managedBrowser, systemChromeCandidates, resolveBrowser, ensureBrowser, toolsStatus, runHyperframes, ENGINE_IDLE_MS } from "./tools.mjs";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "itv-tools-"));
 const exe = process.platform === "win32" ? "chrome-headless-shell.exe" : "chrome-headless-shell";
@@ -83,9 +83,10 @@ test("tools status reports a missing engine, ffmpeg and browser plainly", () => 
   fs.rmSync(data, { recursive: true, force: true });
 });
 
-// 2026-10-06: an engine that hangs (a stuck browser) is stopped with a
-// sentence, it never runs forever.
-test("a silent engine is stopped after the idle time", async () => {
+// The engine has no limit of its own by default (the core's check-in tells
+// the user instead); a caller's own limit still ends it with a sentence.
+test("a silent engine is stopped only when a caller asks for a limit", async () => {
+  assert.equal(ENGINE_IDLE_MS, 0);
   const engine = tmp();
   const bin = path.join(engine, "node_modules", "hyperframes", "bin");
   fs.mkdirSync(bin, { recursive: true });

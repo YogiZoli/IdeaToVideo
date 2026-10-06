@@ -234,19 +234,25 @@ Kész (2026-09-30):
    **Hibátlanítás: kész** (2026-10-06, DECISIONS 91), a cél a megbízható
    futás és az átláthatóság. Stop gomb minden haladásjelzőn; folyamatfa
    (Windows Job Object), így a Stop, az őrkutya és a kilépés a Chrome-ot és
-   az ffmpeg-et is leállítja; őrkutya (5 perc csend, a motornál 15 perc);
+   az ffmpeg-et is leállítja; checkin 15 mp-enként (working, waiting,
+   seems stuck), automatikus leállítás nélkül (DECISIONS 92);
    türelmes újrapróbálás (AI kb. 3 perc körökben, a sáv kiírja; hang és
    HeyGen hívásonként); nincs dupla fizetés (megőrzött hangblokkok, HeyGen
    megrendelések átvétele); két javító kör a scriptnél és a jelenet-táblánál,
    az ízlésbeli eltérés csak figyelmeztetés; lépésenként kiírva, lecsukhatod-e
    a gépet; alvás és csend jelzése; beragadt "Running" a mag tudása alapján;
    Autopilot folytatás megszakadás után; render állapot a projektben;
-   felületi hibahatár; "Export diagnostics" zip. Tesztek: 211 Node, 46 Rust, e2e 33/33.
+   felületi hibahatár; "Export diagnostics" zip. Tesztek: 210 Node, 47 Rust, e2e 33/33.
    Telepítő: commit afc0118 (2026-10-06 00:45, 99 MB), Zoltan próbájára vár.
    **Következő: Zoltan próbája** (a napló: `node scripts/log-summary.mjs`),
    utána a fázis lezárása (Mac build, STATUS, DECISIONS, SPEC, Drive tükör,
    PR a main felé).
-   Később: stock kereső (DECISIONS 90, a pilot után); az OpenArt kimarad;
+   **Stock kereső: új terv, Zoltan döntésére vár** (DECISIONS 93,
+   `docs/stock.md`): Pixabay és Coverr az első kör, az Unsplash és a Pexels
+   kulcsra vár.
+   **AI B-roll (generált klipek): terv, Zoltan döntésére vár** (DECISIONS 94,
+   `docs/ai-broll.md`, benne a prompt egy új chathez).
+   Később: az OpenArt kimarad;
    élő előnézet renderelés nélkül (K9 b, Zoltan még nem döntött);
    lokalizáció és fordítás (DECISIONS 86). A PDT import és a Translation
    Pack külön chatben a PDT repóban.

@@ -134,15 +134,15 @@ async fn run_command(
         let (mut last_step, mut last_bucket) = (String::new(), -1i64);
         let mut on_progress = |v: Value| {
             let step = v.get("step").and_then(Value::as_str).unwrap_or("").to_string();
-            if step == "alive" {
-                // a heartbeat: for the UI's "last sign of life", never logged
+            if step == "alive" || step == "pulse" {
+                // a heartbeat or a check-in: for the bar's state, never logged
                 let _ = app.emit("runner-progress", runner::progress_payload(&command, project.as_deref(), v));
                 return;
             }
             let bucket = v.get("percent").and_then(Value::as_f64).map(|p| (p / 10.0) as i64);
-            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "repairing" | "estimate" | "slept" | "resumed");
+            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "repairing" | "estimate" | "slept" | "stalled" | "moving");
             if always || step != last_step || bucket.is_some_and(|b| b != last_bucket) {
-                let level = if matches!(step.as_str(), "retry" | "fallback" | "repairing" | "slept") { "warn" } else { "info" };
+                let level = if matches!(step.as_str(), "retry" | "fallback" | "repairing" | "slept" | "stalled") { "warn" } else { "info" };
                 core.log.write("runner", level, "run_progress", json!({ "command": command, "progress": log::safe(&v) }), &secrets);
                 last_step = step;
                 if let Some(b) = bucket {

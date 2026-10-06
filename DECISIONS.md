@@ -941,9 +941,8 @@
       a futó leáll mindenével. Fizetős lépésnél (AI, hang, zene, HeyGen) egy
       megerősítés mondja meg, mi marad kifizetve. A leállítás nem hiba: szürke
       dobozban "Stopped by you." (ITV-STOPPED).
-    - **Őrkutya:** a runner 20 mp-enként életjelet ad; 5 perc csend után a mag
-      leállítja ("gave no sign of life", ITV-STUCK). A videómotor 15 percnyi
-      kimenet nélküli állás után áll le (egy render minden kockát kiír).
+    - **Őrkutya:** az automatikus leállítás aznap kikerült, helyette
+      checkin: DECISIONS 92.
     - **Türelmes újrapróbálás:** AI: modellenként 3 gyors próba, a többi
       modell, majd várakozás és új kör (15, 30, 45, 60 mp, kb. 3 perc), a sáv
       kiírja ("Gemini is busy (HTTP 503). Trying again in 30 s"). A "Test key"
@@ -991,3 +990,51 @@
       olvashatók, és egy elbukott futásnál a runner stderr-je.
     - **Windows fájlzár:** a `project.json` egyedi ideiglenes fájllal és kb. 2
       mp-es újrapróbálással íródik (vírusirtó, felhő-szinkron).
+92. **Checkin az őrkutya helyett: előbb megnézi, a user dönt** (Zoltan,
+    2026-10-06). A 91. pont automatikus leállítása (5 perc csend, a motornál
+    15 perc) kikerül: egy lépést soha nem állít le az app magától, csak a
+    Stop gomb.
+    - A Rust mag 15 mp-enként ránéz a futásra: beszél-e a runner (20 mp-es
+      életjel), és dolgozik-e bármelyik folyamata (a teljes folyamatfa
+      processzorideje nő-e; Windows: a Job Object elszámolása, macOS: `ps`).
+    - A sávon csak az állapot látszik, szám nélkül: "Checked 8 s ago:
+      working", "waiting for the service" vagy "seems stuck".
+    - "Seems stuck": 10 percig se életjel, vagy egy a gépen futó lépésnél
+      (render, build, ellenőrzés) se munka, se új lépés. Egy szolgáltatásra
+      váró lépés (AI, hang, HeyGen) várakozás közben nem dolgozik, ezért ott
+      ez nem számít elakadásnak. A sáv ilyenkor kiírja, hogy lehet várni
+      vagy Stopot nyomni.
+    - A naplóba egyszer kerül be, amikor elakadtnak tűnik ("stalled"), és
+      egyszer, amikor újra mozog ("moving").
+    - A kilépés marad, ahogy volt: az X a tálcára tesz, minden fut tovább;
+      a Quit (megerősítés után) mindent leállít, a Chrome-ot és az ffmpeg-et
+      is.
+93. **Stock videó és kép: új terv, még nem épül** (Zoltan, 2026-10-06),
+    `docs/stock.md`, a 90. pont vázlatát váltja. Zoltan pár nap múlva dönt.
+    - Első kör: Pixabay és Coverr (mindkettőhöz van kulcsa). Az Unsplash
+      (jelentkezés beadva 2026-10-06) és a Pexels (új kulcs szünetel) rejtve
+      marad, amíg nincs kulcs. Shutterstock, Storyblocks, Getty félretéve.
+    - Nagyon egyszerű kereső, a HeyGenéhez hasonló: Videos és Images fül,
+      Landscape vagy Portrait, licenc szerinti szűrő, HD vagy 4K, kártyák
+      "Use" gombbal; a Scenes tabon jelenetenként és a Footage oldalon.
+    - Licenc minden elemhez eltéve, `credits` a `publish.json`-ban, forrássor
+      a YouTube leírásban.
+    - **Mennyi stock (Claude döntése, Zoltan rábízta; felülbírálható):** csak
+      ahol a narráció valami láthatót mond; legfeljebb minden harmadik
+      jelenet, kettő nem jön egymás után, CTA alá soha, a saját felvétel
+      előnyt kap. Később a Settingsben választható (Off, Some, More).
+    - Képek lassú mozgással, saját mozgás nélkül: jelölt a registry
+      `yt-camera-move` komponense és a Motion profil "Push in" kamerája.
+94. **AI B-roll: generált, egyedi klipek, terv, még nem épül** (Zoltan,
+    2026-10-06), `docs/ai-broll.md`. Zoltan: a videó alatti forráslista és a
+    copyright vita kockázata helyett egyedi, generált klip. A runner a user
+    saját kulcsával hívja a generátort (HeyGen Video 1 a meglévő HeyGen
+    kulccsal, Veo 3.1 Lite a meglévő Gemini kulccsal), letölti a klipet,
+    ami a felvétel-könyvtárba kerül; a HyperFrames rendereli. Becslés egy 8
+    perces videóra (kb. 60 mp B-roll): 1,8 USD (HeyGen Video 1) vagy 4,8 USD
+    (Veo 3.1 Lite, 1080p). Becsült ár és jóváhagyás minden megrendelés előtt,
+    költségplafon videónként, Autopilotban alapból ki. A Remotion nem
+    generátor, és a render a HyperFrames marad. A YouTube "altered or
+    synthetic content" jelölését az app jelzi. A stock tervben
+    (DECISIONS 93) a forrásmegjelölés csak belül tárolódik, a videó alá nem
+    kerül.

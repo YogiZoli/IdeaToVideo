@@ -20,7 +20,7 @@ const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.
 const listeners = {};
 window.__emit = (event, payload) => (listeners[event] ?? []).forEach((h) => window["_" + h]?.({ event, payload, id: 1 }));
 const LONG = { "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
-// ?quiet=1: no heartbeat (the bar's "no sign of life" line); ?slept=1: the
+// ?quiet=1: no heartbeat, ?stuck=1: the check-in says stuck (the bar's "no sign of life" line); ?slept=1: the
 // computer slept during the job; Stop (stop_job) ends a job with its reason.
 let nextJob = 10;
 async function longJob(command, request) {
@@ -39,6 +39,8 @@ async function longJob(command, request) {
       throw "Stopped by you.";
     }
     if (!q.get("quiet") && ++beat % 8 === 0) window.__emit("runner-progress", { command, project: job.project, progress: { step: "alive" } });
+    // the core's check-in (runner.rs): ?stuck=1 shows a step that seems stuck
+    if (beat % 8 === 4) window.__emit("runner-progress", { command, project: job.project, progress: { step: "pulse", state: q.get("stuck") ? "stuck" : q.get("quiet") ? "waiting" : "working" } });
     const f = (Date.now() - t0) / slow;
     if (command === "render-video") window.__emit("runner-progress", { command, project: job.project, progress: { step: "render", percent: Math.round(3 + 92 * f), frame: Math.round(3848 * f), frames: 3848 } });
   }

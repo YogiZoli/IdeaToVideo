@@ -18,7 +18,7 @@
   // paid), signs of life when a step is quiet, the sleep of the computer, and
   // per step whether the lid may close.
   import { onMount } from "svelte";
-  import { costText, adviceText, lifeText, workPlace, clock } from "./progressInfo";
+  import { costText, adviceText, lifeText, pulseText, workPlace, clock } from "./progressInfo";
   import { work, track, measure, startWork, jobOf } from "./work.svelte";
   import { stopJob, errorText } from "./api";
   import { log } from "./logger";
@@ -36,6 +36,7 @@
   const t = $derived(track(project, command));
   const m = $derived(t ? measure(t, work.now) : null);
   const life = $derived(t ? lifeText(t, work.now) : []);
+  const checked = $derived(t ? pulseText(t, work.now) : "");
   const job = $derived(jobOf(project, command));
 
   // Stop asks once for a step that spends money or credits
@@ -83,7 +84,7 @@
   <progress max="100" value={m?.percent ?? 0}></progress>
   <div class="line">
     <span class="hint">{t?.waiting ?? `${t?.phase ? `Now: ${t.phase}.` : "Working."} ${status}`}</span>
-    <span class="hint clock">Running for {clock(m?.elapsed ?? 0)}</span>
+    <span class="hint clock">Running for {clock(m?.elapsed ?? 0)}{checked ? ` · ${checked}` : ""}</span>
   </div>
   {#each life as line (line)}<p class="hint life">{line}</p>{/each}
   <p class="hint">{costText(command, provider)} {adviceText(command)}</p>

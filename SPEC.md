@@ -285,8 +285,9 @@ elkészült és jóváhagyásra vár, azt jóváhagyja, nem csinálja újra.
 - Minden runner-futás egy folyamatfában (Windows Job Object, macOS
   folyamatcsoport): a Stop, az őrkutya és a kilépés a Chrome-ot és az
   ffmpeg-et is leállítja.
-- A runner 20 mp-enként életjelet ad; 5 percnyi csend után a mag leállítja.
-  A videómotor (hyperframes) 15 percnyi kimenet nélküli állás után leáll.
+- Checkin (DECISIONS 92): a mag 15 mp-enként megnézi, beszél-e a runner és
+  dolgozik-e a folyamatfája; a sáv kiírja: working, waiting for the service,
+  seems stuck. Az app soha nem állít le magától egy lépést, csak a Stop.
 - A runner észreveszi, ha a gép aludt (óraugrás), és kiírja.
 - A hang kész blokkjai egy elbukott futás után megmaradnak
   (`audio/blocks-cache/`), az újrafuttatás csak a hiányzót olvassa fel.

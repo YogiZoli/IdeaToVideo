@@ -128,10 +128,11 @@ export function resolveBrowser(env = process.env) {
 
 // ---- running hyperframes ----------------------------------------------------------
 
-// No output from the engine for this long: it is stuck (a browser that hangs),
-// and it is stopped with a sentence instead of running forever (2026-10-06).
-// A render prints every frame; a check of a long video is the quietest step.
-export const ENGINE_IDLE_MS = 15 * 60000;
+// The engine is never stopped for being quiet (Zoltan, 2026-10-06: look
+// first, then the user decides): the core's check-in (runner.rs) tells the
+// user when a step seems stuck. `idleMs` stays for a caller that wants a
+// limit of its own; by default there is none.
+export const ENGINE_IDLE_MS = 0;
 
 // Runs the engine's hyperframes CLI with our node. Streams every output line to
 // onLine. Resolves { code, tail } (the last lines, for error messages).
@@ -145,6 +146,7 @@ export function runHyperframes(args, { env = process.env, cwd, browser, onLine =
     let timer = null;
     const arm = () => {
       clearTimeout(timer);
+      if (!idleMs) return;
       timer = setTimeout(() => {
         stuck = true;
         child.kill();
