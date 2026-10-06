@@ -11,8 +11,12 @@
 // explainer workflow (skills/faceless-explainer/references/motion-language.md:
 // "no lazy breathing, no bad slow pan/push in the back half", "subtle jitter"
 // the only sanctioned aliveness, finite tweens only, power3 settles):
-//   push    multi-phase-camera's push on the scene: a slow push-in over the
-//           first half of the scene with a power3 settle, then it holds;
+//   push    one continuous move over the WHOLE scene: a push-in of 5% with a
+//           slow sideways drift, alternating direction scene by scene. It
+//           never settles: Zoltan's 2026-10-06 video froze for seconds after
+//           the old half-scene push. That doctrine ("no slow push in the back
+//           half") lost to the rule that nothing ever stops: one continuous
+//           move per scene, at least 4%;
 //   jitter  sine-wave-loop's low-amplitude register: a small positional jitter
 //           over the hold, as one finite keyframe tween.
 // Each runs on a camera wrapper around the scene, so it never fights the
@@ -25,7 +29,8 @@ export const BACKGROUNDS = {
 };
 export const CAMERAS = { off: { label: "Off" }, jitter: { label: "Subtle jitter" }, push: { label: "Push in" } };
 export const PIECE = { target: 10, min: 5, max: 15 };
-export const PUSH_SCALE = 1.04;
+export const PUSH_SCALE = 1.05;
+export const DRIFT_PX = 16;
 export const JITTER_PX = 3;
 
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -52,8 +57,8 @@ export function backgroundFor(background, { light }) {
 // Camera lines for one scene wrapper (`#cam-<n>`), local to the main timeline.
 export function cameraLines(move, { id, start, duration, index = 0 }) {
   if (move === "push") {
-    const half = r3(duration / 2);
-    return [`tl.fromTo("#${id}", { scale: 1 }, { scale: ${PUSH_SCALE}, duration: ${half}, ease: "power3.out" }, ${start});`];
+    const dir = index % 2 === 0 ? 1 : -1;
+    return [`tl.fromTo("#${id}", { scale: 1, x: 0 }, { scale: ${PUSH_SCALE}, x: ${dir * DRIFT_PX}, duration: ${r3(duration)}, ease: "none" }, ${start});`];
   }
   if (move === "jitter") {
     // A fixed, deterministic path (varies with the scene index, never random).

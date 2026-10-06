@@ -31,9 +31,9 @@ const NOT_STYLE = new Set(["accent", "exit"]);
 
 export const motionPath = (identityDir) => path.join(identityDir, MOTION_FILE);
 
-// A whole profile from a mood (the Start screen's cards). HyperFrames'
-// doctrine prefers stillness, so the camera starts off and the background
-// plain; the user turns them on.
+// A whole profile from a mood (the Start screen's cards). The camera starts
+// on (push): a still frame read as a slide (Zoltan, 2026-10-06); the
+// background starts plain.
 export function profileFromMood(mood = DEFAULT_MOOD, { energy } = {}) {
   const m = ALL_MOODS[mood];
   if (!m) throw new Error(`Unknown mood: ${mood}.`);
@@ -41,7 +41,7 @@ export function profileFromMood(mood = DEFAULT_MOOD, { energy } = {}) {
     schema: MOTION_SCHEMA,
     transition: { mood, ...moodPair(mood), energy: energy ?? m.energy, where: "every" },
     background: { type: "plain", vars: {} },
-    camera: { move: "off" },
+    camera: { move: "push" },
     scenes: { off: [], style: {} },
   };
 }
@@ -63,7 +63,7 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     const item = loadComponent(BACKGROUNDS[b.type].component, { env: { ITV_LIBRARY_DIR: dir } }).item;
     errors.push(...checkVars(item, b.vars));
   }
-  const camera = { move: "off", ...(input.camera ?? {}) };
+  const camera = { move: "push", ...(input.camera ?? {}) };
   const off = [...new Set(input.scenes?.off ?? [])];
   for (const name of off) {
     if (!COMPONENTS[name]) errors.push(`Unknown scene component: ${name}.`);

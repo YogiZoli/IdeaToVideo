@@ -1229,4 +1229,30 @@
       HyperFrames registryben nincs ikonkészlet, csak két ikon-mozgás elem), a
       kimondott szó kiemelése, élénkebb jelenetek, és a CTA-szegmens, nyitó és
       záró klip közös modellje.
+103. **Videóminőség: Zoltan döntései** (2026-10-06, `docs/video-quality-plan.md`):
+    - **Sorrend:** (1) élénkebb alap, (2) ikonok, (3) kimondott szó és
+      feliratok, (4) a 39 archetípus csomagként, Import és Export gombbal,
+      (5) Scenes varázsló, (6) kép és videó források. Csak utána a README, a
+      `release.yml` és az updater.
+    - **Scenes varázsló: igen, negyedikként, bőségesen** (nem rövid; minden
+      lépés átugorható). Ide tartozik a blokk-csomag és az ikoncsalád is,
+      külön blokk- vagy ikonvarázsló nem kell.
+    - **Ikonok: Lucide, Tabler, Iconoir**, mind a három.
+    - **Feliratok: mind a 17 registry felirat-stílus választható** a Motion
+      varázslóban, nem csak három, a kimondott szó kiemelésével együtt.
+    - **A 39 archetípus: a kánon NEM módosul.** Egy importálható csomag-fájl
+      készül belőle (a kánonból csak olvasva), a változók a csomag
+      másolatába kerülnek; az appban Import és Export gomb. Előtte alapos
+      átnézés és javaslatlista (Zoltan kérése). A csomag nem kerül az app
+      repójába és telepítőjébe (DECISIONS 18, 48 marad).
+    - **Képforrás:** AI kép a Gemini kulccsal, amikor lesz rá pénz (1-2 hét).
+      Stock: a Pexels új kulcsot nem ad; Zoltannak Pixabay és Coverr kulcsa
+      van, az Unsplash jelentkezés folyamatban (`docs/stock.md`). A stock
+      felfüggesztésének feloldása Zoltan döntésére vár.
+    - **(1) élénkebb alap, első rész kész:** a kamera push a jelenet teljes
+      hosszán fut (5%, folyamatos, jelenetenként váltakozó oldalirányú
+      sodródással), nem áll meg a felénél; a Motion profil alapja push; profil
+      nélkül is van kamera (vágások, push: `BASE_MOTION`). A HyperFrames
+      explainer doktrínája ("no slow push in the back half") itt Zoltan
+      visszajelzésének enged: semmi nem állhat meg.
 

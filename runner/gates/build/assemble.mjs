@@ -43,7 +43,7 @@ import { cardForPreset, cardTheme, cardFamilies, fixContrast } from "../../brand
 import { TEMPERATURES } from "../../cta/catalog.mjs";
 import { fontFaces, categories } from "../../brand/fonts.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
-import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE } from "../../motion/transitions.mjs";
+import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE, CUT } from "../../motion/transitions.mjs";
 import { backgroundFor, backgroundPieces, cameraLines } from "../../motion/stage.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -539,15 +539,20 @@ ${extra}    </script>
 `;
 }
 
+// What a build moves with when the Identity has no Motion profile: cuts, a
+// plain background and the continuous camera push (motion/stage.mjs).
+export const BASE_MOTION = Object.freeze({ transition: { mood: "premium", primary: CUT, accent: null, energy: "calm", where: "every" }, background: { type: "plain", vars: {} }, camera: { move: "push" }, scenes: { off: [], style: {} } });
+
 // The Motion profile's part of a build (motion/): scene changes, camera
 // wrappers, background pieces. `sectionStarts`: the scenes that open a new
 // script section (the topic changes of HyperFrames' narrative positions).
 export function motionPlan(profile, { times, theme, light, width, height, sectionStarts = new Set(), env = process.env }) {
-  const dir = libraryDir(env);
-  const registry = loadRegistry(dir);
   const ids = times.map((_, n) => `scene-${n + 1}`);
-  const plan = planTransitions(times, { transition: profile.transition, registry, sectionStarts });
-  const built = transitionBuild(times, plan, { ids, registry, theme, width, height });
+  // Only cuts (the base motion): no transition registry is needed.
+  const allCut = profile.transition?.primary === CUT && !profile.transition?.accent;
+  const registry = allCut ? null : loadRegistry(libraryDir(env));
+  const plan = allCut ? times.slice(1).map(() => ({ type: CUT })) : planTransitions(times, { transition: profile.transition, registry, sectionStarts });
+  const built = allCut ? { extend: times.map(() => 0), lines: [], shader: false } : transitionBuild(times, plan, { ids, registry, theme, width, height });
   const move = profile.camera?.move ?? "off";
   const cameras = times.map((t, n) => (move === "off" ? null : `cam-${n + 1}`));
   const lines = [...built.lines];
@@ -579,7 +584,10 @@ export function sectionStartsOf(projectDir, scenes, sentences) {
 // sections read from script.md (the previews).
 export async function assemble(projectDir, { env = process.env, total, language, title, look: wanted = DEFAULT_LOOK, motion, sectionStarts } = {}) {
   const look = resolveLook(wanted);
-  const profile = motion !== undefined ? motion : look.motion ?? null;
+  // Without a Motion profile the video still moves: cuts between scenes and
+  // the continuous camera push (Zoltan, 2026-10-06: skipping the wizard must
+  // not give a slideshow). An explicit motion: null keeps the bare build.
+  const profile = motion !== undefined ? motion : look.motion ?? BASE_MOTION;
   const read = (f, what) => {
     const p = path.join(projectDir, f);
     if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet (${f}).`);

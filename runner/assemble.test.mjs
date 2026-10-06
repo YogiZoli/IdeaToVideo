@@ -126,6 +126,11 @@ test("assemble writes the root composition and the components it uses", async ()
   assert.match(fs.readFileSync(path.join(r.out, "compositions", "components", "scene-1-count-up.html"), "utf8"), /id="root" data-duration="4.3"/);
   assert.match(fs.readFileSync(path.join(r.out, "compositions", "components", "scene-2-count-up.html"), "utf8"), /id="root" data-duration="2.7"/);
   assert.equal(fs.readFileSync(path.join(r.out, "gsap.min.js"), "utf8"), "gsap");
+  // No Motion profile: the scenes still move, cut to cut, the camera pushing (2026-10-06)
+  assert.match(html, /<div id="cam-1" class="itv-cam"/);
+  assert.match(html, /tl\.fromTo\("#cam-2", \{ scale: 1, x: 0 \}, \{ scale: 1\.05, x: -16, duration: 2\.7, ease: "none" \}, 4\.3\)/);
+  const bare = await assemble(proj, { env, total: 7, title: "t", motion: null });
+  assert.doesNotMatch(fs.readFileSync(path.join(bare.out, "index.html"), "utf8"), /itv-cam/, "motion: null keeps the bare build");
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

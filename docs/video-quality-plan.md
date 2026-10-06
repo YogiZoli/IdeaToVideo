@@ -3,8 +3,8 @@
 Zoltan esti videója (`feedback/2026-10-06/NOTES.md`, "What is a motion
 graphics video?") élettelen lett: ugyanaz a rajz, üres kép, szoros betű,
 4-11 mp-ig álló képek, csak szöveg. Zoltan döntése: **előbb a videó
-minősége**, utána a README, a `release.yml` és az updater. Állapot: **terv,
-Zoltan döntéseire vár** (a 8. pont).
+minősége**, utána a README, a `release.yml` és az updater. Állapot: **jóváhagyva** (Zoltan, 2026-10-06, DECISIONS 103); a
+sorrend és a döntések a 9. pontban.
 
 ## 1. Mi mit csinál ma (a félreértés oka)
 
@@ -154,3 +154,20 @@ Példa, egy mondat a videóból: "Motion graphics is graphic design that moves."
 Sorrend javaslat: (a) élénkebb alap, kimondott szó, ikonok a rajzhoz;
 (b) Scenes varázsló; (c) kép és videó források; (d) a 39 archetípus
 csomagként; utána a README, `release.yml`, updater.
+
+## 9. Zoltan döntései (2026-10-06, DECISIONS 103)
+
+1. **Sorrend:** élénkebb alap, ikonok, kimondott szó és feliratok, a 39
+   archetípus csomagként (Import, Export), Scenes varázsló, kép és videó
+   források; csak utána README, `release.yml`, updater.
+2. **Scenes varázsló:** igen, bőséges. A blokk-csomagok és az ikoncsaládok
+   is itt vannak (blokk = egy egész jelenettípus, például a tölcsér; ikon =
+   kis kép egy jeleneten belül).
+3. **Feliratok:** mind a 17 stílus választható, előnézettel.
+4. **A 39 archetípus:** a kánon érintetlen. Csomag-fájl (`.itvpack`, zip):
+   `pack.json` (név, szerző, verzió, blokkonként szerep, leírás, változók
+   és határaik, hossz, kinézet: a saját vagy az Identity Brandje), a blokkok
+   önálló HTML-je, előnézeti képek. Az appban Settings, Identity, Scenes:
+   Import pack, Export pack, Remove; Identity-nként tárolva, az Identity
+   exportja viszi. Előbb alapos átnézés és javaslatlista.
+5. **Képforrás:** AI kép később (pénz); stock feloldása nyitott.
