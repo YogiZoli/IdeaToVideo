@@ -2,8 +2,9 @@
   // MotionWizard: the Identity's Motion profile (docs/motion-wizard.md, docs/
   // wizards/motion.md 6), in the shared WizardShell. Everything it offers is
   // HyperFrames' own: its transition registry and shader transitions, grouped
-  // by its moods and energies, its background components, its camera rules
-  // held to its explainer motion doctrine (stillness first). Saved as
+  // by its moods and energies, its background components, its camera rules.
+  // The camera moves through every scene and the pace sets how often the
+  // picture changes (Zoltan, 2026-10-06: a still frame reads as a slide). Saved as
   // <identity>/motion.json; every ONE Video of the Identity inherits it.
   import { onMount, onDestroy } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";
@@ -99,7 +100,7 @@
     error = "";
     try {
       const r = await runner<{ profile: MotionProfile }>("motion-save", { profile: $state.snapshot(profile) });
-      log("motion_saved", { mood: r.profile.transition.mood, background: r.profile.background.type, camera: r.profile.camera.move, off: r.profile.scenes.off.length });
+      log("motion_saved", { mood: r.profile.transition.mood, background: r.profile.background.type, camera: r.profile.camera.move, pace: r.profile.pace ?? "balanced", off: r.profile.scenes.off.length });
       onsaved(r.profile);
     } catch (e) {
       error = errorText(e);
@@ -155,6 +156,13 @@
           <label class="radio"><input type="radio" name="energy" checked={profile.transition.energy === e.id} onchange={() => (profile!.transition.energy = e.id as MotionProfile["transition"]["energy"])} /> {e.label} <span class="hint">({e.seconds} s per change)</span></label>
         {/each}
       </div>
+      <h2>Pace</h2>
+      <p class="hint">How often the picture changes. Each sentence gets its own picture; slower paces join sentences that belong together.</p>
+      <div class="opts">
+        {#each st.options.paces ?? [] as p (p.id)}
+          <label class="radio"><input type="radio" name="pace" checked={(profile.pace ?? "balanced") === p.id} onchange={() => (profile!.pace = p.id as MotionProfile["pace"])} /> {p.label}{p.id === "balanced" ? " (recommended)" : ""} <span class="hint">({p.picture})</span></label>
+        {/each}
+      </div>
       <p class="hint">Moods, energies and transitions come from HyperFrames by HeyGen (Apache-2.0): its transition overview, its transition registry and its shader transitions.</p>
     {:else if step === 1}
       <p class="lead">One main change between related points, a different one where a new section starts. The last change is always a slow crossfade.</p>
@@ -189,15 +197,15 @@
         {/each}
       </div>
     {:else if step === 3}
-      <p class="lead">HyperFrames' own advice for explainers: rather no motion than bad motion. A still frame is fine.</p>
+      <p class="lead">A slow camera move keeps every scene alive after it has landed, so nothing looks like a slide.</p>
       <div class="opts cards">
         {#each st.options.cameras as c (c.id)}
           <label class="radio card">
             <input type="radio" name="camera" checked={profile.camera.move === c.id} onchange={() => (profile!.camera = { move: c.id as MotionProfile["camera"]["move"] })} />
-            <b>{c.label}{c.id === "off" ? " (recommended)" : ""}</b>
-            {#if c.id === "off"}<span class="hint">The scenes hold still once they have landed.</span>{/if}
+            <b>{c.label}{c.id === "push" ? " (recommended)" : ""}</b>
+            {#if c.id === "off"}<span class="hint">The scenes hold still once they have landed. Can look like a slide.</span>{/if}
             {#if c.id === "jitter"}<span class="hint">A tiny movement that keeps a held frame alive.</span>{/if}
-            {#if c.id === "push"}<span class="hint">A slow push in during the first half of each scene, then it holds.</span>{/if}
+            {#if c.id === "push"}<span class="hint">A slow push in with a gentle drift through the whole scene, never stopping.</span>{/if}
           </label>
         {/each}
       </div>

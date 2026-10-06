@@ -6,11 +6,11 @@
 // call-to-action scene. Every on-screen text is taken from the words of its
 // own sentences, so the picture still shows what the voice says.
 
-import { COMPONENTS } from "./roles.mjs";
+import { COMPONENTS, paceOf } from "./roles.mjs";
 import { MAX_WORDS } from "./index.mjs";
 
-const TARGET = 3; // seconds: a scene grows until it lasts this long
-const LONGEST = 6; // a scene never grows past this many seconds (under MAX_SECONDS)
+// How long a scene grows (target) and never grows past (longest): the
+// Identity's pace, roles.mjs PACES.
 
 const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ -]+/gu, " ").split(/\s+/).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;
@@ -54,7 +54,8 @@ function textScene(component, sentences) {
  * calls: Map(sentence id -> { keyword }); off: components the Motion profile
  * turned off; themeIsLight: headline-slam then has no shadow.
  */
-export function simplePlan({ sentences, sections = [], title = "", calls = new Map(), off = [], themeIsLight = false }) {
+export function simplePlan({ sentences, sections = [], title = "", calls = new Map(), off = [], themeIsLight = false, pace }) {
+  const { target: TARGET, longest: LONGEST } = paceOf(pace);
   // 1. groups of sentences: a call alone, a new section starts a new group
   const groups = [];
   let cur = null;

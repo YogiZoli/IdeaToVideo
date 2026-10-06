@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMPONENTS, ROLES } from "./gates/scenes/roles.mjs";
+import { COMPONENTS, ROLES, PACES } from "./gates/scenes/roles.mjs";
+import { simplePlan } from "./gates/scenes/simple.mjs";
 import { checkScenes, sentenceSections, makeScenes, refillScene, saveScenes, sceneRows, buildMessages, buildData, libraryCatalog, isSoft } from "./gates/scenes/index.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -190,3 +191,20 @@ test("save-scenes (Custom) checks like the AI's table", async () => {
   await assert.rejects(saveScenes({ projectDir: proj, scenes: edited.slice(1), env }), /problems/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("the pace is the Identity's choice: how long a joined scene may last, the planner's rule, the simple plan (2026-10-06)", () => {
+  const { env } = fixture();
+  const joined = { scenes: [{ from: "S1", to: "S2", component: "per-word-rise" }, { from: "S3", to: "S4", component: "headline-slam" }, { from: "S5", component: "per-word-rise" }] };
+  const issues = (pace) => checkScenes(structuredClone(joined), { sentences: SENTENCES, total: TOTAL, env, pace }).issues.filter((i) => /split it/.test(i));
+  assert.equal(issues("calm").length, 0, "calm: up to 10 s");
+  assert.ok(issues("fast").length >= 1, "fast: over 5 s goes back");
+  assert.match(issues(undefined).join(), /over 7 s/, "no choice: balanced");
+  const sys = (pace) => buildMessages({}, [], { pace })[0].content;
+  assert.match(sys("fast"), /every 2 to 4 seconds/);
+  assert.match(sys(undefined), /every 3 to 5 seconds/);
+  assert.doesNotMatch(sys("calm"), /\{\{PACE\}\}/);
+  const count = (pace) => simplePlan({ sentences: SENTENCES, pace }).scenes.length;
+  assert.ok(count("fast") >= count("balanced") && count("balanced") >= count("calm"), `${count("fast")} ${count("balanced")} ${count("calm")}`);
+  assert.deepEqual(Object.keys(PACES), ["calm", "balanced", "fast"]);
+});
+

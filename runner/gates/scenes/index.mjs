@@ -16,7 +16,7 @@ import { chat, extractJson } from "../../providers/llm.mjs";
 import { loadComponent, checkVars, sceneTimes, mountTheme } from "../build/assemble.mjs";
 import { narrationFromMarkdown } from "../voice/narration.mjs";
 import { duration } from "../../audio.mjs";
-import { ROLES, COMPONENTS, roleOf } from "./roles.mjs";
+import { ROLES, COMPONENTS, roleOf, paceOf } from "./roles.mjs";
 import { CALL_FIELDS } from "../script/index.mjs";
 import { catalogForPlanner } from "../../footage/library.mjs";
 import { simplePlan } from "./simple.mjs";
@@ -24,10 +24,11 @@ import { simplePlan } from "./simple.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 export const MIN_SECONDS = 2;
-// A scene of several sentences may last at most this long (Zoltan,
-// 2026-10-06: scenes of 9-11 s that joined three sentences read as slides;
-// a new picture every 3-5 s). One long sentence may still be longer.
-export const MAX_SECONDS = 7;
+// A scene of several sentences may last at most this long; the Identity's
+// pace (roles.mjs PACES, the Motion wizard) sets it, this is the default
+// pace's (Zoltan, 2026-10-06: scenes of 9-11 s that joined three sentences
+// read as slides). One long sentence may still be longer.
+export const MAX_SECONDS = paceOf().joined;
 export const MAX_WORDS = 6;
 const HIDDEN_VARS = new Set(["exit", "cues"]);
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -112,8 +113,8 @@ function readScript(projectDir) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
-export function buildMessages(data, catalog) {
-  const system = fs.readFileSync(path.join(here, "prompt.md"), "utf8");
+export function buildMessages(data, catalog, { pace } = {}) {
+  const system = fs.readFileSync(path.join(here, "prompt.md"), "utf8").replace("{{PACE}}", paceOf(pace).rule);
   const library = catalog.map((c) => ({ component: c.name, role: c.role, what: c.description, ...(c.maxWords ? { maxWords: c.maxWords } : {}), variables: c.variables }));
   const roles = Object.fromEntries(Object.entries(ROLES).map(([id, r]) => [id, r.hint]));
   const user = `LIBRARY\n${JSON.stringify({ roles, components: library }, null, 1)}\nEND LIBRARY\n\nDATA\n${JSON.stringify(data, null, 1)}\nEND DATA\n\nPlan the scenes now. Answer with the JSON object only.`;
@@ -138,7 +139,8 @@ function onScreen(component, vars = {}) {
 
 // Every problem with a planned table, as sentences the repair call can act on.
 // `warnings` do not fail the gate; the UI shows them.
-export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map(), gaps = [] }) {
+export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map(), gaps = [], pace } = {}) {
+  const maxJoined = paceOf(pace).joined;
   const issues = [];
   const warnings = [];
   const scenes = answer?.scenes;
@@ -197,7 +199,7 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
     // time is not the scene's own (DECISIONS 78).
     const d = r3(times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0));
     if (d < MIN_SECONDS && scenes.length > 1 && !calls.has(sc.from)) issues.push(`scene ${i + 1} (${sc.from}) lasts ${d} s, under ${MIN_SECONDS} s: join it with a neighbour`);
-    if (d > MAX_SECONDS && to > from) issues.push(`scene ${i + 1} (${sc.from} to ${sc.to}) lasts ${d} s, over ${MAX_SECONDS} s: split it`);
+    if (d > maxJoined && to > from) issues.push(`scene ${i + 1} (${sc.from} to ${sc.to}) lasts ${d} s, over ${maxJoined} s: split it`);
     // Numbers on screen should be numbers the voice says. Written-out numbers
     // ("eight") are not recognised, so this only warns.
     if (roleOf(sc.component) === "proof") {
@@ -360,7 +362,7 @@ export function writeTable(projectDir, table) {
 }
 
 // Gate 3, Recommended. llm = { provider, apiKey, model, fetchImpl?, sleep? }.
-export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, onProgress = () => {} }) {
+export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, pace, onProgress = () => {} }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
@@ -370,8 +372,8 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   const clips = footage ? catalogForPlanner(footage) : [];
   if (clips.length) data.footage = clips;
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog), (a) => {
-    const r = checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir) });
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog, { pace }), (a) => {
+    const r = checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir), pace });
     return { ...r, issues: [...r.issues, ...footageIssues(a?.footage, { sentences, calls, clips })] };
   });
   const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
@@ -381,14 +383,14 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
 }
 
 // Default: the plan without AI (simple.mjs), checked like the AI's plan.
-export async function simpleScenes({ projectDir, env = process.env, title = "", themeIsLight = false, off = [] }) {
+export async function simpleScenes({ projectDir, env = process.env, title = "", themeIsLight = false, off = [], pace }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
   const calls = callSentences(readScript(projectDir), sentences);
   const gaps = gapsOf(projectDir);
-  const answer = joinShort(simplePlan({ sentences, sections: sentenceSections(md, sentences), title, calls, off, themeIsLight }), { sentences, total, calls, gaps });
-  const { issues, warnings } = checkScenes(answer, { sentences, total, env, off, calls, gaps });
+  const answer = joinShort(simplePlan({ sentences, sections: sentenceSections(md, sentences), title, calls, off, themeIsLight, pace }), { sentences, total, calls, gaps });
+  const { issues, warnings } = checkScenes(answer, { sentences, total, env, off, calls, gaps, pace });
   if (issues.length) throw new Error(`The simple plan did not pass the checks: ${issues.slice(0, 5).join("; ")}`);
   const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
   writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(answer.scenes.map(clean), calls), gaps: [], warnings });
@@ -396,11 +398,11 @@ export async function simpleScenes({ projectDir, env = process.env, title = "", 
 }
 
 // Custom: the user's edited table, checked the same way (no LLM).
-export async function saveScenes({ projectDir, scenes, env = process.env }) {
+export async function saveScenes({ projectDir, scenes, env = process.env, pace }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
   const total = await audioLength(projectDir, sentences, env);
   const calls = callSentences(readScript(projectDir), sentences);
-  const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env, calls, gaps: gapsOf(projectDir) });
+  const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env, calls, gaps: gapsOf(projectDir), pace });
   if (issues.length) throw new Error(`The scene table has problems: ${issues.slice(0, 5).join("; ")}`);
   const current = readJson(projectDir, "scenes.json", "scene table");
   writeTable(projectDir, { ...current, scenes: withCalls(scenes.map(clean), calls), warnings });

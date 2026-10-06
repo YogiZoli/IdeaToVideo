@@ -39,3 +39,17 @@ export const COMPONENTS = {
 };
 
 export const roleOf = (component) => COMPONENTS[component]?.role ?? null;
+
+// How often the picture changes, the Identity's choice in the Motion wizard
+// (Zoltan, 2026-10-06: "not something I should decide for every user").
+//   target  the Simple plan grows a scene until it lasts this long
+//   longest the Simple plan never grows a scene past this
+//   joined  the check sends back a scene of several sentences longer than this
+//   rule    the planner's instruction
+export const PACES = {
+  calm: { label: "Calm", picture: "a new picture every 5 to 8 seconds", target: 5, longest: 9, joined: 10, rule: "A new picture every 5 to 8 seconds. Join sentences that belong together while the joined scene stays under 10 seconds. A scene is at least 2 seconds." },
+  balanced: { label: "Balanced", picture: "a new picture every 3 to 5 seconds", target: 3, longest: 6, joined: 7, rule: "A new picture every 3 to 5 seconds. Give every sentence its own scene. Join only very short sentences that belong together, and only while the joined scene stays under 6 seconds. A scene is at least 2 seconds." },
+  fast: { label: "Fast", picture: "a new picture every 2 to 4 seconds", target: 2, longest: 4, joined: 5, rule: "A new picture every 2 to 4 seconds. Give every sentence its own scene; join two sentences only when one of them is under 2 seconds. A scene is at least 2 seconds." },
+};
+export const DEFAULT_PACE = "balanced";
+export const paceOf = (id) => PACES[id] ?? PACES[DEFAULT_PACE];

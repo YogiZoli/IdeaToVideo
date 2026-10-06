@@ -189,6 +189,8 @@ function loadCtaChecked(identityDir) {
   }
 }
 const offOf = (look) => (typeof look === "object" ? look?.motion?.scenes?.off ?? [] : []);
+// How often the picture changes (the Motion profile, roles.mjs PACES).
+const paceOfLook = (look) => (typeof look === "object" ? look?.motion?.pace ?? undefined : undefined);
 
 // Dictionary findings for a ONE Video: the script's spoken text and every
 // text of the scene table (DECISIONS 68). Never blocks, the gates show them.
@@ -720,6 +722,7 @@ const commands = {
           name,
           themeIsLight: isLightLook(look),
           off: offOf(look),
+          pace: paceOfLook(look),
           footage: typeof look === "object" ? look?.footage ?? null : null,
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
@@ -743,7 +746,7 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: simple plan without AI");
     try {
-      const r = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look) });
+      const r = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look), pace: paceOfLook(look) });
       brollBack(projectDir);
       project = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "default" });
       saveProject(projectDir, project);
@@ -759,7 +762,7 @@ const commands = {
   "scene-table": async ({ projectDir, look }) => sceneRows(projectDir, { off: offOf(look) }),
 
   "save-scenes": async ({ projectDir, scenes, look }) => {
-    const r = await saveScenes({ projectDir, scenes });
+    const r = await saveScenes({ projectDir, scenes, pace: paceOfLook(look) });
     const project = edited(projectDir, "scenes");
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: edited by hand");

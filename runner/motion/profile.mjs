@@ -14,7 +14,7 @@ import path from "node:path";
 import { validate, loadSchema } from "../schema/validate.mjs";
 import { ALL_MOODS, moodPair, loadRegistry, knownTransition, CUT, SHADERS, ENERGIES } from "./transitions.mjs";
 import { BACKGROUNDS, CAMERAS } from "./stage.mjs";
-import { COMPONENTS, ROLES } from "../gates/scenes/roles.mjs";
+import { COMPONENTS, ROLES, PACES, DEFAULT_PACE } from "../gates/scenes/roles.mjs";
 import { loadComponent, checkVars, libraryDir } from "../gates/build/assemble.mjs";
 import { cssVars } from "../brand/tokens.mjs";
 
@@ -42,6 +42,7 @@ export function profileFromMood(mood = DEFAULT_MOOD, { energy } = {}) {
     transition: { mood, ...moodPair(mood), energy: energy ?? m.energy, where: "every" },
     background: { type: "plain", vars: {} },
     camera: { move: "push" },
+    pace: DEFAULT_PACE,
     scenes: { off: [], style: {} },
   };
 }
@@ -86,7 +87,7 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     if (Object.keys(vars).length) style[name] = { ...vars };
   }
   if (errors.length) throw new Error(errors.join(" "));
-  const out = { schema: MOTION_SCHEMA, transition: t, background: b, camera, scenes: { off, style } };
+  const out = { schema: MOTION_SCHEMA, transition: t, background: b, camera, pace: input.pace ?? DEFAULT_PACE, scenes: { off, style } };
   if (input.updatedAt) out.updatedAt = input.updatedAt;
   return out;
 }
@@ -187,6 +188,7 @@ export function wizardOptions({ dir = libraryDir() } = {}) {
     backgrounds: Object.entries(BACKGROUNDS).map(([id, b]) => ({ id, label: b.label, darkOnly: Boolean(b.dark), cost: b.component ? RENDER_COST.background : null })),
     shaderCost: RENDER_COST.shader,
     cameras: Object.entries(CAMERAS).map(([id, c]) => ({ id, label: c.label })),
+    paces: Object.entries(PACES).map(([id, p]) => ({ id, label: p.label, picture: p.picture })),
     scenes,
   };
 }

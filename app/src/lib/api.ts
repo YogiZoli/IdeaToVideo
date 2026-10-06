@@ -209,6 +209,8 @@ export type MotionProfile = {
   transition: { mood: string; primary: string; accent: string | null; energy: "calm" | "medium" | "high"; where: "every" | "sections"; direction?: "LEFT" | "RIGHT" | "UP" | "DOWN" };
   background: { type: "plain" | "grain-field" | "aurora-drift"; vars: Record<string, string | number | boolean> };
   camera: { move: "off" | "jitter" | "push" };
+  /** How often the picture changes (runner/gates/scenes/roles.mjs PACES). */
+  pace?: "calm" | "balanced" | "fast";
   scenes: { off: string[]; style: Record<string, Record<string, string | number | boolean>> };
 };
 export type MotionTransition = { name: string; kind: "cut" | "css" | "shader"; label: string };
@@ -220,6 +222,7 @@ export type MotionOptions = {
   backgrounds: { id: string; label: string; darkOnly: boolean; cost: string | null }[];
   shaderCost: string;
   cameras: { id: string; label: string }[];
+  paces?: { id: string; label: string; picture: string }[];
   scenes: { role: string; label: string; hint: string; components: { name: string; label: string; description: string; style: MotionStyleVar[] }[] }[];
 };
 export type MotionState = { profile: MotionProfile | null; recommended: { mood: string; energy?: string; reason: string | null }; start: MotionProfile; light: boolean; options: MotionOptions };

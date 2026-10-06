@@ -6,6 +6,7 @@
   "properties": {
     "schema": { "const": "motion-profile/1" },
     "updatedAt": { "type": "string", "maxLength": 40 },
+    "pace": { "enum": ["calm", "balanced", "fast"] },
     "transition": {
       "type": "object",
       "additionalProperties": false,
