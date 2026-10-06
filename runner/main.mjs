@@ -38,6 +38,7 @@ import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendM
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
 import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi, endScreenOf, loadLast, saveLast } from "./cta/profile.mjs";
 import { segmentVoice, segmentVideo } from "./cta/make.mjs";
+import { listPacks, importPack, exportPack, removePack, writeState as writePackState, registerPacks } from "./packs/index.mjs";
 import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
 import { describeClip } from "./footage/describe.mjs";
 import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
@@ -578,6 +579,18 @@ const commands = {
     return { segment: await addSegment({ identityDir, file, keyword, name: name || got.title, text, source: "heygen-import", heygenId: id }) };
   },
 
+  // Block packs (packs/, DECISIONS 107), per Identity.
+  "packs-list": async ({ identityDir }) => ({
+    packs: listPacks(identityDir).map((p) => ({ id: p.id, name: p.name, author: p.author ?? "", version: p.version ?? "", description: p.description ?? "", look: p.look, on: p.on, followBrand: p.followBrand, off: p.off, blocks: p.blocks.map((b) => ({ id: b.id, label: b.label, role: b.role, what: b.what ?? "", needs: b.needs ?? [], realOnly: Boolean(b.realOnly) })) })),
+  }),
+  "pack-import": async ({ identityDir, file }) => {
+    if (!identityDir) throw new Error("No Identity to import the pack into.");
+    return importPack(identityDir, file);
+  },
+  "pack-export": async ({ identityDir, id, file }) => exportPack(identityDir, id, file),
+  "pack-remove": async ({ identityDir, id }) => removePack(identityDir, id),
+  "pack-state": async ({ identityDir, id, state }) => ({ state: writePackState(identityDir, id, state ?? {}) }),
+
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
 
   "dictionary-save": async ({ identityDir, dictionary }) => {
@@ -1055,6 +1068,18 @@ async function main() {
   }
   heartbeat();
   try {
+    if (req.identityDir) {
+      // the Identity's block packs: the build finds them, the planner and the
+      // scene table's checks know their blocks (packs/, DECISIONS 107)
+      process.env.ITV_IDENTITY_DIR = req.identityDir;
+      let hasFootage = false;
+      try {
+        hasFootage = (loadLibrary(req.identityDir).clips ?? []).some((c) => c.source !== "generated");
+      } catch {
+        hasFootage = false;
+      }
+      await registerPacks(req.identityDir, { hasFootage });
+    }
     if (req.identityDir && LOOK_COMMANDS.has(name)) req.look = lookOf(req);
     emit({ event: "result", data: await cmd(req) });
     return 0;

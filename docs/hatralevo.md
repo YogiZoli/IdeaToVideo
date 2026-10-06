@@ -14,8 +14,8 @@ Kész:
 Hátravan:
 1. ~~Ikonok (Lucide, Tabler, Iconoir) a rajzos jelenethez~~: kész (DECISIONS 105).
 2. ~~Kimondott szó és a felirat-stílusok~~: kész (DECISIONS 106; 15 stílus, a 17-ből kettő nem felirat).
-3. A 39 archetípus: az átnézés kész (`docs/pilot/archetypes-review.md`); a csomagfájl, Import és Export **most fut**.
-4. Scenes varázsló (bőséges).
+3. ~~A 39 archetípus csomagként, Import és Export~~: kész (DECISIONS 107); a csomag: `C:/Users/gdp/ITV-packs/explainer-archetypes.itvpack`.
+4. Scenes varázsló (bőséges). **Most ez jön.**
 5. Kép és videó források: Pixabay és Coverr keresés (az Unsplash a
    jóváhagyása után).
 6. Egyoldalas angol telepítési leírás.

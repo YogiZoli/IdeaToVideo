@@ -22,7 +22,9 @@ import { cssVars } from "../brand/tokens.mjs";
 export const MOTION_SCHEMA = "motion-profile/1";
 export const MOTION_FILE = "motion.json";
 // The closing role belongs to the CTA wizard (docs/wizards/motion.md 9).
-export const WIZARD_ROLES = Object.keys(ROLES).filter((r) => r !== "closing");
+// the roles of the built-in library (block packs bring more, packs/)
+const LIBRARY_ROLES = Object.keys(ROLES).filter((r) => Object.values(COMPONENTS).some((c) => c.role === r));
+export const WIZARD_ROLES = LIBRARY_ROLES.filter((r) => r !== "closing");
 export const DEFAULT_MOOD = "premium";
 // Style variables the wizard never offers: the accent is the Brand's, and a
 // scene's exit belongs to the scene change (HyperFrames: "exit defaults to
@@ -71,7 +73,7 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     if (!COMPONENTS[name]) errors.push(`Unknown scene component: ${name}.`);
     else if (!WIZARD_ROLES.includes(COMPONENTS[name].role)) errors.push(`${COMPONENTS[name].label} is not chosen here (its role belongs to the CTA wizard).`);
   }
-  for (const role of Object.keys(ROLES)) {
+  for (const role of LIBRARY_ROLES) {
     const left = Object.entries(COMPONENTS).filter(([n, c]) => c.role === role && !off.includes(n));
     if (!left.length) errors.push(`Keep at least one scene for "${ROLES[role].label}".`);
   }

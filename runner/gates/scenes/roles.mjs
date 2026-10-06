@@ -17,6 +17,13 @@ export const ROLES = {
   list: { label: "List or steps", hint: "Three to six things." },
   sketch: { label: "Sketch", hint: "A simple drawing for an idea." },
   closing: { label: "Closing", hint: "The call to action, or your name at the end." },
+  // the roles block packs bring (packs/index.mjs ROLES)
+  relation: { label: "Relation", hint: "How two things connect: A leads to B, or one of two ways." },
+  contrast: { label: "Contrast", hint: "Wrong and right, before and after." },
+  process: { label: "Process", hint: "Steps in order, states, a cycle." },
+  detail: { label: "Detail", hint: "A close look at one real thing: a record, a form, a command." },
+  footage: { label: "Over footage", hint: "Titles and callouts over your own footage." },
+  cta: { label: "Comment call", hint: "Asks the viewer to comment a keyword." },
 };
 
 export const COMPONENTS = {
@@ -38,7 +45,12 @@ export const COMPONENTS = {
   "logo-brand-close": { role: "closing", label: "Name at the end", mainVar: "wordmark", retired: true },
 };
 
-export const roleOf = (component) => COMPONENTS[component]?.role ?? null;
+// Block packs (packs/, DECISIONS 107) add their blocks here per command,
+// "<pack>:<block>": { role, label, mainVar, words, pack: true, realOnly }.
+export const PACK_COMPONENTS = new Map();
+export const componentMeta = (name) => COMPONENTS[name] ?? PACK_COMPONENTS.get(name) ?? null;
+
+export const roleOf = (component) => componentMeta(component)?.role ?? null;
 
 // How often the picture changes, the Identity's choice in the Motion wizard
 // (Zoltan, 2026-10-06: "not something I should decide for every user").

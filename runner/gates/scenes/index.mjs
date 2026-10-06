@@ -16,7 +16,7 @@ import { chat, extractJson } from "../../providers/llm.mjs";
 import { loadComponent, checkVars, sceneTimes, mountTheme } from "../build/assemble.mjs";
 import { narrationFromMarkdown } from "../voice/narration.mjs";
 import { duration } from "../../audio.mjs";
-import { ROLES, COMPONENTS, roleOf, paceOf } from "./roles.mjs";
+import { ROLES, COMPONENTS, roleOf, paceOf, componentMeta, PACK_COMPONENTS } from "./roles.mjs";
 import { CALL_FIELDS } from "../script/index.mjs";
 import { catalogForPlanner } from "../../footage/library.mjs";
 import { simplePlan } from "./simple.mjs";
@@ -55,7 +55,17 @@ export function libraryCatalog({ env = process.env, off = [] } = {}) {
           return out;
         }),
     };
-  });
+  }).concat(
+    // the blocks of the Identity's packs (packs/registerPacks)
+    [...PACK_COMPONENTS].filter(([name]) => !off.includes(name)).map(([name, meta]) => ({
+      name,
+      role: meta.role,
+      label: meta.label,
+      description: `${meta.description}${meta.realOnly ? " Only when the voice names a real person, record or quote; never invent one." : ""} Never a real brand, company or famous person.`,
+      maxWords: meta.words,
+      variables: meta.variables.map((v) => ({ id: v.id, type: v.type, description: v.icon ? `${v.label}: an icon, one or two plain words for a simple thing (rocket, mail, calendar)` : v.optional ? `${v.label} (optional, may be empty)` : v.label, default: v.default })),
+    })),
+  );
 }
 
 // Which script section each sentence belongs to, by counting words through
@@ -163,7 +173,7 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
   scenes.forEach((sc, i) => {
     const at = `scene ${i + 1}`;
     if (!sc || typeof sc !== "object") return issues.push(`${at}: not an object`);
-    if (!COMPONENTS[sc.component]) return issues.push(`${at}: unknown component ${sc.component} (use one from the LIBRARY)`);
+    if (!componentMeta(sc.component)) return issues.push(`${at}: unknown component ${sc.component} (use one from the LIBRARY)`);
     if (off.includes(sc.component)) return issues.push(`${at}: ${sc.component} is turned off for this channel (use one from the LIBRARY)`);
     if (sc.vars !== undefined && (typeof sc.vars !== "object" || Array.isArray(sc.vars) || sc.vars === null)) return issues.push(`${at}: vars must be an object`);
     const vars = sc.vars ?? {};
@@ -178,7 +188,8 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
     for (const l of onScreen(sc.component, vars)) {
       if (l.item ? words(l.text) > 3 : words(l.text) > MAX_WORDS) issues.push(`${at}: ${l.id} "${l.text}" is too long (at most ${l.item ? 3 : MAX_WORDS} words)`);
     }
-    for (const [id, max] of Object.entries(COMPONENTS[sc.component].words ?? {})) {
+    if (componentMeta(sc.component).realOnly) warnings.push(`Scene ${i + 1}: ${componentMeta(sc.component).label} shows a real person, record or quote. Check that it is real.`);
+    for (const [id, max] of Object.entries(componentMeta(sc.component).words ?? {})) {
       if (typeof vars[id] === "string" && words(vars[id]) > max) issues.push(`${at}: ${sc.component} ${id} "${vars[id]}" is too long for this component (at most ${max} words)`);
     }
     if (i > 0 && scenes[i - 1]?.component === sc.component) issues.push(`${at}: same component as the scene before (${sc.component})`);
@@ -420,7 +431,7 @@ export async function refillScene({ llm, projectDir, index, component, request =
   if (!sc) throw new Error(`There is no scene ${index + 1}.`);
   const wish = String(request ?? "").trim().slice(0, 500);
   if (!component && !wish) throw new Error("Pick a scene type or say what to change.");
-  if (component && !COMPONENTS[component]) throw new Error(`Unknown component: ${component}`);
+  if (component && !componentMeta(component)) throw new Error(`Unknown component: ${component}`);
   if (component && !wish && roleOf(component) !== roleOf(sc.component)) throw new Error("Swap only within the same role.");
   if (sc.call) throw new Error(`This scene is the comment call ${sc.call.keyword}: it always shows the keyword.`);
   if (component && off.includes(component)) throw new Error("That scene type is turned off in the Motion profile.");
@@ -474,7 +485,7 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
   const gaps = gapsOf(projectDir);
   const own = (i) => (times[i].duration === null ? null : r3(times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0)));
   const rows = table.scenes.map((sc, i) => {
-    const meta = COMPONENTS[sc.component] ?? { role: null, label: sc.component, mainVar: null };
+    const meta = componentMeta(sc.component) ?? { role: null, label: sc.component, mainVar: null };
     return {
       index: i,
       from: sc.from,
@@ -491,7 +502,7 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
       shows: onScreen(sc.component, sc.vars).map((l) => l.text).join(" / "),
       call: sc.call ?? null,
       footage: (table.footage ?? []).find((f) => ids.indexOf(f.from) <= ids.indexOf(sc.to ?? sc.from) && ids.indexOf(f.to ?? f.from) >= ids.indexOf(sc.from))?.clip ?? null,
-      alternatives: Object.entries(COMPONENTS)
+      alternatives: [...Object.entries(COMPONENTS), ...PACK_COMPONENTS]
         .filter(([c, m]) => !sc.call && m.role === meta.role && c !== sc.component && !off.includes(c) && !m.retired)
         .map(([c, m]) => ({ component: c, label: m.label })),
     };

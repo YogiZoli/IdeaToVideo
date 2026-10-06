@@ -1335,3 +1335,43 @@
       színe váltja, a félig fehér betűt a halvány szövegszín, az Editorial az
       alsó harmadba került. A Parallax nagy háttérszava hangos marad, ezért
       jelölt. Render próba (Pill karaoke): a kimondott szó sorban sötétedik.
+107. **Blokk-csomagok (.itvpack) és a 39 archetípus csomagként** (Zoltan,
+    2026-10-06 és 07; `docs/pilot/archetypes-review.md`, `docs/import-export.md`):
+    - **A kánon érintetlen.** Egy általános csomagkészítő
+      (`scripts/make-pack.mjs`) a kánon blokkjaiból csak olvasva gyártja a
+      csomagot; a forrás-leíró (`C:/Users/gdp/ITV-packs/explainer-archetypes/pack.src.json`)
+      és a csomag (`C:/Users/gdp/ITV-packs/explainer-archetypes.itvpack`,
+      1,1 MB) a repón kívül van, az app telepítőjében sincs.
+    - **Formátum:** zip (`runner/packs/zip.mjs`, saját kis író és olvasó; a
+      Windows kibontója is olvassa): `pack.json` (`itv-pack/1`: id, név,
+      kinézet, blokkonként szerep, leírás, változók és határaik, rajzolt
+      hossz), `blocks/<id>.html`, `shared/fontface.css` (a betű egyszer).
+    - **A csomagban javítva** (a kánonban nem): egységes változók (a
+      deklarált és a használt egyezik); a sampler-feliratok (kick, subcap,
+      caption) opcionálisak és üresen eltűnnek; a display-word blur nélkül;
+      **márkanyom sehol** (Zoltan: "se saját márka, se C2C, se zg"): a
+      megjegyzések ki, a kódnevek semlegesek, a márkás mintaszövegek
+      semlegesek, a csatornánkénti színblokkok ki, és a készítő leáll, ha
+      bármi marad. **Ikonok: Lucide** (ISC, Zoltan: ne a saját 37 legyen az
+      alap, hanem egy bevált ingyenes készlet), a blokk saját körében; egy
+      ikon-változóba írt bármely tárgyat a build a három ikonkészletből
+      kikeres.
+    - **Kinézet: alapból a user Identity Brandje** (Zoltan), kapcsolóval a
+      csomag saját kinézete. Ismert korlát: néhány blokk fix színe (például a
+      tölcsér sávjai) marad.
+    - **Kitalált nevek:** a személy- és rekordkártyák szándékosan kitalált
+      példák (Zoltan); a tervező utasítása: soha valódi márka, cég vagy
+      híres ember.
+    - **Az appban:** Settings, Identity, Scenes: Import pack, Export pack,
+      Remove, "Use this pack", "Use this Identity's Brand", blokkonként be és
+      ki. Identity-nként tárolva (`<identity>/packs/<id>/`); az Identity
+      export és import viszi (a Rust oldal a `packs/` alatt a HTML és CSS
+      fájlt is engedi, négy szint mélyen, máshol nem). A tervező a csomag
+      blokkjait is látja (új szerepek: kapcsolat, ellentét, folyamat,
+      részlet, felvétel fölé, komment-felhívás), a Scenes tab cserelistája
+      is; a felvételt igénylő blokkok csak saját felvétellel. A build a
+      blokkba teszi a betűt, a jelenet hosszát (rövid jelenetnél a belépők
+      arányosan korábban), és a Brand színeit.
+    - Próba: hét blokk egy videóban, a saját és a Brand kinézettel is,
+      build, lint, check 0 hiba; az "arrow" Lucide villanykörte és rakéta
+      ikonnal.

@@ -29,6 +29,7 @@
   import CtaWizard from "./cta/CtaWizard.svelte";
   import CtaPage from "./cta/CtaPage.svelte";
   import FootagePage from "./footage/FootagePage.svelte";
+  import PacksPage from "./packs/PacksPage.svelte";
   import { ensureFonts } from "./brand/fontsDom";
   import { runner, exportBrand, importBrand } from "./api";
   import type { BrandState, BrandCard } from "./api";
@@ -353,6 +354,8 @@
       <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
     {:else if pageId === "cta"}
       <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
+    {:else if pageId === "scenes"}
+      <PacksPage />
     {:else if pageId === "footage"}
       <FootagePage {app} />
     {:else if pageId === "dictionary"}

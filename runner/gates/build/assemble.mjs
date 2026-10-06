@@ -45,9 +45,12 @@ import { fontFaces, categories } from "../../brand/fonts.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
 import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE, CUT } from "../../motion/transitions.mjs";
 import { backgroundFor, backgroundPieces, cameraLines } from "../../motion/stage.mjs";
-import { pickIcons, withSketch } from "../../icons/index.mjs";
+import { pickIcons, withSketch, findIcon } from "../../icons/index.mjs";
 import { adaptCaption, loadCaption } from "../../captions/index.mjs";
 import { spokenTimes, withSpoken } from "./spoken.mjs";
+import { isPackComponent, loadPackBlock, fitPackBlock } from "../../packs/index.mjs";
+// the icon names a pack block has built in (scripts/make-pack.mjs ICON_NAMES)
+const PACK_ICON_NAMES = new Set(["comment", "client", "script", "voice", "visuals", "face", "check", "cross", "clock", "money", "place", "title", "caption", "globe", "spark", "lock", "branch", "funnel", "cycle", "gauge", "quote", "question", "warn", "heart", "code", "grid", "mail", "tag", "bang", "query", "dash", "paint"]);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -61,6 +64,13 @@ export function libraryDir(env = process.env) {
 }
 
 export function loadComponent(name, { env = process.env } = {}) {
+  // a block of an imported pack, "<pack>:<block>" (packs/, DECISIONS 107)
+  if (isPackComponent(name)) {
+    const pb = loadPackBlock(name, env.ITV_IDENTITY_DIR);
+    const compositionId = (/data-composition-id="([a-z0-9-]+)"/.exec(pb.html) ?? [])[1];
+    if (!compositionId) throw new Error(`${name}: the block has no composition id.`);
+    return { name, item: pb.item, html: pb.html, target: null, assets: [], pack: { fontface: pb.fontface, seconds: pb.block.seconds, followBrand: pb.pack.followBrand, compositionId } };
+  }
   if (!/^[a-z0-9-]+$/.test(String(name))) throw new Error(`Not a component name: ${name}`);
   const dir = path.join(libraryDir(env), "components", name);
   const itemFile = path.join(dir, "registry-item.json");
@@ -658,7 +668,21 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // (icons/, DECISIONS 105). Without the icon sets the preset sketches stay.
   const icons = pickIcons(scenes, { sentences, recent: look.iconsRecent ?? [], env });
   const fitted = scenes.map((sc, n) => {
-    let html = trackingFit(widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component));
+    const comp = components.get(sc.component);
+    if (comp.pack) {
+      // a pack block: its own font, the scene's length, the Brand when the pack follows it
+      const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
+      // an icon variable may name any simple thing: the three icon sets have it
+      const icons = {};
+      for (const v of comp.item.variables ?? []) {
+        const want = v.icon ? String(sc.vars?.[v.id] ?? "").trim() : "";
+        if (!want || PACK_ICON_NAMES.has(want)) continue;
+        const hit = findIcon(want, { env });
+        if (hit) icons[want] = hit.d.map((d) => `<path d="${d}"/>`).join("");
+      }
+      return fitPackBlock(comp.html, { fontface: comp.pack.fontface, seconds: r3(times[n].duration + ext(n)), drawn: comp.pack.seconds, theme: comp.pack.followBrand ? { ...baseTheme(look), ...(table.theme ?? {}) } : null, family: comp.pack.followBrand ? family : null, icons });
+    }
+    let html = trackingFit(widerFit(fitDuration(comp.html, sc.component, r3(times[n].duration + ext(n))), sc.component));
     if (icons[n]) html = withSketch(html, icons[n]);
     // the spoken word in colour while it is said, no impact shake (spoken.mjs);
     // the Motion profile can turn it off
@@ -680,9 +704,9 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // transitions the scenes alternate between tracks 1 and 4.
   const overlap = Boolean(mp && mp.extend.some((x) => x > 0));
   const mounts = scenes.map((sc, n) => {
-    const src = `compositions/components/scene-${n + 1}-${sc.component}.html`;
+    const src = `compositions/components/scene-${n + 1}-${sc.component.replace(":", "--")}.html`;
     fs.writeFileSync(path.join(out, src), fitted[n]);
-    const m = { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
+    const m = { id: `scene-${n + 1}`, compositionId: components.get(sc.component).pack?.compositionId ?? sc.component, src, ...mountTheme(sc.vars), ...times[n] };
     if (sc.call) m.style += `; --brand: ${callColor(sc.call, { ...baseTheme(look), ...(table.theme ?? {}) })}`;
     if (mp) {
       m.duration = r3(times[n].duration + ext(n));
