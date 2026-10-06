@@ -6,7 +6,7 @@
 //
 //   node scripts/make-pack.mjs --src <pack.src.json> --out <file.itvpack>
 //
-// pack.src.json: { id, name, author, version, look: "own" | "brand",
+// pack.src.json: { id, name, author, version, look: "own" | "brand", neutral?,
 //   description, blocksDir, blocks: { <id>: { role, label, what, needs?,
 //   realOnly?, optional?: [variable ids] } } }
 //
@@ -141,7 +141,7 @@ export function emptyOptional(html, ids) {
 }
 
 // What the block says about its variables, and what it really uses.
-export function blockVariables(html, { optional = [] } = {}) {
+export function blockVariables(html, { optional = [], neutral = true } = {}) {
   const declared = JSON.parse((/data-composition-variables='([^']*)'/.exec(html) ?? [, "[]"])[1].replace(/&#39;/g, "'"));
   const used = new Map();
   const icons = new Set();
@@ -165,7 +165,7 @@ export function blockVariables(html, { optional = [] } = {}) {
     id: v.id,
     type: v.type ?? "string",
     label: v.label ?? v.id,
-    default: swapText(v.default ?? ""),
+    default: neutral ? swapText(v.default ?? "") : v.default ?? "",
     ...(icons.has(v.id) ? { icon: true } : {}),
     maxWords: Math.max(2, words(v.default) + 3),
     ...(optional.includes(v.id) || ["kick", "subcap", "caption"].includes(v.id) ? { optional: true } : {}),
@@ -184,8 +184,11 @@ export function makePack(src) {
     const raw = fs.readFileSync(file, "utf8");
     const faces = raw.match(FONTFACE) ?? [];
     if (!fontface && faces.length) fontface = faces.join("\n");
-    const variables = blockVariables(raw, meta);
-    const html = debrand(withLucide(emptyOptional(fixBlock(raw.replace(FONTFACE, "")), variables.filter((v) => v.optional).map((v) => v.id)), lucide));
+    const variables = blockVariables(raw, { ...meta, neutral: src.neutral !== false });
+    const fixed = emptyOptional(fixBlock(raw.replace(FONTFACE, "")), variables.filter((v) => v.optional).map((v) => v.id));
+    // "neutral" (the default): no brand trace, Lucide icons; an "original" pack
+    // (neutral: false) keeps the designer's own look, icons and names
+    const html = src.neutral === false ? fixed : debrand(withLucide(fixed, lucide));
     const seconds = Number((/data-scene-dur="([\d.]+)"/.exec(raw) ?? [])[1]);
     if (!(seconds > 0)) throw new Error(`${id}: no data-scene-dur, the block's drawn length is unknown.`);
     blocks.push({ id, role: meta.role, label: meta.label, what: meta.what ?? "", seconds, variables: variables.map((v) => (v.optional ? { ...v, default: "" } : v)), ...(meta.needs ? { needs: meta.needs } : {}), ...(meta.realOnly ? { realOnly: true } : {}) });

@@ -1380,4 +1380,25 @@
     célra szól. Kivéve a kulcsmezőt, a kulcslistából, a Test key-ből és az
     app jogosultságai közül. Stock: Pixabay (kereskedelmi célra is szabad),
     az Unsplash a jóváhagyása után.
+109. **Zoltan saját márkája importálható fájlban, és az Open Sans** (Zoltan,
+    2026-10-07: "a ZG és C2C pontos másolata kell, hogy ne kelljen újra
+    kitalálni"; az Open Sans marad):
+    - **Open Sans az app betűi között** (OFL, fontsource 5.3.0, rögzítve), mint
+      bármelyik másik; a Brand kártya választhatja.
+    - **A csomagkészítő két módja:** "neutral" (alap: márkanyom nélkül, Lucide
+      ikonok, a befogadó Brandjében) és "original" (`neutral: false`: a
+      tervező saját kinézete, ikonjai és nevei).
+    - **A fájlok** (`C:/Users/gdp/ITV-packs/`, a repón kívül, leírás:
+      `README.md`): `ZG-C2C.identity.zip` (teljes Identity: a kánon ZG/C2C
+      színei és betűje, a kánon szerinti Motion, az eredeti csomag, a
+      "Zoltan Gero" Identity csatornája, hangja és avatarja; CTA, kulcs és
+      videó nélkül), `zg-archetypes-original.itvpack`,
+      `neutral-explainer-archetypes.itvpack`. Elnevezési rend:
+      `<MÁRKA>.identity.zip`, `<tulaj>-<tartalom>-original.itvpack`,
+      `neutral-<tartalom>.itvpack`.
+    - A ZG/C2C Motion a kánonból (`MOTION.md`, `BLOCKS.md`): folyamatos push
+      kamera, Dot field háttér, egy átmenet ismétlődik (crossfade, a kánon
+      fade-through-jához legközelebbi), Balanced tempó, a kimondott szó
+      kiemelve, felirat ki.
+    - A fájlok az új telepítővel működnek (csomag-import, Open Sans).
 
