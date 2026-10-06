@@ -532,8 +532,8 @@ const commands = {
   // segment: the account's finished videos, then the chosen one downloaded
   // (reads only, no cost; DECISIONS 101). Pictures are cached locally like
   // the avatar previews.
-  "segment-import-list": async ({ identityDir }) => {
-    const videos = await heygen.listVideos({ apiKey: key() });
+  "segment-import-list": async ({ identityDir, title }) => {
+    const videos = await heygen.listVideos({ apiKey: key(), title: String(title ?? "").trim().slice(0, 100) || undefined });
     const have = new Set(loadSegments(identityDir).map((s) => s.heygenId).filter(Boolean));
     const dir = path.join(dataDir(), "avatar-previews");
     const queue = [...videos];

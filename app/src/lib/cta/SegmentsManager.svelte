@@ -34,6 +34,7 @@
   type HeygenVideo = { id: string; title: string; seconds: number | null; createdAt: number | string | null; image: string | null; tooLong: boolean; imported: boolean };
   let theirs = $state<HeygenVideo[] | null>(null);
   let pickedVideo = $state<string | null>(null);
+  let search = $state("");
 
   const SLOT_IDS: CtaSlot[] = ["start", "middle", "end"];
   const info = $derived(options.keywords.find((k) => k.keyword === keyword) ?? null);
@@ -105,7 +106,7 @@
     error = "";
     busy = "Reading your HeyGen videos...";
     try {
-      theirs = (await runner<{ videos: HeygenVideo[] }>("segment-import-list", { service: "heygen" })).videos;
+      theirs = (await runner<{ videos: HeygenVideo[] }>("segment-import-list", { service: "heygen", title: search })).videos;
       pickedVideo = null;
     } catch (e) {
       error = errorText(e);
@@ -194,7 +195,7 @@
       <div class="way wide">
         <b>C. Import a video you already made in HeyGen</b>
         <span class="hint">Videos in your HeyGen account, made in its web app or earlier. Reading and downloading them costs nothing. Make the clip once, give it this keyword here, and it plays every time a comment call uses {keyword}. Only the videos HeyGen lists for the API appear: if yours is missing, download it in HeyGen and use A.</span>
-        <div class="row"><button type="button" disabled={!!busy} onclick={showTheirs}>{theirs ? "Read the list again" : "Show my HeyGen videos"}</button></div>
+        <div class="row"><input type="search" placeholder="Search by title (optional)" bind:value={search} onkeydown={(e) => e.key === "Enter" && showTheirs()} /><button type="button" disabled={!!busy} onclick={showTheirs}>{theirs ? "Search again" : "Show my HeyGen videos"}</button></div>
         {#if theirs}
           {#if theirs.length}
             <ul class="picks">
@@ -203,7 +204,7 @@
                   <label>
                     <input type="radio" name="heygen-video" value={v.id} bind:group={pickedVideo} disabled={!!busy || v.tooLong} />
                     {#if v.image}<img src={convertFileSrc(v.image)} alt="" />{:else}<span class="noimg"></span>{/if}
-                    <span class="meta"><b>{v.title || "Untitled"}</b><span class="hint">{v.seconds != null ? `${v.seconds} s` : "length unknown"}{v.tooLong ? `, longer than ${30} s: too long for a segment` : ""}{v.imported ? ", already imported" : ""}</span></span>
+                    <span class="meta"><b>{v.title || "Untitled"}</b><span class="hint">{v.createdAt && Number(v.createdAt) ? `${new Date(Number(v.createdAt) * 1000).toLocaleDateString()}, ` : ""}{v.seconds != null ? `${v.seconds} s` : "length unknown"}{v.tooLong ? `, longer than ${30} s: too long for a segment` : ""}{v.imported ? ", already imported" : ""}</span></span>
                   </label>
                 </li>
               {/each}
@@ -211,7 +212,7 @@
             <label class="field"><span>What does it say? (optional, for the captions)</span><textarea rows="4" maxlength={TEXT_MAX} bind:value={said} placeholder={`Comment ${keyword} below and ...`}></textarea><span class="hint">{said.length} / {TEXT_MAX} characters, enough for the whole 30 s</span></label>
             <div class="row"><button type="button" class="primary" disabled={!!busy || !pickedVideo} onclick={importVideo}>Import as {keyword}</button></div>
           {:else}
-            <p class="hint">HeyGen listed no finished videos for this key. Download your clip in HeyGen and use A.</p>
+            <p class="hint">{search.trim() ? "No finished video with this title." : "HeyGen listed no finished videos for this key. Download your clip in HeyGen and use A."}</p>
           {/if}
         {/if}
       </div>

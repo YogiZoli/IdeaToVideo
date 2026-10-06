@@ -1189,8 +1189,14 @@
     - **Import from HeyGen** (CTA, Your segments, C): `GET /v3/videos`
       (olvasás), a kész videók listája, kiválasztás, kulcsszóhoz rendelés,
       letöltés (`source: heygen-import`, a szegmens megjegyzi a `heygenId`-t,
-      így látszik, mi van már importálva). Nyitott: a webes felületen készült
-      videók listázódnak-e; a valódi fiókkal kell kipróbálni (Zoltan).
+      így látszik, mi van már importálva). **Kipróbálva Zoltan kulcsával
+      (2026-10-06, csak olvasás, ingyen, a kulcs nem került sehova):** a lista
+      50 videót ad oldalanként (van következő oldal), a kész videókhoz van
+      letöltési cím és kép (`files2.heygen.ai`), és a webes felületen készült
+      videók is benne vannak (például az "Avatar Video" és a "Meet your
+      avatar"). A lista zsúfolt (az app saját open és close klipjei, tesztek),
+      ezért az importnak címkereső mezője és dátuma van. Nem próbáltam: a
+      letöltés és a klip minősége (vízjel nincs-e), azt az első importnál látjuk.
     - **Szegmens szövege 1500 karakter** (volt 400): egy 30 mp-es klip teljes
       szövege beleférjen, a mezők alatt számláló. A felirat és a publikálási
       adat (`said`) ezt használja.
