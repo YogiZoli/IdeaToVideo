@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-06 (AI B-roll megépült, branch `ai-broll`, DECISIONS 98-99)
+Frissítve: 2026-10-07 (3. fázis folyamatban, branch `phase-3`, DECISIONS 101-109)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -41,17 +41,38 @@ móddal a renderig).
    feltöltésként adja hozzá (ingyen). Kérdés a próbán: ad-e az Avatar III
    átlátszó hátterű (WebM) klipet.
 
-## 3. fázis, branch `phase-3` (2026-10-06)
+## 3. fázis, branch `phase-3` (frissítve 2026-10-07)
 
-Terv: `docs/phase-3-plan.md` (jóváhagyva, DECISIONS 101). Csak ingyenes
-lépések; a pénzes (aláírás, Mac, név, domain) és a baráti tesztek későbbre.
-**Kész:** az avatar motorválasztás (alap Avatar III, per videó és Identity
-alap), az Import from HeyGen a CTA-szegmensekhez, a szegmens szövege 1500
-karakter. Fizetős HeyGen hívás nem volt; a videólistát ingyen kipróbáltam Zoltan
-kulcsával: a webes videók listázódnak (DECISIONS 101). **Következő:** sampler render a presetekkel (PRD 14.5),
-a 4. fázis ingyenes része (README, About, `release.yml`, updater), majd
-egyetlen új telepítő és az A kör Windows Sandboxban. Az "Unlimited" Avatar
-III az API-ra nem vonatkozik (DECISIONS 101).
+**Itt kezdd:** `docs/hatralevo.md` (a sorrend és mi kész), utána
+`docs/video-quality-plan.md` (a videóminőség terve), a DECISIONS 101-109.
+A branch pusholva (`origin/phase-3`), PR még nincs (a fázis végén).
+
+**Zoltan sorrendje (DECISIONS 103):** (1) élénkebb alap, (2) ikonok, (3)
+kimondott szó és feliratok, (4) a 39 archetípus csomagként, (5) Scenes
+varázsló, (6) kép és videó források, utána telepítési leírás, új telepítő,
+Zoltan próbája Windows Sandboxban; csak ezután README, `release.yml`, updater.
+Zoltan kérése: kérdés nélkül haladni a javaslatok szerint.
+
+**Kész ebben a fázisban:**
+- avatar motorválasztás (alap Avatar III), Import from HeyGen, szegmens szöveg
+  1500 karakter (101); sampler a 11 presettel, olvashatóság, betűköz,
+  THIRD-PARTY-NOTICES (102);
+- élénkebb alap: folyamatos kamera, új kép 3-5 mp-enként (103); tempó
+  választható, Pixabay kulcs (104; a Coverr kivéve, 108);
+- ikonok: Lucide, Tabler, Iconoir a rajzos jelenetben (105);
+- 15 felirat-stílus és a kimondott szó kiemelése (106);
+- blokk-csomagok (`.itvpack`), Import, Export a Settings, Identity, Scenes
+  oldalon; a 39 archetípus márkanyom nélkül és eredetiben (107);
+- Open Sans; Zoltan ZG/C2C márkája importálható Identity-fájlban:
+  `C:/Users/gdp/ITV-packs/ZG-C2C.identity.zip` (109, `C:/Users/gdp/ITV-packs/README.md`).
+
+**Következő: (5) Scenes varázsló** (bőséges, Zoltan): keverék (szöveg, ikon,
+kép, videó), csomagok és blokkok, ikoncsaládok, képforrás; a tempó a Motion
+varázslóban marad. Utána (6) Pixabay keresés.
+
+**Tesztek:** 258 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
+az új funkciók a 4. fázis végi telepítővel próbálhatók (Zoltan döntése).
+Mintavideók: `C:/Users/gdp/Videos/IdeaToVideo-mintak/`.
 
 Régebbi sorrend: utána a 3. fázis (pilot).
 
