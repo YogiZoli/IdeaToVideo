@@ -14,6 +14,7 @@
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
   import BrollSettings from "./BrollSettings.svelte";
+  import StockKeys from "./StockKeys.svelte";
 
   let { app }: { app: AppState } = $props();
 
@@ -166,6 +167,7 @@
 </section>
 
 <BrollSettings {app} />
+<StockKeys {app} />
 
 {#if st && generated.length}
   <section class="card">

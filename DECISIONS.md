@@ -1263,4 +1263,21 @@
       egy címkártya). Egy hosszú mondat egy jelenet marad; a mondaton belüli
       bontás a kimondott szó kiemelésével (3. lépés) jön. Próba: 46 mp-es
       render, egy jeleneten belül 0,8 mp alatt a kép mozdul (SSIM 0,98).
+104. **Tempó választható, stock kulcsok** (Zoltan, 2026-10-06: "ez nem olyasmi,
+    amiben a usernek kéne döntenie?"; "Pixabay és Coverr menjen már most"):
+    - **Tempó a Motion varázsló első képernyőjén:** Calm (új kép 5-8 mp-enként,
+      összevont jelenet legfeljebb 10 mp), Balanced (3-5 mp, legfeljebb 7 mp,
+      ajánlott, az alap), Fast (2-4 mp, legfeljebb 5 mp). A Motion profil
+      `pace` mezője; a tervező promptja, a gépi ellenőrzés és a Simple plan
+      ezt követi (`roles.mjs` PACES). A Camera képernyő ajánlása Push in lett.
+    - **Stock felfüggesztés feloldva** (Zoltan): Pixabay és Coverr most, az
+      Unsplash a jóváhagyása után. Most a kulcsok: Settings, Identity,
+      Footage, "Stock photos and videos" (Test key). A keresés a kép és videó
+      források lépésében jön (DECISIONS 103 sorrend, 6.).
+    - **Figyelem, Coverr:** az API leírása szerint az ingyenes hozzáférés
+      addig jár, amíg az app nem kér érte pénzt, és a videókat nem használják
+      kereskedelmi célra; a forrást (logó, kattintható) mutatni kell. A
+      Pixabay licence kereskedelmi célra is szabad, forrásmegjelölés nélkül;
+      a találatokat 24 óráig gyorsítótárazni kell, a képeket letölteni. A
+      Coverr használata a kiadás előtt Zoltan döntése.
 
