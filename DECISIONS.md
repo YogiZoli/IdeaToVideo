@@ -1038,3 +1038,23 @@
     synthetic content" jelölését az app jelzi. A stock tervben
     (DECISIONS 93) a forrásmegjelölés csak belül tárolódik, a videó alá nem
     kerül.
+95. **AI B-roll és stock: Zoltan döntései; a sorrend** (Zoltan, 2026-10-06).
+    Felírva, nem épül; az AI B-roll a 2. fázis lezárása után, külön chatben.
+    - **Alapból kikapcsolva.** Bekapcsolva az alap generátor a **HeyGen
+      Video 1**; a Veo 3.1 csak második választás, és lehet, hogy kimarad.
+    - **Költségplafon videónként: a user csúszkája a Settingsben** (Settings,
+      Identity, Footage), **alap 1 USD** (a csúszka 1 és 10 USD között, 0,50-es
+      lépésekkel). Indok: a HeyGen avatar már pénzbe kerül, egy videó
+      összesen pár dollár maradjon. A plafon fölött az app mindig kérdez.
+    - **Elkészült klipek a userénél maradnak, újrahasznosíthatóan:** Settings,
+      Identity, Footage alatt külön rész, "AI B-roll" (a saját felvételek
+      mellett). Minden klip a képleírásával, a generátorral, a dátummal és
+      azzal, hogy melyik videókban szerepelt. Egy újabb videónál a tervező
+      előbb ezek közül választ (ingyen), csak a hiányzót rendeli meg.
+    - **A stock (Pixabay, Coverr) felfüggesztve**, amíg Zoltan másképp nem
+      dönt (`docs/stock.md`, DECISIONS 93). Csak az AI B-roll iránya marad,
+      így copyright kockázat nincs.
+    - **Sorrend:** előbb a 2. fázis lezárása (új chat), utána az AI B-roll
+      (új chat, `docs/ai-broll.md` 7). A Mac build ráér: nem a 2. fázis
+      lezárásához kell, hanem a 3. és 4. fázis után (a kiadás előtt).
+

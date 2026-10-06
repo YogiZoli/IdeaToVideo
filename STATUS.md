@@ -244,23 +244,25 @@ Kész (2026-09-30):
    Autopilot folytatás megszakadás után; render állapot a projektben;
    felületi hibahatár; "Export diagnostics" zip. Tesztek: 210 Node, 47 Rust, e2e 33/33.
    Telepítő: commit c105d15 (2026-10-06, a checkinnel, 99 MB), Zoltan próbájára vár.
-   **Következő: Zoltan próbája** (a napló: `node scripts/log-summary.mjs`),
-   utána a fázis lezárása (Mac build, STATUS, DECISIONS, SPEC, Drive tükör,
-   PR a main felé).
-   **Stock kereső: új terv, Zoltan döntésére vár** (DECISIONS 93,
-   `docs/stock.md`): Pixabay és Coverr az első kör, az Unsplash és a Pexels
-   kulcsra vár.
-   **AI B-roll (generált klipek): terv, Zoltan döntésére vár** (DECISIONS 94,
-   `docs/ai-broll.md`, benne a prompt egy új chathez).
+   **Következő: a 2. fázis lezárása, új chatben** (benne Zoltan próbájának
+   napló-összefoglalója: `node scripts/log-summary.mjs`): STATUS, DECISIONS,
+   SPEC, Drive tükör, PR a main felé. **A Mac build nem kell hozzá**, a 3. és
+   4. fázis után jön (DECISIONS 95). Utána az AI B-roll.
+   **Stock kereső: felfüggesztve** (DECISIONS 93, 95, `docs/stock.md`).
+   **AI B-roll (generált klipek): döntések megvannak, a 2. fázis lezárása
+   után épül, új chatben** (DECISIONS 94, 95, `docs/ai-broll.md`, a 7.
+   pontban a prompt): alapból kikapcsolva, HeyGen Video 1, plafon csúszkán
+   alap 1 USD, az elkészült klipek a Footage alatt újrahasznosíthatóan.
    Később: az OpenArt kimarad;
    élő előnézet renderelés nélkül (K9 b, Zoltan még nem döntött);
    lokalizáció és fordítás (DECISIONS 86). A PDT import és a Translation
    Pack külön chatben a PDT repóban.
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
-Utána a **fázis vége**: Mac build (`gh workflow run build -f platforms=both`, a
-jóváhagyott változaton), STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR
-`phase-2` a main felé, Zoltan jóváhagyása, merge.
+Utána a **fázis vége**: STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR
+`phase-2` a main felé, Zoltan jóváhagyása, merge. A Mac build
+(`gh workflow run build -f platforms=both`) a 3. és 4. fázis után, a kiadás
+előtt (DECISIONS 95).
 
 **Megoldva (2026-10-02, DECISIONS 72), a 14. lépéshez: betűk.** A HyperFrames minden `@font-face` nélküli
 betűcsaládot a Google Fonts-ról tölt le (a Georgiát is EB Garamondra cseréli),

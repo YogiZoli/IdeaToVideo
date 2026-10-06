@@ -1,8 +1,9 @@
 # Stock videó és kép: terv (még nem épül)
 
-Állapot: **terv, Zoltan döntésére vár** (2026-10-06). Zoltan pár napig gondolkodik
-rajta; addig az Unsplash is válaszolhat a jelentkezésre. A DECISIONS 90 vázlatát
-ez a terv váltja fel (DECISIONS 93). Bármi felülírható.
+Állapot: **felfüggesztve** (Zoltan, 2026-10-06, DECISIONS 95): amíg másképp nem
+dönt, csak az AI B-roll iránya marad (`docs/ai-broll.md`), így copyright
+kockázat sincs. A terv megmarad, ha egyszer mégis kell. A DECISIONS 90
+vázlatát ez a terv váltotta fel (DECISIONS 93).
 
 ## 1. Mire jó
 

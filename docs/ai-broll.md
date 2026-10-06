@@ -1,8 +1,13 @@
 # AI B-roll: egyedi, generált klipek a stock helyett (terv)
 
-Állapot: **terv, Zoltan döntésére vár** (2026-10-06, DECISIONS 94). A stock
-terv (`docs/stock.md`) mellett áll, nem helyette: a kettő ugyanabba a
-felvétel-könyvtárba ír, és a jelenet-tervező ugyanúgy használja őket.
+Állapot: **terv, a döntések megvannak (DECISIONS 95), még nem épül.** A 2.
+fázis lezárása után, külön chatben készül (prompt: 7). A stock
+(`docs/stock.md`) felfüggesztve, csak ez az irány marad.
+
+Zoltan döntései (2026-10-06): alapból kikapcsolva; bekapcsolva HeyGen Video 1,
+a Veo csak második, lehet, hogy kimarad; költségplafon videónként egy
+csúszkán, alap 1 USD; az elkészült klipek a Footage alatt külön "AI B-roll"
+részben maradnak, újra és újra használhatók.
 
 ## 1. Miért
 
@@ -72,9 +77,21 @@ a generált klip saját hangja néma marad a keverésben.
    kerülnek ("generated" forrással), így egy későbbi videó is
    felhasználhatja őket ingyen.
 
-Autopilot: egy kapcsoló, alapból kikapcsolva (pénzbe kerül). Settings,
-Identity, Footage: alap generátor, minőség, és egy költségplafon videónként
-(alap 5 USD); a plafon fölött mindig kérdez.
+Autopilot: egy kapcsoló, alapból kikapcsolva (pénzbe kerül).
+
+**Settings, Identity, Footage** (DECISIONS 95):
+- "AI B-roll" kapcsoló, alapból **kikapcsolva**; kikapcsolva a Scenes tabon
+  a gomb sem látszik.
+- Generátor: **HeyGen Video 1** (alap); a Veo 3.1 Lite csak akkor jelenik meg,
+  ha Zoltan később benne hagyja.
+- **Költségplafon videónként: csúszka, 1 és 10 USD között, 0,50-es
+  lépésekkel, alap 1 USD.** A becslés mindig mutatja, mennyi fér még bele; a
+  plafon fölött az app kérdez, magától soha nem lépi túl.
+- **"AI B-roll" könyvtár**, külön rész a saját felvételek mellett: minden
+  elkészült klip előnézettel, a képleírásával, a generátorral, a dátummal és
+  a videókkal, amikben szerepelt; törölhető. Egy újabb videónál a tervező
+  előbb ezek közül választ (ingyen), és csak a hiányzót rendeli meg; a
+  becslés ezt külön mutatja ("3 from your library, 4 new, about 0.60 USD").
 
 ## 5. Technikai felépítés
 
@@ -96,30 +113,39 @@ Identity, Footage: alap generátor, minőség, és egy költségplafon videónk�
 - Tesztek: illesztők álszolgáltatóval (mint a HeyGen avatar tesztjei), a
   becslés, a dupla megrendelés tiltása, a plafon.
 
-## 6. Nyitott kérdések Zoltannak
+## 6. Eldőlt (Zoltan, 2026-10-06, DECISIONS 95)
 
-1. Alap generátor: HeyGen Video 1 (olcsó, 768p) vagy Veo 3.1 Lite (1080p)?
-   Javaslat: Veo 3.1 Lite alapnak, HeyGen Video 1 választhatóan.
-2. Költségplafon videónként: 5 USD jó alap?
-3. A stock (Pixabay, Coverr) ettől függetlenül jöjjön, vagy elég a
-   generált? Javaslat: előbb a generált, a stock később, ha a pilot kéri.
+1. Alapból kikapcsolva; bekapcsolva HeyGen Video 1; a Veo csak második, és
+   lehet, hogy kimarad. Építéskor a Veo illesztő elhagyható.
+2. Plafon videónként csúszkán, alap 1 USD.
+3. A stock felfüggesztve; csak az AI B-roll marad.
+4. Az elkészült klipek a userénél maradnak, a Footage alatt külön "AI
+   B-roll" részben, újrahasznosíthatóan.
 
-## 7. Prompt egy új chathez
+A 3. pont becslése 1 USD-s plafonnal: HeyGen Video 1 768p-n kb. 30-60 mp
+B-roll fér bele egy videóba (0,02-0,03 USD/mp), a könyvtárból vett klip
+ingyen van.
+
+## 7. Prompt egy új chathez (a 2. fázis lezárása után)
 
 ```text
 Olvasd el és kövesd szó szerint a C:/Users/gdp/projects/IdeaToVideo/docs/SESSION-PROMPT.md
 fájlban lévő session promptot (a text blokk), az a KEZDÉS és a SZABÁLYOK.
 
-A helyzet: 2. fázis, branch phase-2. A hibátlanítás kész (DECISIONS 91-92).
-Ebben a chatben: az AI B-roll megépítése a docs/ai-broll.md terv szerint
-(DECISIONS 94), az én válaszaimmal a terv 6. pontjára: [ide írom a válaszokat].
+A helyzet: a 2. fázis lezárva és merge-ölve a mainre. Ebben a chatben: az AI
+B-roll megépítése a docs/ai-broll.md terv szerint, Zoltan döntéseivel
+(DECISIONS 94 és 95): alapból kikapcsolva, HeyGen Video 1 a generátor, a Veo
+csak ha külön kérem; költségplafon videónként csúszkán, alap 1 USD; az
+elkészült klipek a Settings, Identity, Footage alatt külön "AI B-roll"
+részben, újrahasznosíthatóan. A stock felfüggesztve, ne építsd.
 
-Menet: előbb mondd vissza a tervet röviden, és ellenőrizd a két API mai
-leírását (HeyGen Video 1: developers.heygen.com; Veo 3.1: ai.google.dev,
-Gemini API video generation): végpontok, felbontás, hossz, ár. Ha valami
-eltér a tervtől, szólj, mielőtt kódolsz. Utána: illesztők és runner
-parancsok tesztekkel, a Scenes tab "Make B-roll clips" lépése, ui-mock
-próba, e2e, telepítő. A végén STATUS, DECISIONS, Drive tükör, commit és push.
+Menet: új feature branch a mainről. Előbb mondd vissza a tervet röviden, és
+ellenőrizd a HeyGen Video 1 mai API leírását (developers.heygen.com):
+végpont, felbontás, hossz, ár, kereskedelmi felhasználás. Ha valami eltér a
+tervtől, szólj és kérdezz, mielőtt kódolsz. Utána: illesztő és runner
+parancsok tesztekkel, a könyvtár, a Scenes tab "Make B-roll clips" lépése, a
+Settings csúszka, ui-mock próba, e2e, telepítő. A végén STATUS, DECISIONS,
+Drive tükör, commit, push, PR a main felé, és állj meg a jóváhagyásomig.
 Fizetős hívást csak az én kifejezett jóváhagyásommal indíts (egy próbaklip,
 legfeljebb 5 mp).
 ```
