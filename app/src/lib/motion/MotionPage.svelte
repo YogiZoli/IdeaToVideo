@@ -39,7 +39,7 @@
   {:else}
     {@const p = st.profile}
     <p>Mood: {name(st.options.moods, p.transition.mood)}, {name(st.options.energies, p.transition.energy).toLowerCase()} energy. Scene changes: {tlabel(p.transition.primary)}{p.transition.accent ? `, ${tlabel(p.transition.accent)} at new sections` : ""}{p.transition.where === "sections" ? ", cuts inside a section" : ""}.</p>
-    <p class="hint">Background: {name(st.options.backgrounds, p.background.type)}. Camera: {name(st.options.cameras, p.camera.move)}. Pace: {name(st.options.paces ?? [], p.pace ?? "balanced")}.{p.scenes.off.length ? ` Scene types turned off: ${p.scenes.off.length}.` : ""}{p.updatedAt ? ` Saved ${new Date(p.updatedAt).toLocaleDateString()}.` : ""}</p>
+    <p class="hint">Background: {name(st.options.backgrounds, p.background.type)}. Camera: {name(st.options.cameras, p.camera.move)}. Pace: {name(st.options.paces ?? [], p.pace ?? "balanced")}. Captions: {p.captions?.style && p.captions.style !== "off" ? name(st.options.captions ?? [], p.captions.style) : "off"}.{p.scenes.off.length ? ` Scene types turned off: ${p.scenes.off.length}.` : ""}{p.updatedAt ? ` Saved ${new Date(p.updatedAt).toLocaleDateString()}.` : ""}</p>
   {/if}
   <p class="hint">Every ONE Video of this Identity uses it from its next build.</p>
   <div class="row"><button type="button" class="primary" onclick={onopen}>Open Motion wizard</button></div>

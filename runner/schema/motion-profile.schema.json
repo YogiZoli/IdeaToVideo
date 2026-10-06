@@ -7,6 +7,12 @@
     "schema": { "const": "motion-profile/1" },
     "updatedAt": { "type": "string", "maxLength": 40 },
     "pace": { "enum": ["calm", "balanced", "fast"] },
+    "spokenWord": { "enum": ["highlight", "off"] },
+    "captions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "style": { "type": "string", "pattern": "^(off|caption-[a-z-]{1,40})$" } }
+    },
     "transition": {
       "type": "object",
       "additionalProperties": false,

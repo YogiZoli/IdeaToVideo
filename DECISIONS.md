@@ -1303,4 +1303,28 @@
       tiltott szót tartalmazó címke kimarad, egy Iconoir ikon emiatt kimaradt.
     - Később: a rács-kártyák ikonjai, és a Scenes varázslóban a családok és
       a kedvencek Identity-nként.
-
+106. **Feliratok és a kimondott szó** (Zoltan: "mind a 17", "a kimondott szó
+    legyen kiemelve, mint egy átiratban, rázás helyett"):
+    - **15 felirat-stílus** a HyperFrames registryből (`caption-*`), a
+      rögzített commitról, SHA256 lockkal, előnézeti képpel és a saját
+      fájljaikkal (a Texture hat textúrája). A 17 felirat-címkés elemből kettő
+      nem felirat-stílus: a `caption-blend-difference` csak egy CSS keverési
+      hatás, a `caption-camera-follow` egymondatos jelenettípus (a Scenes
+      varázslóba kerülhet).
+    - **Build-másolat** (`runner/captions/`): a videó saját szavai és
+      időzítése (`words.json`), saját csoportok (legfeljebb 4 szó, új csoport
+      mondatjel vagy szünet után), a videó hossza, az Identity betűje, helyi
+      GSAP, Google Fonts nélkül. A színek a márkából, 3:1 felett: világos
+      kinézetnél a fehér és halvány betű a szöveg színét kapja, a neon és a
+      kódzöld a fő színt; a karaoke pirula a felület színét. Egy fedőréteg az
+      egész videó fölött (track 9); a HyperFrames futtató `caption-overrides.json`
+      fájlját üres listával adjuk; a feliratszavak átfedés-jelölést kapnak
+      (szándékos rétegzés).
+    - **Motion varázsló, új "Captions" képernyő:** Off (alap) és a 15 stílus
+      képpel, a hangos stílusok jelölve; a `.srt` mindig elkészül.
+    - **A kimondott szó a jelenet saját szövegében** (`spoken.mjs`, alapból
+      be, a Captions képernyőn kikapcsolható): a headline-slam és a
+      per-word-rise szavai a kimondás idejére átszíneződnek (márkaszín, vagy a
+      szöveg színe, ha már márkaszínű), a jelenet saját GSAP idővonalán; a
+      headline-slam háromkockás rázása nincs többé.
+    - Próba: mind a 15 stílus build, lint és check (Blue Professional).

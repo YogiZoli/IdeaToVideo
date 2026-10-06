@@ -14,6 +14,7 @@
 // Brand Identity Card and its local fonts) instead of the fixed themes. Every
 // planned component once, plus a Hungarian line for the accents (PRD 7).
 // --out <dir> copies each contact sheet there as <preset>.png.
+// --captions <style> burns in one caption style (runner/captions/).
 // Needs the built engine, library and ffmpeg (scripts/fetch-*.mjs) and the
 // render browser (tools-status / browser-ensure).
 
@@ -22,7 +23,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { assemble, BLUE_PROFESSIONAL, libraryDir } from "../../runner/gates/build/assemble.mjs";
+import { assemble, BLUE_PROFESSIONAL, libraryDir, BASE_MOTION } from "../../runner/gates/build/assemble.mjs";
 import { lintAndCheck } from "../../runner/gates/build/index.mjs";
 import { renderVideo } from "../../runner/gates/render/index.mjs";
 import { resolveBrowser, ffmpegPaths } from "../../runner/tools.mjs";
@@ -37,6 +38,7 @@ const { values: args } = parseArgs({
     theme: { type: "string" },
     preset: { type: "string" },
     out: { type: "string" },
+    captions: { type: "string" },
   },
 });
 if (!args.work) {
@@ -144,7 +146,7 @@ for (const name of presets ?? (args.theme ? [args.theme] : Object.keys(THEMES)))
 
   const row = { name, assemble: false, check: null, sheet: null, render: null };
   results.push(row);
-  const built = await timed("assemble", () => assemble(dir, { env, total: TOTAL, title: `Pilot ${name}`, ...(presets ? { look: name } : {}) }));
+  const built = await timed("assemble", () => assemble(dir, { env, total: TOTAL, title: `Pilot ${name}`, ...(presets ? { look: name } : {}), ...(args.captions ? { motion: { ...BASE_MOTION, captions: { style: args.captions } } } : {}) }));
   if (!built) continue;
   row.assemble = true;
   row.check = (await timed("lint + check", () => lintAndCheck(dir, { env }))) ? "ok" : "failed";

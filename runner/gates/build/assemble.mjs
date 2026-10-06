@@ -46,6 +46,8 @@ import { sentenceSections } from "../scenes/index.mjs";
 import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE, CUT } from "../../motion/transitions.mjs";
 import { backgroundFor, backgroundPieces, cameraLines } from "../../motion/stage.mjs";
 import { pickIcons, withSketch } from "../../icons/index.mjs";
+import { adaptCaption, loadCaption } from "../../captions/index.mjs";
+import { spokenTimes, withSpoken } from "./spoken.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -472,7 +474,7 @@ const hostHtml = (m, width, height, motion) => {
 };
 const NL = "\n";
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null, captions = null }) {
   const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
   const ground = motion?.backgrounds?.length
     ? motion.backgrounds
@@ -528,7 +530,7 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
 ${ground}${footageMode === "background" ? footage.map((f) => "\n" + footageVideo(f, "background")).join("") : ""}
 ${hosts}${footageMode === "background" ? "" : footage.map((f) => "\n" + footageVideo(f, "scene")).join("")}
-${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}
+${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}${captions ? `\n    <div id="captions" class="clip" data-composition-id="${captions.compositionId}" data-composition-src="${captions.src}" data-start="0" data-duration="${total}" data-track-index="9" data-width="${width}" data-height="${height}" data-layout-allow-overlap></div>` : ""}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
     </div>
     <script>
@@ -658,6 +660,9 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const fitted = scenes.map((sc, n) => {
     let html = trackingFit(widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component));
     if (icons[n]) html = withSketch(html, icons[n]);
+    // the spoken word in colour while it is said, no impact shake (spoken.mjs);
+    // the Motion profile can turn it off
+    if (profile?.spokenWord !== "off") html = withSpoken(html, sc.component, spokenTimes(sc, spoken, times[n].start, times[n].start + times[n].duration));
     return bgComponent || underFootage(n) ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
@@ -716,11 +721,27 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const covered = [...segments.map((g) => ({ at: g.start, seconds: g.seconds })), ...footage.map((f) => ({ at: f.start, seconds: Math.round((f.end - f.start) * 1000) / 1000 }))];
   if (covered.length) fs.writeFileSync(path.join(out, COVERED_FILE), JSON.stringify(covered, null, 2) + "\n");
   const motionPart = mp ? { lines: mp.lines, shader: mp.shader, backgrounds } : null;
+  // Burned-in captions over the whole video, in the Motion profile's style
+  // (captions/, DECISIONS 106): the narration's own words and timing.
+  let captionMount = null;
+  const captionStyle = profile?.captions?.style;
+  if (captionStyle && captionStyle !== "off") {
+    const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
+    const src = `compositions/components/captions-${captionStyle}.html`;
+    fs.writeFileSync(path.join(out, src), adaptCaption(captionStyle, loadCaption(captionStyle, { env }), { words: spoken, total, family, theme: { ...baseTheme(look), ...(table.theme ?? {}) }, light: Boolean(look.light) }));
+    // the HyperFrames runtime asks for word-level overrides whenever there
+    // are captions; none here
+    fs.writeFileSync(path.join(out, "caption-overrides.json"), "[]\n");
+    // a style's own assets (caption-texture's texture pictures) next to it
+    const capDir = path.join(libraryDir(env), "captions", captionStyle);
+    for (const f of fs.readdirSync(capDir)) if (/\.(png|jpe?g|webp|svg)$/i.test(f) && f !== "preview.png") fs.copyFileSync(path.join(capDir, f), path.join(out, "compositions", "components", f));
+    captionMount = { compositionId: captionStyle, src };
+  }
   if (mp) {
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount }));
   return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
 }
 

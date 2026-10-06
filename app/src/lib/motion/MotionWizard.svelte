@@ -21,6 +21,7 @@
     { id: "changes", title: "Scene changes" },
     { id: "background", title: "Background" },
     { id: "camera", title: "Camera" },
+    { id: "captions", title: "Captions" },
     { id: "scenes", title: "Scenes" },
     { id: "preview", title: "Preview and save" },
   ];
@@ -100,7 +101,7 @@
     error = "";
     try {
       const r = await runner<{ profile: MotionProfile }>("motion-save", { profile: $state.snapshot(profile) });
-      log("motion_saved", { mood: r.profile.transition.mood, background: r.profile.background.type, camera: r.profile.camera.move, pace: r.profile.pace ?? "balanced", off: r.profile.scenes.off.length });
+      log("motion_saved", { mood: r.profile.transition.mood, background: r.profile.background.type, camera: r.profile.camera.move, pace: r.profile.pace ?? "balanced", captions: r.profile.captions?.style ?? "off", off: r.profile.scenes.off.length });
       onsaved(r.profile);
     } catch (e) {
       error = errorText(e);
@@ -210,6 +211,26 @@
         {/each}
       </div>
     {:else if step === 4}
+      <p class="lead">Captions burned into the video: the narrator's words as they are spoken, the spoken word highlighted. Viewers who watch without sound read along. The captions file (.srt) for YouTube is made either way.</p>
+      <label class="radio"><input type="checkbox" checked={(profile.spokenWord ?? "highlight") === "highlight"} onchange={(e) => (profile!.spokenWord = e.currentTarget.checked ? "highlight" : "off")} /> Highlight the spoken word in the scene's own text too (and no shaking headlines)</label>
+      <p class="hint">Fifteen caption styles from HyperFrames by HeyGen, in your brand's font and colors. The calm ones suit explainers; the loud ones suit short, punchy videos.</p>
+      <div class="capgrid">
+        <label class="capcard" class:chosen={(profile.captions?.style ?? "off") === "off"}>
+          <input type="radio" name="captions" checked={(profile.captions?.style ?? "off") === "off"} onchange={() => (profile!.captions = { style: "off" })} />
+          <span class="capimg off">No captions</span>
+          <b>Off</b>
+          <span class="hint">Only the captions file.</span>
+        </label>
+        {#each st.options.captions ?? [] as c (c.id)}
+          <label class="capcard" class:chosen={profile.captions?.style === c.id}>
+            <input type="radio" name="captions" checked={profile.captions?.style === c.id} onchange={() => (profile!.captions = { style: c.id })} />
+            {#if c.image}<img class="capimg" src={convertFileSrc(c.image)} alt="" />{:else}<span class="capimg"></span>{/if}
+            <b>{c.label}{c.calm ? "" : " (loud)"}</b>
+            <span class="hint">{c.hint}</span>
+          </label>
+        {/each}
+      </div>
+    {:else if step === 5}
       <p class="lead">Which scene types the AI may use, and how they look. Each kind keeps at least one. The closing scenes are set in the CTA wizard.</p>
       {#each st.options.scenes as r (r.role)}
         <section class="role">
@@ -251,6 +272,11 @@
 {/if}
 
 <style>
+  .capgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .capcard { display: grid; gap: 4px; align-content: start; padding: 8px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+  .capcard.chosen { border-color: var(--primary, currentColor); box-shadow: 0 0 0 1px var(--primary, currentColor); }
+  .capcard input { position: absolute; opacity: 0; pointer-events: none; }
+  .capimg { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: var(--muted, #eee); display: grid; place-items: center; font-size: 13px; color: var(--muted-foreground); }
   .loading { padding: 24px; display: grid; gap: 12px; }
   .lead { margin: 0; }
   .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }

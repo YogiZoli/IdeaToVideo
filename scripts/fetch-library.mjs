@@ -199,6 +199,28 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
     }
     log(`library: ${name}`);
   }
+  // Caption styles (DECISIONS 106): the component file and its preview
+  // picture, both pinned in the lock.
+  for (const name of list.captions ?? []) {
+    const item = await get(rawUrl(list.commit, name, "registry-item.json"), fetchImpl);
+    const meta = JSON.parse(item.toString("utf8"));
+    // every file the item lists (the HTML, and assets such as textures)
+    const files = meta.files?.map((f) => f.path) ?? [`${name}.html`];
+    if (!files.includes(`${name}.html`)) throw new Error(`${name}: registry-item.json does not list ${name}.html`);
+    const parts = [["registry-item.json", item], ...files.map((f) => [f, null])];
+    if (meta.preview?.poster) parts.push(["preview.png", null]);
+    for (const [file, have] of parts) {
+      const buf = have ?? (file === "preview.png" ? await get(meta.preview.poster, fetchImpl) : await get(rawUrl(list.commit, name, file), fetchImpl));
+      const key = `captions/${name}/${file}`;
+      const got = sha256(buf);
+      if (update) lock.files[key] = got;
+      else if (lock.files[key] !== got) throw new Error(`SHA256 mismatch for ${key}: expected ${lock.files[key]}, got ${got}`);
+      const dst = path.join(stage, key);
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, file.endsWith(".html") ? localizeGsap(buf.toString("utf8")) : buf);
+    }
+  }
+  log(`library: ${list.captions?.length ?? 0} caption styles`);
   for (const name of list.presets ?? []) {
     const buf = await get(presetUrl(list.commit, name), fetchImpl);
     const key = `presets/${name}/FRAME.md`;

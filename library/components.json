@@ -17,6 +17,13 @@
     "cobalt-grid", "code-editorial", "coral", "creative-mode", "editorial-forest"
   ],
   "$motion": "The Motion wizard (docs/wizards/motion.md, docs/motion-wizard.md): background components and HyperFrames' own transition files, same commit, same lock. transitions.json is the curated CSS transition registry HyperFrames ships with its faceless-explainer workflow; overview.md holds its energy and mood tables. Shader transitions come from the @hyperframes/shader-transitions npm package (engine/package.json).",
+  "$captions": "Caption styles (DECISIONS 106): HyperFrames' caption-* components, same commit, same lock. Each is a whole-frame overlay with a demo transcript; runner/captions/ puts the video's own words, timing and font in at build time. Their preview pictures come along (preview.png).",
+  "captions": [
+    "caption-pill-karaoke", "caption-highlight", "caption-weight-shift", "caption-editorial-emphasis",
+    "caption-kinetic-slam", "caption-clip-wipe", "caption-gradient-fill", "caption-texture",
+    "caption-parallax-layers", "caption-emoji-pop", "caption-glitch-rgb", "caption-matrix-decode",
+    "caption-neon-accent", "caption-neon-glow", "caption-particle-burst"
+  ],
   "motion": {
     "backgrounds": ["aurora-drift", "grain-field"],
     "files": [

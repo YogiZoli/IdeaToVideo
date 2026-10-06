@@ -14,6 +14,7 @@ import path from "node:path";
 import { validate, loadSchema } from "../schema/validate.mjs";
 import { ALL_MOODS, moodPair, loadRegistry, knownTransition, CUT, SHADERS, ENERGIES } from "./transitions.mjs";
 import { BACKGROUNDS, CAMERAS } from "./stage.mjs";
+import { CAPTION_STYLES, captionDir } from "../captions/index.mjs";
 import { COMPONENTS, ROLES, PACES, DEFAULT_PACE } from "../gates/scenes/roles.mjs";
 import { loadComponent, checkVars, libraryDir } from "../gates/build/assemble.mjs";
 import { cssVars } from "../brand/tokens.mjs";
@@ -87,7 +88,9 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     if (Object.keys(vars).length) style[name] = { ...vars };
   }
   if (errors.length) throw new Error(errors.join(" "));
-  const out = { schema: MOTION_SCHEMA, transition: t, background: b, camera, pace: input.pace ?? DEFAULT_PACE, scenes: { off, style } };
+  const captions = { style: input.captions?.style ?? "off" };
+  if (captions.style !== "off" && !CAPTION_STYLES[captions.style]) throw new Error(`Unknown caption style: ${captions.style}.`);
+  const out = { schema: MOTION_SCHEMA, transition: t, background: b, camera, pace: input.pace ?? DEFAULT_PACE, spokenWord: input.spokenWord === "off" ? "off" : "highlight", captions, scenes: { off, style } };
   if (input.updatedAt) out.updatedAt = input.updatedAt;
   return out;
 }
@@ -189,6 +192,10 @@ export function wizardOptions({ dir = libraryDir() } = {}) {
     shaderCost: RENDER_COST.shader,
     cameras: Object.entries(CAMERAS).map(([id, c]) => ({ id, label: c.label })),
     paces: Object.entries(PACES).map(([id, p]) => ({ id, label: p.label, picture: p.picture })),
+    captions: Object.entries(CAPTION_STYLES).map(([id, c]) => {
+      const image = path.join(captionDir(), id, "preview.png");
+      return { id, label: c.label, hint: c.hint, calm: c.calm, image: fs.existsSync(image) ? image : null };
+    }),
     scenes,
   };
 }

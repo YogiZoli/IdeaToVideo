@@ -257,6 +257,8 @@ fn allow_media(app: &AppHandle, projects: &Path) {
     }
     if let Ok(r) = app.path().resource_dir() {
         let _ = scope.allow_directory(runner::plain_path(r.join("library").join("fonts")), true);
+        // the caption styles' preview pictures (the Motion wizard)
+        let _ = scope.allow_directory(runner::plain_path(r.join("library").join("captions")), true);
     }
 }
 

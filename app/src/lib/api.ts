@@ -211,6 +211,10 @@ export type MotionProfile = {
   camera: { move: "off" | "jitter" | "push" };
   /** How often the picture changes (runner/gates/scenes/roles.mjs PACES). */
   pace?: "calm" | "balanced" | "fast";
+  /** Burned-in captions (runner/captions/): a caption-* style or "off". */
+  captions?: { style: string };
+  /** The spoken word highlighted in a scene's own text (runner/gates/build/spoken.mjs). */
+  spokenWord?: "highlight" | "off";
   scenes: { off: string[]; style: Record<string, Record<string, string | number | boolean>> };
 };
 export type MotionTransition = { name: string; kind: "cut" | "css" | "shader"; label: string };
@@ -223,6 +227,7 @@ export type MotionOptions = {
   shaderCost: string;
   cameras: { id: string; label: string }[];
   paces?: { id: string; label: string; picture: string }[];
+  captions?: { id: string; label: string; hint: string; calm: boolean; image: string | null }[];
   scenes: { role: string; label: string; hint: string; components: { name: string; label: string; description: string; style: MotionStyleVar[] }[] }[];
 };
 export type MotionState = { profile: MotionProfile | null; recommended: { mood: string; energy?: string; reason: string | null }; start: MotionProfile; light: boolean; options: MotionOptions };
