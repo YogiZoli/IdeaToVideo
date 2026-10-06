@@ -1,10 +1,26 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-06 (hibátlanítás: megbízható futás, DECISIONS 91)
+Frissítve: 2026-10-06 (a 2. fázis lezárva, DECISIONS 96-97)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
-Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes 5 kapus menet a UI-ban · 3 pilot · 4 kiadás.
+Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot · 4 kiadás.
+
+## Most (2026-10-06)
+
+**A 2. fázis lezárva** (DECISIONS 97). Előtte Zoltan c105d15-ös próbájának
+hibái javítva (DECISIONS 96, `feedback/2026-10-06/NOTES.md`): a check a
+kamera nélküli lapon fut (a Preview build hatszor elbukott a 9. jeleneten,
+pedig a render jó volt); **Eleven v4 az alap**, a v2 nem kap nyelvkódot; a
+Preview build nem állítja vissza a jóváhagyott avatart (a kapuk sorrendje a
+tabok szerint); a "Get a key" linkek nyílnak; az elfogyott Claude kredit
+emberi mondattal. Tesztek: 218 Node, 47 Rust, e2e 33/33. SPEC és PRD menet-
+leírása a kódhoz igazítva.
+
+**Következő: AI B-roll, új chatben** (DECISIONS 94-95, `docs/ai-broll.md` 7.
+pont a prompttal). Előtte érdemes egy új telepítővel (a lezárás commitjával)
+egy magyar ONE Videót renderig vinni. A Drive tükör a 3. és 4. fázis után
+frissül. A Mac build a 3. és 4. fázis után (DECISIONS 95).
 
 ## Hol tartunk
 
@@ -244,10 +260,8 @@ Kész (2026-09-30):
    Autopilot folytatás megszakadás után; render állapot a projektben;
    felületi hibahatár; "Export diagnostics" zip. Tesztek: 210 Node, 47 Rust, e2e 33/33.
    Telepítő: commit c105d15 (2026-10-06, a checkinnel, 99 MB), Zoltan próbájára vár.
-   **Következő: a 2. fázis lezárása, új chatben** (benne Zoltan próbájának
-   napló-összefoglalója: `node scripts/log-summary.mjs`): STATUS, DECISIONS,
-   SPEC, Drive tükör, PR a main felé. **A Mac build nem kell hozzá**, a 3. és
-   4. fázis után jön (DECISIONS 95). Utána az AI B-roll.
+   **A 2. fázis lezárása: kész** (2026-10-06, DECISIONS 96-97): Zoltan
+   próbájának hibái javítva, PR a main felé, merge. Utána az AI B-roll.
    **Stock kereső: felfüggesztve** (DECISIONS 93, 95, `docs/stock.md`).
    **AI B-roll (generált klipek): döntések megvannak, a 2. fázis lezárása
    után épül, új chatben** (DECISIONS 94, 95, `docs/ai-broll.md`, a 7.
@@ -259,8 +273,9 @@ Kész (2026-09-30):
    Pack külön chatben a PDT repóban.
 6. ~~Mentés (Backup)~~: kész, lásd 2b.
 
-Utána a **fázis vége**: STATUS, DECISIONS, SPEC frissítve, Drive tükör, PR
-`phase-2` a main felé, Zoltan jóváhagyása, merge. A Mac build
+A **fázis vége megvolt** (2026-10-06): STATUS, DECISIONS, SPEC frissítve, PR
+`phase-2` a main felé, merge (Zoltan előzetes engedélyével). A Drive tükör a
+3. és 4. fázis után. A Mac build
 (`gh workflow run build -f platforms=both`) a 3. és 4. fázis után, a kiadás
 előtt (DECISIONS 95).
 

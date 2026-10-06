@@ -61,9 +61,9 @@
   // "Previously used" (per Identity, runner last-used): the voice this brand
   // used last is chosen, and the cards open only on "Choose another".
   let lastVoice = $state<string | null>(null);
-  // ElevenLabs model (runner ELEVEN_MODELS): v2 tested, v4 newest.
-  const ELEVEN_MODELS: Record<string, string> = { eleven_multilingual_v2: "Multilingual v2 (tested)", eleven_v4: "Eleven v4 (newest, most expressive)" };
-  let voiceModel = $state("eleven_multilingual_v2");
+  // ElevenLabs model (runner ELEVEN_MODELS): v4 the default since 2026-10-06, v2 older.
+  const ELEVEN_MODELS: Record<string, string> = { eleven_v4: "Eleven v4 (recommended)", eleven_multilingual_v2: "Multilingual v2 (older)" };
+  let voiceModel = $state("eleven_v4");
   let chooseOther = $state(false);
   const previous = $derived(!!lastVoice && voiceId === lastVoice);
 
@@ -219,7 +219,7 @@
               {#each Object.entries(ELEVEN_MODELS) as [id, label] (id)}<option value={id}>{label}</option>{/each}
             </select>
           </div>
-          {#if voiceModel === "eleven_v4"}<p class="hint">More expressive. ElevenLabs does not list Hungarian for v4 yet; for a Hungarian video use v2. Your clones work with both.</p>{/if}
+          {#if voiceModel === "eleven_multilingual_v2"}<p class="hint">The older model. Eleven v4 reads more naturally in every language the app writes in. Your clones work with both.</p>{/if}
         {/if}
       </div>
 

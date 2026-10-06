@@ -21,10 +21,10 @@ import { joinBlocks, mix, duration, clipAudio, silence } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
 
 export const VOICE_PROVIDERS = { elevenlabs, gemini };
-// The ElevenLabs models gate 2 offers. v2 is the tested default (timing,
-// joined blocks); Eleven v4 (2026-09-28) reads tone and pacing from the text,
-// and ElevenLabs does not list Hungarian among its languages yet.
-export const ELEVEN_MODELS = { eleven_multilingual_v2: "Multilingual v2 (tested)", eleven_v4: "Eleven v4 (newest, most expressive)" };
+// The ElevenLabs models gate 2 offers. Eleven v4 (2026-09-28) is the default
+// since 2026-10-06 (Zoltan: clearly better, Hungarian works); Multilingual v2
+// stays for a voice that sounds better with it.
+export const ELEVEN_MODELS = { eleven_v4: "Eleven v4 (recommended)", eleven_multilingual_v2: "Multilingual v2 (older)" };
 
 // The music file sits in the project (the Rust core's import_music copies it
 // to audio/music.<ext>). Only that relative name comes in, never a free path.
@@ -53,7 +53,7 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
   // A finished voice clears them: "make the voice again" is a new reading.
   const cacheDir = path.join(audioDir, "blocks-cache");
   fs.mkdirSync(cacheDir, { recursive: true });
-  const model = narrator.provider === "elevenlabs" && ELEVEN_MODELS[narrator.model] ? narrator.model : null;
+  const model = narrator.provider !== "elevenlabs" ? null : ELEVEN_MODELS[narrator.model] ? narrator.model : elevenlabs.DEFAULT_MODEL;
 
   const files = [];
   const blockWords = [];
@@ -62,7 +62,7 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
     onProgress({ step: "voice", block: i + 1, of: blocks.length });
     const args = {
       voiceId: narrator.voice,
-      // ElevenLabs only: Eleven v4 when chosen at gate 2 (2026-10-05), else its default
+      // ElevenLabs only: the model chosen at gate 2, else the default (Eleven v4)
       ...(model ? { model } : {}),
       text: speakable(blocks[i].text),
       previousText: blocks[i - 1] && speakable(blocks[i - 1].text),

@@ -86,7 +86,7 @@ test("ElevenLabs speak: audio and word timings; errors never show the key", asyn
   assert.deepEqual(r.words.map((w) => w.text), ["Hello", "world"]);
   const body = JSON.parse(f.calls[0].init.body);
   assert.equal(body.previous_text, "Before.");
-  assert.equal(body.model_id, "eleven_multilingual_v2");
+  assert.equal(body.model_id, "eleven_v4", "Eleven v4 is the default (2026-10-06)");
 
   const bad = fakeFetch({ status: 401, json: { detail: { status: "invalid_api_key", message: `bad key ${KEY}` } } });
   await assert.rejects(speak({ apiKey: KEY, fetchImpl: bad, voiceId: "v1", text: "x" }), (e) => /rejected the API key/.test(e.message) && !e.message.includes(KEY));

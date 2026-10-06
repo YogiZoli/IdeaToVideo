@@ -87,7 +87,7 @@ vagy **Skip, use default**. Minden kulcsos lépésnél van "Test key" gomb.
 | 6 | **YouTube csatorna URL** | Skip |
 | 7 | **Landing URL** (lead magnet) | Skip, nincs CTA |
 | 8 | **Tartalom nyelve** | angol |
-| 9 | **Narrator Voice**: ElevenLabs kulcs és hang | ingyenes `edge-tts`, a nyelvhez illő hanggal |
+| 9 | **Narrator Voice**: ElevenLabs kulcs és hang (alap modell: Eleven v4) | ingyenes Gemini TTS a Gemini kulccsal (az `edge-tts` nem épült) |
 | 10 | **HeyGen kulcs** (avatar) | nincs avatar |
 | 11 | **vidIQ kulcs** (kulcsszó adat) | nincs kulcsszó adat, a téma kézzel |
 | 12 | Import Tervező appból (Channel Profile, Video Brief Card) | Skip |
@@ -117,6 +117,14 @@ A kapuk a kánon (PIPELINE.md) szerint:
 | 7. Render | egyszer, helyben | automatikus |
 | 8. Avatar | HeyGen avatar a sarokba, ha van kulcs | 5. kapu |
 | 9. Feliratok, export | MP4 és felirat fájl | automatikus |
+
+**Módosítva 2026-10-06 (a 2. fázis lezárása, DECISIONS 48, 85, 96):** a
+megvalósult menet hat tabon: 1. Script, 2. Voice and music, 3. Scenes,
+4. Avatar (opcionális), 5. Preview (build, check, kontakt lap), 6. Your video
+(render, feliratok, fejezetek, publikálási adat). Az avatar a Preview előtt
+van: a HeyGen klipeket a build teszi a videóba, nem a render utáni ffmpeg.
+A jelenet-tábla a 39 archetípus helyett az app saját könyvtárából (a
+HyperFrames registry komponensei, mondat-szerepek szerint) választ.
 
 Minden kapunál három gomb: **Recommended** (az AI dönt a kánon szerint),
 **Default** (a preset alapértéke), **Custom** (kézi).

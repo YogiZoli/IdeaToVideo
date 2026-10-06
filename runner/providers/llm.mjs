@@ -44,13 +44,36 @@ function endpoint(baseUrl) {
   return new URL("chat/completions", baseUrl.endsWith("/") ? baseUrl : baseUrl + "/").toString();
 }
 
+// The provider's own words from an error body, not the raw JSON around them:
+// {"error":{"message":...}} (OpenAI style, Anthropic), [{"error":{...}}]
+// (Gemini), {"message":...}; the Anthropic SDK puts the status in front
+// ("400 {...}"). Anything else as it came.
+export function bodyMessage(body) {
+  const text = String(body ?? "").replace(/^\d{3}\s+(?=[[{])/, "");
+  try {
+    const j = JSON.parse(text);
+    const e = Array.isArray(j) ? j[0]?.error : j?.error;
+    const m = (typeof e === "string" ? e : e?.message) ?? j?.message;
+    if (typeof m === "string" && m.trim()) return m.trim();
+  } catch {
+    // not JSON
+  }
+  return text;
+}
+
 // The message the user sees, per HTTP status. No response body text for auth
 // errors, the provider sometimes echoes part of the key back.
 export function friendlyError(label, status, body) {
   if (status === 401 || status === 403) return `${label} rejected the API key. Check it in Settings.`;
   if (status === 429) return `${label} quota ran out or the rate limit was hit. Wait a little, or switch provider in Settings.`;
   if (status === 404) return `${label} does not know this model. Check the model name in Settings.`;
-  if (status === 400) return `${label} refused the request: ${String(body).slice(0, 300)}`;
+  if (status === 400 || status === 402) {
+    const said = bodyMessage(body);
+    // Anthropic: 400 "Your credit balance is too low" (Zoltan's test, 2026-10-06);
+    // others answer 402 or say "billing", "insufficient", "quota".
+    if (status === 402 || /credit balance|billing|insufficient|payment|top.?up/i.test(said)) return `${label} says the account has no credit left. Add credit on the ${label} website, or choose another AI in Settings.`;
+    return `${label} refused the request: ${said.slice(0, 300)}`;
+  }
   if (status >= 500) return `${label} is overloaded or having problems right now (HTTP ${status}). The app kept trying for about three minutes, on every model it has for ${label}. Wait a few minutes and press the button again; nothing is lost.`;
   return `${label} answered with HTTP ${status}.`;
 }

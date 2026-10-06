@@ -134,8 +134,10 @@ fn size_of(dir: &Path) -> (u64, u64) {
 // ---- redaction ----------------------------------------------------------------------
 
 /// Does this token look like an API key? Known prefixes, or a long run with
-/// upper case, lower case and digits mixed (keys are; words, slugs like
-/// "2026-10-01_from-freelancer-to-owner" and hex hashes are not).
+/// upper case, lower case and digits mixed inside one piece (keys are; words,
+/// slugs like "2026-10-01_from-freelancer-to-owner", hex hashes and file
+/// names like "IdeaToVideo-diagnostics-20261006-1016" are not: their pieces
+/// between "-" and "_" are words or numbers, Zoltan's log of 2026-10-06).
 fn looks_like_key(t: &str) -> bool {
     let known = ["AIza", "sk-", "sk_", "xai-", "pk-", "hg_"];
     if t.len() >= 20 && known.iter().any(|p| t.starts_with(p)) {
@@ -145,6 +147,9 @@ fn looks_like_key(t: &str) -> bool {
         && t.chars().any(|c| c.is_ascii_digit())
         && t.chars().any(|c| c.is_ascii_uppercase())
         && t.chars().any(|c| c.is_ascii_lowercase())
+        && t
+            .split(['-', '_'])
+            .any(|p| p.chars().any(|c| c.is_ascii_digit()) && p.chars().any(|c| c.is_ascii_alphabetic()))
 }
 
 /// Masks the given secrets by value and every key-like token.
@@ -245,6 +250,8 @@ mod tests {
         assert_eq!(redact("secret=MYSECRETVALUE12", &["MYSECRETVALUE12"]), "secret=[key]");
         let plain = "C:/Users/gdp/Documents/Studio Projects/My Identity/2026-10-01_from-freelancer-to-owner/out/video.mp4";
         assert_eq!(redact(plain, &[]), plain);
+        let zip = r"C:\Users\gdp\Downloads\IdeaToVideo-diagnostics-20261006-1016.zip";
+        assert_eq!(redact(zip, &[]), zip);
         assert_eq!(redact("The Gemini quota is used up (HTTP 429).", &[]), "The Gemini quota is used up (HTTP 429).");
     }
 

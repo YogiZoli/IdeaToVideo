@@ -765,7 +765,8 @@
 83. **Eleven v4 választható** (2026-10-05): a 2. kapuban "Voice model":
     Multilingual v2 (tesztelt, alap) vagy Eleven v4 (`eleven_v4`, 2026-09-28,
     a legkifejezőbb); a brand megjegyzi. Az ElevenLabs a v4-nél a magyart
-    még nem sorolja fel. A kipróbálás Zoltané (kulccsal).
+    még nem sorolja fel. A kipróbálás Zoltané (kulccsal). (2026-10-06: a v4
+    az alap, és tud magyarul, DECISIONS 96.)
 84. **Jelenet-tábla a 8 perces teszt után** (2026-10-05, `feedback/2026-10-05/NOTES.md`
     harmadik rész): a CTA-szegmensek és a YouTube végképernyő saját sort kapnak
     (`sceneRows` `inserts`); a sor hossza a jelenet saját ideje; sorszám és
@@ -1058,3 +1059,34 @@
       (új chat, `docs/ai-broll.md` 7). A Mac build ráér: nem a 2. fázis
       lezárásához kell, hanem a 3. és 4. fázis után (a kiadás előtt).
 
+
+## 2026-10-06 (a 2. fázis lezárása)
+
+96. **Javítások Zoltan c105d15-ös próbája után** (`feedback/2026-10-06/NOTES.md`).
+    - **A check a kamera nélküli lapon fut.** A Mozgás profil kamera-burkolója
+      miatt a `hyperframes check` minden jelenetet 0 px magasnak mért, és a
+      constellation-hub címkéi "átfedtek"; a build hatszor elbukott. A render
+      jó volt (kivágott renderrel ellenőrizve). A kontakt lap és a check közös
+      segédet kap (`withoutCameraPage`), a build utána visszakapja a kamerát.
+      A check hibaüzenete a jelenet számát mondja.
+    - **Eleven v4 az alap ElevenLabs modell** (Zoltan: meghallgatta, sokkal
+      jobb, és tud magyarul; a 83. pont "a v4 nem sorolja fel a magyart" része
+      elavult). A v2 választható marad ("older"), nyelvkódot nem kap; egy
+      visszadobott nyelvkód után a runner egyszer nélküle próbál.
+    - **A kapuk sorrendje a tabok szerint:** script, voice, scenes, avatar,
+      review (`GATES`). Eddig a Preview build a már jóváhagyott, kifizetett
+      avatart "todo"-ra állította.
+    - A külső linkek (kulcs-oldalak, YouTube Studio) engedélyezve a Tauri
+      capability-ben, csak a nevezett hostokra.
+    - Az AI hibák a szolgáltató saját mondatával; az elfogyott kredit külön
+      mondattal.
+97. **A 2. fázis lezárva** (2026-10-06). A kimenet megvan: az appból kész
+    videó, a teljes menettel (Script, Voice and music, Scenes, Avatar,
+    Preview, Your video), Autopilottal, a Brand, Motion, CTA varázslóval,
+    Identityvel, mentéssel és naplóval. Tesztek: 218 Node, 47 Rust, e2e 33/33,
+    mind zöld. PR `phase-2` a main felé, Zoltan előzetes engedélyével Claude
+    merge-öli (Zoltan, 2026-10-06: "te merge-ölöd, elég ha tájékoztatsz").
+    A Drive tükör a 3. és 4. fázis után frissül (Zoltan). A SPEC és a PRD
+    menet-leírása a kódhoz igazítva (avatar a Preview előtt, Gemini TTS az
+    Edge TTS helyett, a könyvtár a 39 archetípus helyett). Következő: AI
+    B-roll (DECISIONS 94-95, `docs/ai-broll.md`), utána a 3. fázis (pilot).

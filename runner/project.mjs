@@ -6,7 +6,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { validate, loadSchema } from "./schema/validate.mjs";
 
-export const GATES = ["script", "voice", "scenes", "review", "avatar"];
+// The order of the work, as the tabs show it since DECISIONS 85: the avatar
+// before the preview, because the preview build puts the avatar clips in.
+// (Until 2026-10-06 the avatar was last here, so every preview build reset
+// an approved, paid avatar to todo: Zoltan's test.)
+export const GATES = ["script", "voice", "scenes", "avatar", "review"];
 const STATUS_AFTER = { script: "Scripted", voice: "Voiced", scenes: "Scened", review: "Reviewed" };
 
 export function slugify(title) {

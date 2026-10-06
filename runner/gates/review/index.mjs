@@ -34,6 +34,25 @@ export function withoutCamera(html) {
     .replace(/^[ \t]*tl\.fromTo\("#cam-[^\n]*\n/gm, "");
 }
 
+// Runs `fn` while build/index.html is the page without the camera, then puts
+// the built page back. The camera wrappers (Motion profile) keep the engine's
+// snapshot and check from laying out the scenes inside them: the stills came
+// out empty, and the check measured every scene as 0 px tall, so the nodes of
+// constellation-hub all landed on one line and "overlapped" (Zoltan's tests,
+// 2026-10-05 and 2026-10-06; the render was fine both times). The camera only
+// moves a few pixels, so the page without it is the one to look at.
+export async function withoutCameraPage(out, fn) {
+  const index = path.join(out, "index.html");
+  const html = fs.readFileSync(index, "utf8");
+  const still = withoutCamera(html);
+  if (still !== html) fs.writeFileSync(index, still);
+  try {
+    return await fn(html);
+  } finally {
+    if (still !== html) fs.writeFileSync(index, html);
+  }
+}
+
 // The scenes as the built index.html mounts them.
 export function mountsOf(html) {
   return [...html.matchAll(/id="scene-(\d+)"[^>]*data-start="([\d.]+)" data-duration="([\d.]+)"/g)].map((m) => ({ n: Number(m[1]), start: Number(m[2]), duration: Number(m[3]) }));
@@ -70,19 +89,10 @@ export async function contactSheet(projectDir, { env = process.env, onProgress =
   fs.rmSync(shots, { recursive: true, force: true });
   fs.mkdirSync(shots, { recursive: true });
   onProgress({ step: "snapshots", frames: mounts.length });
-  // The camera wrappers (Motion profile) keep `hyperframes snapshot` from
-  // seeking the scenes inside them: the stills came out empty, only the
-  // background (Zoltan's test, 2026-10-05; the render was fine). The stills
-  // are taken without the wrappers; the camera only moves a few pixels.
-  const index = path.join(buildDir(projectDir), "index.html");
-  const stillHtml = withoutCamera(html);
-  if (stillHtml !== html) fs.writeFileSync(index, stillHtml);
-  let r;
-  try {
-    r = await runHyperframes(["snapshot", "-o", shots, "--at", landedTimes(mounts).join(","), "--no-end", "--describe", "false"], { env, cwd: buildDir(projectDir), browser: browser.path });
-  } finally {
-    if (stillHtml !== html) fs.writeFileSync(index, html);
-  }
+  // The stills are taken without the camera wrappers (withoutCameraPage).
+  const r = await withoutCameraPage(buildDir(projectDir), () =>
+    runHyperframes(["snapshot", "-o", shots, "--at", landedTimes(mounts).join(","), "--no-end", "--describe", "false"], { env, cwd: buildDir(projectDir), browser: browser.path }),
+  );
   fs.writeFileSync(path.join(review, "snapshot.log"), r.tail + "\n");
   if (r.code !== 0) throw new Error(`The snapshots failed: ${r.tail.split("\n").slice(-4).join(" ")}`);
   const pngs = fs.readdirSync(shots).filter((f) => f.endsWith(".png")).sort(byNumber);

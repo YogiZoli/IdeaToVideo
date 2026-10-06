@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { engineDir, runHyperframes, resolveBrowser } from "../../tools.mjs";
-import { landedTimes, mountsOf } from "../review/index.mjs";
+import { landedTimes, mountsOf, withoutCameraPage } from "../review/index.mjs";
 
 export const buildDir = (projectDir) => path.join(projectDir, "build");
 
@@ -65,6 +65,14 @@ export function countedErrors(report, windows = [], covered = []) {
   return errors;
 }
 
+// "Scene 9: " for a finding inside a scene's file, so the user knows which
+// row of the scene table to change (Zoltan, 2026-10-06: the message only
+// named a CSS class).
+export function sceneOf(finding) {
+  const m = /(?:^|\/)scene-(\d+)-/.exec(String(finding?.sourceFile ?? "").replace(/\\/g, "/"));
+  return m ? `Scene ${m[1]}: ` : "";
+}
+
 const lastLines = (tail) => tail.split("\n").slice(-6).join(" ");
 
 export async function lintAndCheck(projectDir, { env = process.env, onProgress = () => {} } = {}) {
@@ -80,16 +88,19 @@ export async function lintAndCheck(projectDir, { env = process.env, onProgress =
   const windows = transitionWindows(out);
   const covered = coveredWindows(out);
   if (!windows.length && !covered.length) {
-    const r = await runHyperframes(["check"], { env, cwd: out, browser: browser.path });
+    const r = await withoutCameraPage(out, () => runHyperframes(["check"], { env, cwd: out, browser: browser.path }));
     fs.writeFileSync(path.join(out, "check.log"), r.tail + "\n");
     if (r.code !== 0) throw new Error(`hyperframes check found problems: ${lastLines(r.tail)}`);
     return { ok: true };
   }
   // With scene changes: every scene is also checked once it has landed, and
   // the report is read as JSON so the change windows can be told apart.
-  const html = fs.readFileSync(path.join(out, "index.html"), "utf8");
+  // The check looks at the page without the camera wrappers: inside them it
+  // measures every scene as 0 px tall (withoutCameraPage).
   const lines = [];
-  const r = await runHyperframes(["check", "--json", "--at", landedTimes(mountsOf(html)).join(",")], { env, cwd: out, browser: browser.path, onLine: (l) => lines.push(l) });
+  const r = await withoutCameraPage(out, (html) =>
+    runHyperframes(["check", "--json", "--at", landedTimes(mountsOf(html)).join(",")], { env, cwd: out, browser: browser.path, onLine: (l) => lines.push(l) }),
+  );
   const text = lines.join("\n");
   let report;
   try {
@@ -101,7 +112,7 @@ export async function lintAndCheck(projectDir, { env = process.env, onProgress =
   const errors = countedErrors(report, windows, covered);
   fs.writeFileSync(path.join(out, "check.log"), JSON.stringify({ errors, report }, null, 2) + "\n");
   if (errors.length) {
-    const what = errors.slice(0, 3).map((e) => `${e.section} ${e.code ?? ""} ${e.selector ?? ""} at ${e.time ?? "?"} s: ${e.message}`);
+    const what = errors.slice(0, 3).map((e) => `${sceneOf(e)}${e.section} ${e.code ?? ""} ${e.selector ?? ""} at ${e.time ?? "?"} s: ${e.message}`);
     throw new Error(`hyperframes check found problems: ${what.join("; ")}`);
   }
   return { ok: true };

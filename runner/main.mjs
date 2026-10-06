@@ -219,7 +219,7 @@ function recovered(projectDir, live = null) {
   const next = recoverInterrupted(project, undefined, { dir: projectDir, live });
   if (next !== project) {
     saveProject(projectDir, next);
-    appendLog(projectDir, "a step was interrupted (the app was closed), marked failed");
+    appendLog(projectDir, "a step stopped before it finished (Stop, no answer, or the app was closed), marked failed");
   }
   return next;
 }
@@ -832,7 +832,9 @@ const commands = {
   // something a later one needs.
   "skip-gate": async ({ projectDir, gate }) => {
     if (gate !== "avatar") throw new Error(`The ${gate} step cannot be skipped.`);
-    const project = setGate(loadProject(projectDir), gate, { state: "skipped" });
+    let project = setGate(loadProject(projectDir), gate, { state: "skipped" });
+    // the preview comes after the avatar: one built with the avatar is stale
+    if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
     saveProject(projectDir, project);
     appendLog(projectDir, `${gate}: skipped`);
     return { gate: project.gates[gate], status: project.status };

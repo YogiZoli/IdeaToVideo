@@ -68,7 +68,8 @@ IdeaToVideo/
     src-tauri/            Rust core, tauri.conf.json, ikonok
   runner/                 Node pipeline runner (a sidecar belépési pontja)
     providers/            LLM, TTS, HeyGen, vidIQ kliensek
-    gates/                kapunként egy modul (script, voice, scenes, review, avatar)
+    gates/                kapunként egy modul (script, voice, scenes, avatar, review),
+                          és build, render, channel
     schema/               JSON sémák (config, project, brief card)
   engine/                 a render lánc (hyperframes, gsap), pinnelt lockfile
   scripts/                build, sidecar letöltés, release
@@ -160,12 +161,12 @@ Projects/<Identity mappája>/2026-09-24_how-to-start/   (2026-10-01 óta, DECISI
   sentences.json      3. lépés (sentences.mjs)
   words.json
   scenes.json         3. kapu kimenete (jelenet-tábla)
-  build/index.html    build-video.mjs + stamp-timing.mjs
+  avatar/             HeyGen klipek (az Avatar lépés kimenete, a build előtt)
+  build/index.html    gates/build/assemble.mjs
   build/compositions/
-  review/contact.png  4. kapu (kontakt lap)
-  out/video.mp4       render
-  out/final.mp4       avatarral (5. kapu)
-  out/video.srt       feliratok
+  review/contact.png  Preview (kontakt lap)
+  out/video-<idő>.mp4 render (az avatar már benne, a HyperFrames rakja rá)
+  out/video-<idő>.srt feliratok, .chapters.txt, .publish.json, .comments.txt
   log.txt
 ```
 
@@ -182,8 +183,8 @@ Projects/<Identity mappája>/2026-09-24_how-to-start/   (2026-10-01 óta, DECISI
     "script":  { "state": "approved", "mode": "recommended", "at": "2026-09-24T18:02:00Z" },
     "voice":   { "state": "pending" },
     "scenes":  { "state": "todo" },
-    "review":  { "state": "todo" },
-    "avatar":  { "state": "skipped", "reason": "no HeyGen key" }
+    "avatar":  { "state": "skipped", "reason": "no HeyGen key" },
+    "review":  { "state": "todo" }
   }
 }
 ```
@@ -253,21 +254,26 @@ várakozást a haladásjelző kiírja ("Gemini is busy (HTTP 503). Trying again 
 
 ## 6. A menet megvalósítása
 
-| Lépés | Modul | Mit hív | Kimenet |
-|---|---|---|---|
-| 1. Script (1. kapu) | `gates/script` | LLM | `script.md` |
-| 2. Hang, zene (2. kapu) | `gates/voice` | ElevenLabs vagy edge TTS, ffmpeg (ducking, -14 LUFS) | `audio/vo_bgm.mp3`, `audio/stt.json` |
-| 3. Mondattábla | `sentences.mjs` | nincs | `sentences.json`, `words.json` |
-| 4. Jelenet-tábla (3. kapu) | `gates/scenes` | LLM + CATALOG.md | `scenes.json` |
-| 5. Build | `build-video.mjs`, `stamp-timing.mjs` | nincs | `build/index.html` |
-| 6. Lint, check | `image-audio-lint.mjs`, `hyperframes lint/check` | hyperframes CLI | 0 hiba a feltétel |
-| 7. Kontakt lap (4. kapu) | `gates/review` | `hyperframes snapshot` | `review/contact.png` |
-| 8. Render | `hyperframes render` | hyperframes CLI | `out/video.mp4` |
-| 9. Avatar (5. kapu) | `gates/avatar`, `avatar-composite.mjs` | HeyGen API, ffmpeg | `out/final.mp4` |
-| 10. Feliratok | `gates/captions` | a `words.json`-ból | `out/video.srt` |
+**Módosítva 2026-10-06 (DECISIONS 85, 96):** a menet a UI tabjai szerint;
+a kapuk sorrendje a kódban (`runner/project.mjs` `GATES`): script, voice,
+scenes, avatar, review. Az avatar a Preview előtt van, mert a build teszi a
+klipeket a videóba (a régi "avatar a render után, ffmpeg-gel" terv nem épült).
 
-**Szó-időzítés hang után:** ElevenLabs esetén a TTS válasz időbélyegeiből (vagy
-az ElevenLabs STT-ből), edge TTS esetén a word boundary eseményekből. Mindkettő
+| Lépés (tab) | Modul | Mit hív | Kimenet |
+|---|---|---|---|
+| 1. Script | `gates/script` | LLM | `script.md`, `script.json` |
+| 2. Hang, zene | `gates/voice` | ElevenLabs (alap: Eleven v4) vagy Gemini TTS, ffmpeg (ducking, -14 LUFS) | `audio/vo_bgm.mp3`, `audio/stt.json` |
+| (mondattábla) | `runner/timing/sentences.mjs` | nincs | `sentences.json`, `words.json` |
+| 3. Scenes (jelenet-tábla) | `gates/scenes` | LLM + a könyvtár szerepei (`roles.mjs`) | `scenes.json` |
+| 4. Avatar (opcionális) | `gates/avatar` | HeyGen API (átlátszó WebM) | `avatar/` |
+| 5. Preview: build | `gates/build/assemble.mjs` | nincs | `build/index.html` |
+| 5. Preview: lint, check | `gates/build/index.mjs` | `hyperframes lint/check` (a kamera-burkoló nélküli lapon) | 0 hiba a feltétel |
+| 5. Preview: kontakt lap | `gates/review` | `hyperframes snapshot` | `review/contact.png` |
+| 6. Your video: render | `gates/render` | `hyperframes render` | `out/video-<idő>.mp4` |
+| 6. Your video: feliratok, fejezetek, publikálási adat | `gates/render/export.mjs`, `publish.mjs` | a `words.json`-ból | `.srt`, `.chapters.txt`, `.publish.json` |
+
+**Szó-időzítés hang után:** ElevenLabs esetén a TTS válasz időbélyegeiből,
+Gemini TTS esetén mondatonkénti felolvasással és a mondatok hosszából. Mindkettő
 a `sentences.mjs` által várt `{ words:[{text,start,end,type}] }` formára
 alakítva.
 
@@ -304,8 +310,8 @@ elkészült és jóváhagyásra vár, azt jóváhagyja, nem csinálja újra.
 
 | Szolgáltatás | Mire | Megjegyzés |
 |---|---|---|
-| ElevenLabs | Narrator Voice + időbélyegek | opcionális |
-| Edge TTS (Microsoft) | ingyenes Narrator Voice | Node könyvtárral a sidecarban, Python nélkül. Nem hivatalos API, ezért egy második ingyenes tartalék is kell (nyitott kérdés). |
+| ElevenLabs | Narrator Voice + időbélyegek; zene (ElevenLabs Music) | opcionális. Alap modell 2026-10-06 óta: Eleven v4 (DECISIONS 96) |
+| Gemini TTS | ingyenes Narrator Voice a Gemini kulccsal | az Edge TTS helyett (nem épült) |
 | HeyGen | avatar klip (natív alfa webm) | opcionális, a user kreditje |
 | vidIQ | kulcsszó adat | opcionális. Nyitott, hogy van-e user-kulcsos API (lásd 12. pont). |
 | YouTube | csak a csatorna URL, publikus adat | nincs OAuth a v1-ben |
@@ -345,8 +351,9 @@ a képet adja): `docs/phase-0.md`.
 
 ## 10. Build, release, frissítés
 
-- `build.yml`: minden push-ra Windows és macOS build, a parity és a regress
-  teszt lefut.
+- `build.yml`: PR-re csak Windows build; a macOS build kézzel indul
+  (`gh workflow run build -f platforms=both`), a 3. és 4. fázis után, a
+  kiadás előtt (DECISIONS 95). GitHub Actions percet fogyaszt: előbb Zoltan.
 - `release.yml`: tag-re (`v0.x.y`) telepítő a GitHub Releases-re + updater
   manifest.
 - Sidecarok: ffmpeg statikus build és Node bináris platformonként, a
@@ -359,9 +366,9 @@ a képet adja): `docs/phase-0.md`.
 | Szint | Mi | Hol |
 |---|---|---|
 | Parity | a Node szkriptek kimenete azonos a PowerShell-ével (0. fázis) | brand-frames, egyszeri |
-| Unit | sémák, `data-sent` feloldás, LLM JSON validálás | runner |
-| Regress | a 39 archetípus vizuálisan nem változott (`regress.mjs`) | brand-frames, minden kánon-léptetésnél |
-| E2E | egy rövid mintavideó végig, mock LLM-mel és edge TTS-sel | CI, mindkét platform |
+| Unit | runner (`npm test`, Node) és Rust mag (`cargo test`) | runner, `app/src-tauri` |
+| Regress | (a 39 archetípus a D út óta nincs az appban, DECISIONS 48) | brand-frames, nem az app része |
+| E2E | egy rövid mintavideó végig, mock LLM-mel és csendes hanggal (`npm run e2e`) | helyben |
 | Pilot | egy barát, segítség nélkül | kézi, 3. fázis |
 
 ## 12. Nyitott technikai kérdések
@@ -369,8 +376,8 @@ a képet adja): `docs/phase-0.md`.
 1. **vidIQ:** eldőlt (DECISIONS 42): MCP szerver user kulccsal, opcionális.
    Eredeti kérdés: van-e user-kulcsos, nyilvános API? Ha nincs, a v1-ben kimarad, és
    a kulcsszó kézzel vagy a Brief Cardból jön.
-2. **Ingyenes TTS tartalék** az Edge TTS mellé (nem hivatalos API, bármikor
-   változhat).
+2. **Ingyenes TTS tartalék:** eldőlt, a Gemini TTS a user Gemini kulcsával;
+   az Edge TTS nem épült.
 3. **Headless Chrome:** eldőlt (DECISIONS 25): letöltött, rögzített Chrome,
    tartalék a rendszer Google Chrome, Edge nem. Lásd 8. pont.
 4. **Node sidecar formája:** eldőlt (DECISIONS 26): csomagolt Node +
