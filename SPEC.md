@@ -1,4 +1,4 @@
-# SPEC: Studio (munkanév)
+# SPEC: IdeaToVideo
 
 Verzió: 0.1, 2026-09-24, jóváhagyva (Zoltan)
 Alapja: `PRD.md` 0.1 és `DECISIONS.md`
@@ -68,16 +68,25 @@ IdeaToVideo/
     src-tauri/            Rust core, tauri.conf.json, ikonok
   runner/                 Node pipeline runner (a sidecar belépési pontja)
     providers/            LLM, TTS, HeyGen, vidIQ kliensek
-    gates/                kapunként egy modul (script, voice, scenes, review, avatar)
+    gates/                kapunként egy modul (script, voice, scenes, avatar, review),
+                          és build, render, channel
     schema/               JSON sémák (config, project, brief card)
-  vendor/brand-frames/    a kánon, pinnelt commit (git submodule, privát)
+  engine/                 a render lánc (hyperframes, gsap), pinnelt lockfile
   scripts/                build, sidecar letöltés, release
   .github/workflows/      build.yml (Win + Mac), release.yml
 ```
 
-A `brand-frames` (blokkok, MOTION szabályok, pipeline szkriptek) **submodule**,
-pinnelt committal. A kánon egy helyen él, az app csak egy rögzített verzióját
-csomagolja. Kánon-frissítés = submodule léptetése + regress teszt + új release.
+**Módosítva 2026-09-30 (DECISIONS 48, 49):** az app nem használja Zoltan
+brand-frames kánonját (39 archetípus, MOTION, pipeline szkriptek), submodule
+nincs. Az app saját részei:
+
+- `engine/`: a render lánc, `package.json` + `package-lock.json` (hyperframes
+  0.8.22, gsap 3.14.2). A `scripts/fetch-engine.mjs` build közben
+  `app/src-tauri/engine/`-be telepíti, `onnxruntime-node` nélkül (154 MB).
+- A könyvtár (jelenettípusok) a HyperFrames nyilvános registryjéből, az app
+  saját összerakójával (a registry-próba után).
+- Időzítés, mondattábla és a többi pipeline-eszköz: a runner saját kódja
+  (`runner/timing/`).
 
 ## 4. Adatmodell
 
@@ -113,12 +122,29 @@ Windowson `%APPDATA%`, Macen `~/Library/Application Support`.
 
 A kulcsok **nincsenek** benne. Csak az, hogy van-e (`"vidiq": false`).
 
+**Módosítva 2026-10-01 (DECISIONS 67, `docs/identity.md`): két szint.** A
+`config.json` schema 2 csak az App szintet tartja (`ui`, `llm` alap,
+`projectsDir`, `activeIdentity`, `onboarded`, `defaults.autopilot`). A fenti
+többi mező Identity-nként a `<app config dir>/identities/<id>/identity.json`
+fájlban él (`runner/schema/identity.schema.json`), mellette az Identity saját
+fájljai (`brand/logo`, később a varázslók eredményei). Az Identity `llm`
+mezője felülírhatja az App AI-ját (`null`: az App-é). A kapuk az összefésült,
+fenti formát kapják (`app/src/lib/identity.ts`). A régi egyfájlos config az
+első indításkor átáll: belőle lesz a "My Identity" (`identity.rs`).
+
 ### 4.2 Kulcsok
 
 OS kulcstár (`keyring` crate): Windows Credential Manager, macOS Keychain.
-Szolgáltatásnév: `studio.<provider>`, pl. `studio.gemini`, `studio.elevenlabs`.
+Szolgáltatásnév: `ideatovideo.<provider>`, pl. `ideatovideo.gemini`, `ideatovideo.elevenlabs` (DECISIONS 38).
 A UI soha nem kapja vissza a kulcsot, csak annyit: be van-e állítva, és
 sikerült-e a "Test key".
+
+**Módosítva 2026-10-01:** fiók `default` = App kulcs (minden Identity-é),
+fiók `identity-<id>` = egy Identity saját kulcsa. Egy munka az Identity saját
+kulcsát használja, ha van, különben az App kulcsot. Hogy melyik Identity-é a
+munka, azt a Rust a ONE Video mappájából állapítja meg, nem a felülettől
+kapja. Egy kulcson egyszerre egy munka, a helyi nehéz munkák (build, check,
+render) egy sorban, ma egyszerre egy (`jobs.rs`).
 
 ### 4.3 Project mappa
 
@@ -126,8 +152,8 @@ Egy videó = egy mappa a `Projects/` alatt (alapból a Dokumentumok mappában,
 Settings-ben átállítható).
 
 ```text
-Projects/2026-09-24_how-to-start/
-  project.json        állapot, kapuk, választások
+Projects/<Identity mappája>/2026-09-24_how-to-start/   (2026-10-01 óta, DECISIONS 67)
+  project.json        állapot, kapuk, választások, az Identity id-je
   brief.json          Video Brief Card (beolvasva vagy az 1. lépésben kitöltve)
   script.md           1. kapu kimenete
   audio/vo.mp3        2. kapu kimenete (+ vo_bgm.mp3)
@@ -135,12 +161,12 @@ Projects/2026-09-24_how-to-start/
   sentences.json      3. lépés (sentences.mjs)
   words.json
   scenes.json         3. kapu kimenete (jelenet-tábla)
-  build/index.html    build-video.mjs + stamp-timing.mjs
+  avatar/             HeyGen klipek (az Avatar lépés kimenete, a build előtt)
+  build/index.html    gates/build/assemble.mjs
   build/compositions/
-  review/contact.png  4. kapu (kontakt lap)
-  out/video.mp4       render
-  out/final.mp4       avatarral (5. kapu)
-  out/video.srt       feliratok
+  review/contact.png  Preview (kontakt lap)
+  out/video-<idő>.mp4 render (az avatar már benne, a HyperFrames rakja rá)
+  out/video-<idő>.srt feliratok, .chapters.txt, .publish.json, .comments.txt
   log.txt
 ```
 
@@ -157,8 +183,8 @@ Projects/2026-09-24_how-to-start/
     "script":  { "state": "approved", "mode": "recommended", "at": "2026-09-24T18:02:00Z" },
     "voice":   { "state": "pending" },
     "scenes":  { "state": "todo" },
-    "review":  { "state": "todo" },
-    "avatar":  { "state": "skipped", "reason": "no HeyGen key" }
+    "avatar":  { "state": "skipped", "reason": "no HeyGen key" },
+    "review":  { "state": "todo" }
   }
 }
 ```
@@ -166,6 +192,11 @@ Projects/2026-09-24_how-to-start/
 `status` értékei: `Idea`, `Scripted`, `Voiced`, `Scened`, `Reviewed`,
 `Rendered`, `Done`. Kapu `state`: `todo`, `running`, `pending` (jóváhagyásra
 vár), `approved`, `skipped`, `failed`. `mode`: `recommended`, `default`, `custom`.
+
+Két további, opcionális mező (DECISIONS 91): `render` (`running`, `done`,
+`failed`, idővel, minőséggel, a hiba szövegével), hogy egy elbukott vagy
+megszakadt render újraindítás után is látszódjon; és `autopilotRun`, amíg a
+"Finish on Autopilot" fut, hogy egy megszakadt Autopilot folytatódjon.
 
 ### 4.5 Video Brief Card (`brief.json`, séma v1)
 
@@ -185,7 +216,7 @@ vár), `approved`, `skipped`, `failed`. `mode`: `recommended`, `default`, `custo
 }
 ```
 
-Kötelező mező: `schema`, `title`. A többi opcionális, hiányzó mezőt a Studio
+Kötelező mező: `schema`, `title`. A többi opcionális, hiányzó mezőt az IdeaToVideo
 Recommended módban kitölt. A Tervező app ugyanezt a sémát írja; a séma
 verziója a `schema` mezőben van, így a két app külön fejlődhet.
 
@@ -209,29 +240,40 @@ indításkor a "Test key" egy rövid hívással ellenőriz.
 Prompt-sablonok a `runner/gates/*/prompt.md` fájlokban, a kánonból levezetve
 (script: Ownership Framework + Brand Voice + Audience; jelenet-tábla: CATALOG.md
 + MOTION szabályok + max 6 szó). A válasz minden LLM kapunál **JSON**, séma
-szerint validálva; ha nem valid, egy javító hívás, utána hiba a UI-ban.
+szerint validálva; ha nem valid, legfeljebb két javító hívás (DECISIONS 91),
+utána hiba a UI-ban. A jelenet-táblánál a csak ízlésbeli eltérés (ugyanaz a
+komponens kétszer egymás után, egy kicsit hosszabb jelenet) a javítások után
+figyelmeztetés, nem hiba.
 
-Hibakezelés: 429 (kvóta) és 5xx esetén exponenciális visszalépés, 3 próba,
-utána érthető üzenet ("A Gemini ingyenes kvóta elfogyott. Várj, vagy válts
-szolgáltatót a Settings-ben.").
+Hibakezelés (DECISIONS 91): 429 (kvóta), 5xx és hálózati hiba esetén
+modellenként 3 gyors próba, utána a szolgáltató többi modellje, és ha mind
+foglalt, várakozás és új kör (15, 30, 45, 60 mp, összesen kb. 3 perc). A
+várakozást a haladásjelző kiírja ("Gemini is busy (HTTP 503). Trying again in
+30 s, round 2 of 4."). Csak utána érthető üzenet. A "Test key" nem vár. A hang
+(Gemini TTS, ElevenLabs) és a HeyGen ugyanígy türelmes (kb. 3 perc hívásonként).
 
 ## 6. A menet megvalósítása
 
-| Lépés | Modul | Mit hív | Kimenet |
-|---|---|---|---|
-| 1. Script (1. kapu) | `gates/script` | LLM | `script.md` |
-| 2. Hang, zene (2. kapu) | `gates/voice` | ElevenLabs vagy edge TTS, ffmpeg (ducking, -14 LUFS) | `audio/vo_bgm.mp3`, `audio/stt.json` |
-| 3. Mondattábla | `sentences.mjs` | nincs | `sentences.json`, `words.json` |
-| 4. Jelenet-tábla (3. kapu) | `gates/scenes` | LLM + CATALOG.md | `scenes.json` |
-| 5. Build | `build-video.mjs`, `stamp-timing.mjs` | nincs | `build/index.html` |
-| 6. Lint, check | `image-audio-lint.mjs`, `hyperframes lint/check` | hyperframes CLI | 0 hiba a feltétel |
-| 7. Kontakt lap (4. kapu) | `gates/review` | `hyperframes snapshot` | `review/contact.png` |
-| 8. Render | `hyperframes render` | hyperframes CLI | `out/video.mp4` |
-| 9. Avatar (5. kapu) | `gates/avatar`, `avatar-composite.mjs` | HeyGen API, ffmpeg | `out/final.mp4` |
-| 10. Feliratok | `gates/captions` | a `words.json`-ból | `out/video.srt` |
+**Módosítva 2026-10-06 (DECISIONS 85, 96):** a menet a UI tabjai szerint;
+a kapuk sorrendje a kódban (`runner/project.mjs` `GATES`): script, voice,
+scenes, avatar, review. Az avatar a Preview előtt van, mert a build teszi a
+klipeket a videóba (a régi "avatar a render után, ffmpeg-gel" terv nem épült).
 
-**Szó-időzítés hang után:** ElevenLabs esetén a TTS válasz időbélyegeiből (vagy
-az ElevenLabs STT-ből), edge TTS esetén a word boundary eseményekből. Mindkettő
+| Lépés (tab) | Modul | Mit hív | Kimenet |
+|---|---|---|---|
+| 1. Script | `gates/script` | LLM | `script.md`, `script.json` |
+| 2. Hang, zene | `gates/voice` | ElevenLabs (alap: Eleven v4) vagy Gemini TTS, ffmpeg (ducking, -14 LUFS) | `audio/vo_bgm.mp3`, `audio/stt.json` |
+| (mondattábla) | `runner/timing/sentences.mjs` | nincs | `sentences.json`, `words.json` |
+| 3. Scenes (jelenet-tábla) | `gates/scenes` | LLM + a könyvtár szerepei (`roles.mjs`) | `scenes.json` |
+| 4. Avatar (opcionális) | `gates/avatar` | HeyGen API (átlátszó WebM) | `avatar/` |
+| 5. Preview: build | `gates/build/assemble.mjs` | nincs | `build/index.html` |
+| 5. Preview: lint, check | `gates/build/index.mjs` | `hyperframes lint/check` (a kamera-burkoló nélküli lapon) | 0 hiba a feltétel |
+| 5. Preview: kontakt lap | `gates/review` | `hyperframes snapshot` | `review/contact.png` |
+| 6. Your video: render | `gates/render` | `hyperframes render` | `out/video-<idő>.mp4` |
+| 6. Your video: feliratok, fejezetek, publikálási adat | `gates/render/export.mjs`, `publish.mjs` | a `words.json`-ból | `.srt`, `.chapters.txt`, `.publish.json` |
+
+**Szó-időzítés hang után:** ElevenLabs esetén a TTS válasz időbélyegeiből,
+Gemini TTS esetén mondatonkénti felolvasással és a mondatok hosszából. Mindkettő
 a `sentences.mjs` által várt `{ words:[{text,start,end,type}] }` formára
 alakítva.
 
@@ -240,14 +282,36 @@ alakítva.
 
 **Megszakítás és folytatás:** a `project.json` a forrás. Az app újraindítás
 után a legutolsó nem `approved` kapunál folytat. Egy kapu újrafuttatása
-érvényteleníti a későbbi kapukat.
+érvényteleníti a későbbi kapukat. Egy `running` kapu, amin a Rust mag szerint
+már nem dolgozik semmi (`liveProjects`), `failed` lesz "Interrupted" üzenettel.
+A megszakadt Autopilot a videó megnyitásakor magától folytatódik; ami már
+elkészült és jóváhagyásra vár, azt jóváhagyja, nem csinálja újra.
+
+**Megbízható futás (DECISIONS 91):**
+- Minden runner-futás egy folyamatfában (Windows Job Object, macOS
+  folyamatcsoport): a Stop, az őrkutya és a kilépés a Chrome-ot és az
+  ffmpeg-et is leállítja.
+- Checkin (DECISIONS 92): a mag 15 mp-enként megnézi, beszél-e a runner és
+  dolgozik-e a folyamatfája; a sáv kiírja: working, waiting for the service,
+  seems stuck. Az app soha nem állít le magától egy lépést, csak a Stop.
+- A runner észreveszi, ha a gép aludt (óraugrás), és kiírja.
+- A hang kész blokkjai egy elbukott futás után megmaradnak
+  (`audio/blocks-cache/`), az újrafuttatás csak a hiányzót olvassa fel.
+- A HeyGen megrendelt videóinak azonosítója `avatar/pending.json`-ba kerül;
+  egy elbukott vagy leállított futás újraindítva átveszi őket, nem rendel
+  újra.
+- A `project.json` írása egyedi ideiglenes fájllal és rövid újrapróbálással
+  (Windows fájlzár).
+- Settings, App, General, "Export diagnostics": egy zip a naplóval, a
+  beállításokkal és minden ONE Video állapotával, kulcs, hang, videó és
+  script szöveg nélkül.
 
 ## 7. Integrációk
 
 | Szolgáltatás | Mire | Megjegyzés |
 |---|---|---|
-| ElevenLabs | Narrator Voice + időbélyegek | opcionális |
-| Edge TTS (Microsoft) | ingyenes Narrator Voice | Node könyvtárral a sidecarban, Python nélkül. Nem hivatalos API, ezért egy második ingyenes tartalék is kell (nyitott kérdés). |
+| ElevenLabs | Narrator Voice + időbélyegek; zene (ElevenLabs Music) | opcionális. Alap modell 2026-10-06 óta: Eleven v4 (DECISIONS 96) |
+| Gemini TTS | ingyenes Narrator Voice a Gemini kulccsal | az Edge TTS helyett (nem épült) |
 | HeyGen | avatar klip (natív alfa webm) | opcionális, a user kreditje |
 | vidIQ | kulcsszó adat | opcionális. Nyitott, hogy van-e user-kulcsos API (lásd 12. pont). |
 | YouTube | csak a csatorna URL, publikus adat | nincs OAuth a v1-ben |
@@ -259,12 +323,16 @@ A `hyperframes` headless Chrome-mal renderel.
 **Döntés (2026-09-24, DECISIONS 25):** a render Chrome.
 
 1. **Alap:** a hyperframes által letöltött, rögzített verziójú chrome-headless-shell
-   (ma 152.0.7977.30), első indításkor, a felhasználói adatmappába (`hyperframes
-   browser ensure`, mérve 31 mp és 282 MB). Nem frissül magától, így egy
-   böngészőfrissítés nem töri el a rendert.
-2. **Tartalék:** a gépen lévő Google Chrome, ha a letöltés nem sikerül. Az app a
-   `HYPERFRAMES_BROWSER_PATH` változóval adja át, mert Windowson a hyperframes
-   magától nem találja meg.
+   (ma 152.0.7977.30), első indításkor (`hyperframes browser ensure`, mérve 31-42
+   mp és 282 MB). Nem frissül magától, így egy böngészőfrissítés nem töri el a
+   rendert. A hely az app saját helyi adatmappája: a runner a hyperframes
+   gyerekfolyamatainak a `<app_local_data>/hyperframes-home` mappát adja otthonnak
+   (`HOME`, `USERPROFILE`), így a böngésző és minden hyperframes gyorsítótár ott
+   van, nem a user `~/.cache` mappájában (`runner/tools.mjs`).
+2. **Tartalék:** a gépen lévő Google Chrome, ha a letöltés nem sikerül (vagy
+   Windows ARM-on, ahol nincs rögzített shell). A runner a választott böngészőt
+   mindig kifejezetten adja át (`HYPERFRAMES_BROWSER_PATH`), a hyperframes soha
+   nem választ magától.
 3. **Edge nem.** Mérve teljes értékű lenne, de Zoltan döntése szerint kimarad.
 
 Mérés (a letöltött shell, a rendszer Chrome és az Edge egyforma gyors és ugyanazt
@@ -283,8 +351,9 @@ a képet adja): `docs/phase-0.md`.
 
 ## 10. Build, release, frissítés
 
-- `build.yml`: minden push-ra Windows és macOS build, a parity és a regress
-  teszt lefut.
+- `build.yml`: PR-re csak Windows build; a macOS build kézzel indul
+  (`gh workflow run build -f platforms=both`), a 3. és 4. fázis után, a
+  kiadás előtt (DECISIONS 95). GitHub Actions percet fogyaszt: előbb Zoltan.
 - `release.yml`: tag-re (`v0.x.y`) telepítő a GitHub Releases-re + updater
   manifest.
 - Sidecarok: ffmpeg statikus build és Node bináris platformonként, a
@@ -297,9 +366,9 @@ a képet adja): `docs/phase-0.md`.
 | Szint | Mi | Hol |
 |---|---|---|
 | Parity | a Node szkriptek kimenete azonos a PowerShell-ével (0. fázis) | brand-frames, egyszeri |
-| Unit | sémák, `data-sent` feloldás, LLM JSON validálás | runner |
-| Regress | a 39 archetípus vizuálisan nem változott (`regress.mjs`) | brand-frames, minden kánon-léptetésnél |
-| E2E | egy rövid mintavideó végig, mock LLM-mel és edge TTS-sel | CI, mindkét platform |
+| Unit | runner (`npm test`, Node) és Rust mag (`cargo test`) | runner, `app/src-tauri` |
+| Regress | (a 39 archetípus a D út óta nincs az appban, DECISIONS 48) | brand-frames, nem az app része |
+| E2E | egy rövid mintavideó végig, mock LLM-mel és csendes hanggal (`npm run e2e`) | helyben |
 | Pilot | egy barát, segítség nélkül | kézi, 3. fázis |
 
 ## 12. Nyitott technikai kérdések
@@ -307,8 +376,8 @@ a képet adja): `docs/phase-0.md`.
 1. **vidIQ:** eldőlt (DECISIONS 42): MCP szerver user kulccsal, opcionális.
    Eredeti kérdés: van-e user-kulcsos, nyilvános API? Ha nincs, a v1-ben kimarad, és
    a kulcsszó kézzel vagy a Brief Cardból jön.
-2. **Ingyenes TTS tartalék** az Edge TTS mellé (nem hivatalos API, bármikor
-   változhat).
+2. **Ingyenes TTS tartalék:** eldőlt, a Gemini TTS a user Gemini kulcsával;
+   az Edge TTS nem épült.
 3. **Headless Chrome:** eldőlt (DECISIONS 25): letöltött, rögzített Chrome,
    tartalék a rendszer Google Chrome, Edge nem. Lásd 8. pont.
 4. **Node sidecar formája:** eldőlt (DECISIONS 26): csomagolt Node +

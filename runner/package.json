@@ -1,0 +1,9 @@
+{
+  "name": "ideatovideo-runner",
+  "private": true,
+  "type": "module",
+  "description": "The runner's own dependencies, bundled with the app (tauri.conf.json resources). Only the official Anthropic SDK for the native Claude connector (DECISIONS 89); every other provider goes through plain fetch.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0"
+  }
+}

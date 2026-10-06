@@ -1,207 +1,307 @@
 <script lang="ts">
-  // One project. Phase 1 has gate 1 (script): Recommended (the AI writes it),
-  // Custom (edit by hand, save-script), Approve. Later gates show their state.
+  // One ONE Video, as tabs (Zoltan, 2026-10-05, DECISIONS 85): one step on
+  // screen at a time, the steps as clickable tabs on top. Each tab says in
+  // one word where it stands: Done (green), Now (the next step to do, framed),
+  // Next, Optional (the avatar). Every tab can be opened at any time; a tab
+  // whose step needs an earlier one says so and links there. Approving a
+  // step opens the next tab by itself. A job that runs shows its percent on
+  // its tab, so it is visible from every other tab too.
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
-  import { ask } from "@tauri-apps/plugin-dialog";
-  import { onDestroy, untrack } from "svelte";
+  import { untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
-  import type { AppState, Gate } from "./api";
-  import { runner, onProgress, errorText } from "./api";
+  import ScriptGate from "./ScriptGate.svelte";
+  import VoiceGate from "./VoiceGate.svelte";
+  import SceneGate from "./SceneGate.svelte";
+  import AvatarGate from "./AvatarGate.svelte";
+  import PreviewGate from "./PreviewGate.svelte";
+  import VideoTab from "./VideoTab.svelte";
+  import type { AppState, Gate, CtaSlot } from "./api";
+  import { runner, errorText } from "./api";
+  import { narratorProvider } from "./catalog";
+  import { setScreen, log } from "./logger";
+  import { work, running, track, measure, startWork, pilots } from "./work.svelte";
+  import { TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import { avatarLooks } from "./avatars";
+  import { llmFor } from "./llm";
+  import { notifyDone } from "./notify";
 
-  let { app, dir, back }: { app: AppState; dir: string; back: () => void } = $props();
+  // saved: new settings from a tab (the AI of a step, StepModel)
+  let { app, dir: dirProp, back, saved }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void } = $props();
+  // The project this view was opened for, fixed: a long job (an avatar, a
+  // render) keeps writing to it even if the user opens Settings meanwhile.
+  const dir = untrack(() => dirProp);
+  startWork();
 
+  type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; publishFile?: string | null; comments?: string | null };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; gates: Record<string, Gate> };
+    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate> };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
+    calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
+    latestVideo: Video | null;
+    stills: { scene: number; at: number; file: string }[];
+    voiceInfo: { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number } | null;
   };
 
-  const GATE_LABELS: [string, string][] = [
-    ["script", "1. Script"],
-    ["voice", "2. Voice and music"],
-    ["scenes", "3. Scene table"],
-    ["review", "4. Review"],
-    ["avatar", "5. Avatar"],
-  ];
-
   let data = $state<Loaded | null>(null);
-  let draft = $state("");
-  let length = $state(untrack(() => app.config?.defaults?.targetLengthMin ?? 8));
-  let busy = $state(false);
-  let step = $state("");
   let error = $state("");
-  let notice = $state("");
+  let active = $state<TabId>("script");
+  let body = $state<HTMLDivElement>();
+  const hasHeygen = $derived(!!app.keys["heygen"]);
+  const look = $derived(app.config?.brand?.preset ?? "blue-professional");
 
-  const script = $derived(data?.project.gates.script);
-  const llmContext = $derived({ step: "script", provider: app.config?.llm.provider, model: app.config?.llm.model });
-  const dirty = $derived(data?.scriptMarkdown != null && draft !== data.scriptMarkdown);
+  function show(id: TabId, why = "click") {
+    if (active !== id) log("tab", { tab: id, why });
+    active = id;
+    body?.scrollTo({ top: 0 });
+  }
 
-  // Does not clear `error`: a failed write-script reloads the project, and the
-  // message must stay on screen.
+  // Approving a step opens the next tab (Zoltan: "as soon as it is approved,
+  // it takes me to the next tab"). Only for a change seen in this view.
+  let before: Record<string, string> | null = null;
   async function load() {
     try {
-      data = await runner<Loaded>("load-project", { projectDir: dir });
-      draft = data.scriptMarkdown ?? "";
-      if (data.brief?.targetLengthMin) length = data.brief.targetLengthMin;
+      const next = await runner<Loaded>("load-project", { projectDir: dir });
+      const name = dir.split(/[\\/]/).pop();
+      const states = Object.fromEntries(Object.entries(next.project.gates).map(([k, g]) => [k, g.state]));
+      const first = data === null;
+      data = next;
+      if (first) {
+        setScreen(`video/${name}`);
+        log("video_state", { video: name, status: next.project.status, gates: states, autopilot: !!next.project.autopilot, hasVideo: !!next.latestVideo });
+        active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen);
+        // a render that failed or was cut off before this view opened
+        if (next.project.render?.state === "failed" && !renderError) renderError = next.project.render.error ?? "The last render did not finish.";
+        // the app works ahead, for free (K10 b): the avatar list and its
+        // pictures load now, so the Avatar tab opens at once
+        if (hasHeygen && next.project.gates.avatar?.state !== "approved") avatarLooks().catch(() => {});
+        // Autopilot was under way and got cut off (the window reloaded, the
+        // app was closed): it goes on by itself, and says so (2026-10-06)
+        if (next.project.autopilotRun && !pilots[dir]) resumePilot = true;
+      } else if (before && !pilot) {
+        const done = (g: string, s: Record<string, string>) => s[g] === "approved" || (g === "avatar" && s[g] === "skipped");
+        for (const t of TABS) {
+          if (t.gate && t.id === active && done(t.gate, states) && !done(t.gate, before)) show(nextAfter(t.id, hasHeygen), "approved");
+        }
+      }
+      before = states;
     } catch (e) {
       error = errorText(e);
     }
   }
+  load();
+
+  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen) : null);
+  // the percent of the job running for a tab, for its label
+  function tabJob(cmds: string[]) {
+    const c = running(dir, cmds);
+    if (!c) return null;
+    const t = track(dir, c);
+    return t ? measure(t, work.now).percent : 0;
+  }
+
+  // Autopilot (SPEC 6): every remaining step in Recommended mode, each
+  // approved as soon as it is made, then the render. The same runner
+  // commands as the buttons, one after the other; the tab of the step at
+  // work is shown, with its own progress bar. Stops at the first error.
+  // project.json keeps a mark while it runs (autopilot-mark), so a run cut
+  // off by a reload or a closed app goes on when the ONE Video opens again;
+  // the app-wide `pilots` keeps a second one from starting meanwhile.
+  const pilot = $derived(pilots[dir] ?? "");
+  const setPilot = (label: string) => {
+    if (label) pilots[dir] = label;
+    else delete pilots[dir];
+  };
+  let pilotError = $state("");
+  let pilotNote = $state("");
+  let resumePilot = $state(false);
+  // a cut-off Autopilot waits for the step still running, then goes on
   $effect(() => {
-    load();
+    if (resumePilot && data && !anyJob && !pilots[dir]) {
+      resumePilot = false;
+      pilotNote = "Autopilot was cut off (the window reloaded or the app was closed), so it goes on from where it stopped. Stop any step to end it.";
+      log("autopilot_resumed", {});
+      autopilot(true);
+    }
   });
-
-  const unlisten = onProgress((p) => {
-    if (p.command !== "write-script") return;
-    const s = p.progress.step;
-    step = s === "repairing" ? "Fixing a few style problems..." : "Writing the script...";
+  // another view of this ONE Video runs the Autopilot: follow its steps
+  $effect(() => {
+    if (pilot) untrack(() => load());
   });
-  onDestroy(() => {
-    unlisten.then((f) => f());
-  });
-
-  async function writeRecommended() {
-    if (data?.scriptMarkdown && !(await ask("Write a new script? The current one and every later gate will be replaced.", { title: "Write again", kind: "warning" }))) return;
-    busy = true;
-    error = "";
-    notice = "";
-    step = "Starting...";
+  async function autopilot(resumed = false) {
+    if (!data || pilots[dir]) return;
+    pilotError = "";
+    if (!resumed) pilotNote = "";
+    const gates = () => data!.project.gates;
+    const approved = (g: string) => gates()[g]?.state === "approved";
+    // made, waiting for approval: approved as it is, never made again (and
+    // never paid twice) when a cut-off Autopilot goes on
+    const made = (g: string) => gates()[g]?.state === "pending";
+    const rendered = () => {
+      const r = data?.project.render;
+      return !!data?.latestVideo && r?.state === "done" && String(r.at ?? "") > String(gates().review?.at ?? "");
+    };
+    if (["script", "voice", "scenes", "review"].every(approved) && (rendered() || (!resumed && data.latestVideo))) {
+      if (resumed) await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
+      else pilotError = "Every step is done already. Render again on the Your video tab if you want a new file.";
+      return;
+    }
+    const approveGate = async (gate: string) => {
+      if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
+      await load();
+    };
+    setPilot("Starting");
     try {
-      const r = await runner<{ words: number }>("write-script", {
-        projectDir: dir,
-        llm: app.config!.llm,
-        input: { topic: data!.project.title, targetLengthMin: length },
-        channel: app.config!.channel,
-      });
-      notice = `Script ready, ${r.words} words.`;
-      await load();
+      await runner("autopilot-mark", { projectDir: dir, on: true });
+      if (!approved("script")) {
+        if (!data.scriptMarkdown) {
+          setPilot("Writing the script");
+          show("script", "autopilot");
+          await runner("write-script", { projectDir: dir, llm: llmFor(app.config, "script"), input: { topic: data.project.title, targetLengthMin: data.brief?.targetLengthMin ?? app.config?.defaults?.targetLengthMin ?? 8 }, channel: app.config!.channel });
+          await load();
+        }
+        await approveGate("script");
+      }
+      if (!approved("voice") && made("voice")) await approveGate("voice");
+      if (!approved("voice")) {
+        setPilot("Reading the script aloud and mixing");
+        show("voice", "autopilot");
+        const provider = narratorProvider(app.config?.narrator.provider);
+        // Settings may hold a voice id or its name; the user's own voices come first
+        const want = (app.config?.narrator.voice ?? "").trim();
+        const list = (await runner<{ voices: { id: string; name: string }[] }>("list-voices", { narrator: { provider } })).voices;
+        const voice =
+          list.find((v) => v.id === want)?.id ??
+          (want ? (list.find((v) => v.name.toLowerCase() === want.toLowerCase()) ?? list.find((v) => v.name.toLowerCase().includes(want.toLowerCase())))?.id : undefined) ??
+          list[0]?.id ??
+          null;
+        if (!voice) throw new Error("No narrator voice is available. Pick one on the Voice and music tab.");
+        await runner("make-voice", { projectDir: dir, narrator: { provider, voice }, music: null });
+        // music (DECISIONS 62): ElevenLabs Music with a key, else none
+        if (app.keys["elevenlabs"]) {
+          setPilot("Adding the background music");
+          await runner("make-music", { projectDir: dir, music: { provider: "elevenlabs" } });
+        }
+        await approveGate("voice");
+      }
+      if (!approved("scenes") && made("scenes")) await approveGate("scenes");
+      if (!approved("scenes")) {
+        setPilot("Planning the scenes");
+        show("scenes", "autopilot");
+        await runner("make-scenes", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
+        await approveGate("scenes");
+      }
+      if (!approved("review") && made("review")) await approveGate("review");
+      if (!approved("review")) {
+        setPilot("Building the preview");
+        show("preview", "autopilot");
+        await runner("build-video", { projectDir: dir, look });
+        await approveGate("review");
+      }
+      if (!rendered()) {
+        setPilot("Rendering the video");
+        await render("standard");
+        if (renderError) throw new Error(renderError);
+      }
+      await runner("autopilot-mark", { projectDir: dir, on: false });
+      pilotNote = "";
     } catch (e) {
-      error = errorText(e);
-      await load();
+      pilotError = `Autopilot stopped: ${errorText(e)}`;
+      await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
+      await load().catch(() => {});
     } finally {
-      busy = false;
-      step = "";
+      setPilot("");
     }
   }
-
-  async function saveCustom() {
-    busy = true;
-    error = "";
+  // The render belongs to the ONE Video, not to a tab: started from the
+  // Preview ("Approve and render") or from Your video, it goes on whichever
+  // tab is open, and its error waits on Your video.
+  let renderError = $state("");
+  async function render(quality = "standard") {
+    renderError = "";
+    show("video", "render");
     try {
-      await runner("save-script", { projectDir: dir, markdown: draft });
-      notice = "Your edits are saved.";
-      await load();
+      const r = await runner<{ seconds: number }>("render-video", { projectDir: dir, quality });
+      notifyDone("Your video is ready", `${data?.project.title ?? ""}: ${Math.round(r.seconds)} s of video.`);
     } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = false;
+      renderError = errorText(e);
     }
+    await load();
   }
-
-  async function approve() {
-    busy = true;
-    error = "";
-    try {
-      if (dirty) await runner("save-script", { projectDir: dir, markdown: draft });
-      await runner("approve-gate", { projectDir: dir, gate: "script" });
-      notice = "Script approved.";
-      await load();
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = false;
-    }
-  }
-
-  const stateLabel = (g?: Gate) =>
-    ({ todo: "Not started", running: "Running", pending: "Waiting for your approval", approved: "Approved", skipped: "Skipped", failed: "Failed" })[g?.state ?? "todo"] ?? g?.state;
+  const anyJob = $derived(!!running(dir, TABS.flatMap((t) => t.commands)));
 </script>
 
 <div class="page">
   <header>
-    <button type="button" class="ghost" onclick={back}>All projects</button>
-    <span class="spacer"></span>
-    <button type="button" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
+    <button type="button" class="ghost" onclick={back}>Back to the list</button>
+    <h1 title={data?.project.title}>{data?.project.title ?? ""}</h1>
+    {#if data}
+      <button type="button" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
+      <button type="button" class="ghost" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
+    {/if}
   </header>
 
   {#if !data}
-    {#if error}<ErrorBox message={error} context={{ step: "load-project" }} />{:else}<p class="hint">Loading...</p>{/if}
+    <div class="body">{#if error}<ErrorBox message={error} context={{ step: "load-project" }} />{:else}<p class="hint">Loading...</p>{/if}</div>
   {:else}
-    <h1>{data.project.title}</h1>
-    <p class="hint">Status: <strong>{data.project.status}</strong>. Language: {data.project.language}.{data.project.autopilot ? " Autopilot on." : ""}</p>
-
-    <ol class="gates">
-      {#each GATE_LABELS as [id, label]}
-        <li class={data.project.gates[id]?.state ?? "todo"}>
-          <span>{label}</span>
-          <span class="state">{id === "script" ? stateLabel(data.project.gates[id]) : "Next version"}</span>
-        </li>
-      {/each}
-    </ol>
-
-    <section class="card">
-      <div class="head">
-        <h2>1. Script</h2>
-        <span class="pill {script?.state}">{stateLabel(script)}{script?.mode ? `, ${script.mode}` : ""}</span>
-      </div>
-
-      <div class="controls">
-        <label for="len">Length</label>
-        <input id="len" type="number" min="1" max="30" bind:value={length} disabled={busy} />
-        <span class="hint">minutes</span>
-        <span class="spacer"></span>
-        <button type="button" class="primary" disabled={busy} onclick={writeRecommended}>
-          {data.scriptMarkdown ? "Write again (Recommended)" : "Write script (Recommended)"}
+    <nav class="tabs" aria-label="Steps">
+      {#each TABS as t (t.id)}
+        {@const st = states?.[t.id] ?? "next"}
+        {@const pct = tabJob(t.commands)}
+        <button type="button" class="tab {st}" class:open={active === t.id} aria-current={active === t.id ? "step" : undefined} onclick={() => show(t.id)}>
+          <span class="name">{t.n}. {t.label}</span>
+          <span class="word">{pct !== null ? `Running ${pct}%` : { done: "Done", now: "Now", next: "Next", optional: "Optional", failed: "Failed" }[st]}</span>
+          {#if pct !== null}<span class="bar" style="width: {pct}%"></span>{/if}
         </button>
-      </div>
+      {/each}
+    </nav>
+    {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
+    {#if pilotNote && pilot}<p class="note">{pilotNote}</p>{/if}
+    {#if data.project.render?.state === "failed" && !running(dir, ["render-video"]) && active !== "video"}
+      <p class="note">The last render did not finish: {data.project.render.error ?? "no reason given"} <button type="button" class="link" onclick={() => show("video", "render-failed")}>Open Your video</button></p>
+    {/if}
 
-      {#if busy && step}<p class="hint">{step} This usually takes under a minute.</p>{/if}
-      {#if error}
-        <ErrorBox message={error} context={llmContext} />
-      {:else if script?.state === "failed" && script.error}
-        <ErrorBox message={`Last attempt failed: ${script.error}`} context={llmContext} />
-      {/if}
-      {#if notice && !error}<p class="good">{notice}</p>{/if}
-
-      {#if data.scriptMarkdown !== null || script?.state === "failed"}
-        <label for="script" class="label">Script (you can edit it: Custom)</label>
-        <textarea id="script" rows="22" bind:value={draft} disabled={busy} spellcheck="true"></textarea>
-        <div class="actions">
-          <button type="button" disabled={busy || !dirty} onclick={saveCustom}>Save my edits</button>
-          <button type="button" class="primary" disabled={busy || !draft.trim() || script?.state === "approved"} onclick={approve}>
-            {script?.state === "approved" ? "Approved" : "Approve script"}
-          </button>
-        </div>
+    <div class="body" bind:this={body}>
+      {#if active === "script"}
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} />
+      {:else if active === "voice"}
+        <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
+      {:else if active === "scenes"}
+        <SceneGate {app} {dir} {saved} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} goto={show} next={nextAfter("scenes", hasHeygen)} />
+      {:else if active === "avatar"}
+        <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
+      {:else if active === "preview"}
+        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} />
       {:else}
-        <p class="hint">Click Write script. The AI uses your Audience, Brand Voice and landing page from Settings{data.brief ? ", and the Video Brief Card" : ""}.</p>
+        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} {renderError} {render} goto={show} />
       {/if}
-    </section>
+    </div>
   {/if}
 </div>
 
 <style>
-  .page { padding: 24px; max-width: 900px; margin: 0 auto; display: grid; gap: 14px; }
-  header { display: flex; gap: 8px; align-items: center; }
-  .spacer { flex: 1; }
-  h1 { margin: 0; }
-  h2 { margin: 0; font-size: 17px; }
-  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .gates { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .gates li { background: var(--muted); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; font-size: 13px; font-weight: 600; }
-  .gates .state { font-weight: 400; color: var(--muted-foreground); }
-  .gates li.approved { background: var(--success-surface); }
-  .gates li.pending { background: var(--primary-surface); }
-  .gates li.failed { background: var(--danger-surface); }
-  .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
-  .pill.approved { background: var(--success-surface); color: var(--success); }
-  .pill.pending { background: var(--primary-surface); color: var(--primary-surface-foreground); }
-  .pill.failed { background: var(--danger-surface); color: var(--danger-text); }
-  .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-  .controls input { width: 70px; }
-  .label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
-  textarea { width: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
-  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  .page { height: 100%; display: grid; grid-template-rows: auto auto auto 1fr; max-width: 1100px; margin: 0 auto; padding: 10px 20px 0; gap: 8px; }
+  header { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  h1 { flex: 1; margin: 0; font-size: 20px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .tab { position: relative; overflow: hidden; display: grid; gap: 1px; justify-items: start; text-align: left; min-height: 0; padding: 7px 10px; border-radius: 10px; border: 2px solid transparent; background: var(--muted); font-size: 13px; }
+  .tab .name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .tab .word { font-weight: 400; font-size: 12px; color: var(--muted-foreground); }
+  .tab.done { background: var(--success-surface); }
+  .tab.done .word { color: var(--success); font-weight: 600; }
+  .tab.now { border-color: var(--primary); background: var(--surface); }
+  .tab.now .word { color: var(--primary); font-weight: 600; }
+  .tab.optional { opacity: 0.7; }
+  .tab.failed { background: var(--danger-surface); }
+  .tab.failed .word { color: var(--danger-text); font-weight: 600; }
+  /* the tab on screen: raised, joined to the page under it */
+  .tab.open { box-shadow: 0 3px 0 0 var(--foreground); opacity: 1; }
+  .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--primary); transition: width 0.5s linear; }
+  /* no bottom padding: the action bar sticks to the very bottom edge */
+  .body { min-height: 0; overflow: auto; padding: 4px 2px 0; scroll-padding-bottom: 90px; }
   .hint { color: var(--muted-foreground); font-size: 13px; }
-  .good { color: var(--success); }
-  .bad { color: var(--danger-text); white-space: pre-wrap; }
+  .note { margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--warning-surface); color: var(--warning-text); font-size: 13px; }
+  @media (max-width: 980px) {
+    .tab { padding: 6px 8px; font-size: 12px; }
+  }
 </style>

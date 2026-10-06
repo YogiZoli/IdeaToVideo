@@ -1,0 +1,233 @@
+// mock.js: see prepare.mjs. A stand-in for the Tauri core in a plain browser.
+// Logs every call in window.__calls and keeps a small in-memory core: App
+// settings, Identities, a keychain with App and Identity keys (docs/identity.md).
+// URL switches: ?fresh=1 first run (no settings), ?tier=solo the Solo plan,
+// ?one=1 a single Identity, ?nobackup=1 no backup folder. window.__log holds
+// what the UI sent to the local log (log_event).
+// The ONE Video tabs (DECISIONS 85): ?stage=0..6 how many steps of the test
+// project are approved (default 3), ?slow=<ms> how long a long job takes
+// (default 2500). Long jobs show up in the Jobs list and send progress
+// events, like the real core; window.__emit(event, payload) sends one by hand.
+window.__calls = [];
+window.__log = [];
+const q = new URLSearchParams(location.search);
+const ORDER = ["script", "voice", "scenes", "avatar", "review"];
+const stage = Number(q.get("stage") ?? 3);
+const slow = Number(q.get("slow") ?? 2500);
+const project = { id: "p", title: "How to turn viewers into subscribers with one simple question", status: "Scened", language: "en", gates: Object.fromEntries(ORDER.map((g, i) => [g, { state: i < stage ? (g === "avatar" ? "skipped" : "approved") : "todo" }])) };
+let video = stage >= 6 ? { file: "/preview/motion.mp4", seconds: 128, renderSeconds: 417, chapters: "0:00 Intro\n0:35 The mistake", srt: "x.srt", publishFile: "x.publish.json", comments: "GUIDE", youtube: null } : null;
+const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.state !== "todo";
+const listeners = {};
+window.__emit = (event, payload) => (listeners[event] ?? []).forEach((h) => window["_" + h]?.({ event, payload, id: 1 }));
+const LONG = { "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
+// ?quiet=1: no heartbeat, ?stuck=1: the check-in says stuck (the bar's "no sign of life" line); ?slept=1: the
+// computer slept during the job; Stop (stop_job) ends a job with its reason.
+let nextJob = 10;
+async function longJob(command, request) {
+  const job = { id: nextJob++, command, identity: "my-identity", identityName: "My Identity", project: request.projectDir ?? null, state: "running" };
+  jobs.push(job);
+  window.__emit("jobs-changed", [...jobs]);
+  window.__emit("runner-progress", { command, project: job.project, progress: { step: "estimate", expectSeconds: LONG[command] } });
+  const t0 = Date.now();
+  let beat = 0;
+  if (q.get("slept")) window.__emit("runner-progress", { command, project: job.project, progress: { step: "slept", seconds: 754 } });
+  while (Date.now() - t0 < slow) {
+    await new Promise((r) => setTimeout(r, 250));
+    if (job.stopped) {
+      jobs.splice(jobs.indexOf(job), 1);
+      window.__emit("jobs-changed", [...jobs]);
+      throw "Stopped by you.";
+    }
+    if (!q.get("quiet") && ++beat % 8 === 0) window.__emit("runner-progress", { command, project: job.project, progress: { step: "alive" } });
+    // the core's check-in (runner.rs): ?stuck=1 shows a step that seems stuck
+    if (beat % 8 === 4) window.__emit("runner-progress", { command, project: job.project, progress: { step: "pulse", state: q.get("stuck") ? "stuck" : q.get("quiet") ? "waiting" : "working" } });
+    const f = (Date.now() - t0) / slow;
+    if (command === "render-video") window.__emit("runner-progress", { command, project: job.project, progress: { step: "render", percent: Math.round(3 + 92 * f), frame: Math.round(3848 * f), frames: 3848 } });
+  }
+  jobs.splice(jobs.indexOf(job), 1);
+  window.__emit("jobs-changed", [...jobs]);
+}
+const setState = (g, state, mode) => {
+  project.gates[g] = { state, ...(mode ? { mode } : {}) };
+  if (state === "running" || state === "pending") for (const later of ORDER.slice(ORDER.indexOf(g) + 1)) if (g !== "review") project.gates[later] = { state: "todo" };
+};
+const stillsList = () => (hasStills() ? [1, 2, 3, 4, 5].map((n) => ({ scene: n, at: n * 6 - 0.5, file: `/preview/${n}.png` })) : []);
+const fields = (over = {}) => ({ llm: null, channel: { contentLanguage: "en", audience: "founders", youtubeUrl: null }, narrator: { provider: "elevenlabs", voice: "Zoltan BD" }, brand: { preset: "blue-professional", logo: null }, avatar: { enabled: true }, research: { vidiq: true }, defaults: { scriptTemplate: "ownership", targetLengthMin: 8 }, ...over });
+const core = {
+  app: q.get("fresh") ? null : { schema: 2, onboarded: true, llm: { provider: "gemini", model: "gemini-3.5-flash" }, projectsDir: null, activeIdentity: "my-identity", defaults: { autopilot: false }, backup: q.get("nobackup") ? {} : { dir: "G:/My Drive", level: 4, auto: true } },
+  identities: q.get("fresh") ? [] : [
+    { schema: 1, id: "my-identity", name: "My Identity", folder: "My Identity", ...fields({ channel: { contentLanguage: "en", audience: "founders", youtubeUrl: "https://www.youtube.com/@zoltangero" } }) },
+    ...(q.get("one") ? [] : [{ schema: 1, id: "voxflow", name: "VoxFlow", folder: "VoxFlow", ...fields({ llm: { provider: "claude", model: "claude-sonnet-5" }, channel: { contentLanguage: "hu", audience: "coaches", youtubeUrl: null } }) }]),
+  ],
+  // "<name>@app" or "<name>@<identity id>"
+  keys: new Set(["gemini@app", "elevenlabs@app", "heygen@app", "vidiq@voxflow"]),
+};
+const tier = q.get("tier") === "solo" ? "Solo" : "Agency";
+const edition = { product: "IdeaToVideo", tier, identityLimit: tier === "Solo" ? 1 : null, copyKeysDefault: tier !== "Solo" };
+const NAMES = ["gemini", "openrouter", "claude", "openai", "deepseek", "grok", "elevenlabs", "heygen", "vidiq"];
+const slug = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "identity";
+const active = () => core.identities.find((i) => i.id === core.app?.activeIdentity) ?? core.identities[0] ?? null;
+function sources() {
+  const id = active()?.id;
+  return Object.fromEntries(NAMES.map((n) => [n, { app: core.keys.has(`${n}@app`), identity: !!id && core.keys.has(`${n}@${id}`) }]));
+}
+function state(notice = null) {
+  const a = active();
+  const src = sources();
+  return {
+    app: core.app, identity: a, edition, notice,
+    identities: core.identities.map((i) => ({ id: i.id, name: i.name, folder: i.folder, youtubeUrl: i.channel?.youtubeUrl ?? null })),
+    projectsRoot: "C:/P", projectsDir: a ? `C:/P/${a.folder}` : "C:/P", defaultProjectsDir: "C:/P",
+    keys: Object.fromEntries(Object.entries(src).map(([n, s]) => [n, s.app || s.identity])), keySources: src, version: "0.1.0",
+    backupRoot: core.app?.backup?.dir ? `${core.app.backup.dir}/IdeaToVideo_Backup` : null,
+    log: { dir: "C:/Users/me/AppData/Local/app.ideatovideo.desktop/logs", files: 2, bytes: 48000, session: "s1", errors: 0, warnings: 1 },
+  };
+}
+function room() {
+  if (edition.identityLimit !== null && core.identities.length >= edition.identityLimit) throw `The ${tier} plan includes 1 Identity. The Agency plan includes unlimited Identities.`;
+}
+function addIdentity(i) {
+  room();
+  let id = slug(i.name), n = 2;
+  while (core.identities.some((x) => x.id === id)) id = `${slug(i.name)}-${n++}`;
+  const made = { ...JSON.parse(JSON.stringify(i)), schema: 1, id, folder: i.name };
+  core.identities.push(made);
+  core.app.activeIdentity = id;
+  return made;
+}
+// The Brand wizard (brand-state.json from prepare.mjs) and the dictionary.
+let motionProfile = null;
+let ctaProfile = null;
+let brandCard = null;
+let dictionary = { schema: "dictionary/1", preferred: [{ term: "Owner", note: "capital O" }], banned: [{ term: "blasting email", instead: "sending to your list" }], distinct: [], positions: [{ against: "hustle culture", kind: "phenomenon" }] };
+async function brandState() {
+  const s = await (await fetch("/brand-state.json")).json();
+  return brandCard ? { ...s, card: brandCard, own: true } : s;
+}
+const jobs = q.get("otherjob") ? [{ id: 1, command: "render-video", identity: "voxflow", identityName: "VoxFlow", project: "C:/P/VoxFlow/2026-10-01_first", state: "running" }] : [];
+const replies = {
+  "load-project": { project, brief: null, scriptMarkdown: "# T\n", latestVideo: null, stills: [], voiceInfo: null },
+  "scene-table": { rows: [], gaps: [], warnings: [] },
+  "list-voices": { voices: [{ id: "v1", name: "Zoltan BD", own: true, accent: null, gender: null, previewUrl: null }, { id: "v2", name: "Zoltan EN calm", own: true, accent: "hungarian", gender: "male", previewUrl: null }, ...["Adam", "Alice", "Bella", "Bill", "Brian", "Callum", "Charlie", "Charlotte", "Chris", "Daniel", "Emily", "Eric", "George", "Jessica", "Laura", "Liam", "Lily", "Matilda", "River", "Roger", "Sarah", "Will"].map((n, i) => ({ id: `s${i}`, name: n, own: false, accent: ["american", "british", "australian"][i % 3], gender: i % 2 ? "female" : "male", description: "narration", previewUrl: null }))] },
+  "music-estimate": { usd: 0.2, prompt: "calm" },
+  "avatar-looks": { own: [{ id: "g1", name: "Zoltan", note: null, image: "/preview/1.png", looks: ["Office, blue shirt", "Studio, black tee", "Outdoor, jacket", "Desk, glasses", "Stage, suit", "Kitchen, casual", "Podcast", "Green screen"].map((n, i) => ({ id: `l${i}`, name: n, image: `/preview/${(i % 5) + 1}.png`, video: "x" })) }, { id: "g2", name: "Zoltan 2025", note: null, image: null, looks: [{ id: "m1", name: "Webinar", image: null }] }, { id: "g3", name: "Anna (client)", note: "training", image: null, looks: [] }], stock: ["Abigail", "Brandon", "Chen", "Daisy", "Elias", "Fatima", "Gabriel", "Hana", "Ivan", "Julia", "Kofi", "Lena", "Marco", "Nina", "Omar"].map((n, i) => ({ id: `st${i}`, name: `${n} ${["Office", "Casual", "Studio"][i % 3]}`, image: null })) },
+  "avatar-plan": { segments: [{ name: "open", label: "Opening", start: 0, duration: 5.2 }, { name: "close", label: "Closing", start: 120, duration: 7.4 }], current: null, estimate: { low: 1.2, high: 2.5 }, account: { remaining: 23.5, currency: "usd" } },
+  "youtube-texts": { titles: ["Turn viewers into subscribers with one question", "The one question that grows your channel", "Stop asking for subs: do this instead"], title: "", summary: "You learn why asking for a subscription fails, and the one-word question that turns viewers into subscribers.", description: "You learn why asking for a subscription fails.\n\nGUIDE: the one-page checklist\n\n0:00 Intro\n0:35 The mistake\n", tags: ["youtube growth", "get subscribers", "call to action"] },
+  "build-video": { scenes: 1, seconds: 5, stills: [] },
+  "validate-config": { errors: [] },
+  "test-llm": { ok: true, message: "The key works." },
+  "test-service": { ok: true, message: "The key works." },
+  "backup-estimate": { projects: 6, levels: { 1: 60000, 2: 9000000, 3: 9100000, 4: 75000000 } },
+  "backup-all": { projects: 6, copied: 40, bytes: 70000000, failed: [] },
+  "backup-status": { path: "My Identity/Test_2026-10-01", at: "2026-10-01T14:02:00Z", lastLevel: 4, level: null },
+  "set-backup-level": { level: 2 },
+  "backup-project": { path: "My Identity/Test_2026-10-01", copied: 3, at: "2026-10-01T15:00:00Z" },
+  "list-backups": { backups: [{ path: "My Identity/Old_one_2026-09-20", title: "Old one", projectId: "2026-09-20_old-one", at: "2026-09-20T10:00:00Z", level: 4, here: false }, { path: "My Identity/Test_2026-10-01", title: "Test", projectId: "p", at: "2026-10-01T14:02:00Z", level: 4, here: true }] },
+  "restore-project": { dir: "C:/P/My Identity/2026-09-20_old-one", id: "2026-09-20_old-one", reset: false },
+};
+window.__TAURI_INTERNALS__ = {
+  transformCallback: (cb) => { const id = Math.random(); window["_" + id] = cb; return id; },
+  convertFileSrc: (p) => p,
+  invoke: async (cmd, args) => {
+    window.__calls.push({ cmd, args: JSON.parse(JSON.stringify(args ?? {})) });
+    switch (cmd) {
+      case "app_state": return state();
+      case "save_settings": {
+        if (args.config) core.app = { ...args.config };
+        let notice = null;
+        if (args.identity) {
+          const known = core.identities.find((i) => i.id === args.identity.id);
+          if (known) {
+            if (known.name !== args.identity.name) notice = null;
+            Object.assign(known, args.identity, { folder: args.identity.name });
+          } else addIdentity(args.identity);
+        }
+        return state(notice);
+      }
+      case "set_active_identity": core.app.activeIdentity = args.id; return state();
+      case "duplicate_identity": {
+        const src = core.identities.find((i) => i.id === args.id);
+        const made = addIdentity({ ...src, name: args.name });
+        if (args.copyKeys) for (const n of NAMES) if (core.keys.has(`${n}@${src.id}`)) core.keys.add(`${n}@${made.id}`);
+        return state();
+      }
+      case "delete_identity":
+        if (core.identities.length <= 1) throw "This is the only Identity, so it cannot be deleted.";
+        core.identities = core.identities.filter((i) => i.id !== args.id);
+        core.app.activeIdentity = core.identities[0].id;
+        return state();
+      case "export_identity": return args.path;
+      case "import_identity": addIdentity({ ...fields(), name: "Imported" }); return state();
+      case "set_key": core.keys.add(`${args.name}@${args.scope === "app" ? "app" : active().id}`); return null;
+      case "delete_key": core.keys.delete(`${args.name}@${args.scope === "app" ? "app" : active().id}`); return null;
+      case "delete_all_keys": core.keys.clear(); return null;
+      case "key_status": { const s = state(); return { keys: s.keys, keySources: s.keySources }; }
+      case "job_list": return jobs;
+      case "stop_job": { const j = jobs.find((x) => x.id === args.id); if (!j) throw "That job has already finished."; j.stopped = true; return null; }
+      case "export_diagnostics": return args.path;
+      case "log_event": window.__log.push({ level: args.level, event: args.event, ...args.data }); return null;
+      case "log_status": return state().log;
+      case "delete_logs": return { ...state().log, files: 0, bytes: 0 };
+      case "cloud_folders": return [{ label: "Google Drive", path: "G:/My Drive" }, { label: "OneDrive", path: "C:/Users/me/OneDrive" }];
+      case "backup_settings_now": return core.identities.length;
+      case "restore_settings":
+        core.app = { schema: 2, onboarded: true, llm: { provider: "gemini", model: "gemini-3.5-flash" }, activeIdentity: "restored", backup: { dir: args.path, level: 4, auto: true } };
+        core.identities = [{ schema: 1, id: "restored", name: "Restored", folder: "Restored", ...fields() }];
+        return state();
+      case "plugin:opener|reveal_item_in_dir": return null;
+      case "import_logo": return `C:/cfg/identities/${args.forNew ? ".new" : active().id}/brand/${args.variant === "dark" ? "logo-dark" : "logo"}.png`;
+      case "export_brand": return args.path;
+      case "import_brand": return (await brandState()).presets.find((p) => p.id === "od-stripe").card;
+      case "read_tokens_file": return ":root { --background: 0 0% 4%; }";
+      case "plugin:event|listen": (listeners[args.event] ??= []).push(args.handler); return args.handler;
+      case "export_video": return args.path;
+      case "plugin:dialog|open": return "C:/Downloads/VoxFlow.identity.zip";
+      case "plugin:dialog|save": return args?.options?.defaultPath ? `C:/Downloads/${args.options.defaultPath}` : "C:/Downloads/x.identity.zip";
+      case "plugin:dialog|ask": return true;
+      // ask() goes through "message" in the dialog plugin 2.x: confirm it.
+      case "plugin:dialog|message": return "Yes";
+      case "run_runner":
+        if (typeof args.request.projectDir !== "undefined" && typeof args.request.projectDir !== "string") throw "projectDir must be a string";
+        if (args.command in LONG) await longJob(args.command, args.request);
+        if (args.command === "load-project") return { project, brief: null, scriptMarkdown: ORDER.indexOf("script") < stage || project.gates.script.state !== "todo" ? "## Opening\nYou want to start a channel.\n\n## Main part\nAsk one question.\n" : null, latestVideo: video, stills: stillsList(), voiceInfo: project.gates.voice.state !== "todo" ? { seconds: 128, voLufs: -16, finalLufs: -14, musicGainDb: -18, music: "music.mp3", words: 318 } : null, calls: null };
+        if (args.command === "approve-gate") { setState(args.request.gate, "approved", project.gates[args.request.gate]?.mode); return { gate: project.gates[args.request.gate] }; }
+        if (args.command === "skip-gate") { setState("avatar", "skipped"); return { gate: project.gates.avatar }; }
+        if (args.command === "write-script" || args.command === "save-script") { setState("script", "pending", args.command === "save-script" ? "custom" : "recommended"); return { words: 318 }; }
+        if (args.command === "make-voice") { setState("voice", "pending"); return { info: { seconds: 128, voLufs: -16, finalLufs: -14, musicGainDb: null, music: null, words: 318 } }; }
+        if (args.command === "make-scenes" && q.get("aifail")) { setState("scenes", "failed"); throw "Gemini is overloaded or having problems right now (HTTP 503). Try again in a few minutes, or pick another model in Settings."; }
+        if (args.command === "make-scenes" || args.command === "simple-scenes") setState("scenes", "pending", args.command === "simple-scenes" ? "default" : "recommended");
+        if (args.command === "refill-scene" || args.command === "save-scenes") { setState("scenes", "pending", "custom"); project.gates.review = { state: "todo" }; }
+        if (args.command === "build-video") { project.gates.review = { state: "pending" }; }
+        if (args.command === "render-video") { video = { file: "/preview/motion.mp4", seconds: 128, renderSeconds: 417, chapters: "0:00 Intro", srt: "x.srt", publishFile: "x.publish.json", comments: "GUIDE", youtube: null }; return video; }
+        if (args.command === "list-projects") return { projects: [{ id: "p", title: `Test of ${active()?.name}`, status: "Scened", dir: `${args.request.projectsDir}/test`, createdAt: "2026", gates: project.gates }] };
+        if (args.command === "create-project") return { id: "n", dir: `${args.request.projectsDir}/2026-10-01_new` };
+        if (args.command === "brand-state") return brandState();
+        if (args.command === "brand-save") { brandCard = { ...args.request.card, updatedAt: new Date().toISOString() }; return { card: brandCard, own: true, contrast: [] }; }
+        if (args.command === "brand-import") return (await fetch("/brand-import.json")).json();
+        if (args.command === "brand-preview") { await new Promise((r) => setTimeout(r, 600)); return { stills: [1, 2, 3, 4, 5].map((n) => ({ scene: n, at: n * 4 - 0.2, file: `/preview/${n}.png` })) }; }
+        if (args.command === "dictionary-load") return { dictionary };
+        // The Motion wizard (motion-state.json from prepare.mjs; the preview
+        // video is the last real one, if prepare.mjs found it).
+        // The CTA wizard (cta-state.json from prepare.mjs).
+        if (args.command === "cta-state") { const c = await (await fetch("/cta-state.json")).json(); return { ...c, profile: ctaProfile }; }
+        // "Previously used" voice and avatar of the Identity (runner last-used).
+        // The Identity's footage (runner footage-list).
+        // A real scene table, when prepare.mjs or a test put one next to the page.
+        if (args.command === "scene-table") { try { const r = await fetch("/scene-table.json"); if (r.ok) return await r.json(); } catch {} }
+        if (args.command === "footage-list") return { mode: "scene", dir: "/preview", maxSeconds: 600, modes: { scene: "Its own scene: only the footage, full frame", background: "Behind the words: the footage, darkened, with the scene's short text on it" }, clips: [{ id: "f1", file: "f1.mp4", name: "office walk", description: "A person walks through a bright office with a laptop.", seconds: 74.2, shots: [0, 12.5, 31, 47.2], stills: [], source: "upload", used: [{ project: "a", start: 0, end: 6 }], createdAt: "2026-10-05" }, { id: "f2", file: "f2.mp4", name: "city timelapse", description: "", seconds: 31, shots: [0], stills: [], source: "upload", used: [], createdAt: "2026-10-05" }] };
+        if (args.command === "last-used") return { used: { voice: { provider: "elevenlabs", voice: "v1", name: "Zoltan BD" } } };
+        if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }
+        if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }
+        if (args.command === "motion-state") { const m = await (await fetch("/motion-state.json")).json(); return { ...m, profile: motionProfile }; }
+        if (args.command === "motion-save") { motionProfile = { ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: motionProfile }; }
+        if (args.command === "motion-check") return { profile: args.request.profile };
+        if (args.command === "motion-preview") { await new Promise((r) => setTimeout(r, 1500)); return { file: "/preview/motion.mp4", seconds: 18, renderSeconds: 41, notes: [], transitions: ["cross-warp-morph", "blur-crossfade", "cross-warp-morph", "blur-crossfade", "crossfade"] }; }
+        if (args.command === "dictionary-save") { dictionary = args.request.dictionary; return { dictionary }; }
+        if (args.command === "dictionary-check") return { findings: dictionary.banned.length ? [{ kind: "banned", term: dictionary.banned[0].term, found: dictionary.banned[0].term, instead: dictionary.banned[0].instead, where: "script open.problem" }, { kind: "spelling", term: "Owner", found: "owner", where: "scene 2 text" }] : [] };
+        return replies[args.command] ?? {};
+    }
+    return null;
+  },
+};
+// unlisten() of @tauri-apps/api/event calls into the event plugin
+window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => {} };

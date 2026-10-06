@@ -7,9 +7,25 @@
   ],
   "permissions": [
     "core:default",
-    "opener:allow-open-url",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://aistudio.google.com/*" },
+        { "url": "https://openrouter.ai/*" },
+        { "url": "https://console.anthropic.com/*" },
+        { "url": "https://platform.openai.com/*" },
+        { "url": "https://platform.deepseek.com/*" },
+        { "url": "https://console.x.ai*" },
+        { "url": "https://elevenlabs.io/*" },
+        { "url": "https://app.heygen.com/*" },
+        { "url": "https://app.vidiq.com/*" },
+        { "url": "https://studio.youtube.com/*" }
+      ]
+    },
     "opener:allow-reveal-item-in-dir",
     "dialog:allow-open",
-    "dialog:allow-ask"
+    "dialog:allow-ask",
+    "dialog:allow-save",
+    "core:window:allow-request-user-attention"
   ]
 }

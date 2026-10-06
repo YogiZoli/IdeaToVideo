@@ -1,5 +1,5 @@
-/* App chrome in the design canon's language (tokens from the design-system
-   repo, baked in at build time). No owner name or logo: the user's brand goes
+/* App chrome in the app's own look (tokens from the design-system repo, baked
+   in at build time). No owner name or logo: the user's brand goes
    into the videos, not the app. Fonts are self-hosted (no external calls, CSP). */
 @import "$design/tokens.css";
 @import "@fontsource/open-sans/latin-400.css";
@@ -78,6 +78,7 @@ button.secondary { background: var(--secondary); border-color: var(--secondary);
 button.secondary:hover:not(:disabled) { background: var(--secondary-hover); border-color: var(--secondary-hover); }
 button.ghost { border-color: transparent; background: transparent; }
 button.ghost:hover:not(:disabled) { background: var(--surface-alt); border-color: transparent; }
+button.danger { background: var(--danger-surface); border-color: var(--danger-border); color: var(--danger-text); }
 button.link {
   min-height: 0; padding: 0 var(--space-2); border: none; background: none;
   color: var(--link); font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-normal);
@@ -91,3 +92,18 @@ button.link:hover:not(:disabled) { background: none; color: var(--link-hover); t
   padding: var(--space-7);
   box-shadow: var(--shadow-xs);
 }
+
+/* The one decision of a tab, always in view (Zoltan, 2026-10-05): a bar at
+   the bottom of the tab's scroll area, with the next step said in words on
+   the left and the main button on the right. */
+.actionbar {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: flex-end;
+  margin: var(--space-6) calc(-1 * var(--space-7)) calc(-1 * var(--space-7));
+  padding: var(--space-4) var(--space-7);
+  background: var(--surface);
+  border-top: var(--border-width) solid var(--border);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.actionbar .say { flex: 1; min-width: 200px; color: var(--muted-foreground); font-size: 13px; }
+.actionbar .say b { color: var(--foreground); }

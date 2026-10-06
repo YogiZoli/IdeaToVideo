@@ -1,0 +1,87 @@
+{
+  "$comment": "Brand Identity Card, schema brand-identity-card/1 (DECISIONS 69, docs/wizards/brand.md 4). One design source per Identity, a contract like the Video Brief Card: other apps read it too, so only hex colours and known names, never CSS expressions. Logos are file names inside the Identity's brand/ folder.",
+  "type": "object",
+  "required": ["schema", "colors", "fonts", "shape"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "brand-identity-card/1" },
+    "name": { "type": "string", "maxLength": 120 },
+    "updatedAt": { "type": "string", "maxLength": 40 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["preset", "logo", "scratch", "import"] },
+        "preset": { "type": "string", "pattern": "^[a-z0-9-]{1,60}$" }
+      }
+    },
+    "appearance": { "enum": ["light", "dark"] },
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["background", "text", "muted", "surface", "border", "primary", "secondary", "tertiary"],
+      "properties": {
+        "background": { "$ref": "#/definitions/hex" },
+        "text": { "$ref": "#/definitions/hex" },
+        "muted": { "$ref": "#/definitions/hex" },
+        "surface": { "$ref": "#/definitions/hex" },
+        "border": { "$ref": "#/definitions/hex" },
+        "primary": { "$ref": "#/definitions/hex" },
+        "secondary": { "$ref": "#/definitions/hex" },
+        "tertiary": { "$ref": "#/definitions/hex" }
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display", "body"],
+      "properties": {
+        "display": { "$ref": "#/definitions/font" },
+        "body": { "$ref": "#/definitions/font" },
+        "mono": { "$ref": "#/definitions/font" }
+      }
+    },
+    "shape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["corners", "cards"],
+      "properties": {
+        "corners": { "enum": ["none", "small", "medium", "large"] },
+        "radiusPx": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "cards": { "enum": ["flat", "border", "shadow"] }
+      }
+    },
+    "logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "light": { "$ref": "#/definitions/file" },
+        "dark": { "$ref": "#/definitions/file" }
+      }
+    },
+    "nameplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "maxLength": 80 },
+        "title": { "type": "string", "maxLength": 120 },
+        "url": { "type": "string", "maxLength": 200 }
+      }
+    }
+  },
+  "definitions": {
+    "hex": { "type": "string", "pattern": "^#[0-9a-f]{6}$" },
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family"],
+      "properties": {
+        "family": { "type": "string", "pattern": "^[A-Za-z0-9 ]{1,60}$" },
+        "weight": { "type": "integer", "minimum": 100, "maximum": 900 },
+        "source": { "enum": ["bundled"] }
+      }
+    },
+    "file": { "type": ["string", "null"], "pattern": "^logo(-dark)?\\.(png|jpg|jpeg|svg|webp)$" }
+  }
+}

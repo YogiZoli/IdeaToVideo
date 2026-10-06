@@ -6,7 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validate, loadSchema } from "./schema/validate.mjs";
-import { chat, testKey, extractJson, redact, friendlyError, LlmError } from "./providers/llm.mjs";
+import { chat, testKey, extractJson, redact, friendlyError, LlmError, ROUND_WAITS, onLlmEvent } from "./providers/llm.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { buildData, buildMessages, styleIssues, checkScript, renderMarkdown, writeScript } from "./gates/script/index.mjs";
 import { suggestChannel, buildSuggestMessages } from "./gates/channel/index.mjs";
@@ -50,25 +50,50 @@ const goodScript = {
 
 // ---- schemas ------------------------------------------------------------------
 
-test("config schema accepts the SPEC 4.1 example and rejects secrets", () => {
+test("config schema (App, schema 2) accepts the App settings and rejects secrets and Identity fields", () => {
   const cfg = {
-    schema: 1,
+    schema: 2,
+    onboarded: true,
     ui: { language: "en" },
     llm: { provider: "gemini", model: "gemini-3.5-flash" },
-    brand: { preset: "blue-professional", logo: "brand/logo.png", overrides: { primary: "#1e2bfa" } },
-    channel: { audience: "...", brandVoice: "...", profile: "...", youtubeUrl: null, landingUrl: null, contentLanguage: "en" },
-    narrator: { provider: "edge-tts", voice: "en-US-AndrewNeural" },
-    avatar: { enabled: false },
-    research: { vidiq: false },
-    defaults: { scriptTemplate: "ownership", autopilot: false },
+    projectsDir: null,
+    activeIdentity: "my-identity",
+    defaults: { autopilot: false },
   };
   assert.deepEqual(validate(cfg, loadSchema("config")), []);
   const withKey = structuredClone(cfg);
   withKey.llm.apiKey = KEY;
   assert.match(validate(withKey, loadSchema("config")).join(), /unknown field apiKey/);
-  const badColor = structuredClone(cfg);
+  assert.match(validate({ ...cfg, channel: {} }, loadSchema("config")).join(), /unknown field channel/);
+  assert.match(validate({ ...cfg, schema: 1 }, loadSchema("config")).join(), /must be 2/);
+  assert.match(validate({ ...cfg, activeIdentity: "../x" }, loadSchema("config")).join(), /does not match/);
+});
+
+test("identity schema accepts the SPEC 4.1 fields, an optional AI override, and rejects secrets", () => {
+  const ident = {
+    schema: 1,
+    id: "zoltan-gero",
+    name: "Zoltan Gero",
+    folder: "Zoltan Gero",
+    createdAt: "2026-10-01T10:00:00.000Z",
+    llm: null,
+    brand: { preset: "blue-professional", logo: null, overrides: { primary: "#1e2bfa" } },
+    channel: { audience: "...", brandVoice: "...", profile: "...", youtubeUrl: null, landingUrl: null, contentLanguage: "en" },
+    narrator: { provider: "gemini", voice: "Kore" },
+    avatar: { enabled: false },
+    research: { vidiq: false },
+    defaults: { scriptTemplate: "ownership", targetLengthMin: 8 },
+  };
+  const s = loadSchema("identity");
+  assert.deepEqual(validate(ident, s), []);
+  assert.deepEqual(validate({ ...ident, llm: { provider: "claude", model: "claude-sonnet-5" } }, s), []);
+  assert.match(validate({ ...ident, llm: { provider: "claude", model: "x", apiKey: KEY } }, s).join(), /unknown field apiKey/);
+  assert.match(validate({ ...ident, id: "Zoltan Gero" }, s).join(), /does not match/);
+  assert.match(validate({ ...ident, name: "" }, s).join(), /shorter than 1/);
+  const badColor = structuredClone(ident);
   badColor.brand.overrides.primary = "blue";
-  assert.match(validate(badColor, loadSchema("config")).join(), /does not match/);
+  assert.match(validate(badColor, s).join(), /does not match/);
+  assert.match(validate({ ...ident, defaults: { autopilot: true } }, s).join(), /unknown field autopilot/);
 });
 
 test("brief card schema: only schema and title are required, extra fields refused", () => {
@@ -102,7 +127,7 @@ test("chat retries 429 and 5xx three times in total, then gives a plain message"
   const f = fakeFetch([{ status: 429, text: "slow down" }, { status: 503, text: "" }, { status: 429, text: "" }]);
   const slept = [];
   await assert.rejects(
-    chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) }),
+    chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms), noFallback: true }),
     (e) => e instanceof LlmError && /quota ran out/.test(e.message),
   );
   assert.equal(f.calls.length, 3);
@@ -118,20 +143,62 @@ test("chat recovers when a retry succeeds, and honours Retry-After", async () =>
 
 test("chat does not retry a rejected key, and never repeats the key", async () => {
   const f = fakeFetch([{ status: 401, text: `invalid key ${KEY}` }]);
-  await assert.rejects(chat({ provider: "claude", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), (e) => {
+  await assert.rejects(chat({ provider: "deepseek", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), (e) => {
     assert.equal(f.calls.length, 1);
     assert.ok(!e.message.includes(KEY));
-    assert.match(e.message, /Claude rejected the API key/);
+    assert.match(e.message, /DeepSeek rejected the API key/);
     return true;
   });
 });
 
-test("claude goes through the compatible endpoint without json mode", async () => {
-  const f = fakeFetch([answer("{}")]);
-  await chat({ provider: "claude", apiKey: KEY, messages: [], json: true, fetchImpl: f, sleep: noSleep });
-  assert.equal(f.calls[0].url, "https://api.anthropic.com/v1/chat/completions");
-  assert.equal(f.calls[0].body.model, "claude-sonnet-5");
-  assert.equal(f.calls[0].body.response_format, undefined);
+// Claude goes through its own connector (DECISIONS 89): a stand-in for the SDK.
+function fakeClaude(reply) {
+  const sent = [];
+  return { sent, beta: { messages: { stream: (body) => { sent.push(body); return { finalMessage: async () => (reply instanceof Error ? Promise.reject(reply) : reply) }; } } } };
+}
+
+test("claude goes through its native connector, with effort and the server-side fallback", async () => {
+  const c = fakeClaude({ stop_reason: "end_turn", content: [{ type: "thinking", thinking: "" }, { type: "text", text: "{}" }] });
+  const text = await chat({ provider: "claude", model: "claude-opus-5-5", effort: "high", apiKey: KEY, messages: [{ role: "system", content: "S" }, { role: "user", content: "U" }], json: true, claudeClient: c });
+  assert.equal(text, "{}");
+  const b = c.sent[0];
+  assert.equal(b.model, "claude-opus-5-5");
+  assert.deepEqual(b.output_config, { effort: "high" });
+  assert.equal(b.system, "S");
+  assert.deepEqual(b.messages, [{ role: "user", content: "U" }]);
+  assert.equal(b.temperature, undefined);
+  assert.equal(b.thinking, undefined);
+  assert.equal(b.fallbacks, "default");
+  assert.deepEqual(b.betas, ["server-side-fallback-2026-07-01"]);
+});
+
+test("claude: Haiku gets no effort, the default model is Sonnet 5.5, a refusal and a bad key read well", async () => {
+  const c = fakeClaude({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] });
+  await chat({ provider: "claude", model: "claude-haiku-4-5", effort: "high", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: c });
+  assert.equal(c.sent[0].output_config, undefined);
+  assert.equal(c.sent[0].fallbacks, undefined);
+  const d = fakeClaude({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] });
+  await chat({ provider: "claude", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: d });
+  assert.equal(d.sent[0].model, "claude-sonnet-5-5");
+  const r = fakeClaude({ stop_reason: "refusal", stop_details: { category: "cyber" }, content: [] });
+  await assert.rejects(chat({ provider: "claude", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: r }), /Claude declined this request \(cyber\)/);
+  const k = fakeClaude(Object.assign(new Error(`bad key ${KEY}`), { status: 401 }));
+  await assert.rejects(chat({ provider: "claude", apiKey: KEY, messages: [{ role: "user", content: "U" }], claudeClient: k }), (e) => {
+    assert.match(e.message, /Claude rejected the API key/);
+    assert.ok(!e.message.includes(KEY));
+    return true;
+  });
+});
+
+test("effort reaches the OpenAI-compatible providers in their own field", async () => {
+  const f = fakeFetch([answer("x"), answer("x"), answer("x")]);
+  await chat({ provider: "gemini", apiKey: KEY, effort: "medium", messages: [], fetchImpl: f, sleep: noSleep });
+  await chat({ provider: "openrouter", apiKey: KEY, effort: "max", messages: [], fetchImpl: f, sleep: noSleep });
+  await chat({ provider: "deepseek", apiKey: KEY, effort: "high", messages: [], fetchImpl: f, sleep: noSleep });
+  assert.equal(f.calls[0].body.reasoning_effort, "medium");
+  assert.deepEqual(f.calls[1].body.reasoning, { effort: "high" });
+  assert.equal(f.calls[2].body.reasoning_effort, undefined);
+  assert.equal(f.calls[2].body.reasoning, undefined);
 });
 
 test("chat asks for a model when the provider has no default, and for a key", async () => {
@@ -141,8 +208,11 @@ test("chat asks for a model when the provider has no default, and for a key", as
 
 test("network errors are retried and redacted", async () => {
   const f = fakeFetch([new Error(`connect failed for ${KEY}`)]);
-  await assert.rejects(chat({ provider: "grok", model: "grok-x", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep }), (e) => {
-    assert.equal(f.calls.length, 3);
+  const slept = [];
+  await assert.rejects(chat({ provider: "grok", model: "grok-x", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) }), (e) => {
+    // 3 quick tries, then a wait and another round, about three minutes in all
+    assert.equal(f.calls.length, 3 * (1 + ROUND_WAITS.length));
+    assert.deepEqual(slept.filter((ms) => ms >= 15000), ROUND_WAITS.map((s) => s * 1000));
     assert.ok(!e.message.includes(KEY));
     return true;
   });
@@ -174,11 +244,11 @@ test("service keys: ElevenLabs and HeyGen checks", async () => {
 
 // ---- script gate ---------------------------------------------------------------------
 
-test("buildData: brief wins over channel, CTA only when there is one", () => {
+test("buildData: brief wins over channel, the landing link never goes into the narration", () => {
   const d = buildData({ topic: "t", brief: { title: "B", cta: { text: "Get it" } }, channel: { audience: "A", ctaText: "Other" } });
   assert.equal(d.topic, "t");
   assert.equal(d.audience, "A");
-  assert.deepEqual(d.cta, { text: "Get it", landingUrl: null });
+  assert.equal(d.cta, null, "the link is in the description only (CTA K10, 2026-10-05)");
   assert.equal(buildData({ topic: "t" }).cta, null);
   assert.throws(() => buildData({}), /topic or a brief title/);
 });
@@ -221,11 +291,12 @@ test("renderMarkdown places the ownership CTA after the highest-value section", 
 });
 
 test("writeScript: one repair call fixes a bad first answer", async () => {
-  const bad = structuredClone(goodScript);
+  const plain = { ...structuredClone(goodScript), ownershipCta: null, own: { ...goodScript.own, cta: null } };
+  const bad = structuredClone(plain);
   bad.open.problem = "Problem: too hard.";
-  const f = fakeFetch([answer(JSON.stringify(bad)), answer("```json\n" + JSON.stringify(goodScript) + "\n```")]);
+  const f = fakeFetch([answer(JSON.stringify(bad)), answer("```json\n" + JSON.stringify(plain) + "\n```")]);
   const steps = [];
-  const r = await writeScript({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, input: { topic: "t", channel: { ctaText: "Checklist" } }, onProgress: (p) => steps.push(p.step) });
+  const r = await writeScript({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, input: { topic: "t", targetLengthMin: 0.5, channel: { ctaText: "Checklist" } }, onProgress: (p) => steps.push(p.step) });
   assert.equal(f.calls.length, 2);
   assert.deepEqual(steps, ["writing", "repairing"]);
   assert.match(f.calls[1].body.messages.at(-1).content, /contains a colon/);
@@ -277,6 +348,9 @@ test("createProject, gates and status", () => {
   assert.equal(p.gates.voice.state, "todo", "re-running a gate invalidates later ones");
   assert.equal(p.status, "Idea");
   assert.throws(() => createProject({ projectsDir: dir, title: "x", brief: { schema: "video-brief-card/1" } }), /not valid/);
+  const c = createProject({ projectsDir: dir, title: "Owned", identity: "zoltan-gero", now });
+  assert.equal(loadProject(c.dir).identity, "zoltan-gero", "a ONE Video knows its Identity");
+  assert.equal(loadProject(a.dir).identity, undefined);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -306,6 +380,19 @@ test("main.mjs speaks JSON lines: create, list, save, approve", () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+// 2026-10-02, Zoltan's log: a failed scene swap (Gemini 429) was in the app log
+// but not in the ONE Video's own log.txt.
+test("a failed scene swap is written to the ONE Video's log.txt", () => {
+  const dir = tmp();
+  const { dir: pdir } = run("create-project", { projectsDir: dir, title: "Swap log" }).events.at(-1).data;
+  const r = run("refill-scene", { projectDir: pdir, llm: { provider: "gemini" }, index: 0, component: "count-up" }, { STUDIO_API_KEY: "" });
+  assert.equal(r.status, 1);
+  const log = fs.readFileSync(path.join(pdir, "log.txt"), "utf8");
+  assert.match(log, /scenes: swapping scene 1 to count-up with gemini/);
+  assert.match(log, /scenes: swap of scene 1 failed, There is no scene table yet/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 // ---- repo hygiene ------------------------------------------------------------------
 
 // Zoltan's rule (2026-09-24): these third-party names must not appear anywhere in
@@ -325,4 +412,61 @@ test("no third-party method names anywhere in the repo", () => {
   };
   walk(root);
   assert.deepEqual(hits, []);
+});
+
+test("Gemini overloaded after the retries: the same request once on the other Gemini model", async () => {
+  const f = fakeFetch([{ status: 503, text: "" }, { status: 503, text: "" }, { status: 503, text: "" }, answer("from the other model")]);
+  const used = [];
+  const text = await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: noSleep, onFallback: (m) => used.push(m) });
+  assert.equal(text, "from the other model");
+  assert.deepEqual(used, ["gemini-3.8-flash"]);
+  assert.equal(f.calls.at(-1).body.model, "gemini-3.8-flash");
+  // 2026-10-02 (K5): out of quota on one Gemini model, the others are tried
+  // in turn (2026-10-05: three models); when all are out, the plain quota message.
+  const quota = fakeFetch([{ status: 429 }, { status: 429 }, { status: 429 }, answer("from the other model's quota")]);
+  assert.equal(await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: quota, sleep: noSleep }), "from the other model's quota");
+  assert.equal(quota.calls.at(-1).body.model, "gemini-3.8-flash");
+  const all = fakeFetch(Array(9).fill({ status: 429 }));
+  await assert.rejects(chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: all, sleep: noSleep }), /quota/);
+  assert.deepEqual([...new Set(all.calls.map((c) => c.body.model))], ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"]);
+});
+
+// 2026-10-06: every Gemini model busy at once (Zoltan's test, 2026-10-05):
+// the app waits and goes round again, and says how long on the bar.
+test("all models busy: a wait, said on the bar, then another round", async () => {
+  const f = fakeFetch([...Array(9).fill({ status: 503, text: "" }), answer("after the wait")]);
+  const slept = [];
+  const said = [];
+  onLlmEvent((e) => said.push(e));
+  const text = await chat({ provider: "gemini", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) });
+  onLlmEvent(null);
+  assert.equal(text, "after the wait");
+  assert.equal(f.calls.at(-1).body.model, "gemini-3.5-flash");
+  const wait = said.find((e) => e.waitSeconds);
+  assert.equal(wait.waitSeconds, ROUND_WAITS[0]);
+  assert.match(wait.message, /Gemini is busy \(HTTP 503\)\. Trying again in 15 s/);
+  assert.ok(slept.includes(15000));
+  // a key test answers at once
+  const k = fakeFetch(Array(20).fill({ status: 503, text: "" }));
+  await assert.rejects(testKey({ provider: "deepseek", apiKey: KEY, fetchImpl: k, sleep: noSleep }), /overloaded/);
+  assert.equal(k.calls.length, 3);
+});
+
+// 2026-10-01: a gate left "running" by a closed app showed "Running" forever.
+test("a gate interrupted by a closed app becomes failed on load", async () => {
+  const { recoverInterrupted, setGate, INTERRUPTED } = await import("./project.mjs");
+  const base = { schema: 1, id: "2026-10-01_x", status: "Idea", language: "en", gates: { script: { state: "approved" }, voice: { state: "todo" }, scenes: { state: "todo" }, review: { state: "todo" }, avatar: { state: "todo" } } };
+  const running = setGate(base, "voice", { state: "running", mode: "recommended" });
+  assert.equal(running.gates.voice.pid, process.pid);
+  // the runner that set it is alive: untouched
+  assert.equal(recoverInterrupted(running, () => true), running);
+  // gone: failed, with a clear message, the other gates kept
+  const r = recoverInterrupted(running, () => false);
+  assert.equal(r.gates.voice.state, "failed");
+  assert.equal(r.gates.voice.error, INTERRUPTED);
+  assert.equal(r.gates.script.state, "approved");
+  // an old project without a pid counts as interrupted
+  const old = structuredClone(base);
+  old.gates.scenes = { state: "running" };
+  assert.equal(recoverInterrupted(old).gates.scenes.state, "failed");
 });

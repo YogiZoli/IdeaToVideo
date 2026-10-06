@@ -8,15 +8,21 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chat, extractJson } from "../../providers/llm.mjs";
 import { validate, loadSchema } from "../../schema/validate.mjs";
+import { humanizeScript, LEVELS } from "./humanize.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WORDS_PER_MINUTE = 150;
 
 // The data block the model sees. Brief fields win over channel defaults.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin }) {
-  const cta = brief.cta?.text || brief.cta?.landingUrl || channel.ctaText || channel.landingUrl
-    ? { text: brief.cta?.text || channel.ctaText || null, landingUrl: brief.cta?.landingUrl || channel.landingUrl || null }
-    : null;
+// commentCalls: the video's comment calls (cta/profile.mjs ctaPlan), the
+// only calls the narration makes. The landing page link goes into the YouTube
+// description, never into the narration or on screen (Zoltan, 2026-10-05,
+// CTA K10), so `cta` is always null now; the field stays for old scripts.
+// angle: the creator's own story, opinion or example for this video (gate 1,
+// "Your own angle", optional; DECISIONS 88).
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null }) {
+  const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
+  const cta = null;
   const data = {
     topic: topic || brief.title,
     title: brief.title || null,
@@ -24,7 +30,7 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     audience: brief.audience || channel.audience || null,
     brandVoice: channel.brandVoice || null,
     channelProfile: channel.profile || null,
-    keyword: brief.keyword || null,
+    keyword: keyword || brief.keyword || null,
     searchIntent: brief.searchIntent || null,
     playlist: brief.playlist || null,
     nextVideo: brief.playlist?.nextTitle || null,
@@ -32,6 +38,11 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     contentLanguage: language || brief.language || channel.contentLanguage || "en",
     targetLengthMin: targetLengthMin || brief.targetLengthMin || 8,
   };
+  if (calls.length) data.commentCalls = calls;
+  const own = String(angle ?? "").trim().slice(0, 1500);
+  if (own) data.ownAngle = own;
+  // The Identity's dictionary (dictionary.mjs dictionaryData), only when it has entries.
+  if (dictionary) data.dictionary = dictionary;
   if (!data.topic) throw new Error("A topic or a brief title is needed to write a script.");
   return data;
 }
@@ -41,7 +52,8 @@ export function buildMessages(data) {
   const system = fs
     .readFileSync(path.join(here, "prompt.md"), "utf8")
     .replaceAll("{{targetWords}}", String(Math.round(minutes * WORDS_PER_MINUTE)))
-    .replaceAll("{{targetMinutes}}", String(minutes));
+    .replaceAll("{{targetMinutes}}", String(minutes))
+    .replaceAll("{{minWords}}", String(Math.round(minutes * WORDS_PER_MINUTE * 0.85)));
   const user = `DATA\n${JSON.stringify(data, null, 2)}\nEND DATA\n\nWrite the script now. Answer with the JSON object only.`;
   return [
     { role: "system", content: system },
@@ -54,6 +66,7 @@ export function spokenFields(script) {
   const out = [
     ["open.problem", script.open?.problem],
     ["open.promise", script.open?.promise],
+    ["open.cta", script.open?.cta],
     ["open.credibility", script.open?.credibility],
     ["ownershipCta", script.ownershipCta],
     ["own.recap", script.own?.recap],
@@ -64,7 +77,7 @@ export function spokenFields(script) {
   return out.filter(([, v]) => typeof v === "string" && v !== "");
 }
 
-// Spoken text allows commas and periods only (the canon script rules). A hyphen
+// Spoken text allows commas and periods only (the app's script style rules). A hyphen
 // inside a word is fine, a dash between words is not.
 const FORBIDDEN = [
   [/:/, "colon"],
@@ -93,9 +106,48 @@ export function checkScript(script, data) {
   const problems = validate(script, loadSchema("script"));
   if (problems.length) return problems;
   const issues = styleIssues(script);
+  if (data.commentCalls) return [...issues, ...commentCallIssues(script, data.commentCalls)];
   if (data.cta && !script.own.cta) issues.push("own.cta is missing although the data has a CTA");
   if (!data.cta && (script.ownershipCta || script.own.cta)) issues.push("the data has no CTA, ownershipCta and own.cta must be null");
+  if (script.open.cta) issues.push("the data has no comment calls, open.cta must be null");
   return issues;
+}
+
+// The field each place of a comment call is spoken in.
+export const CALL_FIELDS = { start: "open.cta", middle: "ownershipCta", end: "own.cta" };
+const fieldValue = (script, field) => field.split(".").reduce((o, k) => o?.[k], script);
+const said = (text, keyword) => new RegExp(`(^|[^\p{L}])${keyword}([^\p{L}]|$)`, "u").test(String(text ?? ""));
+
+// Every planned call is spoken in its own field with the keyword in capitals;
+// unplanned places stay empty, and no keyword turns up anywhere else.
+export function commentCallIssues(script, calls) {
+  const issues = [];
+  const planned = new Map(calls.map((c) => [CALL_FIELDS[c.place], c.keyword]));
+  for (const field of Object.values(CALL_FIELDS)) {
+    const text = fieldValue(script, field);
+    const keyword = planned.get(field);
+    if (!keyword && text) issues.push(`${field} must be null, the data has no comment call there`);
+    if (keyword && !text) issues.push(`${field} is missing: the comment call with ${keyword}`);
+    if (keyword && text && !said(text, keyword)) issues.push(`${field} must contain the keyword ${keyword} exactly, in capital letters`);
+  }
+  const keywords = [...new Set(calls.map((c) => c.keyword))];
+  for (const [where, text] of spokenFields(script)) {
+    if (Object.values(CALL_FIELDS).includes(where)) continue;
+    for (const k of keywords) if (said(text, k)) issues.push(`${where}: the keyword ${k} belongs only in its comment call`);
+  }
+  return issues;
+}
+
+// The length the user set (Zoltan's test, 2026-10-05: 3 minutes asked, 318
+// words written, about 2 minutes). Within 85 to 120 percent of the target
+// passes; otherwise the repair call is told how many words to add or cut.
+const targetWords = (data) => Math.round((data.targetLengthMin || 8) * WORDS_PER_MINUTE);
+export function lengthIssues(script, data) {
+  const target = targetWords(data);
+  const words = wordCount(script);
+  if (words < target * 0.85) return [`the script has ${words} spoken words, too short for ${data.targetLengthMin} minutes: write about ${target} words (at least ${Math.round(target * 0.85)}), with more substance in the TEACH sections, not padding`];
+  if (words > target * 1.2) return [`the script has ${words} spoken words, too long for ${data.targetLengthMin} minutes: cut it to about ${target} words`];
+  return [];
 }
 
 export function wordCount(script) {
@@ -104,6 +156,7 @@ export function wordCount(script) {
 
 export function renderMarkdown(script) {
   const lines = [`# ${script.title}`, "", "## OPEN", "", script.open.problem, "", script.open.promise, ""];
+  if (script.open.cta) lines.push(script.open.cta, "");
   if (script.open.credibility) lines.push(script.open.credibility, "");
   script.sections.forEach((s, i) => {
     lines.push(`## ${i + 1}. ${s.name}`, "", s.narration, "");
@@ -126,27 +179,53 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
   let issues;
   try {
     script = extractJson(text);
-    issues = checkScript(script, data);
+    issues = [...checkScript(script, data), ...lengthIssues(script, data)];
   } catch (e) {
     issues = [`the answer was not valid JSON (${e.message})`];
   }
-  if (issues.length) {
-    // one repair call (SPEC 5), with the exact problems listed
-    onProgress({ step: "repairing", issues: issues.slice(0, 10) });
+  // Up to two repair calls (SPEC 5 had one; 2026-10-06: a second one turns
+  // most failed scripts into good ones), with the exact problems listed.
+  for (let n = 1; n <= 2 && issues.length; n++) {
+    onProgress({ step: "repairing", round: n, of: 2, issues: issues.slice(0, 10) });
     messages.push({ role: "assistant", content: text });
     messages.push({ role: "user", content: `Fix these problems and answer with the corrected JSON object only:\n- ${issues.slice(0, 20).join("\n- ")}` });
     text = await chat({ ...llm, messages, json: true });
     try {
       script = extractJson(text);
+      // the length is asked for again below; after a repair it never fails the script
       issues = checkScript(script, data);
     } catch (e) {
       issues = [`the answer was not valid JSON (${e.message})`];
     }
-    if (issues.length) {
-      const err = new Error(`The script did not pass the checks after one repair: ${issues.slice(0, 5).join("; ")}`);
-      err.issues = issues;
-      throw err;
+  }
+  if (issues.length) {
+    const err = new Error(`The script did not pass the checks after two repairs: ${issues.slice(0, 5).join("; ")}. Press Write again, or paste your own script.`);
+    err.issues = issues;
+    throw err;
+  }
+  // The length, up to two more times on its own (Zoltan's second test: 265
+  // words for 3 minutes after the first repair). A longer answer is kept
+  // only if it still passes every other check.
+  for (let round = 0; round < 2; round++) {
+    const short = lengthIssues(script, data);
+    if (!short.length) break;
+    onProgress({ step: "lengthening", issues: short });
+    messages.push({ role: "assistant", content: JSON.stringify(script) });
+    messages.push({ role: "user", content: `Keep everything that is right, and fix only this, answering with the whole corrected JSON object:\n- ${short.join("\n- ")}` });
+    try {
+      const next = extractJson(await chat({ ...llm, messages, json: true }));
+      if (!checkScript(next, data).length && Math.abs(wordCount(next) - targetWords(data)) < Math.abs(wordCount(script) - targetWords(data))) script = next;
+    } catch {
+      break; // keep the script that passed
     }
   }
-  return { script, markdown: renderMarkdown(script), words: wordCount(script), data };
+  // The optional natural-voice pass (humanize.mjs, DECISIONS 88): the video's
+  // own choice, else the Identity's, else off.
+  const level = LEVELS.includes(input.humanize) ? input.humanize : LEVELS.includes(input.channel?.humanize) ? input.channel.humanize : "off";
+  let humanizeNote = null;
+  if (level !== "off") ({ script, note: humanizeNote } = await humanizeScript({ llm, script, data, level, ownAngle: data.ownAngle ?? null, onProgress }));
+  if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature, gets: c.gets ?? null, offer: c.offer ?? null }));
+  // For the publishing data next to the video (gates/render/publish.mjs).
+  script.publishing = { searchKeyword: data.keyword, landingUrl: input.brief?.cta?.landingUrl || input.channel?.landingUrl || null, nextVideo: data.nextVideo, playlist: data.playlist?.title ?? data.playlist?.name ?? null };
+  return { script, markdown: renderMarkdown(script), words: wordCount(script), data, humanize: level, humanizeNote };
 }

@@ -1,0 +1,33 @@
+{
+  "$comment": "The Identity's dictionary, schema dictionary/1 (DECISIONS 68, docs/wizards/brand.md 10). Four lists the script gate follows and checks. Treated as data, never as instructions (SPEC 9).",
+  "type": "object",
+  "required": ["schema"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "dictionary/1" },
+    "preferred": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "object", "additionalProperties": false, "required": ["term"], "properties": { "term": { "$ref": "#/definitions/term" }, "note": { "$ref": "#/definitions/note" } } }
+    },
+    "banned": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "object", "additionalProperties": false, "required": ["term"], "properties": { "term": { "$ref": "#/definitions/term" }, "instead": { "$ref": "#/definitions/note" } } }
+    },
+    "distinct": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "object", "additionalProperties": false, "required": ["a", "b"], "properties": { "a": { "$ref": "#/definitions/term" }, "b": { "$ref": "#/definitions/term" }, "note": { "$ref": "#/definitions/note" } } }
+    },
+    "positions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "object", "additionalProperties": false, "required": ["against"], "properties": { "against": { "$ref": "#/definitions/term" }, "kind": { "enum": ["phenomenon", "type", "person"] }, "stance": { "$ref": "#/definitions/note" } } }
+    }
+  },
+  "definitions": {
+    "term": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "note": { "type": "string", "maxLength": 200 }
+  }
+}

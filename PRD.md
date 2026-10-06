@@ -1,4 +1,4 @@
-# PRD: Studio (munkanév)
+# PRD: IdeaToVideo
 
 Verzió: 0.1 vázlat, 2026-09-24
 Tulajdonos: Zoltan Gero
@@ -15,8 +15,10 @@ márkázott motion graphics videó, opcionális avatar, feliratok.
 
 A gyártás a user saját gépén fut, a user saját API kulcsaival (BYOK). Nincs
 szerver, nincs kredit, nincs előfizetés. A render a HyperFrames publikus
-motorján megy (0 kredit), és a Zoltan Gero féle blokk-könyvtár, mozgásrendszer
-és 5 kapus menet adja a minőséget.
+motorján megy (0 kredit). A minőséget az app saját, tesztelt könyvtára (a
+HyperFrames nyilvános registryjéből), a user Brand, Mozgás és CTA varázslója
+és az 5 kapus menet adja (DECISIONS 48, 2026-09-30: Zoltan saját
+blokk-könyvtára és mozgásrendszere nem kerül az appba).
 
 Egy mondatban: **amit a Subscribr-szerű SaaS eszközök kreditért, a saját
 szerverükön és motion graphics nélkül csinálnak, azt ez a user gépén,
@@ -85,7 +87,7 @@ vagy **Skip, use default**. Minden kulcsos lépésnél van "Test key" gomb.
 | 6 | **YouTube csatorna URL** | Skip |
 | 7 | **Landing URL** (lead magnet) | Skip, nincs CTA |
 | 8 | **Tartalom nyelve** | angol |
-| 9 | **Narrator Voice**: ElevenLabs kulcs és hang | ingyenes `edge-tts`, a nyelvhez illő hanggal |
+| 9 | **Narrator Voice**: ElevenLabs kulcs és hang (alap modell: Eleven v4) | ingyenes Gemini TTS a Gemini kulccsal (az `edge-tts` nem épült) |
 | 10 | **HeyGen kulcs** (avatar) | nincs avatar |
 | 11 | **vidIQ kulcs** (kulcsszó adat) | nincs kulcsszó adat, a téma kézzel |
 | 12 | Import Tervező appból (Channel Profile, Video Brief Card) | Skip |
@@ -115,6 +117,14 @@ A kapuk a kánon (PIPELINE.md) szerint:
 | 7. Render | egyszer, helyben | automatikus |
 | 8. Avatar | HeyGen avatar a sarokba, ha van kulcs | 5. kapu |
 | 9. Feliratok, export | MP4 és felirat fájl | automatikus |
+
+**Módosítva 2026-10-06 (a 2. fázis lezárása, DECISIONS 48, 85, 96):** a
+megvalósult menet hat tabon: 1. Script, 2. Voice and music, 3. Scenes,
+4. Avatar (opcionális), 5. Preview (build, check, kontakt lap), 6. Your video
+(render, feliratok, fejezetek, publikálási adat). Az avatar a Preview előtt
+van: a HeyGen klipeket a build teszi a videóba, nem a render utáni ffmpeg.
+A jelenet-tábla a 39 archetípus helyett az app saját könyvtárából (a
+HyperFrames registry komponensei, mondat-szerepek szerint) választ.
 
 Minden kapunál három gomb: **Recommended** (az AI dönt a kánon szerint),
 **Default** (a preset alapértéke), **Custom** (kézi).
@@ -161,9 +171,10 @@ egymástól függetlenül fejlődhessen.
 - **Tauri** asztali app, Windows és Mac. A build GitHub Actionsben mindkettőre.
 - A Node és az ffmpeg sidecarként a csomagban.
 - Render: `npx hyperframes` pinnelt verzióval.
-- LLM: **egyetlen OpenAI-kompatibilis integráció**. Minden szolgáltató ezen
-  megy, a Claude is (Anthropic kompatibilis végpont). Natív Claude csatlakozó
-  csak ha a pilot indokolja.
+- LLM: **OpenAI-kompatibilis integráció** minden szolgáltatónak, kivéve a
+  Claude-ot: az a hivatalos Anthropic SDK-val natívan megy, mert az effort
+  csak ott állítható (DECISIONS 89, 2026-10-05). Lépésenként (Script, Scenes,
+  kis szövegek) külön modell és effort választható.
 - Kulcsok: az operációs rendszer kulcstárában (Windows Credential Manager, Mac
   Keychain). A config fájl (JSON) csak nem titkos beállítást tárol.
 - A PowerShell pipeline szkriptek (`sentences.ps1`, `stamp-timing.ps1`,
@@ -194,8 +205,10 @@ Egyoldalas, képernyőképes telepítési leírás jár mellé.
 - Licenc, két réteg:
   - HyperFrames (HeyGen): Apache-2.0, licencszöveg és hivatkozás az appban
     ("Built on HyperFrames by HeyGen").
-  - Zoltan rétege (39 archetípus, MOTION szabályok, pipeline, app): zárt
-    licenc. Használható, nem csomagolható újra és nem adható el.
+  - Az app rétege (a registryből összeállított könyvtár, a varázslók, a
+    pipeline, az app): zárt licenc. Használható, nem csomagolható újra és nem
+    adható el. Zoltan saját kánonja (39 archetípus, MOTION) nincs benne
+    (DECISIONS 48).
   - A user brandje, beállításai és az elkészült videók a useréi.
 
 ## 12. Siker mérése

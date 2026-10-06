@@ -1,10 +1,10 @@
 {
-  "name": "packaged-video-creator",
+  "name": "ideatovideo",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test \"scripts/**/*.test.mjs\" \"runner/**/*.test.mjs\"",
-    "e2e": "node scripts/phase0/e2e.mjs"
+    "e2e": "node scripts/phase2/e2e.mjs"
   },
   "engines": {
     "node": ">=20"

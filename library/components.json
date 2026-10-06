@@ -1,0 +1,27 @@
+{
+  "$comment": "The app's scene library (DECISIONS 48, 55): HyperFrames registry components (Apache-2.0), pinned to one commit. scripts/fetch-library.mjs downloads each component's files at build time, checks every file against library.lock.json, and bundles them. Nothing is copied into this repo.",
+  "source": "https://github.com/heygen-com/hyperframes",
+  "commit": "9a27b9f9349b43b9fd194a95ace830d7cbe38b42",
+  "components": [
+    "titlecard-lockup", "titlecard-calm",
+    "per-word-rise", "kinetic-type-swap", "headline-slam",
+    "marker-highlight",
+    "count-up", "chart-story", "conic-progress-ring",
+    "grid-card-assemble", "constellation-hub",
+    "whiteboard-ink",
+    "cta-close", "logo-brand-close"
+  ],
+  "$presets": "The Brand wizard's gallery (docs/wizards/brand.md 8): the FRAME.md of each HyperFrames frame preset, same commit, same lock.",
+  "presets": [
+    "blue-professional", "biennale-yellow", "blockframe", "broadside", "capsule", "cartesian",
+    "cobalt-grid", "code-editorial", "coral", "creative-mode", "editorial-forest"
+  ],
+  "$motion": "The Motion wizard (docs/wizards/motion.md, docs/motion-wizard.md): background components and HyperFrames' own transition files, same commit, same lock. transitions.json is the curated CSS transition registry HyperFrames ships with its faceless-explainer workflow; overview.md holds its energy and mood tables. Shader transitions come from the @hyperframes/shader-transitions npm package (engine/package.json).",
+  "motion": {
+    "backgrounds": ["aurora-drift", "grain-field"],
+    "files": [
+      "skills/faceless-explainer/scripts/lib/transitions.json",
+      "skills/hyperframes-animation/transitions/overview.md"
+    ]
+  }
+}

@@ -1,7 +1,9 @@
 # build.yml: tests and installers for Windows and macOS (SPEC 10).
 # Runs only on pull requests and by hand, never on every push: the private
 # repo's Actions minutes are limited and macOS minutes count 10x (Zoltan,
-# 2026-09-30).
+# 2026-09-30). While a phase is in development, pull requests build Windows
+# only; macOS is built by hand (gh workflow run build -f platforms=both) on the
+# version Zoltan approved.
 name: build
 
 on:
@@ -10,6 +12,12 @@ on:
       - "**.md"
       - "docs/**"
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: Which installers to build
+        type: choice
+        options: [windows, macos, both]
+        default: both
 
 concurrency:
   group: build-${{ github.ref }}
@@ -20,15 +28,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: windows-latest
-            bundles: nsis
-          - os: macos-latest
-            bundles: dmg
+        include: ${{ fromJSON(
+          (github.event_name != 'workflow_dispatch' || inputs.platforms == 'windows') && '[{"os":"windows-latest","bundles":"nsis"}]' ||
+          inputs.platforms == 'macos' && '[{"os":"macos-latest","bundles":"dmg"}]' ||
+          '[{"os":"windows-latest","bundles":"nsis"},{"os":"macos-latest","bundles":"dmg"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
-      # the design canon is read at build time and baked into the app
+      # the design-system tokens (the app UI look, DECISIONS 39) are read at build time
       DESIGN_SYSTEM_DIR: ${{ github.workspace }}/design-system
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +57,9 @@ jobs:
         with:
           workspaces: app/src-tauri
 
+      - name: Runner dependencies (the Anthropic SDK, pinned by runner/package-lock.json)
+        run: npm ci --prefix runner --no-audit --no-fund
+
       - name: Runner tests
         run: npm test
 
@@ -61,8 +71,17 @@ jobs:
         working-directory: app
         run: npm run check
 
-      - name: Node sidecar (pinned, SHA256 checked)
+      - name: Node and ffmpeg sidecars (pinned, SHA256 checked)
         run: node scripts/fetch-sidecars.mjs
+
+      - name: ffmpeg can do what the pipeline needs
+        run: node scripts/check-ffmpeg.mjs
+
+      - name: Render engine (HyperFrames, GSAP, pinned by engine/package-lock.json)
+        run: node scripts/fetch-engine.mjs
+
+      - name: Scene library (HyperFrames registry components, pinned and SHA256 checked)
+        run: node scripts/fetch-library.mjs
 
       - name: Rust tests
         working-directory: app/src-tauri

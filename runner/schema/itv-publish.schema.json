@@ -1,0 +1,200 @@
+{
+  "$comment": "IdeaToVideo publishing data, schema itv-publish/1 (runner/gates/render/publish.mjs, DECISIONS 77). Written next to every rendered video as <video>.publish.json. The shared language with the publishing tool: facts the app knows exactly, never titles, descriptions or tags. Fields are only ever added; a breaking change gets itv-publish/2.",
+  "type": "object",
+  "required": [
+    "schema",
+    "createdAt",
+    "video",
+    "chapters",
+    "captions",
+    "script",
+    "sentences",
+    "commentCalls"
+  ],
+  "properties": {
+    "schema": {
+      "const": "itv-publish/1"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "app": {
+      "type": "object"
+    },
+    "video": {
+      "type": "object",
+      "required": [
+        "file",
+        "seconds",
+        "language"
+      ],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "language": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "workingTitle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "searchKeyword": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "landingUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next": {
+      "type": "object"
+    },
+    "chapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "start",
+          "title"
+        ],
+        "properties": {
+          "start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "chaptersText": {
+      "type": "string"
+    },
+    "captions": {
+      "type": "object",
+      "required": [
+        "file",
+        "language"
+      ]
+    },
+    "script": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "heading",
+          "text"
+        ]
+      }
+    },
+    "sentences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "text"
+        ]
+      }
+    },
+    "commentCalls": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "slot",
+          "keyword",
+          "temperature"
+        ],
+        "properties": {
+          "slot": {
+            "enum": [
+              "start",
+              "middle",
+              "end"
+            ]
+          },
+          "keyword": {
+            "type": "string",
+            "pattern": "^[A-Z]{2,12}$"
+          },
+          "temperature": {
+            "enum": [
+              "cold",
+              "warm",
+              "hot"
+            ]
+          },
+          "gets": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "end": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "via": {
+            "enum": [
+              "narrator",
+              "segment"
+            ]
+          },
+          "said": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "endScreen": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "start": {
+          "type": "number",
+          "minimum": 0
+        },
+        "seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

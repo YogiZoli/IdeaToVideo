@@ -10,7 +10,28 @@
     "status": { "enum": ["Idea", "Scripted", "Voiced", "Scened", "Reviewed", "Rendered", "Done"] },
     "language": { "type": "string", "minLength": 2, "maxLength": 10 },
     "autopilot": { "type": "boolean" },
+    "identity": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$" },
     "createdAt": { "type": "string" },
+    "autopilotRun": {
+      "type": "object",
+      "$comment": "Finish on Autopilot is under way (the UI goes on with it when the ONE Video is opened again)",
+      "additionalProperties": false,
+      "properties": { "at": { "type": "string" } }
+    },
+    "render": {
+      "type": "object",
+      "$comment": "the last render: running, done or failed, so a failed one is seen after a restart",
+      "required": ["state"],
+      "additionalProperties": false,
+      "properties": {
+        "state": { "enum": ["running", "done", "failed"] },
+        "at": { "type": "string" },
+        "pid": { "type": "integer" },
+        "quality": { "type": "string", "maxLength": 20 },
+        "file": { "type": "string", "maxLength": 1000 },
+        "error": { "type": "string", "maxLength": 2000 }
+      }
+    },
     "gates": {
       "type": "object",
       "additionalProperties": false,
@@ -32,6 +53,7 @@
         "state": { "enum": ["todo", "running", "pending", "approved", "skipped", "failed"] },
         "mode": { "enum": ["recommended", "default", "custom"] },
         "at": { "type": "string" },
+        "pid": { "type": "integer", "$comment": "the runner process of a running gate, to spot one interrupted by a closed app" },
         "reason": { "type": "string", "maxLength": 500 },
         "error": { "type": "string", "maxLength": 2000 }
       }
