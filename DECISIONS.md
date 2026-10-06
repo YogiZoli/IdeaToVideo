@@ -1327,4 +1327,11 @@
       per-word-rise szavai a kimondás idejére átszíneződnek (márkaszín, vagy a
       szöveg színe, ha már márkaszínű), a jelenet saját GSAP idővonalán; a
       headline-slam háromkockás rázása nincs többé.
-    - Próba: mind a 15 stílus build, lint és check (Blue Professional).
+    - Próba: mind a 15 stílus build, lint és check (Blue Professional). A
+      check nem mindent lát: a kontakt lapokon a Gradient fill, a Clip wipe,
+      a Neon és a Particle burst világos háttéren alig látszott, az Editorial
+      a kép közepére került. Javítva: világos kinézetnél a sötét felvételre
+      készült élénk palettákat (arany, neon, színátmenetek) a márka három
+      színe váltja, a félig fehér betűt a halvány szövegszín, az Editorial az
+      alsó harmadba került. A Parallax nagy háttérszava hangos marad, ezért
+      jelölt. Render próba (Pill karaoke): a kimondott szó sorban sötétedik.

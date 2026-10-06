@@ -103,10 +103,23 @@ function replaceArray(src, name, value) {
 // lists take the three brand colours. On a dark look white stays white.
 const PALE = ["#ffffff", "#fff", "#f5f0d0", "#eeeeee", "#ffd0a0"];
 const LOUD = ["#00ff41", "#e50914"];
+// The vivid palettes drawn for dark footage (gold, neon, the gradient
+// stops, the particle colours): on a light look they become the brand's
+// three colours in turn (sampler, 2026-10-07: pale words on cream).
+const VIVID = ["#FFD700", "#00FFF0", "#FF0099", "#00BBF9", "#00F5D4", "#9B5DE5", "#F15BB5", "#FF3C78", "#FF6B35", "#ef7aff", "#f76e49", "#fd56cb", "#fe9f1b", "#ff2063", "#53FF01", "#FF0002", "#FCFF00", "#FFAA44"];
 export function recolorCaption(html, theme = {}, light = false) {
   if (!theme.fg) return html;
   let out = html;
-  const swap = (from, to) => (out = out.replace(new RegExp(from, "gi"), to));
+  const swap = (from, to) => (out = out.replace(new RegExp(`${from}(?![0-9a-f])`, "gi"), to));
+  if (light) {
+    const brand = [theme.brand, theme.accent, theme["accent-2"]].filter(Boolean);
+    VIVID.forEach((c, i) => swap(c, brand[i % brand.length] ?? theme.fg));
+    // half-white for words still to come, and "white" in a gradient
+    out = out.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*[\d.]+\s*\)/g, theme.muted ?? theme.fg);
+    out = out.replace(/(\d+(?:\.\d+)?%,\s*)white(\s+\d)/g, `$1${theme.muted ?? theme.fg}$2`);
+    // the editorial block sat in the middle of the frame: the lower third
+    out = out.replace(/(\.safe-zone\s*\{\s*position:\s*absolute;\s*)top:\s*580px/, "$1top: 760px");
+  }
   // the karaoke pill: its own light plate, dim words still to come
   out = out.replace(/(\b(?:var|const)\s+COLOR_INACTIVE\s*=\s*)"[^"]*"/, `$1"${theme.muted ?? theme.fg}"`);
   out = out.replace(/(\b(?:var|const)\s+COLOR_ACTIVE\s*=\s*)"[^"]*"/, `$1"${theme.fg}"`);
