@@ -67,8 +67,13 @@ Zoltan kérése: kérdés nélkül haladni a javaslatok szerint.
   `C:/Users/gdp/ITV-packs/ZG-C2C.identity.zip` (109, `C:/Users/gdp/ITV-packs/README.md`).
 
 **Kész a Scenes varázsló** (DECISIONS 110) **és a Pixabay keresés** (111: a
-Scenes tabon, fotó lassú ráközelítéssel). **Következő:** egyoldalas angol
-telepítési leírás, új telepítő, Zoltan próbája Windows Sandboxban.
+Scenes tabon, fotó lassú ráközelítéssel). Kész az egyoldalas angol
+telepítési leírás (`docs/pilot/install-guide.md`) és az új telepítő
+(`C:/Users/gdp/ITV-sandbox/share/IdeaToVideo_0.1.0_981636b_x64-setup.exe`, 106 MB).
+**Következő:** Zoltan bekapcsolja a Windows Sandboxot (rendszergazdai PowerShell,
+`Enable-WindowsOptionalFeature -Online -FeatureName "Containers-DisposableClientVM" -All`,
+újraindítás), utána a próba a `C:/Users/gdp/ITV-sandbox/IdeaToVideo-test.wsb` fájllal
+(a telepítő internetről jöttként jelölve, hogy a SmartScreen is látszódjon).
 
 **Tesztek:** 266 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
 az új funkciók a 4. fázis végi telepítővel próbálhatók (Zoltan döntése).

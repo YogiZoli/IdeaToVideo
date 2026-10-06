@@ -18,8 +18,10 @@ Hátravan:
 4. ~~Scenes varázsló~~: kész (DECISIONS 110).
 5. ~~Kép és videó források: Pixabay keresés~~: kész (DECISIONS 111). Az Unsplash a
    jóváhagyása után; a Coverr kivéve (DECISIONS 108).
-6. **Most ez jön:** egyoldalas angol telepítési leírás.
-7. Egy új telepítő és Zoltan próbája Windows Sandboxban.
+6. ~~Egyoldalas angol telepítési leírás~~: kész (`docs/pilot/install-guide.md`; képek a Sandbox-próbából).
+7. **Most ez jön:** az új telepítő kész (`C:/Users/gdp/ITV-sandbox/share/IdeaToVideo_0.1.0_981636b_x64-setup.exe`);
+   a Windows Sandbox bekapcsolása Zoltannál (rendszergazda, újraindítás), utána a próba
+   a `C:/Users/gdp/ITV-sandbox/IdeaToVideo-test.wsb` fájllal.
 
 ## 4. fázis
 
