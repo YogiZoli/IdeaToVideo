@@ -45,6 +45,7 @@ import { fontFaces, categories } from "../../brand/fonts.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
 import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE, CUT } from "../../motion/transitions.mjs";
 import { backgroundFor, backgroundPieces, cameraLines } from "../../motion/stage.mjs";
+import { pickIcons, withSketch } from "../../icons/index.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -650,8 +651,13 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // The user's own footage under its sentences (DECISIONS 82).
   const footage = footagePlan(table, sentences, look.footage, path.basename(projectDir));
   const underFootage = (n) => look.footage?.mode === "background" && footage.some((f) => f.start < times[n].start + times[n].duration && f.end > times[n].start);
+  // The whiteboard scenes draw an icon that fits their words, never the same
+  // one twice in a video and preferably not one of the Identity's recent ones
+  // (icons/, DECISIONS 105). Without the icon sets the preset sketches stay.
+  const icons = pickIcons(scenes, { sentences, recent: look.iconsRecent ?? [], env });
   const fitted = scenes.map((sc, n) => {
-    const html = trackingFit(widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component));
+    let html = trackingFit(widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component));
+    if (icons[n]) html = withSketch(html, icons[n]);
     return bgComponent || underFootage(n) ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
@@ -715,7 +721,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
   fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart }));
-  return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [] };
+  return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
 }
 
 export { buildDir };

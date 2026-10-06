@@ -138,7 +138,8 @@ for (const name of presets ?? (args.theme ? [args.theme] : Object.keys(THEMES)))
   const third = Math.ceil(LINES.length / 3);
   const part = (a, b) => LINES.slice(a, b).map(([, t]) => t).join(" ");
   fs.writeFileSync(path.join(dir, "script.md"), `# Pilot\n\n## OPEN\n\n${part(0, third)}\n\n## 1. The library\n\n${part(third, 2 * third)}\n\n## OWN\n\n${part(2 * third)}\n`);
-  const scenes =LINES.map(([component, , vars], i) => ({ component, from: `S${i + 1}`, vars }));
+  // The sampler draws an icon in the whiteboard scene, as a planned video would.
+  const scenes = LINES.map(([component, , vars], i) => ({ component, from: `S${i + 1}`, ...(presets && component === "whiteboard-ink" ? { icon: "pencil" } : {}), vars }));
   fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify(presets ? { scenes } : { theme: THEMES[name], scenes }, null, 2) + "\n");
 
   const row = { name, assemble: false, check: null, sheet: null, render: null };

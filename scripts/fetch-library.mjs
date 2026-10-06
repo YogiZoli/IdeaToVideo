@@ -32,6 +32,8 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { codepoints, coverage } from "../runner/brand/cmap.mjs";
 
+import { fetchIcons } from "./fetch-icons.mjs";
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const LIST = path.join(ROOT, "library", "components.json");
 export const LOCK = path.join(ROOT, "library", "library.lock.json");
@@ -222,6 +224,7 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   log(`library: ${list.presets?.length ?? 0} presets`);
   await fetchFonts({ update, fetchImpl, log, out: path.join(stage, "fonts") });
   await fetchOpenDesign({ update, fetchImpl, log, out: path.join(stage, "opendesign") });
+  await fetchIcons({ fetchImpl, log, out: path.join(stage, "icons") });
   fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], backgrounds: list.motion?.backgrounds ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); fonts OFL-1.1 (see fonts/<id>/LICENSE)" }, null, 2) + "\n");
   if (update) fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + "\n");
   fs.rmSync(out, { recursive: true, force: true });

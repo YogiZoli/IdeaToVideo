@@ -1280,4 +1280,27 @@
       Pixabay licence kereskedelmi célra is szabad, forrásmegjelölés nélkül;
       a találatokat 24 óráig gyorsítótárazni kell, a képeket letölteni. A
       Coverr használata a kiadás előtt Zoltan döntése.
+105. **Ikonok a rajzos jelenethez** (Zoltan: "ugyanaz a rajz minden
+    videóban"; Lucide, Tabler, Iconoir, mind a három):
+    - **Letöltés a buildben** (`scripts/fetch-icons.mjs`, a `fetch-library`
+      futtatja): rögzített npm csomagok (`library/icons.json`: lucide-static
+      1.52.0, @tabler/icons 3.49.0 outline, iconoir 7.12.1 regular), sha512
+      ellenőrzéssel. Családonként egy JSON: ikononként path adat a 24-es
+      rácson és keresőszavak (a Lucide és a Tabler saját címkéi). 2130 + 5184
+      + 1382 ikon, 2,6 MB. A licencek mellettük, a THIRD-PARTY-NOTICES-ben is.
+    - **A tervező** minden whiteboard-ink jelenethez `icon` mezőt ad: egy-három
+      angol szó egy kézzelfogható tárgyra, minden rajzhoz más; enélkül a
+      gépi ellenőrzés visszaküldi.
+    - **A build választ** (`runner/icons/index.mjs`): a legjobban illő ikon,
+      egy videóban soha kétszer, és lehetőleg nem az Identity előző 12
+      videójának ikonja (`<identity>/icons-used.json`; az újrabuild a saját
+      ikonjait megtartja). Márkalogó soha (Tabler `brand-*` és a többi
+      logó). A "kikapcsolt" változat (például `lightbulb-off`) csak kérésre.
+      A felirat vagy a mondat szövegéből csak erős találat jöhet; különben
+      a jelenet saját rajza marad. A rajz a jelenet saját helyén (strokes
+      slot), vonalról vonalra, egy kiemelt vonallal; a registry fájl érintetlen.
+    - A tiltott nevek szabálya az ikonok nevére és címkéire is áll: a
+      tiltott szót tartalmazó címke kimarad, egy Iconoir ikon emiatt kimaradt.
+    - Később: a rács-kártyák ikonjai, és a Scenes varázslóban a családok és
+      a kedvencek Identity-nként.
 

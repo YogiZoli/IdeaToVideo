@@ -123,6 +123,26 @@ function lookOf({ identityDir, look }) {
   return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion: motionOf(identityDir), footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
 }
 
+// The icons the Identity's other videos draw (<identity>/icons-used.json, one
+// list per ONE Video, the last 12 videos): a new video prefers others, so
+// two videos never look alike (icons/index.mjs, DECISIONS 105). A rebuild of
+// the same video keeps its own icons.
+const ICONS_USED = "icons-used.json";
+function iconsUsed(identityDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(identityDir, ICONS_USED), "utf8"));
+  } catch {
+    return {};
+  }
+}
+const recentIcons = (identityDir, videoId) => Object.entries(iconsUsed(identityDir)).filter(([id]) => id !== videoId).flatMap(([, v]) => v.icons ?? []);
+function rememberIcons(identityDir, videoId, icons) {
+  if (!identityDir) return;
+  const all = { ...iconsUsed(identityDir), [videoId]: { icons, at: new Date().toISOString() } };
+  const keep = Object.entries(all).sort((a, b) => String(b[1].at).localeCompare(String(a[1].at))).slice(0, 12);
+  fs.writeFileSync(path.join(identityDir, ICONS_USED), JSON.stringify(Object.fromEntries(keep), null, 2) + "\n");
+}
+
 // The Identity's Motion profile, or null (motion/profile.mjs). A broken file
 // stops the build with a sentence, it is never silently ignored.
 function motionOf(identityDir) {
@@ -891,8 +911,9 @@ const commands = {
 
   // Gate 4: build the video from the approved scene table, lint + check, and
   // the contact sheet (review/contact.png) to approve before the render.
-  "build-video": async ({ projectDir, look }) => {
+  "build-video": async ({ projectDir, identityDir, look }) => {
     let project = loadProject(projectDir);
+    if (identityDir && typeof look === "object") look = { ...look, iconsRecent: recentIcons(identityDir, path.basename(projectDir)) };
     if (project.gates.scenes?.state !== "approved") throw new Error("Approve the scene table first.");
     project = setGate(project, "review", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
@@ -902,6 +923,10 @@ const commands = {
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
+      if (r.icons?.length) {
+        appendLog(projectDir, `review: icons ${r.icons.join(" ")}`);
+        rememberIcons(identityDir, path.basename(projectDir), r.icons);
+      }
       if (r.transitions?.some((t) => t !== "cut")) appendLog(projectDir, `review: Motion profile, scene changes ${r.transitions.join(" ")}`);
       for (const n of r.notes ?? []) appendLog(projectDir, `review: ${n}`);
       return { ...r, gate: project.gates.review, status: project.status };

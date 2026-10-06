@@ -182,6 +182,8 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
       if (typeof vars[id] === "string" && words(vars[id]) > max) issues.push(`${at}: ${sc.component} ${id} "${vars[id]}" is too long for this component (at most ${max} words)`);
     }
     if (i > 0 && scenes[i - 1]?.component === sc.component) issues.push(`${at}: same component as the scene before (${sc.component})`);
+    if (sc.component === "whiteboard-ink" && (typeof sc.icon !== "string" || !sc.icon.trim())) issues.push(`${at}: a whiteboard sketch needs "icon": one to three words for the concrete thing to draw`);
+    else if (sc.component === "whiteboard-ink" && sc.icon.trim().split(/\s+/).length > 4) issues.push(`${at}: "icon" "${sc.icon}" is too long (one to three words)`);
   });
   if (issues.length) return { issues, warnings };
 
@@ -348,7 +350,7 @@ async function ask(llm, messages, check) {
   return { answer, result };
 }
 
-const clean = (sc) => ({ component: sc.component, from: sc.from, ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}), vars: sc.vars ?? {}, ...(sc.call ? { call: sc.call } : {}) });
+const clean = (sc) => ({ component: sc.component, from: sc.from, ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}), ...(sc.component === "whiteboard-ink" && typeof sc.icon === "string" && sc.icon.trim() ? { icon: sc.icon.trim().slice(0, 60) } : {}), vars: sc.vars ?? {}, ...(sc.call ? { call: sc.call } : {}) });
 // The comment call a scene shows (assemble colours its button by temperature).
 const withCalls = (scenes, calls) =>
   scenes.map((sc) => {
