@@ -91,7 +91,7 @@ test("the checks name every problem the repair call has to fix", () => {
   assert.match(check([{ from: "S1", to: "S5", component: "headline-slam", vars: { text: "Without a framework, videos ramble" } }]), /too long for this component \(at most 3 words\)/);
   assert.match(check([{ from: "S1", to: "S2", component: "per-word-rise" }, { from: "S3", to: "S5", component: "per-word-rise" }]), /same component as the scene before/);
   assert.match(check([{ from: "S1", to: "S2", component: "per-word-rise" }, { from: "S4", to: "S5", component: "headline-slam" }]), /next sentence is S3/);
-  assert.match(check([{ from: "S1", to: "S4", component: "per-word-rise" }, { from: "S5", component: "cta-close" }]), /over 12 s: split it/);
+  assert.match(check([{ from: "S1", to: "S4", component: "per-word-rise" }, { from: "S5", component: "cta-close" }]), /over 7 s: split it/);
   const short = [{ ...SENTENCES[0] }, { ...SENTENCES[1], start: 5.0, end: 6.0 }, ...SENTENCES.slice(2)];
   const r = checkScenes({ scenes: [{ from: "S1", component: "per-word-rise" }, { from: "S2", component: "headline-slam" }, { from: "S3", to: "S5", component: "cta-close" }] }, { sentences: short, total: TOTAL, env });
   assert.match(r.issues.join(" "), /scene 2 \(S2\) lasts 1.4 s, under 2 s/);

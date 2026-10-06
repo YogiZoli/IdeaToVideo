@@ -1255,4 +1255,12 @@
       nélkül is van kamera (vágások, push: `BASE_MOTION`). A HyperFrames
       explainer doktrínája ("no slow push in the back half") itt Zoltan
       visszajelzésének enged: semmi nem állhat meg.
+    - **(1) élénkebb alap, második rész: új kép 3-5 mp-enként.** A tervező
+      minden mondatnak külön jelenetet ad, csak a nagyon rövideket vonja
+      össze; több mondatos jelenet legfeljebb 7 mp (volt 12), különben a
+      javító hívás szétbontja; a Simple plan legfeljebb 6 mp-ig von össze.
+      Zoltan videójában a hosszú képek fő oka az összevonás volt (0-11,4 mp
+      egy címkártya). Egy hosszú mondat egy jelenet marad; a mondaton belüli
+      bontás a kimondott szó kiemelésével (3. lépés) jön. Próba: 46 mp-es
+      render, egy jeleneten belül 0,8 mp alatt a kép mozdul (SSIM 0,98).
 

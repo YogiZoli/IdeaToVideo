@@ -10,7 +10,7 @@ import { COMPONENTS } from "./roles.mjs";
 import { MAX_WORDS } from "./index.mjs";
 
 const TARGET = 3; // seconds: a scene grows until it lasts this long
-const LONGEST = 8; // a scene never grows past this many seconds
+const LONGEST = 6; // a scene never grows past this many seconds (under MAX_SECONDS)
 
 const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ -]+/gu, " ").split(/\s+/).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;

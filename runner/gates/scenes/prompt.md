@@ -13,8 +13,9 @@ decoration.
 
 - The scenes cover every sentence exactly once, in order. A scene covers one
   sentence or a few consecutive ones ("from" and "to" are sentence ids).
-- A scene lasts from 2 to 12 seconds. Aim for 3 to 8. Join short sentences that
-  belong together; give a long, important sentence its own scene.
+- A new picture every 3 to 5 seconds. Give every sentence its own scene. Join
+  only very short sentences that belong together, and only while the joined
+  scene stays under 6 seconds. A scene is at least 2 seconds.
 - The first scene is an opening. A new section of the script may start with a
   chapter title (role opening), not every section.
 - The last scenes close the video. Use cta-close only when the sentence asks

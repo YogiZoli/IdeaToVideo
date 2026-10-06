@@ -105,8 +105,8 @@ test("the voice: the segment's sound between the sections, silence for the end s
 
 test("scene lengths do not count a segment or the end screen", () => {
   const sentences = [
-    { id: "S1", start: 0, end: 3, dur: 3, text: "One." },
-    { id: "S2", start: 3.2, end: 6, dur: 2.8, text: "Two." },
+    { id: "S1", start: 0, end: 4, dur: 4, text: "One." },
+    { id: "S2", start: 4.4, end: 6, dur: 1.6, text: "Two." },
     { id: "S3", start: 24, end: 27, dur: 3, text: "Three." },
   ];
   const scenes = {
@@ -119,7 +119,7 @@ test("scene lengths do not count a segment or the end screen", () => {
   const gaps = [{ start: 6.6, end: 23.4 }, { start: 27.6, end: 47.6 }];
   assert.deepEqual(checkScenes(structuredClone(scenes), { sentences, total: 47.6, gaps }).issues, []);
   const joined = { scenes: [scenes.scenes[0], { from: "S2", to: "S3", component: "per-word-rise", vars: { text: "Two" } }] };
-  assert.deepEqual(checkScenes(joined, { sentences, total: 47.6, gaps }).issues, [], "S2 to S3 is 7 s of its own, the segment between them does not count");
+  assert.deepEqual(checkScenes(joined, { sentences, total: 47.6, gaps }).issues, [], "S2 to S3 is 6.4 s of its own, the segment between them does not count");
 });
 
 test("a clip's whole 30 s text fits: at least 1000 characters are kept, the HeyGen id is remembered", { skip: !haveFf && "bundled ffmpeg not fetched" }, async () => {

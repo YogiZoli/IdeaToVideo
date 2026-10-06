@@ -24,7 +24,10 @@ import { simplePlan } from "./simple.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 export const MIN_SECONDS = 2;
-export const MAX_SECONDS = 12;
+// A scene of several sentences may last at most this long (Zoltan,
+// 2026-10-06: scenes of 9-11 s that joined three sentences read as slides;
+// a new picture every 3-5 s). One long sentence may still be longer.
+export const MAX_SECONDS = 7;
 export const MAX_WORDS = 6;
 const HIDDEN_VARS = new Set(["exit", "cues"]);
 const r3 = (x) => Math.round(x * 1000) / 1000;
