@@ -387,7 +387,7 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   const clips = footage ? catalogForPlanner(footage) : [];
   if (clips.length) data.footage = clips;
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog, { pace, mix: mix ? mixRule(mix, { pictures: false, video: clips.length > 0 }) : null }), (a) => {
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog, { pace, mix: mix ? mixRule(mix, { pictures: clips.length > 0, video: clips.length > 0 }) : null }), (a) => {
     const r = checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir), pace });
     return { ...r, issues: [...r.issues, ...footageIssues(a?.footage, { sentences, calls, clips })] };
   });

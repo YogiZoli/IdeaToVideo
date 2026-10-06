@@ -62,11 +62,11 @@ const core = {
     ...(q.get("one") ? [] : [{ schema: 1, id: "voxflow", name: "VoxFlow", folder: "VoxFlow", ...fields({ llm: { provider: "claude", model: "claude-sonnet-5" }, channel: { contentLanguage: "hu", audience: "coaches", youtubeUrl: null } }) }]),
   ],
   // "<name>@app" or "<name>@<identity id>"
-  keys: new Set(["gemini@app", "elevenlabs@app", "heygen@app", "vidiq@voxflow"]),
+  keys: new Set(["gemini@app", "elevenlabs@app", "heygen@app", "vidiq@voxflow", "pixabay@app"]),
 };
 const tier = q.get("tier") === "solo" ? "Solo" : "Agency";
 const edition = { product: "IdeaToVideo", tier, identityLimit: tier === "Solo" ? 1 : null, copyKeysDefault: tier !== "Solo" };
-const NAMES = ["gemini", "openrouter", "claude", "openai", "deepseek", "grok", "elevenlabs", "heygen", "vidiq"];
+const NAMES = ["gemini", "openrouter", "claude", "openai", "deepseek", "grok", "elevenlabs", "heygen", "vidiq", "pixabay"];
 const slug = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "identity";
 const active = () => core.identities.find((i) => i.id === core.app?.activeIdentity) ?? core.identities[0] ?? null;
 function sources() {
@@ -279,6 +279,9 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "segment-import-list") return { maxSeconds: 30, videos: [{ id: "v1", title: "Comment GUIDE below", seconds: 8.4, createdAt: 1760000000, image: null, tooLong: false, imported: false }, { id: "v2", title: "Comment COURSE below", seconds: 9.1, createdAt: 1760000100, image: null, tooLong: false, imported: false }, { id: "v3", title: "Comment TRIGGER below", seconds: 7.7, createdAt: 1760000200, image: null, tooLong: false, imported: true }, { id: "v4", title: "Full webinar intro", seconds: 74, createdAt: 1760000300, image: null, tooLong: true, imported: false }] };
         if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }
         if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }
+        if (args.command === "stock-suggest") return { queries: ["plan week", "morning routine", "calendar", "coffee"] };
+        if (args.command === "stock-search") { await new Promise((r) => setTimeout(r, 600)); const hue = [210, 30, 140, 280, 0, 90]; return { cached: false, hits: hue.map((h, i) => ({ id: String(100 + i), kind: args.request.kind, width: 1920, height: 1080, seconds: args.request.kind === "video" ? 8 + i : null, tags: `${args.request.q}, desk, light`, author: "someone", preview: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='hsl(${h},45%,60%)'/></svg>`)}` })) }; }
+        if (args.command === "stock-add") { await new Promise((r) => setTimeout(r, 1200)); return { clip: { name: "Photo: desk" }, again: args.request.id === "101" }; }
         if (args.command === "scenes-state") return await (await fetch("/scenes-state.json")).json();
         if (args.command === "scenes-save") return { profile: args.profile };
         if (args.command === "packs-list") return await (await fetch("/packs-list.json")).json();

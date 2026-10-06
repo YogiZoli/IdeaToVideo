@@ -38,6 +38,8 @@ import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendM
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
 import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi, endScreenOf, loadLast, saveLast } from "./cta/profile.mjs";
 import { segmentVoice, segmentVideo } from "./cta/make.mjs";
+import * as pixabay from "./stock/pixabay.mjs";
+import { addStock, suggestQueries } from "./stock/index.mjs";
 import { FAMILIES as ICON_FAMILIES, loadFamily as loadIconFamily } from "./icons/index.mjs";
 import { ROLES as SCENE_ROLES, COMPONENTS as SCENE_COMPONENTS } from "./gates/scenes/roles.mjs";
 import { loadScenes as loadScenesProfile, saveScenes as saveScenesProfile, MIX_PRESETS, KINDS, KIND_LABELS, PICTURE_SOURCES } from "./scenes-profile.mjs";
@@ -622,6 +624,35 @@ const commands = {
   "scenes-save": async ({ identityDir, profile }) => {
     if (!identityDir) throw new Error("No Identity to save the Scenes profile in.");
     return { profile: saveScenesProfile(identityDir, profile) };
+  },
+
+  // Stock photos and videos from Pixabay (stock/, DECISIONS 111): search
+  // words from the script, a search with local previews (cached a day, as
+  // Pixabay asks), and the one the user picks into the footage library.
+  "stock-suggest": async ({ projectDir }) => {
+    const project = loadProject(projectDir);
+    const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
+    return { queries: suggestQueries({ title: project.title ?? "", markdown: md }) };
+  },
+  "stock-search": async ({ q, kind = "image" }) => {
+    const r = await pixabay.search({ apiKey: key(), q, kind, cacheDir: path.join(dataDir(), "stock-cache") });
+    const dir = path.join(dataDir(), "stock-previews");
+    const hits = [];
+    for (const h of r.hits) {
+      let preview = null;
+      try {
+        preview = h.preview ? await pixabay.cachePreview({ url: h.preview, dir }) : null;
+      } catch {
+        preview = null;
+      }
+      hits.push({ id: h.id, kind: h.kind, width: h.width, height: h.height, seconds: h.seconds, tags: h.tags, author: h.author, preview });
+    }
+    return { hits, cached: r.cached };
+  },
+  "stock-add": async ({ identityDir, q, kind = "image", id }) => {
+    if (!identityDir) throw new Error("No Identity to add the footage to.");
+    const hit = pixabay.cachedHit(path.join(dataDir(), "stock-cache"), kind, q, id);
+    return addStock({ identityDir, hit, query: q });
   },
 
   // Block packs (packs/, DECISIONS 107), per Identity.

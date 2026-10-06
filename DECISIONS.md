@@ -1424,3 +1424,29 @@
       csomagok. A `ZG-C2C.identity.zip` a Scenes profilt is hozza.
     - Próba a böngészős UI-mockban: mind a hét képernyő; tesztek: 262 Node.
 
+111. **Pixabay keresés: kép és videó a jelenetekhez** (`runner/stock/`,
+    `docs/stock.md`; Zoltan: "6. Pixabay keresés", 2026-10-07):
+    - **Egy panel a Scenes tabon**, a jelenettábla alatt: "Photos and
+      videos". Keresőmező, a scriptből vett ötletek (cím, fejezetcímek, a
+      gyakori szavak), Photos vagy Videos, 18 találat előnézettel, "Add".
+      Kulcs nélkül csak a teendő látszik (Settings, Identity, Footage).
+    - **A választott elem a felvétel-könyvtárba kerül**, mint a saját
+      felvétel, licenc-rekorddal (forrás, azonosító, szerző, Pixabay
+      Content License, oldal). A tervező a következő tervezésnél tesz alá
+      mondatot, ami ugyanazt mutatja; a keverék képrésze csak akkor él, ha
+      van ilyen klip. Ugyanaz az elem kétszer nem töltődik le.
+    - **Fotó: 6 mp-es 1920x1080 klip lassú ráközelítéssel** (ffmpeg zoompan,
+      5 százalék, középre vágva), így nem áll a kép. A `docs/stock.md` 5
+      registry-komponense helyett ez, mert a klip a meglévő felvétel-útra
+      megy, új jelenettípus nélkül.
+    - **A Pixabay feltételei:** a találatok 24 órán át tárolva (nem kérdez
+      újra), a fájl letöltve (nincs hotlink), a forrás a panelen látszik.
+      Biztonságos keresés, fekvő formátum, legalább 1280 px; videóból a
+      1920-as, soha 4K. Csak `pixabay.com` címről tölt; a felület csak a
+      találat azonosítóját küldi vissza, a letöltési cím a runner saját
+      tárából jön. A kulcs a kérés címében megy, hibaüzenetben maszkolva.
+    - **Egyszerűbb, mint a `docs/stock.md` terve:** nincs jelenetenkénti
+      "Find stock" gomb, nincs Settings-beli "Add from stock", nincs
+      Autopilot-választás és 4K szűrő. Ezek a próba után jöhetnek.
+    - Próba a böngészős UI-mockban (keresés, ötletek, Add); tesztek: 266
+      Node (új: `runner/stock.test.mjs`, a fotó-klip ffmpeg-gel).

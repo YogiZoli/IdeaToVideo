@@ -66,11 +66,11 @@ Zoltan kérése: kérdés nélkül haladni a javaslatok szerint.
 - Open Sans; Zoltan ZG/C2C márkája importálható Identity-fájlban:
   `C:/Users/gdp/ITV-packs/ZG-C2C.identity.zip` (109, `C:/Users/gdp/ITV-packs/README.md`).
 
-**Kész a Scenes varázsló is** (DECISIONS 110). **Következő: (6) Pixabay
-keresés** (képek és videók a jelenetekhez), utána telepítési leírás, új
-telepítő, Zoltan próbája Windows Sandboxban.
+**Kész a Scenes varázsló** (DECISIONS 110) **és a Pixabay keresés** (111: a
+Scenes tabon, fotó lassú ráközelítéssel). **Következő:** egyoldalas angol
+telepítési leírás, új telepítő, Zoltan próbája Windows Sandboxban.
 
-**Tesztek:** 258 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
+**Tesztek:** 266 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
 az új funkciók a 4. fázis végi telepítővel próbálhatók (Zoltan döntése).
 Mintavideók: `C:/Users/gdp/Videos/IdeaToVideo-mintak/`.
 
