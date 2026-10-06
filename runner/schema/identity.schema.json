@@ -67,6 +67,7 @@
       "properties": {
         "enabled": {"type": "boolean"},
         "lookId": {"type": ["string", "null"], "maxLength": 200},
+        "engine": {"enum": ["avatar_iii", "avatar_iv", "avatar_v"]},
         "style": {"enum": ["cutout", "circle", "card", "full"]},
         "position": {"enum": ["bottom-right", "bottom-left", "top-right", "top-left"]},
         "size": {"enum": ["small", "medium", "large"]}

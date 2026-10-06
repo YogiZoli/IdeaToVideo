@@ -85,6 +85,8 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("segment-remove", None),
     ("segment-voice", Some(&["narrator", "provider"])),
     ("segment-make", Some(&["service"])),
+    ("segment-import-list", Some(&["service"])),
+    ("segment-import", Some(&["service"])),
     ("broll-settings", None),
     ("broll-settings-save", None),
     ("broll-state", None),

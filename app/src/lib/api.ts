@@ -50,7 +50,7 @@ export type Config = {
     humanize?: "off" | "light" | "strong";
   };
   narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
-  avatar?: { enabled: boolean; lookId?: string | null; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
+  avatar?: { enabled: boolean; lookId?: string | null; engine?: "avatar_iii" | "avatar_iv" | "avatar_v"; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
 };
@@ -239,7 +239,7 @@ export type CtaProfile = {
   offers: Record<string, string>;
   endScreen?: 0 | 5 | 10 | 15 | 20;
 };
-export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen"; text?: string | null; createdAt: string; lastUsedAt: string | null };
+export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen" | "heygen-import"; heygenId?: string; text?: string | null; createdAt: string; lastUsedAt: string | null };
 export type CtaState = {
   profile: CtaProfile | null;
   start: CtaProfile;

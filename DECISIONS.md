@@ -1156,3 +1156,46 @@
     CTA-szegmensekhez a fiók videólistájából (`GET /v3/videos`, ingyenes
     olvasás). Addig a kész szegmensek letöltve és feltöltve kerülnek be,
     ez ingyen van.
+
+## 2026-10-06 (a 3. fázis kezdete)
+
+101. **3. fázis terv, avatar motor és import, szegmens-szöveg** (Zoltan,
+    2026-10-06, `docs/phase-3-plan.md`):
+    - **Ingyenes lépésekkel haladunk** (a pénz 1-2 hét múlva jön). Későbbre:
+      Windows aláírás, Apple Developer ID, a Mac build és Mac teszt, a PRD 14
+      nyitott kérdései (név, cégforma, domain). **Baráti tesztek egyelőre
+      nincsenek**, nem tudni, mikor. A pilot első köre Zoltané, tiszta
+      környezetben (Windows Sandbox), a végén, egyben.
+    - **A telepítő egyszer épül újra, a 4. fázis végén**; addig minden
+      megvalósul a kódban. A Mac build egyetlen alkalommal, Windows és Mac
+      együtt, utána. Ez eltér a PRD 12-től (a pilot Mac-es része a kiadás elé
+      csúszik); a DECISIONS 95 szerinti sorrend marad.
+    - A phase-3 PR CI-ja piros maradhat a 4. fázis végéig (`ci-test-order`,
+      Actions perc).
+    - **Avatar motor** (a DECISIONS 100 megvalósítása): `avatar_iii` (alap),
+      `avatar_iv`, `avatar_v`; az Identity `avatar.engine` mezője, és
+      videónként az Avatar tabon. A megrendelés `engine.type`-ot küld; a look
+      `supported_api_engines` listája szerint csak támogatott motor
+      választható, az alap nem támogatott motornál a legolcsóbb támogatottra
+      esik vissza, kiírva. Becslés motoronként (HeyGen súgója, 2026-10: III
+      0,60-0,99 USD/perc, IV 2,31-4,83; az V ára nem publikus, a IV tartományával
+      becsülünk és jelöljük).
+    - **Az "Unlimited" Avatar III az API-ra nem vonatkozik** (utánanézve): az
+      API külön dollár alapú rendszer; a webes unlimited csak a régi csomagokon
+      él, az új kreditalapú csomagokon az Avatar III 3 kredit percenként. A
+      Settingsben ez egy mondattal kiírva. Következmény: a CTA-szegmenseket a
+      webes HeyGenben érdemes elkészíteni, és letöltve (A) vagy importálva (C)
+      használni, API-hívás nélkül.
+    - **Import from HeyGen** (CTA, Your segments, C): `GET /v3/videos`
+      (olvasás), a kész videók listája, kiválasztás, kulcsszóhoz rendelés,
+      letöltés (`source: heygen-import`, a szegmens megjegyzi a `heygenId`-t,
+      így látszik, mi van már importálva). Nyitott: a webes felületen készült
+      videók listázódnak-e; a valódi fiókkal kell kipróbálni (Zoltan).
+    - **Szegmens szövege 1500 karakter** (volt 400): egy 30 mp-es klip teljes
+      szövege beleférjen, a mezők alatt számláló. A felirat és a publikálási
+      adat (`said`) ezt használja.
+    - Az újrahasznosítás modellje változatlan (DECISIONS 78): egy szegmens egy
+      kulcsszóé, a kulcsszó a kapocs, kulcsszavanként legfeljebb 3, váltakozva.
+    Tesztek: 233 Node (2 új a motorokra és az importra, 1 a szövegre), cargo
+    test zöld.
+

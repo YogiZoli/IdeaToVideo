@@ -4,142 +4,150 @@ Kimenet (PRD 13, 12): **pilot siker vagy hibalista**, és a hibák javítása.
 Pilot siker (PRD 12): egy barát egyedül, Zoltan segítsége nélkül telepít,
 végigmegy az onboardingon és lerenderel egy videót.
 
-Branch: `phase-3` (a mainről, `c2a8e87`). Állapot 2026-10-06: **terv, Zoltan
-jóváhagyására vár.** Kódolás a jóváhagyás előtt nincs.
+Branch: `phase-3` (a mainről, `c2a8e87`). Állapot 2026-10-06: **jóváhagyva
+Zoltan módosításaival** (lásd lent), az implementálás folyik.
 
-## Mi dőlt el (Zoltan, 2026-10-06)
+## Eldőlt (Zoltan, 2026-10-06)
 
-1. **Az első kör Zoltané**, nem a barátoké. A barátok később jönnek: a
-   többségüknek Windows, 1-2 embernek Mac. Rájuk a terv nem épül, a nevük és
-   a gépük nem feltétel (PRD 14.4 részben megválaszolva, lásd 1. pont).
-2. **A telepítő eljutása: Drive link** a `.exe`-re. Nincs GitHub fiók, nincs
-   meghívás.
-3. **Mac build: egyetlen egyszer, Windows és Mac együtt**, amikor a 3. és a
-   4. fázis tartalma kész (DECISIONS 95, megerősítve). A pilot Mac-es része
-   (PRD 12) ezért a 4. fázis végére csúszik. Ez eltér a PRD 12-től; a
-   DECISIONS-be felírom a jóváhagyás után.
+1. **Most csak ingyenes lépések.** Pénzbe kerülő tétel 1-2 hét múlva, addig
+   nem indul: Windows aláírás (Azure Trusted Signing), Apple Developer ID,
+   a Mac build és a Mac kézi teszt (felhős vagy barát Mac), a PRD 14 nyitott
+   kérdései (név, cégforma, domain). Ezek a 4. fázis fizetős végére kerülnek.
+2. **Nincs baráti teszt egyelőre**, nem tudni, kipróbálják-e és mikor. A
+   barátok köre (B kör) a végére marad, a terv rájuk nem épül.
+3. **Telepítő: egyetlen új, a 4. fázis végén.** Addig minden megvalósul a
+   kódban, és Zoltan egyben teszteli. A mostani telepítő (a gépen lévő
+   17:20-as) nem az aktuális main, de nem is kell új.
+4. **Mac build: egyetlen egyszer, Windows és Mac együtt**, a 3. és a 4. fázis
+   tartalma után (DECISIONS 95). A PRD 12 Mac-es pilot-feltétele ezért a
+   kiadás elé csúszik; felírva a DECISIONS 101-be.
+5. **Az avatar motorválasztás és a HeyGen import most készül el**, a 3. és a
+   4. fázis előtt (megépült, lásd 2. pont), fizetős hívás nélkül.
+6. **A tiszta környezet: Windows Sandbox.** Az A kör (Zoltan próbája) ebben
+   fut, miután minden kész.
+7. A phase-3 PR CI-ja piros maradhat a 4. fázis végéig (`ci-test-order`).
 
-## 1. Pilot, két kör
+## 1. Az A kör (Zoltan próbája), a végén, egyben
 
-| Kör | Ki | Gép | Mire jó |
-|---|---|---|---|
-| A | Zoltan, próbakör | a saját Windows 11 gépe, **tiszta környezetben** | a gépies hibák: telepítés, első indítás, onboarding, első videó. Itt készülnek a képernyőképek is. |
-| B | 1-2 barát (Zoltan kérdezi meg őket) | a barát gépe, többnyire Windows | az igazi pilot siker: segítség nélkül. |
+Mi a B kör: a barátok köre, amikor egy barát egyedül telepít. Az A kör a
+próbakör, amit Zoltan csinál egy tiszta Windowson, hogy a gépies hibák
+előbb előkerüljenek. Az A kör nem pilot siker, mert Zoltan ismeri az appot.
 
-**A kör tiszta környezete.** Zoltan gépén ott a fejlesztői állapot (kulcsok a
-kulcstárban, `AppData/Local/app.ideatovideo.desktop`, a letöltött Chrome).
-Az A kör ezért vagy **Windows Sandboxban** fut (egy eldobható, tiszta Windows;
-a Windows 11 Pro tudja, de a funkciót be kell kapcsolni, ezt még nem
-ellenőriztem), vagy egy új helyi Windows felhasználó alatt. A választást és a
-beállítást Zoltannal egyeztetem, mert a funkció bekapcsolása újraindítást
-kér. Az A kör **nem** pilot siker: Zoltan ismeri az appot. A B kör az.
+- **Mikor:** a 4. fázis ingyenes tartalma és az új telepítő után, egyszer.
+- **Hol:** Windows Sandbox (a Windows 11 Pro tudja, a funkciót be kell
+  kapcsolni, ez újraindítást kér; még nem ellenőriztem, hogy be van-e
+  kapcsolva). Tartalék: új helyi Windows felhasználó.
+- **Mit:** telepítés (SmartScreen), első indítás, onboarding, első videó
+  Autopilottal, Export diagnostics. Itt készülnek a képernyőképek a leíráshoz.
+- **Pilot minimum, költség nélkül:** egy ingyenes Gemini kulcs. Hang: Gemini
+  TTS. Nincs ElevenLabs, HeyGen, vidIQ, zene, AI B-roll (alapból ki).
 
-**A pilot minimális útja a barátnak, költség nélkül:** csak egy Gemini kulcs
-(ingyenes tier) kell. Hang: Gemini TTS. Nincs ElevenLabs, HeyGen, vidIQ, zene,
-AI B-roll (alapból ki). A leírás ezt az utat mutatja, a többi lépés
-"Skip, use default".
+## 2. Ami a 3. fázis előtt elkészült: avatar motor, import, szövegmező
 
-## 2. Telepítő és eljutása
+Megépült (DECISIONS 101), tesztelve hamis HeyGen válaszokkal, valódi hívás
+nélkül:
 
-- **Melyik:** a main friss release build-je (`c2a8e87` és ami utána a
-  `phase-3`-ra kerül). A gépen lévő
-  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`
-  17:20-as, a main merge-e 19:49-es, ezért **nem az aktuális**: újra kell
-  építeni. Helyi release build, mérve a 2. fázisban kb. 17 perc (10 perc
-  fordítás, 7 perc NSIS), előre szólok, és nem pollozom.
-- **Név:** `IdeaToVideo_0.1.0_<commit>_x64-setup.exe` (a másolat neve, hogy
-  egy hibajelentésből látszódjon, melyik build volt).
-- **Eljuttatás:** a `.exe` a `G:/My Drive` alatt egy mappába kerül, a megosztó
-  linket Zoltan hozza létre (vagy az én kérdésemre, a konkrét "igen" után,
-  mert a megosztás kifelé szóló lépés). Méret kb. 100 MB. A Drive a 100 MB
-  körüli fájlnál "nem tudta vírusellenőrizni" oldalt mutathat: ezt a
-  kiküldés előtt kipróbálom, és ha zavaró, a leírásba kerül egy sor róla.
-- **Aláíratlan:** a Windows SmartScreen figyelmeztet ("Windows protected your
-  PC"): More info, Run anyway. A leírás ezt képernyőképpel vezeti át. A
-  telepítés a Tauri NSIS alapja szerint felhasználónkénti (nem kér
-  rendszergazdát); ezt az A körben ellenőrzöm.
-- **Első indítás letöltései:** a render böngésző (kb. 282 MB, 42 mp mérve) az
-  első indításkor jön; az onboarding "Download now" sávja ezt mutatja. Win10
-  gépen a WebView2-t a telepítő hozza, internet kell hozzá (ezt a B körben, ha
-  a barátnak Win10-e van, külön figyelni).
+- **Motorválasztás** (Settings, Identity, Voice and avatar, és videónként az
+  Avatar tabon): Avatar III (alap), IV, V. Az `engine` mező az Identity
+  `avatar` beállításában. A look csak a támogatott motorokat engedi; ha az
+  alap nem támogatott, a legolcsóbb támogatottra esik vissza, és ezt kiírja.
+  Becslés motoronként (III: 0,60-0,99 USD/perc, IV: 2,31-4,83; az V ára nem
+  publikus, ezért a IV tartományával becsül, és jelöli).
+- **Import from HeyGen** (Settings, Identity, CTA, Your segments, C): a fiók
+  kész videói (`GET /v3/videos`, olvasás, ingyen), kiválasztás, kulcsszóhoz
+  rendelés, letöltés, szegmens lesz (`source: heygen-import`). Nyitott: a
+  webes felületen készült videók benne vannak-e a listában, azt a valódi
+  fiókkal kell kipróbálni. Ha nincsenek, marad a letöltés és feltöltés (A).
+- **Szegmens szövege: 1500 karakter** (volt 400), hogy egy 30 mp-es klip
+  teljes szövege beleférjen; számláló van a mezők alatt. A felirat (`.srt`)
+  és a publikálási adat is ezt használja.
+- **Az újrahasznosítás** a DECISIONS 78 szerint már megvolt: egy szegmens egy
+  kulcsszóé, Identity-nként legfeljebb 3 kulcsszavanként, váltakozva.
+  Zoltan terve: három klip (Cold, Warm, Hot: GUIDE, COURSE, TRIGGER) egyszer
+  a HeyGen weben, letöltve és feltöltve (A) vagy importálva (C), és minden
+  videóban ugyanaz a három szól, amikor az a kulcsszó a komment-CTA.
 
-## 3. Egyoldalas telepítési leírás, angolul
+### Az "Unlimited" Avatar III (utánanézve, 2026-10-06)
 
-`docs/pilot/install-guide.md` (és PDF), képernyőképekkel
-(`docs/pilot/img/`), az A kör közben elkészített képekkel. Egy oldal, a
-barát nyelvén (angol, nem techy):
+A HeyGen saját súgója szerint az API külön, dollár alapú pay-as-you-go
+rendszer, a webes csomag nem ad API-t és kreditet sem visz át. A webes
+Avatar III "unlimited" csak a régi (legacy) unlimited csomagokon maradt meg;
+az új kreditalapú csomagokon az Avatar III 3 kredit percenként (a Creator
+csomag 600 kreditet ad havonta). Az API-ban az Avatar III is fizetős. Ezért
+az olcsó út a CTA-szegmensekre: a három klip a webes HeyGenben készül, és az
+app letöltve vagy importálva használja, így API-hívás nélkül.
 
-1. Download the installer (a Drive link, a fájlnév).
-2. If Windows warns you: More info, Run anyway (kép).
-3. Install and start the app (kép).
-4. First start: the setup wizard. The only thing you need is a free Gemini
-   key (where to get it, kép), everything else "Skip, use default".
-   A Claude/ChatGPT előfizetés nem API kulcs (PRD 5).
-5. Make your first video: give a topic, "Finish on Autopilot" (kép), how long
-   it takes (a render kb. 2 perc gépidő videópercenként, mérve), do not close
-   the app, do not let the PC sleep.
-6. Where is the video: Your video tab, Show in folder.
-7. If something goes wrong: Settings, App, General, Export diagnostics, and
-   send the zip to Zoltan.
+## 3. Telepítő és eljutása (a 4. fázis végén)
 
-A leírás a jóváhagyás után készül, a képek az A körből.
+- **Build:** helyi release build a mainről (kb. 17 perc, mérve a 2.
+  fázisban), előre szólok. Név: `IdeaToVideo_0.1.0_<commit>_x64-setup.exe`.
+- **Eljuttatás: Drive link** a `.exe`-re. A megosztás kifelé szóló lépés,
+  konkrét igenre. Méret kb. 100 MB; a Drive a nagy fájlnál víruskeresési
+  oldalt mutathat, ezt kiküldés előtt kipróbálom.
+- **Aláíratlan:** SmartScreen ("More info", "Run anyway"), a leírás ezt
+  képernyőképpel vezeti át. A Tauri NSIS alapja felhasználónkénti telepítés
+  (nem kér rendszergazdát), az A körben ellenőrzöm.
+- **Első indítás:** a render böngésző (kb. 282 MB) letöltése, az onboarding
+  "Download now" sávja mutatja.
 
-## 4. Hogyan jönnek vissza a hibák
+## 4. Egyoldalas telepítési leírás, angolul
 
-Képernyőkép nélkül.
+`docs/pilot/install-guide.md` (és PDF), képekkel az A körből: 1. letöltés,
+2. SmartScreen, 3. telepítés és indítás, 4. onboarding (csak egy ingyenes
+Gemini kulcs kell, a többi "Skip, use default"), 5. az első videó
+("Finish on Autopilot", a render kb. 2 perc gépidő videópercenként, ne
+zárd be az appot, ne altasd a gépet), 6. hol a videó (Your video, Show in
+folder), 7. hiba esetén Settings, App, General, Export diagnostics.
 
-1. A barát: Settings, App, General, **Export diagnostics**: egy zip (az app
-   naplója `logs/`, az App és az Identity beállítások `settings/` (kulcs
-   nélkül), videónként `videos/.../` a `project.json`, `log.txt`,
-   `build/render.log`, `lint.log`, `check.log`, avatar állapot; nincs benne
-   kulcs, hang, videó, script szövege). A zip elküldése Driveon vagy
-   üzenetben, Zoltan dönti el.
-2. Zoltan a zipet kicsomagolja: `feedback/<dátum>/<barát>/` (a `feedback/`
-   mappa a megszokott hely, a zip nem kerül commitba, ha személyes adatot
-   gyanítunk; a `NOTES.md` igen).
-3. Én: `node scripts/log-summary.mjs --dir <kicsomagolt>/logs`, utána a
-   videók `log.txt` és `build/*.log` fájljai. A hibakódok `ITV-...` alakúak
-   (`app/src/lib/errors.ts`), a barát megadhatja a kódot szöveggel is.
-4. Minden hibából egy sor a `feedback/<dátum>/NOTES.md`-be: mi, melyik kód,
-   javítva-e. A javítás után új telepítő, és ugyanaz a lépés újra az A körben.
+## 5. Hogyan jönnek vissza a hibák (képernyőkép nélkül)
 
-## 5. Mit ellenőrzök a pilot előtt
+1. Settings, App, General, **Export diagnostics**: zip (`logs/` az app
+   naplója, `settings/` kulcs nélkül, videónként `videos/.../` a
+   `project.json`, `log.txt`, `build/*.log`, avatar állapot; nincs benne
+   kulcs, hang, videó, script szövege).
+2. Kicsomagolás: `feedback/<dátum>/<kitől>/`.
+3. `node scripts/log-summary.mjs --dir <kicsomagolt>/logs`, utána a videók
+   `log.txt` és `build/*.log` fájljai; a hibakódok `ITV-...` alakúak.
+4. Hibánként egy sor a `feedback/<dátum>/NOTES.md`-be, javítás, és az új
+   telepítővel ugyanaz újra.
 
-- **Tesztek:** `npm test` (231 Node), `cargo test` (47 Rust), `npm run e2e`
-  (39 lépés). Zöldek a mainen (STATUS szerint); a pilot előtt újra futtatom.
+## 6. Mit ellenőrzök a telepítő előtt (ingyen, most is futhat)
+
+- **Tesztek:** `npm test` (233 Node), `cargo test`, `npm run e2e` (a
+  fázis végén).
 - **PRD 14.5, sampler render.** A 39 archetípus a D út óta nincs az appban
-  (DECISIONS 48); a megfelelője a **15 komponensű könyvtár a presetekkel**.
-  Javaslat: a meglévő `scripts/phase2/pilot.mjs` (minden komponens egyszer,
-  kb. 50 mp) kap egy `--preset` kapcsolót, és lefut mind a 11 HyperFrames
-  presetre: build, lint, check, kontakt lap (ez gyors, mérve kb. fél perc a
-  buildre); renderelés 3 presetre (egy világos, egy sötét, egy erős színű),
-  kb. 2 perc videónként. A kontakt lapokat én nézem át (olvashatóság, kilógó
-  szöveg, üres jelenet). A kimenet: `docs/pilot/sampler.md` táblázat és a
-  képek a `feedback/<dátum>/sampler/` alatt. A 152 open-design stílusra nem
-  futtatom végig (az a Brand varázsló galériája, a próbája külön), csak
-  szúrópróba 5 darabra.
-- **Üres profilon:** az A kör maga a "friss gép" próba (e2e már ezt szimulálja
-  mock LLM-mel és csendes hanggal).
-- **CI:** az utolsó két PR Windows futása piros, az oka ismert: a runner
-  tesztek a könyvtár letöltése előtt futnak ("The library has no component
-  called titlecard-lockup"). A javítás a `ci-test-order` branchen van
-  (`cd9a3e9`); STATUS szerint **a 4. fázis végén** kerül PR-be, mert Actions
-  percet fogyaszt. Addig a phase-3 PR CI-ja is piros lesz ugyanezért, a helyi
-  tesztek az mérvadóak. Ha mást akarsz, szólj.
+  (DECISIONS 48); a megfelelője a 15 komponensű könyvtár a presetekkel. A
+  `scripts/phase2/pilot.mjs` kap egy `--preset` kapcsolót, és lefut mind a
+  11 HyperFrames presetre: build, lint, check, kontakt lap; renderelés 3
+  presetre (világos, sötét, erős színű), kb. 2 perc videónként. A kontakt
+  lapokat én nézem át. Kimenet: `docs/pilot/sampler.md` és a képek a
+  `feedback/<dátum>/sampler/` alatt. A 152 open-design stílusból 5 darab
+  szúrópróba. Hosszú futás: előre szólok, és nem pollozom.
+- **CI:** a Windows futás piros, mert a runner tesztek a könyvtár letöltése
+  előtt futnak; a javítás a `ci-test-order` branchen (`cd9a3e9`), PR a 4.
+  fázis végén.
 
-## 6. Mi marad ki a 3. fázisból
+## 7. A 4. fázis ingyenes része, ami most megvalósítható
 
-- Mac build és Mac teszt (a 4. fázis végén, egyszer).
-- Az első valódi HeyGen Video 1 próbaklip: a kredit után, külön jóváhagyással.
-- Az avatar motorválasztás és az Import from HeyGen (DECISIONS 100), külön chat.
-- A `ci-test-order` PR.
+Nem kerül pénzbe, és nem kell hozzá név, domain vagy aláírás:
 
-## 7. Zoltan döntésére vár
+- `README.md`, hibaelhárítási oldal, az About oldal a "No support, no
+  installation help." mondattal és a "Built on HyperFrames by HeyGen"
+  felirattal, harmadik fél licencek (`THIRD-PARTY-NOTICES`), a zárt licenc
+  szövege (PRD 11).
+- `release.yml` (tag, telepítő a Releases-be, updater manifest) megírva, de
+  **nem indítva**, mert Actions percet fogyaszt.
+- Tauri updater beállítása (az updater saját kulcspárja ingyenes; a privát
+  kulcsot Zoltan kezeli, nem kerül a repóba).
+- A GSAP licenc-kérdés megfogalmazva (elküldés előtt Zoltan jóváhagyja).
 
-1. A tiszta környezet az A körhöz: Windows Sandbox (javaslat) vagy új helyi
-   Windows felhasználó.
-2. Az avatar motorválasztás (alap Avatar III) és az Import from HeyGen a B kör
-   előtt készüljön-e el (javaslat: igen), vagy a pilot után.
-3. A phase-3 PR piros CI-ja elfogadható-e a 4. fázis végéig.
-4. Pénz: nincs fizetős hívás ebben a tervben. A Mac build egyszer, a 4. fázis
-   végén, külön igenre.
+Fizetős vagy külső, **későbbre** (Zoltan, 2026-10-06): Windows aláírás,
+Apple Developer ID, Mac build és Mac teszt, név, cégforma, domain, a baráti
+körök.
+
+## 8. Zoltan döntésére vár
+
+1. Az updater kulcspárja: megcsináljam-e most, a privát kulcsot hova tegyem
+   (javaslat: Zoltan jelszókezelője, nem a gép és nem a repó).
+2. A 4. fázis ingyenes részét ebben a sorrendben vigyem: sampler, README és
+   About, `release.yml`, updater?

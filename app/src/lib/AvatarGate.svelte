@@ -14,6 +14,8 @@
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
   import LayoutPicker from "./LayoutPicker.svelte";
+  import EnginePicker from "./EnginePicker.svelte";
+  import { chooseEngine, engineLabel, type AvatarEngine } from "./avatarEngines";
   import LookPicker, { type Group, type Look } from "./LookPicker.svelte";
   import type { AvatarLayout, AppState, Gate } from "./api";
   import { runner, onProgress, errorText } from "./api";
@@ -22,7 +24,7 @@
   import type { TabId } from "./tabs";
 
   type Segment = { name: string; label: string; start: number; duration: number; file?: string };
-  type Plan = { segments: Segment[]; current: { lookId: string; format?: string; layout?: AvatarLayout; note?: string | null; segments: Segment[] } | null; estimate: { low: number; high: number }; account: { kind?: string; remaining?: number | null; currency?: string | null; error?: string } | null };
+  type Plan = { segments: Segment[]; current: { lookId: string; engine?: AvatarEngine; format?: string; layout?: AvatarLayout; note?: string | null; segments: Segment[] } | null; estimate: { low: number; high: number }; estimates?: Record<string, { low: number; high: number; guess?: boolean }>; account: { kind?: string; remaining?: number | null; currency?: string | null; error?: string } | null };
 
   let { app, dir, gate, scenesApproved, look = "blue-professional", changed, goto }: { app: AppState; dir: string; gate?: Gate; scenesApproved: boolean; look?: string; changed: () => Promise<void>; goto: (t: TabId) => void } = $props();
 
@@ -36,6 +38,8 @@
   let stock = $state<Look[]>([]);
   let plan = $state<Plan | null>(null);
   let lookId = $state("");
+  // per video; starts from the clips already made, else the last used, else the Settings default (Avatar III when none)
+  let engine = $state<AvatarEngine | undefined>();
   let which = $state<string[]>(["open", "close"]);
   let loading = $state(false);
   let step = $state("");
@@ -51,6 +55,8 @@
   const scale = $derived(plan && plan.segments.length ? seconds / plan.segments.reduce((n, s) => n + s.duration, 0) : 1);
   const allLooks = $derived([...own.flatMap((g) => g.looks), ...stock]);
   const chosenLook = $derived(allLooks.find((l) => l.id === lookId) ?? null);
+  const picked = $derived(chooseEngine(engine, chosenLook?.engines));
+  const rate = $derived((plan?.estimates?.[picked.engine] ?? plan?.estimate ?? { low: 0, high: 0 }) as { low: number; high: number; guess?: boolean });
   const approved = $derived(gate?.state === "approved");
   const skipped = $derived(gate?.state === "skipped");
 
@@ -62,15 +68,16 @@
     try {
       ({ own, stock } = await avatarLooks());
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
-      let used: { lookId?: string; layout?: AvatarLayout } | undefined;
+      let used: { lookId?: string; layout?: AvatarLayout; engine?: AvatarEngine } | undefined;
       try {
-        used = (await runner<{ used: { avatar?: { lookId: string; layout?: AvatarLayout } } }>("last-used", {})).used.avatar;
+        used = (await runner<{ used: { avatar?: { lookId: string; layout?: AvatarLayout; engine?: AvatarEngine } } }>("last-used", {})).used.avatar;
       } catch {
         used = undefined;
       }
       const known = (id?: string | null) => !!id && allLooks.some((l) => l.id === id);
       lookId = plan.current?.lookId ?? (known(used?.lookId) ? used!.lookId! : null) ?? app.config?.avatar?.lookId ?? own.flatMap((g) => g.looks)[0]?.id ?? stock[0]?.id ?? "";
       const a = app.config?.avatar;
+      engine = plan.current?.engine ?? used?.engine ?? a?.engine;
       layout = { ...(plan.current?.layout ?? used?.layout ?? { style: a?.style ?? "cutout", position: a?.position ?? "bottom-right", size: a?.size ?? "medium" }) };
     } catch (e) {
       error = errorText(e);
@@ -101,13 +108,13 @@
 
   let clips = $state<HTMLElement>();
   async function make() {
-    const cost = plan ? `about $${(plan.estimate.low * scale).toFixed(2)} to $${(plan.estimate.high * scale).toFixed(2)}` : "a few dollars";
+    const cost = plan ? `about $${(rate.low * scale).toFixed(2)} to $${(rate.high * scale).toFixed(2)} with ${engineLabel(picked.engine)}` : "a few dollars";
     if (!(await ask(`${current ? "Make the avatar clips again? The ones you have now are replaced. " : ""}Make ${Math.round(seconds)} seconds of avatar video on HeyGen? It costs ${cost} from your HeyGen API balance.`, { title: "Avatar", kind: "info" }))) return;
     busy = true;
     error = "";
     step = "Starting...";
     try {
-      await runner("make-avatar", { projectDir: dir, service: "heygen", lookId, lookName: chosenLook?.name ?? null, which, look, layout: { ...layout } });
+      await runner("make-avatar", { projectDir: dir, service: "heygen", lookId, lookName: chosenLook?.name ?? null, which, look, layout: { ...layout }, engine: picked.engine, lookEngines: chosenLook?.engines ?? [] });
       plan = await runner<Plan>("avatar-plan", { projectDir: dir, service: "heygen" });
       stamp = Date.now();
       await changed();
@@ -206,6 +213,7 @@
         </div>
         {#if plan}
           <div>
+            <EnginePicker bind:engine supported={chosenLook?.engines ?? null} disabled={locked} />
             <span class="label">Where and how big</span>
             <LayoutPicker bind:style={layout.style} bind:position={layout.position} bind:size={layout.size} disabled={locked} cutoutNote={current && current.format !== "webm" ? "The clips you have now are not transparent: a cut-out needs new clips." : ""} />
             {#if layoutChanged}<button type="button" disabled={locked} onclick={applyLayout}>Use this place and size (no new clips, free)</button>{/if}
@@ -215,7 +223,7 @@
                 <label class="choice"><input type="checkbox" bind:group={which} value={s.name} disabled={locked} /> {s.label}: {s.duration.toFixed(1)} s</label>
               {/each}
             </div>
-            <p class="hint">For {Math.round(seconds)} s: about ${(plan.estimate.low * scale).toFixed(2)} to ${(plan.estimate.high * scale).toFixed(2)}, depending on the avatar. {money(plan.account)}</p>
+            <p class="hint">For {Math.round(seconds)} s with {engineLabel(picked.engine)}: about ${(rate.low * scale).toFixed(2)} to ${(rate.high * scale).toFixed(2)}{rate.guess ? " (a guess: HeyGen has not published this price)" : ""}, depending on the avatar. {money(plan.account)}</p>
             {#if current?.note}<p class="hint">{current.note}</p>{/if}
           </div>
         {/if}

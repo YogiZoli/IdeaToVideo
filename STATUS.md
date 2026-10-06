@@ -41,7 +41,19 @@ móddal a renderig).
    feltöltésként adja hozzá (ingyen). Kérdés a próbán: ad-e az Avatar III
    átlátszó hátterű (WebM) klipet.
 
-Utána a 3. fázis (pilot).
+## 3. fázis, branch `phase-3` (2026-10-06)
+
+Terv: `docs/phase-3-plan.md` (jóváhagyva, DECISIONS 101). Csak ingyenes
+lépések; a pénzes (aláírás, Mac, név, domain) és a baráti tesztek későbbre.
+**Kész:** az avatar motorválasztás (alap Avatar III, per videó és Identity
+alap), az Import from HeyGen a CTA-szegmensekhez, a szegmens szövege 1500
+karakter. Valódi HeyGen hívás nem volt; Zoltan próbálja ki, hogy a webes
+videók listázódnak-e. **Következő:** sampler render a presetekkel (PRD 14.5),
+a 4. fázis ingyenes része (README, About, `release.yml`, updater), majd
+egyetlen új telepítő és az A kör Windows Sandboxban. Az "Unlimited" Avatar
+III az API-ra nem vonatkozik (DECISIONS 101).
+
+Régebbi sorrend: utána a 3. fázis (pilot).
 
 ## Előtte (2026-10-06)
 

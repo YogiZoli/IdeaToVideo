@@ -95,10 +95,12 @@ function writePending(projectDir, pending) {
 }
 
 // Gate 5: make the clips. `which` = ["open", "close"] or one of them.
-export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", "close"], look, layout: wanted, env = process.env, fetchImpl = fetch, sleep, onProgress = () => {} }) {
+export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", "close"], look, layout: wanted, engine: wantedEngine, lookEngines, env = process.env, fetchImpl = fetch, sleep, onProgress = () => {} }) {
   const layout = normalizeLayout(wanted);
   let format = layout.style === "cutout" ? "webm" : "mp4";
-  let note = null;
+  const pick = heygen.chooseEngine(wantedEngine, lookEngines);
+  const engine = pick.engine;
+  let note = pick.note;
   if (!lookId) throw new Error("Choose an avatar first.");
   const plan = await avatarPlan(projectDir, { env });
   const chosen = plan.segments.filter((s) => which.includes(s.name));
@@ -114,7 +116,7 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
   for (const [i, seg] of chosen.entries()) {
     onProgress({ step: "upload", segment: seg.label, n: i + 1, of: chosen.length });
     const audio = await cutNarration(projectDir, seg, path.join(dir, `${seg.name}.mp3`), { env });
-    const key = createHash("sha256").update(JSON.stringify({ lookId, audio: createHash("sha256").update(fs.readFileSync(audio)).digest("hex"), background, style: layout.style })).digest("hex").slice(0, 32);
+    const key = createHash("sha256").update(JSON.stringify({ lookId, engine, audio: createHash("sha256").update(fs.readFileSync(audio)).digest("hex"), background, style: layout.style })).digest("hex").slice(0, 32);
     const before = pending[seg.name];
     if (before?.key === key && before.id) {
       if (before.note) note = before.note;
@@ -127,15 +129,15 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
     let id;
     let fmt = format;
     try {
-      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", fetchImpl }), retry);
+      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", engine, fetchImpl }), retry);
     } catch (e) {
       // an older look without background removal: a card instead, said plainly
       if (format !== "webm" || !heygen.noMatting(e)) throw e;
       format = "mp4";
       fmt = "mp4";
       layout.style = "card";
-      note = "This look has no background removal at HeyGen, so it is shown as a card instead of a cut-out.";
-      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, fetchImpl }), retry);
+      note = [note, "This look has no background removal at HeyGen, so it is shown as a card instead of a cut-out."].filter(Boolean).join(" ");
+      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, engine, fetchImpl }), retry);
     }
     pending[seg.name] = { key, id, format: fmt, note, at: new Date().toISOString() };
     writePending(projectDir, pending);
@@ -157,7 +159,7 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
     }
     done.push({ name: seg.name, label: seg.label, start: seg.start, duration: seg.duration, file: `avatar/${seg.name}.${fmt}`, videoId: id, ...(reused ? { reused: true } : {}) });
   }
-  const record = { lookId, background, format: jobs.some((j) => j.format === "webm") ? "webm" : "mp4", layout, note, voBytes: voBytes(projectDir), segments: done, at: new Date().toISOString() };
+  const record = { lookId, engine, background, format: jobs.some((j) => j.format === "webm") ? "webm" : "mp4", layout, note, voBytes: voBytes(projectDir), segments: done, at: new Date().toISOString() };
   fs.writeFileSync(avatarJson(projectDir), JSON.stringify(record, null, 2) + "\n");
   fs.rmSync(pendingFile(projectDir), { force: true });
   return record;

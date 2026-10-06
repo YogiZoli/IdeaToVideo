@@ -40,7 +40,7 @@ import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as nor
 import { segmentVoice, segmentVideo } from "./cta/make.mjs";
 import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
 import { describeClip } from "./footage/describe.mjs";
-import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
+import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
 import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "./cta/catalog.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
 import { cardFromTokens } from "./brand/tokens.mjs";
@@ -518,15 +518,43 @@ const commands = {
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
-  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, perKeyword: SEGMENTS_PER_KEYWORD }),
+  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, maxText: SEGMENT_TEXT_MAX, perKeyword: SEGMENTS_PER_KEYWORD }),
   "segment-add": async ({ identityDir, file, keyword, name, text }) => ({ segment: await addSegment({ identityDir, file, keyword, name, text, source: "upload" }) }),
   "segment-remove": async ({ identityDir, id }) => removeSegment(identityDir, id),
   // A segment made in the app: the narrator reads the sentence (its key),
   // then HeyGen makes the avatar video on it (the HeyGen key).
   "segment-voice": async ({ identityDir, narrator, text, language }) => segmentVoice({ identityDir, narrator, apiKey: key(), text, language }),
-  "segment-make": async ({ identityDir, lookId, audio, keyword, name, text }) => ({
-    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, text, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "segment-make": async ({ identityDir, lookId, audio, keyword, name, text, engine, lookEngines }) => ({
+    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, text, engine, lookEngines, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
   }),
+
+  // A clip made in HeyGen itself (the web app or an earlier run) becomes a
+  // segment: the account's finished videos, then the chosen one downloaded
+  // (reads only, no cost; DECISIONS 101). Pictures are cached locally like
+  // the avatar previews.
+  "segment-import-list": async ({ identityDir }) => {
+    const videos = await heygen.listVideos({ apiKey: key() });
+    const have = new Set(loadSegments(identityDir).map((s) => s.heygenId).filter(Boolean));
+    const dir = path.join(dataDir(), "avatar-previews");
+    const queue = [...videos];
+    const worker = async () => {
+      for (let v = queue.shift(); v; v = queue.shift()) {
+        try {
+          v.image = v.image ? await heygen.cachePreview({ url: v.image, dir }) : null;
+        } catch {
+          v.image = null;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: 6 }, worker));
+    return { videos: videos.map(({ url, ...v }) => ({ ...v, tooLong: v.seconds != null && v.seconds > SEGMENT_MAX_SECONDS, imported: have.has(v.id) })), maxSeconds: SEGMENT_MAX_SECONDS };
+  },
+  "segment-import": async ({ identityDir, id, keyword, name, text }) => {
+    const dir = segmentsDir(identityDir);
+    const file = incomingName(".mp4");
+    const got = await heygen.downloadVideo({ apiKey: key(), id, out: path.join(dir, file) });
+    return { segment: await addSegment({ identityDir, file, keyword, name: name || got.title, text, source: "heygen-import", heygenId: id }) };
+  },
 
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
 
@@ -785,7 +813,7 @@ const commands = {
 
   "avatar-preview": async ({ url }) => ({ file: await heygen.cachePreview({ url, dir: path.join(dataDir(), "avatar-previews") }) }),
 
-  "avatar-plan": async ({ projectDir }) => {
+  "avatar-plan": async ({ projectDir, engine }) => {
     const plan = await avatarPlan(projectDir);
     let account = null;
     try {
@@ -794,23 +822,28 @@ const commands = {
       account = { error: String(e.message) };
     }
     const seconds = plan.segments.reduce((n, s) => n + s.duration, 0);
-    return { ...plan, estimate: heygen.estimateUsd(seconds), account };
+    return {
+      ...plan,
+      estimate: heygen.estimateUsd(seconds, engine),
+      estimates: Object.fromEntries(heygen.ENGINES.map((e) => [e, { ...heygen.estimateUsd(seconds, e), guess: !!heygen.USD_PER_SECOND_BY_ENGINE[e].guess }])),
+      account,
+    };
   },
 
-  "make-avatar": async ({ projectDir, identityDir, lookId, lookName, which, look, layout }) => {
+  "make-avatar": async ({ projectDir, identityDir, lookId, lookName, which, look, layout, engine, lookEngines }) => {
     let project = setGate(loadProject(projectDir), "avatar", { state: "running", mode: "custom" });
     saveProject(projectDir, project);
-    appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}`);
+    appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}, engine ${heygen.chooseEngine(engine, lookEngines).engine}`);
     try {
       const plan = await avatarPlan(projectDir);
       const seconds = plan.segments.filter((s) => (which ?? []).includes(s.name)).reduce((n, s) => n + s.duration, 0);
-      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, layout, onProgress: (p) => emit({ event: "progress", ...p }) }));
+      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, layout, engine, lookEngines, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = loadProject(projectDir);
       if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
       project = setGate(project, "avatar", { state: "pending", mode: "custom" });
       saveProject(projectDir, project);
       appendLog(projectDir, `avatar: done, ${r.segments.map((s) => `${s.name} ${s.duration}s`).join(", ")}`);
-      rememberUsed(identityDir, { avatar: { lookId, name: lookName ?? null, layout: r.layout } });
+      rememberUsed(identityDir, { avatar: { lookId, name: lookName ?? null, layout: r.layout, engine: r.engine } });
       return { avatar: r, gate: project.gates.avatar, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "avatar", { state: "failed", error: String(e.message).slice(0, 2000) }));
