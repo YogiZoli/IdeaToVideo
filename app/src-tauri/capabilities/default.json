@@ -18,6 +18,7 @@
         { "url": "https://console.x.ai*" },
         { "url": "https://elevenlabs.io/*" },
         { "url": "https://app.heygen.com/*" },
+        { "url": "https://www.heygen.com/terms" },
         { "url": "https://app.vidiq.com/*" },
         { "url": "https://studio.youtube.com/*" }
       ]

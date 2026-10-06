@@ -195,6 +195,10 @@
           "minimum": 0
         }
       }
+    },
+    "syntheticMedia": {
+      "type": "boolean",
+      "description": "A generated clip (AI B-roll) is in the video: answer YouTube Studio's altered or synthetic content question."
     }
   }
 }

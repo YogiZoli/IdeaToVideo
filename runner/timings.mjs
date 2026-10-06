@@ -25,6 +25,8 @@ export const DEFAULTS = {
   render: { perUnit: 1.5, min: 20 }, // per second of video (71 s: 102 s)
   "brand-preview": { perUnit: 3, min: 12 }, // per scene of the sample (5 scenes: 15 s, measured 2026-10-02)
   "motion-preview": { perUnit: 8, min: 30 }, // per scene of the sample, a draft render (6 scenes, 18 s of video)
+  "broll-plan": { perUnit: 25, min: 15 }, // per plan (one AI call, a guess until measured)
+  "broll-make": { perUnit: 45, min: 90 }, // per clip (HeyGen makes them side by side; a guess until the first real clip)
 };
 const KEEP = 5;
 

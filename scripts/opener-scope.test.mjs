@@ -20,11 +20,11 @@ function catalogUrls() {
   return [...src.matchAll(/(?:keyUrl: |^\s+\w+: )"(https:[^"]+)"/gm)].map((m) => m[1]);
 }
 
-// Literal openUrl("https://...") calls in the Svelte files.
+// Literal openUrl("https://...") calls in the Svelte files, in every folder.
 function literalUrls() {
   const dir = path.join(ROOT, "app", "src", "lib");
   return fs
-    .readdirSync(dir)
+    .readdirSync(dir, { recursive: true })
     .filter((f) => f.endsWith(".svelte"))
     .flatMap((f) => [...fs.readFileSync(path.join(dir, f), "utf8").matchAll(/openUrl\("(https:[^"]+)"\)/g)].map((m) => m[1]));
 }

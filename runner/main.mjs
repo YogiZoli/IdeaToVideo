@@ -48,6 +48,9 @@ import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gate
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
 import { friendlyMessage } from "./friendly.mjs";
+import { planBroll, estimateBroll, makeBroll, updateItem as updateBroll, againItem as againBroll, removeItem as removeBroll, attach as attachBroll, loadPlan as loadBrollPlan, usesGenerated } from "./broll/index.mjs";
+import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP } from "./broll/settings.mjs";
+import { choices as brollChoices } from "./generate/index.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -211,6 +214,40 @@ function edited(projectDir, gate) {
   return project;
 }
 
+// The scene table's footage changed (AI B-roll): a preview built before is
+// stale. The approvals of the scenes and the avatar stay: the timing is the
+// same.
+function previewStale(projectDir) {
+  const project = loadProject(projectDir);
+  if (project.gates.review && project.gates.review.state !== "todo") saveProject(projectDir, setGate(project, "review", { state: "todo" }));
+}
+// After a new scene plan, the B-roll clips already made go back under their
+// sentences (they are paid for); a plan for an earlier voice stays out.
+function brollBack(projectDir) {
+  try {
+    const n = attachBroll(projectDir);
+    if (n) appendLog(projectDir, `broll: ${n} clips laid under their sentences again`);
+  } catch (e) {
+    appendLog(projectDir, `broll: could not lay the clips again, ${e.message}`);
+  }
+}
+// What the Scenes tab shows of AI B-roll: the Identity's settings, this
+// video's plan and the price of what is left to make.
+function brollState(projectDir, identityDir) {
+  const settings = loadBrollSettings(identityDir);
+  const plan = loadBrollPlan(projectDir);
+  const lib = identityDir ? loadLibrary(identityDir) : { clips: [] };
+  const clips = Object.fromEntries((plan?.items ?? []).filter((i) => i.clip).map((i) => [i.id, lib.clips.find((c) => c.id === i.clip) ?? null]));
+  return { settings, plan, estimate: estimateBroll({ projectDir, settings }), clips, footageDir: identityDir ? footageDir(identityDir) : null, ...brollChoices() };
+}
+function moodOf(identityDir) {
+  try {
+    return loadProfile(identityDir)?.transition?.mood ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // The project, with gates left "running" by a closed app or a stopped step
 // marked failed (saved). `live`: the ONE Videos a step really runs in now,
 // from the app's core (jobs.rs); without it the process id decides.
@@ -265,8 +302,11 @@ function latestVideo(projectDir) {
   const base = file.replace(/\.mp4$/, "");
   const chapters = fs.existsSync(`${base}.chapters.txt`) ? fs.readFileSync(`${base}.chapters.txt`, "utf8").trim() : null;
   let calls = null;
+  let syntheticMedia = false;
   try {
-    calls = JSON.parse(fs.readFileSync(`${base}.publish.json`, "utf8")).commentCalls;
+    const pub = JSON.parse(fs.readFileSync(`${base}.publish.json`, "utf8"));
+    calls = pub.commentCalls;
+    syntheticMedia = pub.syntheticMedia === true;
   } catch {
     // rendered before the publishing data existed
   }
@@ -277,6 +317,7 @@ function latestVideo(projectDir) {
     publishFile: fs.existsSync(`${base}.publish.json`) ? `${base}.publish.json` : null,
     comments: fs.existsSync(`${base}.comments.txt`) ? fs.readFileSync(`${base}.comments.txt`, "utf8") : null,
     calls,
+    syntheticMedia,
     youtube: readYoutube(base),
   };
 }
@@ -426,6 +467,54 @@ const commands = {
   "footage-remove": async ({ identityDir, id }) => removeClip(identityDir, id),
   "footage-mode": async ({ identityDir, mode }) => setFootageMode(identityDir, mode),
   "footage-describe": async ({ identityDir, id, llm }) => ({ clip: await describeClip({ identityDir, id, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } }) }),
+
+  // AI B-roll (broll/, generate/, docs/ai-broll.md). The settings are the
+  // Identity's (Settings, Identity, Footage); the plan is the ONE Video's.
+  "broll-settings": async ({ identityDir }) => ({ settings: loadBrollSettings(identityDir), cap: BROLL_CAP, ...brollChoices() }),
+  "broll-settings-save": async ({ identityDir, settings }) => ({ settings: saveBrollSettings(identityDir, settings) }),
+  "broll-state": async ({ projectDir, identityDir }) => brollState(projectDir, identityDir),
+  "broll-plan": async ({ projectDir, identityDir, llm }) => {
+    const settings = loadBrollSettings(identityDir);
+    if (!settings.enabled) throw new Error("AI B-roll is off. Turn it on in Settings, Identity, Footage.");
+    appendLog(projectDir, `broll: planning with ${llm.provider}/${llm.model || "default model"}`);
+    const identity = identityDir ? { card: loadCard(identityDir).card, mood: moodOf(identityDir) } : {};
+    const r = await logged(projectDir, "broll: planning", () =>
+      timed("broll-plan", 1, emit, () => planBroll({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, settings, identity, library: identityDir ? loadLibrary(identityDir) : null, language: loadProject(projectDir).language, onProgress: (p) => emit({ event: "progress", ...p }) })),
+    );
+    appendLog(projectDir, `broll: planned ${r.plan.items.length} clips${r.note ? `, ${r.note}` : ""}`);
+    return { ...brollState(projectDir, identityDir), note: r.note ?? null };
+  },
+  "broll-estimate": async ({ projectDir, identityDir, ids = null }) => ({ estimate: estimateBroll({ projectDir, settings: loadBrollSettings(identityDir), ids }) }),
+  // The HeyGen account's balance, next to the estimate (like the avatar's).
+  "broll-balance": async () => ({ account: await heygen.balance({ apiKey: key() }) }),
+  "broll-make": async ({ projectDir, identityDir, ids = null, allowOverCap = false }) => {
+    const settings = loadBrollSettings(identityDir);
+    if (!settings.enabled) throw new Error("AI B-roll is off. Turn it on in Settings, Identity, Footage.");
+    const est = estimateBroll({ projectDir, settings, ids });
+    appendLog(projectDir, `broll: making ${est.items} clips with ${settings.generator} ${settings.quality}, about ${est.usd.toFixed(2)} USD${allowOverCap ? ", over the limit with the user's yes" : ""}`);
+    const r = await logged(projectDir, "broll: making", () =>
+      timed("broll-make", Math.max(1, est.items), emit, () => makeBroll({ projectDir, identityDir, apiKey: key(), settings, ids, allowOverCap, onProgress: (p) => emit({ event: "progress", ...p }) })),
+    );
+    previewStale(projectDir);
+    return { ...brollState(projectDir, identityDir), made: r.made, fromLibrary: r.fromLibrary, failed: r.failed };
+  },
+  "broll-update": async ({ projectDir, identityDir, id, prompt, use }) => {
+    updateBroll(projectDir, id, { prompt, use });
+    if (typeof use === "boolean") previewStale(projectDir);
+    return brollState(projectDir, identityDir);
+  },
+  "broll-again": async ({ projectDir, identityDir, id, prompt }) => {
+    againBroll(projectDir, id, { prompt });
+    previewStale(projectDir);
+    appendLog(projectDir, `broll: ${id} to be made again`);
+    return brollState(projectDir, identityDir);
+  },
+  "broll-remove": async ({ projectDir, identityDir, id }) => {
+    removeBroll(projectDir, id);
+    previewStale(projectDir);
+    appendLog(projectDir, `broll: ${id} removed from the video (kept in the library)`);
+    return brollState(projectDir, identityDir);
+  },
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
@@ -607,6 +696,7 @@ const commands = {
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );
+      brollBack(projectDir);
       project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `scenes: done, ${r.scenes} scenes${r.gaps.length ? `, gaps: ${r.gaps.map((g) => `${g.at} ${g.need}`).join("; ")}` : ""}`);
@@ -626,6 +716,7 @@ const commands = {
     appendLog(projectDir, "scenes: simple plan without AI");
     try {
       const r = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look) });
+      brollBack(projectDir);
       project = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "default" });
       saveProject(projectDir, project);
       appendLog(projectDir, `scenes: simple plan done, ${r.scenes} scenes`);
@@ -788,7 +879,7 @@ const commands = {
   // The render, once, locally, after the contact sheet is approved. Its
   // state goes into project.json (running, done, failed), so a render that
   // failed or was cut off is still seen after a restart.
-  "render-video": async ({ projectDir, quality }) => {
+  "render-video": async ({ projectDir, identityDir, quality }) => {
     if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the preview first.");
     const q = quality === "draft" || quality === "high" ? quality : "standard";
     const mark = (render) => saveProject(projectDir, { ...loadProject(projectDir), render: { ...render, at: new Date().toISOString() } });
@@ -807,7 +898,7 @@ const commands = {
     // Captions and chapters next to the video. A problem here never loses the
     // render: the video is there, the note says what is missing.
     try {
-      const extras = writeExtras(projectDir, r.file, { language: loadProject(projectDir).language, total: r.seconds, project: loadProject(projectDir) });
+      const extras = writeExtras(projectDir, r.file, { language: loadProject(projectDir).language, total: r.seconds, project: loadProject(projectDir), syntheticMedia: usesGenerated(projectDir, identityDir) });
       appendLog(projectDir, `render: captions and chapters written${extras.chaptersNote ? `, ${extras.chaptersNote}` : ""}`);
       return { ...r, ...extras };
     } catch (e) {

@@ -36,6 +36,8 @@ const KEY_JOBS: &[&str] = &[
     "segment-make",
     "footage-describe",
     "youtube-texts",
+    "broll-plan",
+    "broll-make",
 ];
 
 /// Commands that set a gate of a ONE Video "running" while they work.
@@ -229,6 +231,8 @@ fn waiting_text(j: &Job) -> String {
         "make-scenes" | "refill-scene" => "the scene plan",
         "make-avatar" => "the avatar clips",
         "segment-voice" | "segment-make" => "a CTA segment",
+        "broll-plan" => "the B-roll plan",
+        "broll-make" => "the B-roll clips",
         _ => "another job",
     };
     let video = j

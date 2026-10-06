@@ -1,12 +1,39 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-06 (a 2. fázis lezárva, DECISIONS 96-97)
+Frissítve: 2026-10-06 (AI B-roll megépült, branch `ai-broll`, DECISIONS 98-99)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot · 4 kiadás.
 
-## Most (2026-10-06)
+## Most (2026-10-06, este)
+
+**AI B-roll: megépült, Zoltan jóváhagyására vár** (branch `ai-broll`, PR a
+main felé, DECISIONS 98-99, `docs/ai-broll.md` 8). HeyGen Video 1 a meglévő
+HeyGen kulccsal; Settings, Identity, Footage: kapcsoló (alapból ki),
+generátor, minőség (480p, 768p alap, 1080p = HeyGen 2k, háromszoros ár),
+plafon csúszkán (1-10 USD, alap 1), és külön "AI B-roll library". Scenes
+tab: "Make B-roll clips" (AI terv, átírható képleírás, pipa, ár, plafon,
+egyenleg, Make, Make again, Remove). Próba mód a telepítőben ("Test clips
+(free, placeholder)"), így a teljes menet kredit nélkül kipróbálható.
+Valódi HeyGen hívás nem volt. Tesztek: 230 Node, 47 Rust, e2e (a próba
+móddal a renderig).
+
+**Nyitott pontok:**
+1. **Az első valódi HeyGen Video 1 próbaklip** (legfeljebb 5 mp, 768p, kb.
+   0,15 USD, októberben fele): amikor lesz API kredit (1-2 hét), és csak
+   Zoltan kifejezett jóváhagyásával. Ellenőrizni: a rendelés és a letöltés
+   él, a 768p minősége 1080p-s videóban, a valódi ár a számlán (a becslés
+   rendes árral számol), a gyártási idő (a haladásjelző becslése: kb. 45 mp
+   klipenként, tipp), és hogy a HeyGen 402-es "api credits" hibája emberi
+   mondattal jön-e.
+2. A `ci-test-order` branch (cd9a3e9, a CI runner tesztjei a könyvtár
+   letöltése után) **a 4. fázis végén kerül PR-be**, mert Actions percet
+   fogyaszt.
+
+Utána a 3. fázis (pilot).
+
+## Előtte (2026-10-06)
 
 **A 2. fázis lezárva** (DECISIONS 97). Előtte Zoltan c105d15-ös próbájának
 hibái javítva (DECISIONS 96, `feedback/2026-10-06/NOTES.md`): a check a
@@ -17,8 +44,7 @@ tabok szerint); a "Get a key" linkek nyílnak; az elfogyott Claude kredit
 emberi mondattal. Tesztek: 218 Node, 47 Rust, e2e 33/33. SPEC és PRD menet-
 leírása a kódhoz igazítva.
 
-**Következő: AI B-roll, új chatben** (DECISIONS 94-95, `docs/ai-broll.md` 7.
-pont a prompttal). Előtte érdemes egy új telepítővel (a lezárás commitjával)
+**Következő volt: AI B-roll** (kész, lásd fent). Előtte érdemes egy új telepítővel (a lezárás commitjával)
 egy magyar ONE Videót renderig vinni. A Drive tükör a 3. és 4. fázis után
 frissül. A Mac build a 3. és 4. fázis után (DECISIONS 95).
 
@@ -263,10 +289,11 @@ Kész (2026-09-30):
    **A 2. fázis lezárása: kész** (2026-10-06, DECISIONS 96-97): Zoltan
    próbájának hibái javítva, PR a main felé, merge. Utána az AI B-roll.
    **Stock kereső: felfüggesztve** (DECISIONS 93, 95, `docs/stock.md`).
-   **AI B-roll (generált klipek): döntések megvannak, a 2. fázis lezárása
-   után épül, új chatben** (DECISIONS 94, 95, `docs/ai-broll.md`, a 7.
-   pontban a prompt): alapból kikapcsolva, HeyGen Video 1, plafon csúszkán
-   alap 1 USD, az elkészült klipek a Footage alatt újrahasznosíthatóan.
+   **AI B-roll (generált klipek): megépült** (2026-10-06, DECISIONS 94, 95,
+   98, 99, `docs/ai-broll.md` 8): alapból kikapcsolva, HeyGen Video 1,
+   480p, 768p, 1080p, plafon csúszkán alap 1 USD, az elkészült klipek a
+   Footage alatt újrahasznosíthatóan, próba mód. Az első valódi klip a
+   HeyGen kredit után, Zoltan jóváhagyásával.
    Később: az OpenArt kimarad;
    élő előnézet renderelés nélkül (K9 b, Zoltan még nem döntött);
    lokalizáció és fordítás (DECISIONS 86). A PDT import és a Translation

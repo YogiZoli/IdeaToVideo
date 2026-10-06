@@ -250,7 +250,18 @@ export type CtaState = {
 };
 
 // The Identity's own footage (runner/footage/library.mjs).
-export type FootageClip = { id: string; file: string; name: string; description: string; seconds: number; shots: number[]; stills: string[]; source: string; used: { project: string; start: number; end: number }[]; createdAt: string };
+export type FootageClip = { id: string; file: string; name: string; description: string; seconds: number; shots: number[]; stills: string[]; source: string; used: { project: string; start: number; end: number }[]; createdAt: string; generated?: GeneratedInfo };
+/** A clip AI made (runner/broll, AI B-roll). */
+export type GeneratedInfo = { generator: string; label: string; quality: string; aspect: string; prompt: string; seconds: number; usd: number; videoId: string; project: string; test?: boolean; at: string };
+
+// AI B-roll (runner/broll, docs/ai-broll.md).
+export type BrollQuality = "480p" | "768p" | "1080p";
+export type BrollSettings = { schema?: string; enabled: boolean; generator: string; quality: BrollQuality; capUsd: number };
+export type BrollChoices = { generators: { id: string; label: string; test: boolean; usdPerSecond: Record<string, number> }[]; qualities: { id: BrollQuality; label: string; note: string }[] };
+export type BrollItem = { id: string; scene: number; from: string; to: string; said: string; start: number; seconds: number; order: number; prompt: string; library: string | null; use: boolean; state: "planned" | "ordered" | "done" | "failed"; attempt: number; clip?: string | null; file?: string; usd?: number; error?: string | null };
+export type BrollPlan = { schema: string; aspect: string; spentUsd: number; items: BrollItem[]; at: string; stale: boolean };
+export type BrollEstimate = { generator?: string; generatorLabel?: string; test?: boolean; quality?: string; items: number; pending?: number; fromLibrary: number; seconds: number; usd: number; capUsd: number; spentUsd: number; leftUsd: number; overCap: boolean };
+export type BrollState = BrollChoices & { settings: BrollSettings; plan: BrollPlan | null; estimate: BrollEstimate; clips: Record<string, FootageClip | null>; footageDir: string | null; note?: string | null };
 export type FootageState = { mode: "scene" | "background"; clips: FootageClip[]; dir: string; modes: Record<string, string>; maxSeconds: number };
 
 export type DictFinding = { kind: "banned" | "spelling"; term: string; found: string; instead?: string; where: string };

@@ -1090,3 +1090,58 @@
     menet-leírása a kódhoz igazítva (avatar a Preview előtt, Gemini TTS az
     Edge TTS helyett, a könyvtár a 39 archetípus helyett). Következő: AI
     B-roll (DECISIONS 94-95, `docs/ai-broll.md`), utána a 3. fázis (pilot).
+
+
+## 2026-10-06 (AI B-roll)
+
+98. **AI B-roll: Zoltan döntései az építés előtt** (2026-10-06, a HeyGen
+    Video 1 mai leírása után, `docs/ai-broll.md` 8). A 94-95. pontot
+    pontosítja.
+    - **Minőség: 480p, 768p (alap) és 1080p**, a Settings, Identity, Footage,
+      AI B-roll részben. A HeyGen Video 1 csak 480p, 768p és 2k felbontást
+      ad; a "1080p" a 2k klipet rendeli (a 768p árának háromszorosa, csak
+      16:9 és 9:16), és a render 1920x1080-ra kicsinyíti. 2K és 4K videó
+      most nem kell.
+    - **Próba mód a telepítőben:** generátor "Test clips (free,
+      placeholder)", ingyenes teszt-minta a gépen, hogy a menet a HeyGen
+      kredit előtt végigpróbálható legyen. A próbaklip jelölve van, és a
+      jelenet-tervező magától nem teszi videóba.
+    - Ebben a chatben nincs fizetős hívás (Zoltannak most nincs HeyGen API
+      kreditje). Az első valódi próbaklip (legfeljebb 5 mp) a kredit után,
+      Zoltan kifejezett jóváhagyásával.
+    - A Veo illesztő nem épül, csak ha Zoltan külön kéri.
+99. **AI B-roll: megépült** (2026-10-06, branch `ai-broll`). Claude döntései
+    építés közben, Zoltan felülbírálhatja (`docs/ai-broll.md` 8):
+    - Klip nem kerül az első és az utolsó jelenetbe, kommentkérő jelenetbe
+      és saját felvétel alá; legfeljebb a jelenetek harmada, szomszédos
+      jelenetbe soha. Egy klip 1-3 mondat alá kerül egy jeleneten belül
+      (2-15 mp narráció), a `scenes.json` `footage` listájában, mint a saját
+      felvétel (DECISIONS 82), így a build és a render változatlan.
+    - A rendelt hossz egész másodperc, legalább 5 (a HeyGen minimuma). A
+      becslés a rendes árral számol, az októberi féláras akció alatt tehát
+      felfelé téved. Az egyenleg a fiókból jön (`GET /v3/users/me`).
+    - A plafon a videóra elköltött összeget is beszámítja; fölötte a rendelés
+      csak a user külön igenjével megy (`allowOverCap`), magától soha.
+    - Nincs dupla fizetés: `broll/pending.json` a leadott rendelésekkel, és
+      a HeyGen `Idempotency-Key` fejléce (ugyanaz a klip ugyanaz a rendelés).
+      Egy korábbi tervhez leadott rendelés sem vész el (újratervezés vagy új
+      hang közben): a következő Make letölti a könyvtárba, ingyen. A
+      videóra elköltött összeg az újratervezés után is számít a plafonba.
+      A lecsukás szabálya az avataréval azonos (a HeyGen dolgozik).
+    - Remove: ki a videóból, a könyvtárban marad. Make again: új rendelés,
+      előtte ár és kérdés; a régi klip a könyvtárban marad.
+    - Új jelenet-terv után az elkészült klipek visszakerülnek a mondataik
+      alá; új hang után a B-roll terv elavul.
+    - A klip a jelenet-tábla változása: a Preview újra kell, a jelenetek és
+      az avatar jóváhagyása marad.
+    - `publish.json` `syntheticMedia` (a séma bővül, nem törik); a Your video
+      tab a YouTube lépésnél kéri az "Altered or synthetic content" igent,
+      ha egy klip valóságosnak látszik.
+    - A klipek az Identity könyvtárába kerülnek (`source: "generated"`,
+      `generated` rekord: generátor, minőség, képleírás, ár, dátum), és a
+      ONE Video saját példányt kap (`broll/clips/`). Az Identity export a
+      `broll.json` beállítást viszi, a klipeket nem (mint eddig a saját
+      felvételeknél).
+    - A HeyGen feltételei linkként a Settingsben (`www.heygen.com/terms`,
+      az opener engedélyben csak ez az egy cím).
+    Tesztek: 231 Node (13 új), 47 Rust, e2e (a próba móddal a renderig).

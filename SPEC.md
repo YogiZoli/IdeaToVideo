@@ -162,6 +162,8 @@ Projects/<Identity mappája>/2026-09-24_how-to-start/   (2026-10-01 óta, DECISI
   words.json
   scenes.json         3. kapu kimenete (jelenet-tábla)
   avatar/             HeyGen klipek (az Avatar lépés kimenete, a build előtt)
+  broll/              AI B-roll: broll.json (terv, állapot, költés), pending.json,
+                      clips/ (a generált klipek saját példánya; DECISIONS 99)
   build/index.html    gates/build/assemble.mjs
   build/compositions/
   review/contact.png  Preview (kontakt lap)
@@ -313,6 +315,7 @@ elkészült és jóváhagyásra vár, azt jóváhagyja, nem csinálja újra.
 | ElevenLabs | Narrator Voice + időbélyegek; zene (ElevenLabs Music) | opcionális. Alap modell 2026-10-06 óta: Eleven v4 (DECISIONS 96) |
 | Gemini TTS | ingyenes Narrator Voice a Gemini kulccsal | az Edge TTS helyett (nem épült) |
 | HeyGen | avatar klip (natív alfa webm) | opcionális, a user kreditje |
+| HeyGen Video 1 | AI B-roll klip (`POST /v3/models/videos`, 480p, 768p, 2k) | opcionális, alapból kikapcsolva, a meglévő HeyGen kulccsal, plafon videónként (DECISIONS 95, 98, 99, `docs/ai-broll.md`) |
 | vidIQ | kulcsszó adat | opcionális. Nyitott, hogy van-e user-kulcsos API (lásd 12. pont). |
 | YouTube | csak a csatorna URL, publikus adat | nincs OAuth a v1-ben |
 

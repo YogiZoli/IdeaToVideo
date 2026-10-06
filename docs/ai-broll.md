@@ -1,8 +1,12 @@
 # AI B-roll: egyedi, generált klipek a stock helyett (terv)
 
-Állapot: **terv, a döntések megvannak (DECISIONS 95), még nem épül.** A 2.
-fázis lezárása után, külön chatben készül (prompt: 7). A stock
-(`docs/stock.md`) felfüggesztve, csak ez az irány marad.
+Állapot: **megépült (2026-10-06, branch `ai-broll`, DECISIONS 98-99),
+helyettesítő generátorral tesztelve.** Valódi HeyGen hívás még nem volt
+(nincs API kredit); az első próbaklip (legfeljebb 5 mp) Zoltan kifejezett
+jóváhagyásával jön, lásd a STATUS nyitott pontjait. A stock (`docs/stock.md`)
+felfüggesztve, csak ez az irány marad.
+
+A 8. pont írja le, ami megépült, és ahol eltér az eredeti tervtől.
 
 Zoltan döntései (2026-10-06): alapból kikapcsolva; bekapcsolva HeyGen Video 1,
 a Veo csak második, lehet, hogy kimarad; költségplafon videónként egy
@@ -149,3 +153,73 @@ Drive tükör, commit, push, PR a main felé, és állj meg a jóváhagyásomig.
 Fizetős hívást csak az én kifejezett jóváhagyásommal indíts (egy próbaklip,
 legfeljebb 5 mp).
 ```
+
+## 8. Ami megépült (2026-10-06, DECISIONS 98-99)
+
+### A HeyGen Video 1 a hivatalos leírás szerint (developers.heygen.com, 2026-10-06)
+
+| Pont | Leírás |
+|---|---|
+| Rendelés | `POST /v3/models/videos`, `model: "heygen-video-1"`, `mode: "text_to_video"`, `prompt`, `duration` 5-15 mp (egész), `resolution` `480p`, `768p` vagy `2k`, `aspect_ratio` (16:9, 9:16 és mások) |
+| Lekérdezés | `GET /v3/models/videos/{id}`: `pending`, `processing`, `completed`, `failed`, `cancelled`; kész állapotban `video_url` (aláírt link) |
+| Kimenet | MP4, H.264, 24 fps, generált hanggal (AAC); a 768p 16:9-ben 1344x768 |
+| Dupla rendelés | `Idempotency-Key` fejléc: ugyanaz a kulcs 24 órán belül ugyanazt a rendelést adja vissza |
+| Kulcs | csak fizetős API kulccsal (`x-api-key`), a meglévő `heygen` kulcs |
+| Ár | a hivatalos leírásban nincs másodpercenkénti ár, csak hogy a 2k a 768p háromszorosa; az indulási árak: 480p 0,02, 768p kb. 0,03 USD/mp, októberben fele |
+| Kereskedelmi felhasználás | fizetős csomagnál a kimenet a useré, kereskedelmi célra is; a HeyGen licencet kap a tartalomra (a szolgáltatás javítására, modell-tanításra is) |
+
+### Eltérések a tervtől (Zoltan döntései, 2026-10-06, DECISIONS 98)
+
+- **Minőség: 480p, 768p (alap), 1080p.** A HeyGen Video 1-nek nincs 1080p-je:
+  a "1080p" a 2k klipet rendeli (háromszoros ár, csak 16:9 és 9:16), és a
+  render 1920x1080-ra kicsinyíti. A becslés: 480p 0,02, 768p 0,03, 1080p
+  0,09 USD/mp (rendes ár, októberben a valódi fele ennyi).
+- **Próba mód** a telepítőben: Settings, Identity, Footage, AI B-roll,
+  generátor "Test clips (free, placeholder)". Az ffmpeg teszt-mintáját
+  gyártja a HeyGen méretében, ingyen; a klip "test" jelölést kap, és a
+  jelenet-tervező magától soha nem teszi videóba.
+- A Veo illesztő nem épült (Zoltan: csak ha külön kéri).
+
+### Claude döntései építés közben (DECISIONS 99, felülbírálhatók)
+
+- **Hova kerülhet klip:** a jelenet-tábla jelenetei közül nem az első és nem
+  az utolsó (cím és zárás, ott szokott az avatar beszélni), nem kommentkérő
+  jelenet, nem olyan, ahol már saját felvétel van. Legfeljebb a jelenetek
+  harmada (lefelé kerekítve), két szomszédos jelenet soha.
+- **Mondatokhoz kötve:** egy klip egy jeleneten belül 1-3 mondat alá kerül
+  (2-15 mp narráció), a `scenes.json` `footage` listájában, ugyanúgy, mint a
+  saját felvétel. A rendelt hossz egész másodperc, legalább 5.
+- **Tiltott a képleírásban:** szöveg, logó, márkanév, felismerhető valódi
+  ember, kamerába beszélő ember.
+- **A tervező előbb a könyvtárból választ** (ingyen); a könyvtár klipje
+  a leírásával (a képleírás, amiből készült) szerepel.
+- **Nincs dupla fizetés:** a leadott rendelés a `broll/pending.json`-ban és a
+  HeyGen `Idempotency-Key` fejlécével; egy korábbi tervhez leadott rendelés
+  sem vész el, a következő Make a könyvtárba menti.
+- **Remove:** a klip kikerül a videóból, a könyvtárban marad. **Make
+  again:** új rendelés, új áron, a régi klip a könyvtárban marad.
+- Új jelenet-terv után a már elkészült klipek visszakerülnek a mondataik
+  alá (ki vannak fizetve). Új hang után a B-roll terv elavul (a klipek a
+  könyvtárban maradnak, az új terv ingyen használhatja őket).
+- A klip a jelenet-tábla változása: a Preview újra kell, a jelenetek és az
+  avatar jóváhagyása marad (az időzítés ugyanaz).
+- A `publish.json` `syntheticMedia: true`, ha a videóban generált klip van;
+  a Your video tab a YouTube lépésnél egy mondattal szól.
+
+### Fájlok
+
+- `runner/generate/index.mjs` (generátorok, árak, minőségek),
+  `heygen-video.mjs` (HeyGen Video 1), `standin.mjs` (próba mód).
+- `runner/broll/settings.mjs` (Identity: `broll.json`), `broll/index.mjs`
+  (terv, becslés, rendelés, a jelenet-táblába illesztés), `broll/prompt.md`.
+- ONE Video: `broll/broll.json` (terv, állapot, elköltött összeg),
+  `broll/pending.json` (leadott, még le nem töltött rendelések),
+  `broll/clips/` (a klipek saját példánya).
+- Runner parancsok: `broll-settings`, `broll-settings-save`, `broll-state`,
+  `broll-plan`, `broll-estimate`, `broll-balance`, `broll-make`,
+  `broll-update`, `broll-again`, `broll-remove`.
+- UI: `app/src/lib/BrollPanel.svelte` (Scenes tab),
+  `app/src/lib/footage/BrollSettings.svelte` és a Footage oldal "AI B-roll
+  library" része.
+- Tesztek: `runner/broll.test.mjs` (álszolgáltatóval), e2e (próba móddal
+  végig a renderig). UI próba: `scripts/ui-mock` `?broll=1` vagy `?broll=test`.

@@ -16,6 +16,7 @@
   import { running } from "./work.svelte";
   import { tabLabel, type TabId } from "./tabs";
   import StepModel from "./StepModel.svelte";
+  import BrollPanel from "./BrollPanel.svelte";
   import { llmFor } from "./llm";
 
   let { app, dir, gate, voiceApproved, changed, goto, next, saved }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId; saved: (s: AppState) => void } = $props();
@@ -195,7 +196,7 @@
                 {:else}
                   {row.label} <span class="hint" title="There is no other scene of this kind to swap to.">(the only one of its kind)</span>
                 {/if}
-                {#if row.footage}<div class="footage">Your footage plays here</div>{/if}
+                {#if row.footage}<div class="footage">A clip plays here</div>{/if}
                 {#if row.call}
                   <div class="call {row.call.temperature}">Comment call: {row.call.keyword} ({row.call.temperature})</div>
                 {:else}
@@ -239,6 +240,7 @@
         </div>
       {/if}
       {#if table.gaps.length}<p class="hint">For {table.gaps.length} sentence{table.gaps.length > 1 ? "s" : ""} the AI would have liked a scene type the app does not have yet. This is noted in the project log.</p>{/if}
+      <BrollPanel {app} {dir} tableChanged={async () => { await load(); await changed(); }} />
     {/if}
 
     <div class="actionbar">

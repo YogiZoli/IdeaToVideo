@@ -85,6 +85,16 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("segment-remove", None),
     ("segment-voice", Some(&["narrator", "provider"])),
     ("segment-make", Some(&["service"])),
+    ("broll-settings", None),
+    ("broll-settings-save", None),
+    ("broll-state", None),
+    ("broll-plan", Some(&["llm", "provider"])),
+    ("broll-estimate", None),
+    ("broll-balance", Some(&["service"])),
+    ("broll-make", Some(&["service"])),
+    ("broll-update", None),
+    ("broll-again", None),
+    ("broll-remove", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

@@ -13,6 +13,7 @@
   import { runner, errorText, importFootage } from "../api";
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
+  import BrollSettings from "./BrollSettings.svelte";
 
   let { app }: { app: AppState } = $props();
 
@@ -37,6 +38,10 @@
 
   const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
   const usedIn = (c: FootageClip) => new Set(c.used.map((u) => u.project)).size;
+  // AI B-roll clips (source "generated") have their own part of the page.
+  const own = $derived((st?.clips ?? []).filter((c) => c.source !== "generated"));
+  const generated = $derived((st?.clips ?? []).filter((c) => c.source === "generated"));
+  const day = (iso?: string) => (iso ? new Date(iso).toLocaleDateString() : "");
 
   async function add() {
     error = "";
@@ -130,11 +135,11 @@
     {#if busy}<p class="busy">{busy}</p>{/if}
     {#if saved}<p class="saved">{saved}</p>{/if}
 
-    {#if !st.clips.length}
+    {#if !own.length}
       <p>No footage yet.</p>
     {:else}
       <ul class="clips">
-        {#each st.clips as c (c.id)}
+        {#each own as c (c.id)}
           <li>
             <div class="stills">
               {#each c.stills as s (s)}<img src={convertFileSrc(`${st.dir}/${s}`)} alt="" loading="lazy" />{/each}
@@ -160,6 +165,34 @@
   {/if}
 </section>
 
+<BrollSettings {app} />
+
+{#if st && generated.length}
+  <section class="card">
+    <h2>AI B-roll library</h2>
+    <p class="hint">Every clip AI made for your videos. A new video takes a fitting one from here first, for free, and orders only what is missing. The description is what the clip was made from; the planner matches it to your sentences.</p>
+    <ul class="clips">
+      {#each generated as c (c.id)}
+        <li>
+          <div class="stills">
+            {#each c.stills as s (s)}<img src={convertFileSrc(`${st.dir}/${s}`)} alt="" loading="lazy" />{/each}
+          </div>
+          <div class="info">
+            <b>{c.name}{#if c.generated?.test} <span class="tag">test clip</span>{/if}</b>
+            <span class="hint">{c.generated?.label ?? "AI"}, {c.generated?.quality ?? ""}, {clock(c.seconds)}, made {day(c.generated?.at ?? c.createdAt)}{c.generated?.usd ? `, about ${c.generated.usd.toFixed(2)} USD` : ""}, {usedIn(c) ? `used in ${usedIn(c)} video${usedIn(c) === 1 ? "" : "s"}` : "not in a rendered video yet"}</span>
+            <textarea rows="3" maxlength="400" bind:value={drafts[c.id]}></textarea>
+            <div class="row">
+              <button type="button" disabled={!!busy || (drafts[c.id] ?? "") === c.description} onclick={() => saveText(c)}>Save text</button>
+              <span class="spacer"></span>
+              <button type="button" class="ghost" disabled={!!busy} onclick={() => remove(c.id)}>Remove</button>
+            </div>
+          </div>
+        </li>
+      {/each}
+    </ul>
+  </section>
+{/if}
+
 <style>
   .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0; }
   .radio { display: flex; gap: 6px; align-items: center; }
@@ -172,5 +205,7 @@
   .busy { font-weight: 600; }
   .saved { padding: 10px 12px; border-radius: 8px; background: var(--success-surface, #e7f6ec); color: var(--success, #1f7a3a); font-weight: 600; }
   .warn { font-size: 12px; color: var(--danger-text, #a5161b); }
+  .tag { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--muted); color: var(--muted-foreground); }
+  section.card + section.card { margin-top: 16px; }
   @media (max-width: 760px) { .clips li { grid-template-columns: 1fr; } }
 </style>
