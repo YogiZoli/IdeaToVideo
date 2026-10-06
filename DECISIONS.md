@@ -1145,3 +1145,13 @@
     - A HeyGen feltételei linkként a Settingsben (`www.heygen.com/terms`,
       az opener engedélyben csak ez az egy cím).
     Tesztek: 231 Node (13 új), 47 Rust, e2e (a próba móddal a renderig).
+100. **Avatar: motorválasztás és import a HeyGenből, később** (Zoltan,
+    2026-10-06, külön chatben épül). Az app ma nem küld `engine` mezőt, így
+    a HeyGen alapja, az Avatar IV fut. Lesz: választás a Settings, Identity,
+    Voice and avatar oldalon (`avatar_iii`, `avatar_iv`, `avatar_v`, csak
+    amit a look támogat), **alap az Avatar III** (a HeyGen nagyvállalati
+    árlistája szerint kb. hatoda a IV és az V árának; a webes csomag
+    "Unlimited" kerete az API-ra nem vonatkozik). És "Import from HeyGen" a
+    CTA-szegmensekhez a fiók videólistájából (`GET /v3/videos`, ingyenes
+    olvasás). Addig a kész szegmensek letöltve és feltöltve kerülnek be,
+    ez ingyen van.

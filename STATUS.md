@@ -30,6 +30,16 @@ móddal a renderig).
 2. A `ci-test-order` branch (cd9a3e9, a CI runner tesztjei a könyvtár
    letöltése után) **a 4. fázis végén kerül PR-be**, mert Actions percet
    fogyaszt.
+3. **Avatar, külön chatben** (Zoltan, 2026-10-06, DECISIONS 100):
+   motorválasztás a Settings, Identity, Voice and avatar oldalon (Avatar
+   III, IV, V, az `engine` mező; **alap: Avatar III**, a legolcsóbb; csak a
+   look által támogatott motorok, becslés motoronként; ma az app nem küld
+   motort, így a HeyGen alapja, az Avatar IV fut). És "Import from HeyGen"
+   a CTA-szegmensekhez (`GET /v3/videos`, ingyenes; ki kell próbálni,
+   hogy a webes felületen készült videók is benne vannak-e). Addig a
+   GUIDE, COURSE, TRIGGER szegmenst Zoltan a webes HeyGenből tölti le, és
+   feltöltésként adja hozzá (ingyen). Kérdés a próbán: ad-e az Avatar III
+   átlátszó hátterű (WebM) klipet.
 
 Utána a 3. fázis (pilot).
 
