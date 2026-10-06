@@ -16,7 +16,7 @@ plafon csúszkán (1-10 USD, alap 1), és külön "AI B-roll library". Scenes
 tab: "Make B-roll clips" (AI terv, átírható képleírás, pipa, ár, plafon,
 egyenleg, Make, Make again, Remove). Próba mód a telepítőben ("Test clips
 (free, placeholder)"), így a teljes menet kredit nélkül kipróbálható.
-Valódi HeyGen hívás nem volt. Tesztek: 230 Node, 47 Rust, e2e (a próba
+Valódi HeyGen hívás nem volt. Tesztek: 231 Node, 47 Rust, e2e 39/39 (a próba
 móddal a renderig).
 
 **Nyitott pontok:**

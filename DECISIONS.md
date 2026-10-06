@@ -1144,7 +1144,8 @@
       felvételeknél).
     - A HeyGen feltételei linkként a Settingsben (`www.heygen.com/terms`,
       az opener engedélyben csak ez az egy cím).
-    Tesztek: 231 Node (13 új), 47 Rust, e2e (a próba móddal a renderig).
+    Tesztek: 231 Node (13 új), 47 Rust, e2e 39/39 (6 új lépés, a próba
+    móddal a renderig).
 100. **Avatar: motorválasztás és import a HeyGenből, később** (Zoltan,
     2026-10-06, külön chatben épül). Az app ma nem küld `engine` mezőt, így
     a HeyGen alapja, az Avatar IV fut. Lesz: választás a Settings, Identity,
