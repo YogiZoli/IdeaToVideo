@@ -20,6 +20,7 @@ import { ROLES, COMPONENTS, roleOf, paceOf, componentMeta, PACK_COMPONENTS } fro
 import { CALL_FIELDS } from "../script/index.mjs";
 import { catalogForPlanner } from "../../footage/library.mjs";
 import { simplePlan } from "./simple.mjs";
+import { mixRule, MIX_PRESETS, DEFAULT_PRESET } from "../../scenes-profile.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -123,8 +124,9 @@ function readScript(projectDir) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
-export function buildMessages(data, catalog, { pace } = {}) {
-  const system = fs.readFileSync(path.join(here, "prompt.md"), "utf8").replace("{{PACE}}", paceOf(pace).rule);
+export function buildMessages(data, catalog, { pace, mix } = {}) {
+  // mix: the Scenes profile's instruction (scenes-profile.mjs mixRule)
+  const system = fs.readFileSync(path.join(here, "prompt.md"), "utf8").replace("{{PACE}}", paceOf(pace).rule).replace("{{MIX}}", mix || mixRule(MIX_PRESETS[DEFAULT_PRESET].mix));
   const library = catalog.map((c) => ({ component: c.name, role: c.role, what: c.description, ...(c.maxWords ? { maxWords: c.maxWords } : {}), variables: c.variables }));
   const roles = Object.fromEntries(Object.entries(ROLES).map(([id, r]) => [id, r.hint]));
   const user = `LIBRARY\n${JSON.stringify({ roles, components: library }, null, 1)}\nEND LIBRARY\n\nDATA\n${JSON.stringify(data, null, 1)}\nEND DATA\n\nPlan the scenes now. Answer with the JSON object only.`;
@@ -375,7 +377,7 @@ export function writeTable(projectDir, table) {
 }
 
 // Gate 3, Recommended. llm = { provider, apiKey, model, fetchImpl?, sleep? }.
-export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, pace, onProgress = () => {} }) {
+export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, pace, mix = null, onProgress = () => {} }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
@@ -385,7 +387,7 @@ export async function makeScenes({ llm, projectDir, env = process.env, language 
   const clips = footage ? catalogForPlanner(footage) : [];
   if (clips.length) data.footage = clips;
   onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog, { pace }), (a) => {
+  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog, { pace, mix: mix ? mixRule(mix, { pictures: false, video: clips.length > 0 }) : null }), (a) => {
     const r = checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir), pace });
     return { ...r, issues: [...r.issues, ...footageIssues(a?.footage, { sentences, calls, clips })] };
   });

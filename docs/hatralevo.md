@@ -15,8 +15,8 @@ Hátravan:
 1. ~~Ikonok (Lucide, Tabler, Iconoir) a rajzos jelenethez~~: kész (DECISIONS 105).
 2. ~~Kimondott szó és a felirat-stílusok~~: kész (DECISIONS 106; 15 stílus, a 17-ből kettő nem felirat).
 3. ~~A 39 archetípus csomagként, Import és Export~~: kész (DECISIONS 107); a csomag: `C:/Users/gdp/ITV-packs/explainer-archetypes.itvpack`.
-4. Scenes varázsló (bőséges). **Most ez jön.**
-5. Kép és videó források: Pixabay keresés (az Unsplash a jóváhagyása
+4. ~~Scenes varázsló~~: kész (DECISIONS 110).
+5. **Most ez jön:** kép és videó források: Pixabay keresés (az Unsplash a jóváhagyása
    után). A Coverr kivéve (DECISIONS 108).
 6. Egyoldalas angol telepítési leírás.
 7. Egy új telepítő és Zoltan próbája Windows Sandboxban.

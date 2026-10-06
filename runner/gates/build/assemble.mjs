@@ -666,7 +666,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // The whiteboard scenes draw an icon that fits their words, never the same
   // one twice in a video and preferably not one of the Identity's recent ones
   // (icons/, DECISIONS 105). Without the icon sets the preset sketches stay.
-  const icons = pickIcons(scenes, { sentences, recent: look.iconsRecent ?? [], env });
+  const icons = pickIcons(scenes, { sentences, recent: look.iconsRecent ?? [], families: look.scenes?.icons?.families, env });
   const fitted = scenes.map((sc, n) => {
     const comp = components.get(sc.component);
     if (comp.pack) {

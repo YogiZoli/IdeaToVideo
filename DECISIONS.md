@@ -1401,4 +1401,26 @@
       fade-through-jához legközelebbi), Balanced tempó, a kimondott szó
       kiemelve, felirat ki.
     - A fájlok az új telepítővel működnek (csomag-import, Open Sans).
+110. **Scenes varázsló** (Zoltan: "negyedik varázsló, bőséges"; DECISIONS 103):
+    - **Identity-szintű `scenes.json`** (`runner/scenes-profile.mjs`): keverék
+      (szöveg, ikon és rajz, kép, videó, százalékban, 100-ra kiegyenlítve),
+      a kikapcsolt beépített jelenettípusok, az ikoncsaládok sorrendben, a
+      kép- és videóforrások. Az Identity export viszi.
+    - **Hét képernyő:** Start (Balanced, Visual, Drawn, Word-led ajánlatok),
+      Mix (csúszkák, figyelmeztetés, ha egy fajtához nincs forrás), Scene
+      types (szerepenként be és ki, legalább egy marad), Scene packs (a
+      csomagok helyben, Import), Icons (családok minta-ikonokkal, sorrend),
+      Pictures and video (saját felvétel, Pixabay, AI B-roll; AI kép később),
+      Check and save. A tempó a Motion varázslóban marad.
+    - **A be- és kikapcsolás átköltözött a Motion varázslóból** (ott a
+      lépés neve "Scene styles", csak a kinézet maradt). Egy régi Motion
+      profil kikapcsolásai továbbra is érvényesek, és az első Scenes profil
+      átveszi őket.
+    - **A tervező** a keveréket utasításként kapja (prompt `{{MIX}}`); egy
+      fajta, amihez a videónak nincs forrása, a többibe olvad (a kép a
+      Pixabay keresésig az ikonokhoz). A build a profil ikoncsaládjait
+      használja.
+    - Settings, Identity, Scenes: összegzés, "Open Scenes wizard", alatta a
+      csomagok. A `ZG-C2C.identity.zip` a Scenes profilt is hozza.
+    - Próba a böngészős UI-mockban: mind a hét képernyő; tesztek: 262 Node.
 

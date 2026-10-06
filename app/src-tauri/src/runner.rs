@@ -88,6 +88,8 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("segment-import-list", Some(&["service"])),
     ("segment-import", Some(&["service"])),
     ("packs-list", None),
+    ("scenes-state", None),
+    ("scenes-save", None),
     ("pack-import", None),
     ("pack-export", None),
     ("pack-remove", None),

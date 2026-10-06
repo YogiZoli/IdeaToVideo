@@ -29,7 +29,8 @@
   import CtaWizard from "./cta/CtaWizard.svelte";
   import CtaPage from "./cta/CtaPage.svelte";
   import FootagePage from "./footage/FootagePage.svelte";
-  import PacksPage from "./packs/PacksPage.svelte";
+  import ScenesPage from "./scenes/ScenesPage.svelte";
+  import ScenesWizard from "./scenes/ScenesWizard.svelte";
   import { ensureFonts } from "./brand/fontsDom";
   import { runner, exportBrand, importBrand } from "./api";
   import type { BrandState, BrandCard } from "./api";
@@ -54,6 +55,8 @@
   let wizard = $state(false);
   let brandWizard = $state(false);
   let motionWizard = $state(false);
+  let scenesWizard = $state(false);
+  let scenesSaved = $state(0);
   let motionSaved = $state(0);
   let ctaWizard = $state(false);
   let ctaSaved = $state(0);
@@ -226,6 +229,8 @@
 
 {#if brandWizard}
   <BrandWizard {app} onclose={() => (brandWizard = false)} onsaved={brandSaved} />
+{:else if scenesWizard}
+  <ScenesWizard {app} onclose={() => (scenesWizard = false)} onsaved={() => { scenesWizard = false; scenesSaved += 1; message = "Your scenes are saved. Every new scene plan of this Identity uses them."; }} />
 {:else if motionWizard}
   <MotionWizard {app} onclose={() => (motionWizard = false)} onsaved={() => { motionWizard = false; motionSaved += 1; message = "Your motion is saved. Every ONE Video of this Identity uses it from its next build."; }} />
 {:else if ctaWizard}
@@ -355,7 +360,7 @@
     {:else if pageId === "cta"}
       <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
     {:else if pageId === "scenes"}
-      <PacksPage />
+      <ScenesPage refresh={scenesSaved} onopen={() => { message = ""; scenesWizard = true; }} />
     {:else if pageId === "footage"}
       <FootagePage {app} />
     {:else if pageId === "dictionary"}

@@ -38,6 +38,9 @@ import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendM
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
 import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi, endScreenOf, loadLast, saveLast } from "./cta/profile.mjs";
 import { segmentVoice, segmentVideo } from "./cta/make.mjs";
+import { FAMILIES as ICON_FAMILIES, loadFamily as loadIconFamily } from "./icons/index.mjs";
+import { ROLES as SCENE_ROLES, COMPONENTS as SCENE_COMPONENTS } from "./gates/scenes/roles.mjs";
+import { loadScenes as loadScenesProfile, saveScenes as saveScenesProfile, MIX_PRESETS, KINDS, KIND_LABELS, PICTURE_SOURCES } from "./scenes-profile.mjs";
 import { listPacks, importPack, exportPack, removePack, writeState as writePackState, registerPacks } from "./packs/index.mjs";
 import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
 import { describeClip } from "./footage/describe.mjs";
@@ -121,7 +124,8 @@ const key = () => process.env.STUDIO_API_KEY || "";
 function lookOf({ identityDir, look }) {
   if (!identityDir) return look;
   const { card } = loadCard(identityDir);
-  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion: motionOf(identityDir), footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
+  const motion = motionOf(identityDir);
+  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion, scenes: loadScenesProfile(identityDir, { motionOff: motion?.scenes?.off ?? [] }).profile, footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
 }
 
 // The icons the Identity's other videos draw (<identity>/icons-used.json, one
@@ -209,7 +213,8 @@ function loadCtaChecked(identityDir) {
     throw new Error(`The CTA profile cannot be used: ${e.message} Open Settings, Identity, CTA to fix it.`);
   }
 }
-const offOf = (look) => (typeof look === "object" ? look?.motion?.scenes?.off ?? [] : []);
+// scene types turned off: the Scenes profile, and an old Motion profile's list
+const offOf = (look) => (typeof look === "object" ? [...new Set([...(look?.motion?.scenes?.off ?? []), ...(look?.scenes?.off ?? [])])] : []);
 // How often the picture changes (the Motion profile, roles.mjs PACES).
 const paceOfLook = (look) => (typeof look === "object" ? look?.motion?.pace ?? undefined : undefined);
 
@@ -579,6 +584,46 @@ const commands = {
     return { segment: await addSegment({ identityDir, file, keyword, name: name || got.title, text, source: "heygen-import", heygenId: id }) };
   },
 
+  // The Scenes wizard (scenes-profile.mjs, DECISIONS 110): the profile and
+  // every choice, with what this Identity has (footage, packs).
+  "scenes-state": async ({ identityDir }) => {
+    const motion = identityDir ? motionOf(identityDir) : null;
+    const { profile, saved } = loadScenesProfile(identityDir, { motionOff: motion?.scenes?.off ?? [] });
+    let footage = 0;
+    try {
+      footage = (loadLibrary(identityDir).clips ?? []).filter((c) => c.source !== "generated").length;
+    } catch {
+      footage = 0;
+    }
+    const SAMPLE = ["lightbulb", "rocket", "calendar", "mail", "target", "users", "chart-bar", "clock", "heart", "message-circle"];
+    const icons = ICON_FAMILIES.map((id) => {
+      const fam = loadIconFamily(id);
+      const sample = fam ? SAMPLE.map((n) => fam.icons[n] ?? Object.entries(fam.icons).find(([k]) => k.startsWith(n))?.[1]).filter(Boolean).slice(0, 8).map((i) => i.d) : [];
+      return { id, label: fam?.label ?? id, license: fam?.license ?? "", count: fam ? Object.keys(fam.icons).length : 0, sample };
+    });
+    const roles = Object.entries(SCENE_ROLES)
+      .filter(([r]) => r !== "closing")
+      .map(([r, meta]) => ({ role: r, label: meta.label, hint: meta.hint, components: Object.entries(SCENE_COMPONENTS).filter(([, c]) => c.role === r && !c.retired).map(([name, c]) => ({ name, label: c.label })) }))
+      .filter((r) => r.components.length);
+    return {
+      profile,
+      saved,
+      options: {
+        presets: Object.entries(MIX_PRESETS).map(([id, p]) => ({ id, ...p })),
+        kinds: KINDS.map((k) => ({ id: k, label: KIND_LABELS[k] })),
+        roles,
+        icons,
+        sources: Object.entries(PICTURE_SOURCES).map(([id, s]) => ({ id, label: s.label, hint: s.hint, kinds: s.kinds, later: Boolean(s.later) })),
+        footage,
+        pace: motion?.pace ?? "balanced",
+      },
+    };
+  },
+  "scenes-save": async ({ identityDir, profile }) => {
+    if (!identityDir) throw new Error("No Identity to save the Scenes profile in.");
+    return { profile: saveScenesProfile(identityDir, profile) };
+  },
+
   // Block packs (packs/, DECISIONS 107), per Identity.
   "packs-list": async ({ identityDir }) => ({
     packs: listPacks(identityDir).map((p) => ({ id: p.id, name: p.name, author: p.author ?? "", version: p.version ?? "", description: p.description ?? "", look: p.look, on: p.on, followBrand: p.followBrand, off: p.off, blocks: p.blocks.map((b) => ({ id: b.id, label: b.label, role: b.role, what: b.what ?? "", needs: b.needs ?? [], realOnly: Boolean(b.realOnly) })) })),
@@ -756,6 +801,7 @@ const commands = {
           themeIsLight: isLightLook(look),
           off: offOf(look),
           pace: paceOfLook(look),
+          mix: typeof look === "object" ? look?.scenes?.mix ?? null : null,
           footage: typeof look === "object" ? look?.footage ?? null : null,
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),

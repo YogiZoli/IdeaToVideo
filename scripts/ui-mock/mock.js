@@ -279,6 +279,10 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "segment-import-list") return { maxSeconds: 30, videos: [{ id: "v1", title: "Comment GUIDE below", seconds: 8.4, createdAt: 1760000000, image: null, tooLong: false, imported: false }, { id: "v2", title: "Comment COURSE below", seconds: 9.1, createdAt: 1760000100, image: null, tooLong: false, imported: false }, { id: "v3", title: "Comment TRIGGER below", seconds: 7.7, createdAt: 1760000200, image: null, tooLong: false, imported: true }, { id: "v4", title: "Full webinar intro", seconds: 74, createdAt: 1760000300, image: null, tooLong: true, imported: false }] };
         if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }
         if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }
+        if (args.command === "scenes-state") return await (await fetch("/scenes-state.json")).json();
+        if (args.command === "scenes-save") return { profile: args.profile };
+        if (args.command === "packs-list") return await (await fetch("/packs-list.json")).json();
+        if (args.command === "pack-state") return { state: { on: true, followBrand: true, off: [], ...args.state } };
         if (args.command === "motion-state") { const m = await (await fetch("/motion-state.json")).json(); return { ...m, profile: motionProfile }; }
         if (args.command === "motion-save") { motionProfile = { ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: motionProfile }; }
         if (args.command === "motion-check") return { profile: args.request.profile };

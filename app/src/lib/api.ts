@@ -230,6 +230,22 @@ export type MotionOptions = {
   captions?: { id: string; label: string; hint: string; calm: boolean; image: string | null }[];
   scenes: { role: string; label: string; hint: string; components: { name: string; label: string; description: string; style: MotionStyleVar[] }[] }[];
 };
+/** The Identity's Scenes profile (runner/scenes-profile.mjs, DECISIONS 110). */
+export type SceneKind = "text" | "icon" | "image" | "video";
+export type ScenesProfile = { schema: "scenes-profile/1"; preset: string; mix: Record<SceneKind, number>; off: string[]; icons: { families: string[] }; pictures: { sources: string[] }; updatedAt?: string };
+export type ScenesState = {
+  profile: ScenesProfile;
+  saved: boolean;
+  options: {
+    presets: { id: string; label: string; hint: string; mix: Record<SceneKind, number> }[];
+    kinds: { id: SceneKind; label: string }[];
+    roles: { role: string; label: string; hint: string; components: { name: string; label: string }[] }[];
+    icons: { id: string; label: string; license: string; count: number; sample: string[][] }[];
+    sources: { id: string; label: string; hint: string; kinds: SceneKind[]; later: boolean }[];
+    footage: number;
+    pace: string;
+  };
+};
 export type MotionState = { profile: MotionProfile | null; recommended: { mood: string; energy?: string; reason: string | null }; start: MotionProfile; light: boolean; options: MotionOptions };
 export type MotionPreview = { file: string; seconds: number; renderSeconds: number; notes: string[]; transitions: string[] };
 

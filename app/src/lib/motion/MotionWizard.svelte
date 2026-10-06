@@ -22,7 +22,7 @@
     { id: "background", title: "Background" },
     { id: "camera", title: "Camera" },
     { id: "captions", title: "Captions" },
-    { id: "scenes", title: "Scenes" },
+    { id: "scenes", title: "Scene styles" },
     { id: "preview", title: "Preview and save" },
   ];
   const language = $derived(app.config?.channel.contentLanguage ?? "en");
@@ -231,14 +231,14 @@
         {/each}
       </div>
     {:else if step === 5}
-      <p class="lead">Which scene types the AI may use, and how they look. Each kind keeps at least one. The closing scenes are set in the CTA wizard.</p>
+      <p class="lead">How each scene type looks. Which scene types the AI may use is set in the Scenes wizard; the closing scenes in the CTA wizard.</p>
       {#each st.options.scenes as r (r.role)}
         <section class="role">
           <h2>{r.label} <span class="hint">{r.hint}</span></h2>
           {#each r.components as c (c.name)}
             {@const on = !profile.scenes.off.includes(c.name)}
             <div class="comp">
-              <label class="check"><input type="checkbox" checked={on} disabled={on && onCount(r.role) <= 1} onchange={(e) => setOff(c.name, e.currentTarget.checked)} /> <b>{c.label}</b></label>
+              <b>{c.label}{on ? "" : " (turned off in the Scenes wizard)"}</b>
               <span class="hint">{c.description}</span>
               {#if on}
                 {#each c.style as v (v.id)}
@@ -289,7 +289,7 @@
   .pick { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   .field { display: grid; gap: 4px; }
   .field.small { grid-template-columns: 140px 1fr; align-items: center; margin-left: 24px; }
-  .radio, .check { display: flex; gap: 6px; align-items: center; }
+  .radio { display: flex; gap: 6px; align-items: center; }
   .role { display: grid; gap: 8px; }
   .role h2 .hint { font-weight: 400; font-size: 13px; margin-left: 8px; color: var(--muted-foreground); }
   .comp { display: grid; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--border); }

@@ -24,6 +24,7 @@ decoration.
   contain the keyword exactly as given, in capital letters; button_label is
   the keyword. When DATA has comment calls, cta-close is used for them only.
 - Never the same component in two scenes in a row. Mix the roles.
+- {{MIX}}
 - Keep the picture moving with the voice, never a slideshow of headlines:
   when a sentence names two or more things, use a list (their items appear
   as the voice says them); when it explains an idea, use the whiteboard
