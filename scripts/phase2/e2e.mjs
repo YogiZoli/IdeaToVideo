@@ -18,6 +18,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createProject, loadProject, saveProject, setGate } from "../../runner/project.mjs";
 import { makeScenes } from "../../runner/gates/scenes/index.mjs";
+import { planBroll } from "../../runner/broll/index.mjs";
 import { callColor } from "../../runner/gates/build/assemble.mjs";
 import { cardForPreset, cardTheme } from "../../runner/brand/card.mjs";
 import { resolveBrowser, hfHome } from "../../runner/tools.mjs";
@@ -183,6 +184,25 @@ const cacheBefore = cached();
   const table = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8"));
   fs.writeFileSync(path.join(dir, "scenes.json"), JSON.stringify({ ...table, footage: [{ from: "S2", clip: clip.id }] }, null, 2));
 }
+// AI B-roll (docs/ai-broll.md) with the free test generator: the settings
+// through the runner, the plan from a stand-in LLM, the clip made by the real
+// broll-make command (no key, no money), into the library and under S4.
+{
+  const on = runner("broll-settings-save", { identityDir, settings: { enabled: true, generator: "test", quality: "768p", capUsd: 1 } });
+  check("AI B-roll: on, with the test clips", on.event === "result" && on.data.settings.generator === "test" && fs.existsSync(path.join(identityDir, "broll.json")));
+  const answer = { clips: [{ scene: 3, from: "S4", prompt: "Hands type on a laptop keyboard on a wooden desk, a notebook and a coffee cup beside it, soft morning light from a window. Slow push in, shallow depth of field, warm tones with coral accents. Photographic, natural, calm, one continuous shot." }] };
+  const llmFetch = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ choices: [{ message: { content: JSON.stringify(answer) } }] }) });
+  const { loadSettings } = await import("../../runner/broll/settings.mjs");
+  const { loadLibrary } = await import("../../runner/footage/library.mjs");
+  const planned = await planBroll({ llm: { provider: "gemini", apiKey: "stand-in", fetchImpl: llmFetch, sleep: async () => {} }, projectDir: dir, settings: loadSettings(identityDir), library: loadLibrary(identityDir) });
+  check("AI B-roll: the plan, one clip under S4", planned.plan.items.length === 1 && planned.plan.items[0].order === 5, JSON.stringify(planned.plan.items.map((i) => [i.from, i.order])));
+  const est = runner("broll-estimate", { projectDir: dir, identityDir });
+  check("AI B-roll: the estimate, free test clips", est.event === "result" && est.data.estimate.items === 1 && est.data.estimate.usd === 0 && !est.data.estimate.overCap);
+  const made = runner("broll-make", { projectDir: dir, identityDir });
+  const table = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8"));
+  const clip = made.data?.plan?.items?.[0]?.clip;
+  check("AI B-roll: the clip is made, in the library and in the scene table", made.event === "result" && made.data.made === 1 && loadLibrary(identityDir).clips.some((c) => c.id === clip && c.source === "generated" && c.generated.test) && table.footage.some((f) => f.from === "S4" && f.clip === clip), made.event === "result" ? `${made.seconds} s` : made.message);
+}
 // A CTA segment (DECISIONS 78), as the voice gate leaves it: its clip in the
 // project, its place in audio/voice.json. The build mounts it muted, full frame.
 {
@@ -195,6 +215,7 @@ const built = runner("build-video", { projectDir: dir, identityDir, look: "blue-
 {
   const html = fs.existsSync(path.join(dir, "build", "index.html")) ? fs.readFileSync(path.join(dir, "build", "index.html"), "utf8") : "";
   check("footage: a muted piece of the clip under S2", /<video id="footage-1" src="footage\/f-1.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "footage", "f-1.mp4")));
+  check("AI B-roll: the generated clip in the build, muted, under S4", /<video id="footage-2" src="footage\/f-2.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "footage", "f-2.mp4")));
   check("CTA: the segment is in the build, muted, full frame",/<video id="segment-middle" src="segments\/middle.mp4" muted/.test(html) && fs.existsSync(path.join(dir, "build", "segments", "middle.mp4")));
 }
 {
@@ -211,12 +232,16 @@ check("gate 4: one still per scene", built.data.stills?.length === 5 && built.da
 check("gate 4: approved", runner("approve-gate", { projectDir: dir, gate: "review" }).event === "result");
 
 // The render, with captions and chapters next to it.
-const rendered = runner("render-video", { projectDir: dir, quality: "draft" });
+const rendered = runner("render-video", { projectDir: dir, identityDir, quality: "draft" });
 check("render", rendered.event === "result" && fs.existsSync(rendered.data?.file ?? ""), rendered.event === "result" ? `${rendered.data.seconds} s of video in ${rendered.seconds} s` : rendered.message);
 check("render: length matches the voice", Math.abs(rendered.data.seconds - TOTAL) < 0.25, `${rendered.data.seconds} s vs ${TOTAL} s`);
 check("captions (.srt) next to the video", fs.existsSync(rendered.data.srt ?? "") && fs.readFileSync(rendered.data.srt, "utf8").includes("Start your first video today."));
 check("brand: no font was downloaded for the build, the stills or the render", cached() === cacheBefore);
 check("YouTube chapters next to the video", rendered.data.chapters?.startsWith("0:00 Intro") === true, (rendered.data.chapters ?? "").replace(/\n/g, " / "));
+{
+  const pub = JSON.parse(fs.readFileSync(rendered.data.publishFile ?? "", "utf8"));
+  check("AI B-roll: the publishing data asks for YouTube's synthetic content answer", pub.syntheticMedia === true && rendered.data.syntheticMedia === true);
+}
 check("the project remembers the video", runner("load-project", { projectDir: dir }).data?.latestVideo?.file === rendered.data.file);
 
 // Backup at level 4 and a restore after the ONE Video is gone (docs/backup.md).

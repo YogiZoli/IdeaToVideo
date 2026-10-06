@@ -111,7 +111,7 @@ export function chapters(sentences, sections, total, language = "en") {
 }
 
 // Writes both files next to the video; returns what the UI shows.
-export function writeExtras(projectDir, videoFile, { language = "en", total, appVersion = null, project = {} } = {}) {
+export function writeExtras(projectDir, videoFile, { language = "en", total, appVersion = null, project = {}, syntheticMedia = false } = {}) {
   const base = videoFile.replace(/\.mp4$/i, "");
   const words = JSON.parse(fs.readFileSync(path.join(projectDir, "words.json"), "utf8"));
   const sentences = JSON.parse(fs.readFileSync(path.join(projectDir, "sentences.json"), "utf8"));
@@ -120,6 +120,6 @@ export function writeExtras(projectDir, videoFile, { language = "en", total, app
   fs.writeFileSync(`${base}.srt`, toSrt([...captionCues(words), ...segmentCues(projectDir)].sort((a, b) => a.start - b.start)));
   const ch = chapters(sentences, sentenceSections(md, sentences), total ?? sentences[sentences.length - 1]?.end ?? 0, language);
   fs.writeFileSync(`${base}.chapters.txt`, ch.text + "\n");
-  const pub = writePublish(projectDir, videoFile, { language, total, chapters: ch.chapters, chaptersText: ch.text, appVersion, project });
-  return { srt: `${base}.srt`, chaptersFile: `${base}.chapters.txt`, chapters: ch.text, chaptersNote: ch.note, ...pub };
+  const pub = writePublish(projectDir, videoFile, { language, total, chapters: ch.chapters, chaptersText: ch.text, appVersion, project, syntheticMedia });
+  return { srt: `${base}.srt`, chaptersFile: `${base}.chapters.txt`, chapters: ch.text, chaptersNote: ch.note, syntheticMedia: !!syntheticMedia, ...pub };
 }

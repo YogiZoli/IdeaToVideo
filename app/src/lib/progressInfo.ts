@@ -30,7 +30,11 @@ export function phaseText(command: string, step: string | undefined): string | n
     backup: "Copying files into the backup folder",
     retry: "The AI service did not answer, trying again",
     fallback: "The AI model is busy, switching to the other model",
+    "broll-order": "Ordering the B-roll clips from HeyGen",
+    "broll-clip": "HeyGen is making the B-roll clips",
   };
+  if (command === "broll-plan" && s === "planning") return "The AI is choosing where B-roll clips go";
+  if (command === "broll-make" && s === "broll-clip") return "Making the B-roll clips";
   if (table[s]) return table[s];
   if (command === "render-video") return "Recording the video frame by frame";
   return null;
@@ -52,6 +56,10 @@ export function costText(command: string, provider?: string): string {
       return "Uses ElevenLabs credits for the music. No AI tokens.";
     case "make-avatar":
       return "Uses HeyGen credits (you approved the estimate). No AI tokens.";
+    case "broll-plan":
+      return "Uses AI tokens from your AI key (a few cents at most). No HeyGen credits yet.";
+    case "broll-make":
+      return "Uses HeyGen credits (you approved the estimate). Clips from your library and test clips are free. No AI tokens.";
     case "avatar-looks":
       return "Free: only reads your HeyGen avatar list. No credits.";
     default:
@@ -62,8 +70,8 @@ export function costText(command: string, provider?: string): string {
 /** Where a step does its work: on this computer, with a service over a live
  * connection, or at a service that keeps working without the app. */
 export function workPlace(command: string): "local" | "online" | "service" {
-  if (command === "make-avatar" || command === "segment-make") return "service";
-  if (["write-script", "make-scenes", "refill-scene", "make-voice", "make-music", "suggest-channel", "youtube-texts", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks"].includes(command)) return "online";
+  if (command === "make-avatar" || command === "segment-make" || command === "broll-make") return "service";
+  if (["broll-plan", "write-script", "make-scenes", "refill-scene", "make-voice", "make-music", "suggest-channel", "youtube-texts", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks"].includes(command)) return "online";
   return "local";
 }
 

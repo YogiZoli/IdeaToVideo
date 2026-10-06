@@ -8,6 +8,8 @@
 // project are approved (default 3), ?slow=<ms> how long a long job takes
 // (default 2500). Long jobs show up in the Jobs list and send progress
 // events, like the real core; window.__emit(event, payload) sends one by hand.
+// AI B-roll (docs/ai-broll.md): ?broll=1 on with HeyGen Video 1, ?broll=test
+// on with the free test clips; both give the Scenes tab a seven-scene table.
 window.__calls = [];
 window.__log = [];
 const q = new URLSearchParams(location.search);
@@ -19,7 +21,7 @@ let video = stage >= 6 ? { file: "/preview/motion.mp4", seconds: 128, renderSeco
 const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.state !== "todo";
 const listeners = {};
 window.__emit = (event, payload) => (listeners[event] ?? []).forEach((h) => window["_" + h]?.({ event, payload, id: 1 }));
-const LONG = { "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
+const LONG = { "broll-plan": 20, "broll-make": 90, "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
 // ?quiet=1: no heartbeat, ?stuck=1: the check-in says stuck (the bar's "no sign of life" line); ?slept=1: the
 // computer slept during the job; Stop (stop_job) ends a job with its reason.
 let nextJob = 10;
@@ -103,6 +105,31 @@ let dictionary = { schema: "dictionary/1", preferred: [{ term: "Owner", note: "c
 async function brandState() {
   const s = await (await fetch("/brand-state.json")).json();
   return brandCard ? { ...s, card: brandCard, own: true } : s;
+}
+// AI B-roll: the Identity's settings, the video's plan, the library.
+const brollOn = q.get("broll");
+let brollSettings = { schema: "itv-broll-settings/1", enabled: !!brollOn, generator: brollOn === "test" ? "test" : "heygen-video-1", quality: "768p", capUsd: 1 };
+const BROLL_GENERATORS = [{ id: "heygen-video-1", label: "HeyGen Video 1", test: false, usdPerSecond: { "480p": 0.02, "768p": 0.03, "1080p": 0.09 } }, { id: "test", label: "Test clips (free, placeholder)", test: true, usdPerSecond: { "480p": 0, "768p": 0, "1080p": 0 } }];
+const BROLL_QUALITIES = [{ id: "480p", label: "480p", note: "cheapest, soft on a 1080p video" }, { id: "768p", label: "768p", note: "the default" }, { id: "1080p", label: "1080p", note: "sharp, three times the 768p price" }];
+let brollPlan = null;
+const brollGenerated = [];
+const SAID = ["You want people to stay after the first ten seconds.", "Most channels lose them right there.", "Picture a small coffee shop at dawn, the first customer at the door.", "The owner looks up and asks one simple question.", "That question changes the whole visit.", "Here is how it works on your channel.", "Comment GUIDE and I send you the checklist."];
+const BROLL_TABLE = { rows: SAID.map((said, i) => ({ index: i, from: `S${i + 1}`, to: `S${i + 1}`, start: i * 6, duration: 6, said, component: ["titlecard-lockup", "per-word-rise", "headline-slam", "per-word-rise", "marker-highlight", "grid-card-assemble", "cta-close"][i], label: ["Title card", "Words rise in", "Headline lands hard", "Words rise in", "Word marked", "Cards in a grid", "Call to action"][i], roleLabel: "", mainVar: null, mainText: null, shows: said.split(" ").slice(0, 3).join(" "), alternatives: [], call: i === 6 ? { slot: "end", keyword: "GUIDE", temperature: "warm" } : null, footage: null })), gaps: [], warnings: [] };
+const brollRate = () => BROLL_GENERATORS.find((g) => g.id === brollSettings.generator).usdPerSecond[brollSettings.quality];
+function brollEstimate(ids = null) {
+  const items = (brollPlan?.items ?? []).filter((i) => i.use && !i.library && i.state !== "done" && (!ids || ids.includes(i.id)));
+  const seconds = items.reduce((t, i) => t + i.order, 0);
+  const usd = Math.round(seconds * brollRate() * 100) / 100;
+  const spent = brollPlan?.spentUsd ?? 0;
+  return { generator: brollSettings.generator, test: brollSettings.generator === "test", quality: brollSettings.quality, items: items.length, pending: 0, fromLibrary: 0, seconds, usd, capUsd: brollSettings.capUsd, spentUsd: spent, leftUsd: Math.max(0, brollSettings.capUsd - spent), overCap: usd > 0 && spent + usd > brollSettings.capUsd };
+}
+function brollState() {
+  const clips = Object.fromEntries((brollPlan?.items ?? []).filter((i) => i.clip).map((i) => [i.id, brollGenerated.find((c) => c.id === i.clip) ?? null]));
+  return { settings: brollSettings, plan: brollPlan, estimate: brollEstimate(), clips, footageDir: "/preview", generators: BROLL_GENERATORS, qualities: BROLL_QUALITIES };
+}
+function brollTable() {
+  const done = (brollPlan?.items ?? []).filter((i) => i.use && i.state === "done");
+  return { ...BROLL_TABLE, rows: BROLL_TABLE.rows.map((r) => ({ ...r, footage: done.find((i) => i.from === r.from)?.clip ?? null })) };
 }
 const jobs = q.get("otherjob") ? [{ id: 1, command: "render-video", identity: "voxflow", identityName: "VoxFlow", project: "C:/P/VoxFlow/2026-10-01_first", state: "running" }] : [];
 const replies = {
@@ -214,6 +241,39 @@ window.__TAURI_INTERNALS__ = {
         // The Identity's footage (runner footage-list).
         // A real scene table, when prepare.mjs or a test put one next to the page.
         if (args.command === "scene-table") { try { const r = await fetch("/scene-table.json"); if (r.ok) return await r.json(); } catch {} }
+        if (args.command === "scene-table" && brollOn) return brollTable();
+        if (args.command === "broll-settings") return { settings: brollSettings, cap: { min: 1, max: 10, step: 0.5, default: 1 }, generators: BROLL_GENERATORS, qualities: BROLL_QUALITIES };
+        if (args.command === "broll-settings-save") { brollSettings = { ...brollSettings, ...args.request.settings, capUsd: Math.min(10, Math.max(1, Math.round(Number(args.request.settings.capUsd) * 2) / 2)) }; return { settings: brollSettings }; }
+        if (args.command === "broll-state") return brollState();
+        if (args.command === "broll-balance") return { account: { kind: "wallet", remaining: 4.88, currency: "usd" } };
+        if (args.command === "broll-estimate") return { estimate: brollEstimate(args.request.ids ?? null) };
+        if (args.command === "broll-plan") {
+          const p = (scene, text) => `A ${text}, seen from the side in soft morning light. Slow push in, shallow depth of field, warm golden tones with deep blue accents from the brand. Photographic, natural, calm, one continuous shot, no text and no logos anywhere in the picture.`;
+          brollPlan = { schema: "itv-broll/1", aspect: "16:9", spentUsd: brollPlan?.spentUsd ?? 0, at: new Date().toISOString(), stale: false, items: [
+            { id: "b1", scene: 2, from: "S3", to: "S3", said: SAID[2], start: 12, seconds: 6, order: 6, prompt: p(3, "small coffee shop at dawn with the first customer opening the glass door"), library: null, use: true, state: "planned", attempt: 0 },
+            { id: "b2", scene: 5, from: "S6", to: "S6", said: SAID[5], start: 30, seconds: 6, order: 6, prompt: p(6, "creator at a desk looking at a laptop screen, hands on the keyboard"), library: null, use: true, state: "planned", attempt: 0 },
+          ] };
+          return { ...brollState(), note: null };
+        }
+        if (args.command === "broll-make") {
+          const e = brollEstimate(args.request.ids ?? null);
+          if (e.overCap && !args.request.allowOverCap) throw `These clips cost about ${e.usd.toFixed(2)} USD; this video's B-roll limit is ${brollSettings.capUsd.toFixed(2)} USD.`;
+          let made = 0;
+          for (const i of brollPlan.items.filter((x) => x.use && x.state !== "done" && (!args.request.ids || args.request.ids.includes(x.id)))) {
+            const id = `g${brollGenerated.length + 1}`;
+            const usd = Math.round(i.order * brollRate() * 100) / 100;
+            brollGenerated.push({ id, file: `${id}.mp4`, name: `${brollSettings.generator === "test" ? "Test clip" : "AI clip"}: ${i.said.slice(0, 60)}`, description: i.prompt, seconds: i.order, shots: [0], stills: ["2.png", "3.png", "4.png"], source: "generated", used: [], createdAt: new Date().toISOString(), generated: { generator: brollSettings.generator, label: BROLL_GENERATORS.find((g) => g.id === brollSettings.generator).label, quality: brollSettings.quality, aspect: "16:9", prompt: i.prompt, seconds: i.order, usd, videoId: id, project: "p", ...(brollSettings.generator === "test" ? { test: true } : {}), at: new Date().toISOString() } });
+            Object.assign(i, { state: "done", clip: id, usd });
+            brollPlan.spentUsd = Math.round((brollPlan.spentUsd + usd) * 100) / 100;
+            made++;
+          }
+          project.gates.review = { state: "todo" };
+          return { ...brollState(), made, fromLibrary: 0, failed: [] };
+        }
+        if (args.command === "broll-update") { const i = brollPlan.items.find((x) => x.id === args.request.id); if (typeof args.request.prompt === "string") i.prompt = args.request.prompt; if (typeof args.request.use === "boolean") i.use = args.request.use; return brollState(); }
+        if (args.command === "broll-again") { const i = brollPlan.items.find((x) => x.id === args.request.id); Object.assign(i, { state: "planned", clip: null, use: true, prompt: args.request.prompt ?? i.prompt, attempt: i.attempt + 1 }); return brollState(); }
+        if (args.command === "broll-remove") { brollPlan.items.find((x) => x.id === args.request.id).use = false; return brollState(); }
+        if (args.command === "footage-list" && brollOn) return { mode: "scene", dir: "/preview", maxSeconds: 600, modes: { scene: "Its own scene: only the footage, full frame", background: "Behind the words: the footage, darkened, with the scene's short text on it" }, clips: [{ id: "f1", file: "f1.mp4", name: "office walk", description: "A person walks through a bright office with a laptop.", seconds: 74.2, shots: [0, 12.5, 31, 47.2], stills: [], source: "upload", used: [{ project: "a", start: 0, end: 6 }], createdAt: "2026-10-05" }, ...brollGenerated] };
         if (args.command === "footage-list") return { mode: "scene", dir: "/preview", maxSeconds: 600, modes: { scene: "Its own scene: only the footage, full frame", background: "Behind the words: the footage, darkened, with the scene's short text on it" }, clips: [{ id: "f1", file: "f1.mp4", name: "office walk", description: "A person walks through a bright office with a laptop.", seconds: 74.2, shots: [0, 12.5, 31, 47.2], stills: [], source: "upload", used: [{ project: "a", start: 0, end: 6 }], createdAt: "2026-10-05" }, { id: "f2", file: "f2.mp4", name: "city timelapse", description: "", seconds: 31, shots: [0], stills: [], source: "upload", used: [], createdAt: "2026-10-05" }] };
         if (args.command === "last-used") return { used: { voice: { provider: "elevenlabs", voice: "v1", name: "Zoltan BD" } } };
         if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }

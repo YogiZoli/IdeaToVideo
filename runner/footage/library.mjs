@@ -81,8 +81,10 @@ async function stills(file, id, dir, seconds, env) {
 }
 
 // A clip the Rust core copied in (import_footage, a temporary name) or a
-// stock download: checked, measured, cut points found, stills made.
-export async function addClip({ identityDir, file, name = "", description = "", source = "upload", credit = null, env = process.env }) {
+// generated one (AI B-roll, broll/index.mjs): checked, measured, cut points
+// found, stills made. `extra`: more fields to keep (a generated clip's
+// `generated` record: generator, quality, prompt, price, date).
+export async function addClip({ identityDir, file, name = "", description = "", source = "upload", credit = null, extra = {}, env = process.env }) {
   const dir = footageDir(identityDir);
   const src = path.join(dir, path.basename(String(file ?? "")));
   const drop = () => fs.rmSync(src, { force: true });
@@ -125,6 +127,7 @@ export async function addClip({ identityDir, file, name = "", description = "", 
     stills: await stills(full, id, dir, seconds, env),
     source,
     ...(credit ? { credit } : {}),
+    ...extra,
     used: [],
     createdAt: new Date().toISOString(),
   };
@@ -191,7 +194,8 @@ export function markPieces(identityDir, project, pieces) {
   saveLibrary(identityDir, lib);
 }
 
-// What the scene planner sees: id, what is on it, how long.
-export const catalogForPlanner = (lib) => lib.clips.filter((c) => c.description).map((c) => ({ id: c.id, about: c.description, seconds: c.seconds }));
+// What the scene planner sees: id, what is on it, how long. A test clip
+// (AI B-roll's free placeholder) is never planned into a video by itself.
+export const catalogForPlanner = (lib) => lib.clips.filter((c) => c.description && !c.generated?.test).map((c) => ({ id: c.id, about: c.description, seconds: c.seconds }));
 
 export const incomingFootage = (ext = ".mp4") => `incoming-${Date.now()}${ext}`;

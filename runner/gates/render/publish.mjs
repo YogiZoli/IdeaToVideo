@@ -27,7 +27,7 @@ const readJson = (projectDir, f) => {
 };
 
 // chapters: [{ start, title }] from export.mjs chapters().
-export function buildPublish(projectDir, videoFile, { language = "en", total, chapters = [], chaptersText = "", appVersion = null, project = {} } = {}) {
+export function buildPublish(projectDir, videoFile, { language = "en", total, chapters = [], chaptersText = "", appVersion = null, project = {}, syntheticMedia = false } = {}) {
   const script = readJson(projectDir, "script.json");
   const sentences = readJson(projectDir, "sentences.json") ?? [];
   const mdFile = path.join(projectDir, "script.md");
@@ -74,6 +74,10 @@ export function buildPublish(projectDir, videoFile, { language = "en", total, ch
     commentCalls: calls,
     // Where YouTube's end screen goes: the silent tail after the last call.
     endScreen: voice.endScreen ?? null,
+    // A generated clip (AI B-roll) is in the video: YouTube Studio's
+    // "altered or synthetic content" question is to be answered yes when a
+    // clip looks real (a person, a place, an event).
+    syntheticMedia: !!syntheticMedia,
   };
 }
 

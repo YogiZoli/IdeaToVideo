@@ -754,13 +754,14 @@ mod tests {
         }
         fs::write(d.join("dictionary.json"), b"{}").unwrap();
         fs::write(d.join("motion.json"), b"{}").unwrap();
+        fs::write(d.join("broll.json"), b"{}").unwrap();
         save(&base, &src).unwrap();
         let out = base.join("Anna.identity.zip");
         export(&base, &src, "IdeaToVideo", &out).unwrap();
         let (ident, files) = read_export(&out).unwrap();
         let mut names: Vec<String> = files.iter().map(|(p, _)| p.to_string_lossy().replace('\\', "/")).collect();
         names.sort();
-        assert_eq!(names, ["brand/FRAME.md", "brand/brand-identity-card.json", "brand/logo-dark.svg", "dictionary.json", "motion.json"]);
+        assert_eq!(names, ["brand/FRAME.md", "brand/brand-identity-card.json", "brand/logo-dark.svg", "broll.json", "dictionary.json", "motion.json"]);
         let new = import(&base, ident, files, &list(&base)).unwrap();
         let nd = dir_of(&base, new["id"].as_str().unwrap()).unwrap();
         assert!(nd.join("brand").join("brand-identity-card.json").exists() && nd.join("dictionary.json").exists() && nd.join("motion.json").exists());

@@ -22,7 +22,7 @@
   import { llmFor } from "./llm";
 
   type Youtube = { titles: string[]; title: string; summary: string; description: string; tags: string[] };
-  type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; publishFile?: string | null; comments?: string | null; youtube?: Youtube | null };
+  type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; publishFile?: string | null; comments?: string | null; youtube?: Youtube | null; syntheticMedia?: boolean };
 
   let {
     app,
@@ -156,6 +156,7 @@
           <button type="button" onclick={openYoutube}>Open YouTube Studio</button>
         </div>
         <p class="hint">YouTube Studio opens in your browser and the video is shown in its folder: drag it into the upload window. Copy the texts below into the upload form.</p>
+        {#if video.syntheticMedia}<p class="synthetic">This video has AI-made B-roll clips. In the upload form, under "Altered or synthetic content", answer <b>Yes</b> if a clip looks real (a real-looking person, place or event). It is also noted in the publishing data.</p>{/if}
         {#if !yt}
           <button type="button" disabled={ytBusy || ytJob} onclick={makeTexts}>{ytBusy || ytJob ? "Writing the texts..." : "Write title, description and tags (AI)"}</button>
         {:else}
@@ -223,4 +224,5 @@
   .good { color: var(--success); margin: 0 0 8px; }
   .note { color: var(--success); font-size: 13px; margin: 0; word-break: break-all; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
+  .synthetic { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
 </style>
