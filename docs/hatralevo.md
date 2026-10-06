@@ -7,7 +7,7 @@ Frissítve: 2026-10-06 este. A sorrend Zoltan döntése (DECISIONS 103).
 Kész:
 - Élénkebb alap: a kamera végig mozog, profil nélkül is (DECISIONS 103).
 - Tempó választható a Motion varázslóban: Calm, Balanced, Fast (104).
-- Pixabay és Coverr kulcsmezők a Footage oldalon (104).
+- Pixabay kulcsmező a Footage oldalon (104; a Coverr kivéve, 108).
 - Avatar motorválasztás, Import from HeyGen, szegmens szöveg 1500 karakter (101).
 - Sampler a 11 presettel, olvashatósági és betűköz javítások, licenclista (102).
 
@@ -16,8 +16,8 @@ Hátravan:
 2. ~~Kimondott szó és a felirat-stílusok~~: kész (DECISIONS 106; 15 stílus, a 17-ből kettő nem felirat).
 3. ~~A 39 archetípus csomagként, Import és Export~~: kész (DECISIONS 107); a csomag: `C:/Users/gdp/ITV-packs/explainer-archetypes.itvpack`.
 4. Scenes varázsló (bőséges). **Most ez jön.**
-5. Kép és videó források: Pixabay és Coverr keresés (az Unsplash a
-   jóváhagyása után).
+5. Kép és videó források: Pixabay keresés (az Unsplash a jóváhagyása
+   után). A Coverr kivéve (DECISIONS 108).
 6. Egyoldalas angol telepítési leírás.
 7. Egy új telepítő és Zoltan próbája Windows Sandboxban.
 

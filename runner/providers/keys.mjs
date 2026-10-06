@@ -7,11 +7,10 @@ import { testVidiq } from "./research/vidiq.mjs";
 const CHECKS = {
   elevenlabs: { label: "ElevenLabs", url: "https://api.elevenlabs.io/v1/user", header: "xi-api-key" },
   heygen: { label: "HeyGen", url: "https://api.heygen.com/v3/users/me", header: "x-api-key" },
-  // Stock (docs/stock.md, DECISIONS 104): one search of three results. Pixabay
+  // Stock (docs/stock.md, DECISIONS 104, 108): one search of three results. Pixabay
   // takes the key only as a query parameter, so the address is built with it
   // and every message is redacted.
   pixabay: { label: "Pixabay", url: (k) => `https://pixabay.com/api/?key=${encodeURIComponent(k)}&q=office&per_page=3` },
-  coverr: { label: "Coverr", url: "https://api.coverr.co/videos?page_size=1", header: "Authorization", bearer: true },
 };
 
 export const KEY_SERVICES = [...Object.keys(CHECKS), "vidiq"];

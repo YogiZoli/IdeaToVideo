@@ -21,8 +21,6 @@
         { "url": "https://www.heygen.com/terms" },
         { "url": "https://app.vidiq.com/*" },
         { "url": "https://pixabay.com/*" },
-        { "url": "https://api.coverr.co/*" },
-        { "url": "https://coverr.co/*" },
         { "url": "https://studio.youtube.com/*" }
       ]
     },

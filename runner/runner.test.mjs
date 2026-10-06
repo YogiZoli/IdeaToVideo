@@ -471,13 +471,12 @@ test("a gate interrupted by a closed app becomes failed on load", async () => {
   assert.equal(recoverInterrupted(old).gates.scenes.state, "failed");
 });
 
-test("stock keys: Pixabay in the address, Coverr as a bearer header, the key never in a message (2026-10-06)", async () => {
+test("stock keys: Pixabay in the address, the key never in a message; no Coverr (2026-10-07)", async () => {
   const seen = [];
   const ok = async (url, init) => (seen.push({ url, init }), { ok: true, status: 200, text: async () => "{}" });
   assert.match((await testServiceKey({ service: "pixabay", apiKey: "pk 1/2", fetchImpl: ok })).message, /Pixabay key works/);
   assert.match(seen[0].url, /^https:\/\/pixabay\.com\/api\/\?key=pk%201%2F2&/);
-  await testServiceKey({ service: "coverr", apiKey: "ck", fetchImpl: ok });
-  assert.equal(seen[1].init.headers.Authorization, "Bearer ck");
+  await assert.rejects(testServiceKey({ service: "coverr", apiKey: "ck", fetchImpl: ok }), /Unknown service/, "Coverr is out (DECISIONS 108)");
   const down = async () => { throw new Error("connect failed for https://pixabay.com/api/?key=secret-123"); };
   await assert.rejects(testServiceKey({ service: "pixabay", apiKey: "secret-123", fetchImpl: down }), (e) => !e.message.includes("secret-123"));
 });

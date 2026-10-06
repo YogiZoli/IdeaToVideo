@@ -1375,3 +1375,9 @@
     - Próba: hét blokk egy videóban, a saját és a Brand kinézettel is,
       build, lint, check 0 hiba; az "arrow" Lucide villanykörte és rakéta
       ikonnal.
+108. **A Coverr kivéve** (Zoltan, 2026-10-07: "semmi copyright kockázatot nem
+    akarok"). Az API leírása szerint az ingyenes hozzáférés nem kereskedelmi
+    célra szól. Kivéve a kulcsmezőt, a kulcslistából, a Test key-ből és az
+    app jogosultságai közül. Stock: Pixabay (kereskedelmi célra is szabad),
+    az Unsplash a jóváhagyása után.
+
