@@ -67,13 +67,12 @@ Zoltan kérése: kérdés nélkül haladni a javaslatok szerint.
   `C:/Users/gdp/ITV-packs/ZG-C2C.identity.zip` (109, `C:/Users/gdp/ITV-packs/README.md`).
 
 **Kész a Scenes varázsló** (DECISIONS 110) **és a Pixabay keresés** (111: a
-Scenes tabon, fotó lassú ráközelítéssel). Kész az egyoldalas angol
-telepítési leírás (`docs/pilot/install-guide.md`) és az új telepítő
-(`C:/Users/gdp/ITV-sandbox/share/IdeaToVideo_0.1.0_981636b_x64-setup.exe`, 106 MB).
-**Következő:** Zoltan bekapcsolja a Windows Sandboxot (rendszergazdai PowerShell,
-`Enable-WindowsOptionalFeature -Online -FeatureName "Containers-DisposableClientVM" -All`,
-újraindítás), utána a próba a `C:/Users/gdp/ITV-sandbox/IdeaToVideo-test.wsb` fájllal
-(a telepítő internetről jöttként jelölve, hogy a SmartScreen is látszódjon).
+Scenes tabon, fotó lassú ráközelítéssel). Kész az egyoldalas angol telepítési leírás (`docs/pilot/install-guide.md`) és az új
+telepítő (`C:/Users/gdp/ITV-sandbox/share/IdeaToVideo_0.1.0_981636b_x64-setup.exe`, 106 MB).
+**A 3. fázis lezárva (2026-10-07):** PR a mainre, Zoltan jóváhagyásával merge; a
+README is kész. A Sandbox-próba elhagyva, a telepítőt Zoltan próbálja, a hibákat megírja.
+**Következő:** Zoltan próbája; a későbbi, ingyenes teendők (updater, `release.yml`,
+`ci-test-order`, a GSAP licenc-kérdés eladás előtt) a `docs/hatralevo.md`-ben.
 
 **Tesztek:** 266 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
 az új funkciók a 4. fázis végi telepítővel próbálhatók (Zoltan döntése).

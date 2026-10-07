@@ -25,21 +25,22 @@ Hátravan:
 
 ## 4. fázis
 
-Ingyenes:
-- README.
-- `release.yml` (megírva, nem indítva).
-- Updater (a kulcspár kész; a privát kulcs Zoltan jelszókezelőjébe).
-- A GSAP licenc-kérdés megfogalmazása (elküldés Zoltan igenjével).
-- A `ci-test-order` PR (pár perc Windows Actions, várhatóan az ingyenes
-  keretben).
-- Kész már: THIRD-PARTY-NOTICES, az About oldal licencsorai.
+Kész: README (2026-10-07), THIRD-PARTY-NOTICES, az About oldal licencsorai.
+
+Később, ingyenes, Zoltan döntése szerint megmarad (2026-10-07):
+- Updater (automatikus frissítés; a kulcspár kész: `C:/Users/gdp/ITV-updater-key`).
+- `release.yml` (a GitHub-os Mac és Windows build).
+- A `ci-test-order` PR (a CI tesztsorrendje).
+- **Eladás előtt kötelező:** a GSAP licenc-kérdés (a no-charge licenc
+  Webflow-versenytárs kitétele egy videót gyártó appra), írásban, elküldés
+  Zoltan igenjével.
+
+Elhagyva: a Windows Sandbox próba (Zoltan, 2026-10-07; a telepítőt ő próbálja).
 
 Fizetős vagy várakozó:
 - Windows aláírás: kb. 10 USD/hó.
 - Apple Developer ID: 99 USD/év.
-- Mac build: macOS Actions perc (lehet, hogy belefér az ingyenes keretbe;
-  futtatás előtt megnézem).
-- Mac kézi teszt: felhős Mac kb. 30 USD/hó, vagy egy barát Macje.
+- Mac build és Mac kézi teszt.
 - Név, cégforma, domain.
 - AI kép (Gemini) és HeyGen API kredit (AI B-roll, avatar próba).
 - A baráti pilot (B kör).
