@@ -1571,3 +1571,35 @@
       `UNSPLASH_ACCESS_KEY` be van állítva.
     - **Production kérelem nem lesz** (Zoltan, 2026-10-08): az Unsplash
       végleg Demo módban marad.
+
+118. **Mac v1, aláíratlan .dmg Apple Silicon gépre** (Zoltan, 2026-10-07 és 08;
+    branch `mac-build`):
+    - **Csak arm64** (`macos-latest`), macOS 11 vagy újabb. Intel Mac nincs:
+      még egy teljes futás kellene, és a pilotban nincs Intel gép.
+    - **Ad-hoc aláírás** (`tauri.conf.json` `signingIdentity: "-"`): Apple
+      Silicon aláírás nélküli kódot nem futtat, és a "damaged" üzenet is
+      ritkább. Apple Developer ID nincs (99 USD/év), a barátok az "Open
+      Anyway" úton nyitják meg (`docs/pilot/install-guide-mac.md`; ha
+      "damaged" jön, `xattr -cr /Applications/IdeaToVideo.app`).
+    - **ffmpeg Apple Silicon Macen: Martin Riedl statikus release buildje,
+      FFmpeg 9.0.2** (`ffmpeg.martin-riedl.de`, rögzített SHA256, a GPL
+      szövege az FFmpeg n9.0.2 tagjéről). Az ffmpeg-static b6.1.1 arm64
+      binárisa valójában 6.0 volt, és hiányzott belőle 11 szűrő, amit a menet
+      használ (overlay, scale, loudnorm, amix...). Ez az első Mac CI futáson
+      derült ki, a `check-ffmpeg` lépésen: e nélkül Macen minden render
+      elbukott volna. Az Intel Mac ffmpeg-static forrása marad (nem építjük).
+      Egy bináris kb. 66 MB, ezért a .dmg nagyobb, mint a Windows telepítő.
+    - **Indítási próba a CI-ban, csak Macen** (`build.yml`, "macOS bundle
+      smoke test"): `codesign --verify --deep --strict`, a bundle-ből indított
+      node, ffmpeg és ffprobe, a runner és az engine megléte, és az app 15
+      mp-ig fut összeomlás nélkül. Kb. 1 perc.
+    - **Kódolvasással ellenőrizve, Macen nem futtatva:** a Keychain
+      (`keyring` `apple-native`, a Publishing token és az Unsplash kulcs is
+      ott), a runner HTTP hívásai (Node `fetch`, platformfüggetlen), az
+      útvonalak (`path.join`, a projektek a `~/Documents` alatt), a render
+      böngésző (a HyperFrames tölti le a `chrome-headless-shell` mac-arm64
+      változatát), a Dock ikon.
+    - **Nincs kipróbálva:** valódi Macen a Gatekeeper menet, a Keychain
+      engedélykérés, a render böngésző letöltése, egy teljes videó a
+      renderig, a Show in folder, az Export diagnostics. Ez a barátok próbáján
+      derül ki; a naplót a `docs/pilot/send-logs.md` szerint küldik.
