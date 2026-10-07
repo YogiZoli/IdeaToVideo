@@ -188,7 +188,7 @@ export const HYPERFRAMES_GROUP = "HyperFrames presets";
 export const exportBrand = (path: string) => call<string>("export_brand", { path });
 export const importFootage = (path: string) => call<string>("import_footage", { path });
 export const importSegment = (path: string) => call<string>("import_segment", { path });
-export const exportPublish = (file: string, path: string) => call<string>("export_publish", { file, path });
+export const exportCard = (file: string, path: string) => call<string>("export_card", { file, path });
 /** A rendered video (and its .srt) out of the project; never overwrites. */
 export const exportVideo = (file: string, path: string) => call<string>("export_video", { file, path });
 export const importBrand = (path: string) => call<BrandCard>("import_brand", { path });

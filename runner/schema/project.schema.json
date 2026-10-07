@@ -12,6 +12,7 @@
     "autopilot": { "type": "boolean" },
     "identity": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$" },
     "createdAt": { "type": "string" },
+    "cardId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "$comment": "the Video Publishing Card id, made once at the first render and kept (DECISIONS 114)" },
     "autopilotRun": {
       "type": "object",
       "$comment": "Finish on Autopilot is under way (the UI goes on with it when the ONE Video is opened again)",

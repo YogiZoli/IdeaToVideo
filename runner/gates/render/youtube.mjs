@@ -1,24 +1,25 @@
-// gates/render/youtube.mjs: the YouTube texts of a rendered video, for the
-// "Upload on YouTube" step (Zoltan, 2026-10-05: title, tags, and the chapters
-// in the description, right next to the YouTube button; the publishing tool
-// keeps doing its own, this is not a duplicate but a shortcut). DECISIONS 86
-// widens DECISIONS 77, which left titles and descriptions to the publishing
-// tool only.
+// gates/render/youtube.mjs: the packaging of a video, its YouTube texts
+// (DECISIONS 86). Made at gate 1, when the script is written, before
+// anything is produced (Zoltan, 2026-10-07): three title ideas, a short
+// summary and the tags. The user picks a title there (it becomes the
+// script's title too) and may edit the summary and the tags. A rewritten
+// script may make new ideas; the user's choice stays until they change it.
 //
-// The AI writes only what needs judgement: three title ideas, a short
-// summary and the tags. Everything the app knows exactly goes into the
-// description by code, never by the AI: the landing page link, the comment
-// keywords with what the viewer gets, and the chapter list with its times.
+// After the render the description is put together by code from the
+// summary and what the app knows exactly, never by the AI: the landing page
+// link, the comment keywords with what the viewer gets, and the chapter list
+// with its times.
 //
-//   out/video-<stamp>.youtube.json   { titles, title, summary, description, tags }
+//   <project>/packaging.json   { schema, titles, title, summary, tags, chosen, at }
 
 import fs from "node:fs";
+import path from "node:path";
 import { chat, extractJson } from "../../providers/llm.mjs";
 
 export const TITLE_MAX = 100; // YouTube's own limit
 export const TAGS_MAX = 500; // YouTube's limit for all tags together, in characters
 
-const SYSTEM = `You write the YouTube upload texts of one video: its title, a short description and the tags.
+const SYSTEM = `You write the YouTube packaging of one video before it is made: title ideas, a short description and the tags.
 
 Rules:
 - Write in the language of the video (DATA language).
@@ -29,7 +30,6 @@ Rules:
 
 Answer with one JSON object only: {"titles": ["...", "...", "..."], "summary": "...", "tags": ["...", "..."]}`;
 
-const clock = (s) => (s === null || s === undefined ? "" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`);
 
 export function issuesOf(a) {
   const issues = [];
@@ -68,20 +68,79 @@ export function description(summary, publish) {
   return parts.join("\n\n") + "\n";
 }
 
-export async function youtubeTexts({ llm, videoFile }) {
-  const base = videoFile.replace(/\.mp4$/i, "");
-  let publish = null;
+export const PACKAGING_SCHEMA = "packaging/1";
+export const SUMMARY_MAX = 1000;
+const packagingFile = (projectDir) => path.join(projectDir, "packaging.json");
+
+export function loadPackaging(projectDir) {
   try {
-    publish = JSON.parse(fs.readFileSync(`${base}.publish.json`, "utf8"));
+    return JSON.parse(fs.readFileSync(packagingFile(projectDir), "utf8"));
   } catch {
-    throw new Error("This video has no publishing data. Render it again, then try once more.");
+    return null;
+  }
+}
+function writePackaging(projectDir, pack) {
+  const p = packagingFile(projectDir);
+  fs.writeFileSync(`${p}.tmp`, JSON.stringify(pack, null, 2) + "\n");
+  fs.renameSync(`${p}.tmp`, p);
+  return pack;
+}
+
+// The chosen title is the script's title too: script.json and the heading
+// of script.md.
+function setScriptTitle(projectDir, title) {
+  const sj = path.join(projectDir, "script.json");
+  if (fs.existsSync(sj)) {
+    const s = JSON.parse(fs.readFileSync(sj, "utf8"));
+    fs.writeFileSync(sj, JSON.stringify({ ...s, title }, null, 2) + "\n");
+  }
+  const md = path.join(projectDir, "script.md");
+  if (fs.existsSync(md)) {
+    const text = fs.readFileSync(md, "utf8");
+    fs.writeFileSync(md, /^# .*$/m.test(text) ? text.replace(/^# .*$/m, `# ${title}`) : `# ${title}\n\n${text}`);
+  }
+}
+
+// New ideas from the AI. Until the user chose, the first idea, the summary
+// and the tags are taken; after that only the ideas change.
+export function mergePackaging(old, answer) {
+  const titles = answer.titles.map((t) => String(t).trim()).filter((t) => t && t.length <= TITLE_MAX).slice(0, 3);
+  const fresh = { titles, title: titles[0], summary: answer.summary.trim().slice(0, SUMMARY_MAX), tags: cleanTags(answer.tags) };
+  if (!old?.chosen) return { schema: PACKAGING_SCHEMA, ...fresh, chosen: false, at: new Date().toISOString() };
+  return { ...old, titles: [...new Set([old.title, ...titles])].slice(0, 4), at: new Date().toISOString() };
+}
+
+// The user's choice: the title (one of the ideas or their own), the
+// summary and the tags.
+export function savePackaging(projectDir, { title, summary, tags }) {
+  const old = loadPackaging(projectDir);
+  if (!old) throw new Error("There is no packaging yet. Make it first.");
+  const t = String(title ?? "").replace(/\s+/g, " ").trim();
+  if (!t) throw new Error("The title is empty.");
+  if (t.length > TITLE_MAX) throw new Error(`The title is longer than ${TITLE_MAX} characters.`);
+  const sum = String(summary ?? "").trim();
+  if (!sum) throw new Error("The summary is empty.");
+  const list = Array.isArray(tags) ? tags : String(tags ?? "").split(",");
+  const pack = writePackaging(projectDir, { ...old, title: t, summary: sum.slice(0, SUMMARY_MAX), tags: cleanTags(list), chosen: true, at: new Date().toISOString() });
+  setScriptTitle(projectDir, t);
+  return pack;
+}
+
+// The AI's part, from the script as written (gate 1).
+export async function makePackaging({ llm, projectDir, language = "en" }) {
+  const md = fs.readFileSync(path.join(projectDir, "script.md"), "utf8");
+  let script = {};
+  try {
+    script = JSON.parse(fs.readFileSync(path.join(projectDir, "script.json"), "utf8"));
+  } catch {
+    // a script written by hand has no script.json
   }
   const data = {
-    language: publish.video?.language ?? "en",
-    workingTitle: publish.video?.title ?? null,
-    searchKeyword: publish.searchKeyword ?? null,
-    chapters: (publish.chapters ?? []).map((c) => `${clock(c.start)} ${c.title}`),
-    script: (publish.script ?? []).map((b) => `${b.heading ? `## ${b.heading}\n` : ""}${b.text}`).join("\n\n").slice(0, 12000),
+    language,
+    workingTitle: script.title ?? md.match(/^# (.*)$/m)?.[1] ?? null,
+    searchKeyword: script.publishing?.searchKeyword ?? null,
+    chapters: [...md.matchAll(/^## (.*)$/gm)].map((m) => m[1]),
+    script: md.slice(0, 12000),
   };
   const messages = [
     { role: "system", content: SYSTEM },
@@ -102,10 +161,24 @@ export async function youtubeTexts({ llm, videoFile }) {
     text = await chat({ ...llm, messages, json: true, temperature: 0.3 });
     answer = extractJson(text);
     issues = issuesOf(answer);
-    if (issues.length) throw new Error(`The YouTube texts did not pass the checks: ${issues.join("; ")}`);
+    if (issues.length) throw new Error(`The packaging did not pass the checks: ${issues.join("; ")}`);
   }
-  const titles = answer.titles.map((t) => t.trim()).filter((t) => t && t.length <= TITLE_MAX).slice(0, 3);
-  const result = { titles, title: titles[0], summary: answer.summary.trim(), description: description(answer.summary, publish), tags: cleanTags(answer.tags) };
-  fs.writeFileSync(`${base}.youtube.json`, JSON.stringify(result, null, 2) + "\n");
-  return { ...result, file: `${base}.youtube.json` };
+  const old = loadPackaging(projectDir);
+  const pack = writePackaging(projectDir, mergePackaging(old, answer));
+  if (!old?.chosen && pack.title) setScriptTitle(projectDir, pack.title);
+  return pack;
+}
+
+// The YouTube texts of a rendered video: the packaging, with the
+// description put together by code. null without packaging.
+export function youtubeTexts(projectDir, videoFile) {
+  const pack = loadPackaging(projectDir);
+  if (!pack) return null;
+  let publish = null;
+  try {
+    publish = JSON.parse(fs.readFileSync(videoFile.replace(/\.mp4$/i, ".card.json"), "utf8"));
+  } catch {
+    publish = null;
+  }
+  return { titles: pack.titles, title: pack.title, summary: pack.summary, description: description(pack.summary, publish), tags: pack.tags };
 }

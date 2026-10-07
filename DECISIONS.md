@@ -840,14 +840,22 @@
     `export_video`, az app teljes ablakban indul. Próba a böngészős
     próbakörnyezetben 1100x620-ban (képek: `feedback/2026-10-05/ui-tabs/`).
     Tesztek: 197 Node, 43 Rust, e2e 33/33.
-86. **YouTube szövegek a kész videó mellett is** (Zoltan, 2026-10-05, K8): a
-    DECISIONS 77 eddig a címet, a leírást és a tageket csak a PDT-nek hagyta.
-    Mostantól a 6. tabon is: runner `youtube-texts`, az AI három cím-ötletet,
-    egy rövid összefoglalót és tageket ír; a leírásba a landing link, a
-    komment-kulcsszavak és a fejezetlista kód írja be, nem az AI;
-    `out/video-<stamp>.youtube.json`. Nem duplikáció: a PDT a sajátját
-    csinálja. A lokalizáció és a fordítás (YouTube API, napi 10000 egység
-    kvóta, egy teljes fordítás kb. 400) később, Zoltan most nem kéri.
+86. **YouTube szövegek: csomagolás a gyártás előtt** (Zoltan, 2026-10-05,
+    K8; frissítve 2026-10-07): a DECISIONS 77 eddig a címet, a leírást és a
+    tageket csak a PDT-nek hagyta. Az app is megírja őket, de **már az 1.
+    kapuban (Script)**: a script írásakor egy kis AI-hívás három
+    cím-ötletet, egy rövid összefoglalót és tageket ír
+    (`<project>/packaging.json`, `runner/gates/render/youtube.mjs`). A
+    user ott választ címet (vagy sajátot ír), szerkeszti az összefoglalót
+    és a tageket; a választott cím a script címe is (`script.json`, a
+    `script.md` fejléce, a projekt neve). Újraírt scriptnél a csomagolás
+    újragenerálható ("New ideas"), de a user választása megmarad, amíg ő
+    nem cseréli; addig csak az ötletlista bővül. A render után a leírás
+    ebből és a pontos adatokból áll össze kóddal (landing link,
+    komment-kulcsszavak, fejezetlista), nem az AI-tól; a Video tabon
+    másolás gombbal. Nem duplikáció: a PDT a sajátját csinálja. A
+    lokalizáció és a fordítás (YouTube API, napi 10000 egység kvóta, egy
+    teljes fordítás kb. 400) később, Zoltan most nem kéri.
 87. **Az app a tálcán él, mint a Claude** (Zoltan, 2026-10-05, A változat):
     az ablak X gombja nem lép ki, csak elrejti az ablakot; az app és minden
     futó munka (render, hang, avatar) megy tovább. Tálca-ikon (Windows: a
@@ -1477,3 +1485,30 @@
     - Az e2e jelenettáblája a 7 mp-es plafon (DECISIONS 103) óta elavult
       volt (S1 és S2 együtt 8 mp): a mainen is elbukott. Javítva, 6
       jelenet; 39/39.
+
+113. **A csomagolás előrekerül az 1. kapuba** (Zoltan, 2026-10-07, a D5
+    visszavonása után): a DECISIONS 86 szerint. A runner parancsai:
+    `packaging-state`, `packaging-make`, `packaging-save`; a
+    `youtube-texts` AI-hívás megszűnt, a Video tab a csomagolásból és a
+    `publish.json`-ból rakja össze a szövegeket (`youtube.json` nincs
+    többé). Ha a csomagolás AI-hívása elbukik, a script megmarad, és a
+    Script tabon kézzel újrapróbálható. Tesztek: `runner/packaging.test.mjs`.
+
+114. **Video Publishing Card, az itv-publish/1 utódja** (Zoltan, 2026-10-07,
+    D3 és a D5 visszavonása utáni 3. és 4. pont):
+    - **Séma `video-publishing-card/1`**
+      (`runner/schema/video-publishing-card.schema.json`); a mezőnevek
+      (camelCase) a régiek. Új: `cardId` (UUID, projektenként egyszer
+      generálva, a `project.json`-ban megtartva), `videoId: null` (a
+      publikáló app tölti), `endScreen.startSec` (ha van végképernyő), és
+      `packaging {titles, title, summary, tags}` a Script tab
+      csomagolásából (DECISIONS 86), `null`, ha még nincs.
+    - **Fájl: `<video>.card.json`**, írás előtt a sémával ellenőrizve; a
+      `comments.txt` marad. Az `itv-publish/1` sémája, a `.publish.json`
+      írása és a Rust `export_publish` megszűnt (helyette `export_card`,
+      csak `.card.json`), átállási kód nélkül. A már renderelt régi
+      videók mellett maradt `.publish.json` fájlokat az app nem olvassa:
+      egy új render megírja a kártyát.
+    - **Video tab:** Files (MP4, `.srt`, `chapters.txt`, a kártya),
+      Publishing ("Export card"), Upload on YouTube (YouTube Studio
+      megnyitása, a cím, a leírás és a tagek másolás gombbal), Backup.

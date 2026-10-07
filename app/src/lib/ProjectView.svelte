@@ -32,7 +32,7 @@
   const dir = untrack(() => dirProp);
   startWork();
 
-  type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; publishFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
+  type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; cardFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
   type Loaded = {
     project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate> };
     brief: { targetLengthMin?: number } | null;

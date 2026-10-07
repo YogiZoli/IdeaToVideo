@@ -6,7 +6,7 @@
   // API: the cloud's own app syncs it), Upload on YouTube (YouTube Studio
   // opens, the file is shown in its folder, the title, description and tags
   // are one click to copy; no Google sign-in from this app, DECISIONS 86),
-  // the publishing data for the publishing tool, and the backup.
+  // the Video Publishing Card (Export card; DECISIONS 114), and the backup.
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { revealItemInDir, openUrl } from "@tauri-apps/plugin-opener";
   import { save as saveDialog } from "@tauri-apps/plugin-dialog";
@@ -15,14 +15,13 @@
   import Needs from "./Needs.svelte";
   import ProjectBackup from "./ProjectBackup.svelte";
   import type { AppState } from "./api";
-  import { runner, errorText, exportPublish, exportVideo, cloudFolders } from "./api";
+  import { runner, errorText, exportCard, exportVideo, cloudFolders } from "./api";
   import { running } from "./work.svelte";
   import { log } from "./logger";
   import type { TabId } from "./tabs";
-  import { llmFor } from "./llm";
 
   type Youtube = { titles: string[]; title: string; summary: string; description: string; tags: string[] };
-  type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; publishFile?: string | null; comments?: string | null; youtube?: Youtube | null; syntheticMedia?: boolean };
+  type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; cardFile?: string | null; comments?: string | null; youtube?: Youtube | null; syntheticMedia?: boolean };
 
   let {
     app,
@@ -76,25 +75,9 @@
     }
   }
 
-  // YouTube: the texts first (one small AI call, kept next to the video)
-  let yt = $state<Youtube | null>(null);
-  $effect(() => {
-    yt = video?.youtube ?? null;
-  });
-  let ytBusy = $state(false);
-  const ytJob = $derived(!!running(dir, ["youtube-texts"]));
-  async function makeTexts() {
-    if (!video) return;
-    ytBusy = true;
-    error = "";
-    try {
-      yt = await runner<Youtube>("youtube-texts", { projectDir: dir, file: video.file, llm: llmFor(app.config, "texts") });
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      ytBusy = false;
-    }
-  }
+  // YouTube: the packaging chosen at gate 1, the description by code
+  // (DECISIONS 86).
+  const yt = $derived(video?.youtube ?? null);
   let copied = $state("");
   async function copy(what: string, text: string) {
     await navigator.clipboard.writeText(text);
@@ -110,13 +93,13 @@
 
   let exported = $state("");
   async function exportData() {
-    if (!video?.publishFile) return;
-    const name = video.publishFile.split(/[\\/]/).pop()!;
-    const path = await saveDialog({ defaultPath: name, filters: [{ name: "Publishing data", extensions: ["json"] }] });
+    if (!video?.cardFile) return;
+    const name = video.cardFile.split(/[\\/]/).pop()!;
+    const path = await saveDialog({ defaultPath: name, filters: [{ name: "Publishing card", extensions: ["json"] }] });
     if (typeof path !== "string") return;
     try {
-      exported = `Saved: ${await exportPublish(video.publishFile, path)}`;
-      log("publish_exported", {});
+      exported = `Saved: ${await exportCard(video.cardFile, path)}`;
+      log("card_exported", {});
     } catch (e) {
       exported = errorText(e);
     }
@@ -156,29 +139,42 @@
           <button type="button" onclick={openYoutube}>Open YouTube Studio</button>
         </div>
         <p class="hint">YouTube Studio opens in your browser and the video is shown in its folder: drag it into the upload window. Copy the texts below into the upload form.</p>
-        {#if video.syntheticMedia}<p class="synthetic">This video has AI-made B-roll clips. In the upload form, under "Altered or synthetic content", answer <b>Yes</b> if a clip looks real (a real-looking person, place or event). It is also noted in the publishing data.</p>{/if}
+        {#if video.syntheticMedia}<p class="synthetic">This video has AI-made B-roll clips. In the upload form, under "Altered or synthetic content", answer <b>Yes</b> if a clip looks real (a real-looking person, place or event). It is also noted in the publishing card.</p>{/if}
         {#if !yt}
-          <button type="button" disabled={ytBusy || ytJob} onclick={makeTexts}>{ytBusy || ytJob ? "Writing the texts..." : "Write title, description and tags (AI)"}</button>
+          <p class="hint">No packaging yet: make the title, summary and tags on the Script tab, then the texts appear here.</p>
         {:else}
-          <span class="sub">Title (pick one)</span>
-          {#each yt.titles as t}
-            <div class="copyrow"><span>{t}</span><button type="button" class="ghost" onclick={() => copy(t, t)}>{copied === t ? "Copied" : "Copy"}</button></div>
-          {/each}
-          <div class="copyrow top"><span class="sub">Description, with the chapters</span><button type="button" class="ghost" onclick={() => copy("description", yt!.description)}>{copied === "description" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow"><span class="sub">Title</span></div>
+          <div class="copyrow"><span>{yt.title}</span><button type="button" class="ghost" onclick={() => copy("title", yt.title)}>{copied === "title" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow top"><span class="sub">Description, with the chapters</span><button type="button" class="ghost" onclick={() => copy("description", yt.description)}>{copied === "description" ? "Copied" : "Copy"}</button></div>
           <pre>{yt.description}</pre>
-          <div class="copyrow top"><span class="sub">Tags</span><button type="button" class="ghost" onclick={() => copy("tags", yt!.tags.join(", "))}>{copied === "tags" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow top"><span class="sub">Tags</span><button type="button" class="ghost" onclick={() => copy("tags", yt.tags.join(", "))}>{copied === "tags" ? "Copied" : "Copy"}</button></div>
           <p class="tags">{yt.tags.join(", ")}</p>
-          <button type="button" class="ghost" disabled={ytBusy || ytJob} onclick={makeTexts}>Write new ones</button>
         {/if}
       </div>
 
-      <details class="block">
-        <summary class="label">Publishing data and backup</summary>
-        {#if video.publishFile}
-          <p class="hint">For your publishing tool and your comment-reply tool: chapters with times, the script, the comment keywords with their times, your landing page.</p>
-          <button type="button" onclick={exportData}>Export publishing data</button>
+      <div class="block">
+        <div class="bhead"><span class="label">Files</span></div>
+        <div class="row">
+          <button type="button" class="ghost" onclick={() => revealItemInDir(video.file)}>MP4</button>
+          {#if video.srt}<button type="button" class="ghost" onclick={() => revealItemInDir(video.srt!)}>Captions (.srt)</button>{/if}
+          {#if video.chapters}<button type="button" class="ghost" onclick={() => revealItemInDir(video.file.replace(/\.mp4$/i, ".chapters.txt"))}>chapters.txt</button>{/if}
+          {#if video.cardFile}<button type="button" class="ghost" onclick={() => revealItemInDir(video.cardFile!)}>Card (.card.json)</button>{/if}
+        </div>
+      </div>
+
+      {#if video.cardFile}
+        <div class="block">
+          <div class="bhead"><span class="label">Publishing</span></div>
+          <p class="hint">The video's publishing card: chapters with times, the script, the comment keywords with their times, your landing page, and the title, summary and tags from the Script tab.</p>
+          <div class="row">
+            <button type="button" onclick={exportData}>Export card</button>
+          </div>
           {#if exported}<p class="hint">{exported}</p>{/if}
-        {/if}
+        </div>
+      {/if}
+
+      <details class="block">
+        <summary class="label">Backup</summary>
         <ProjectBackup {app} {dir} />
       </details>
     {/if}
@@ -225,4 +221,5 @@
   .note { color: var(--success); font-size: 13px; margin: 0; word-break: break-all; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
   .synthetic { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 </style>

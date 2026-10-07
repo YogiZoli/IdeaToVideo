@@ -5,13 +5,13 @@
 //
 //   out/video-<stamp>.srt           upload it in YouTube Studio as subtitles
 //   out/video-<stamp>.chapters.txt  paste it into the video description
-//   out/video-<stamp>.publish.json  and .comments.txt (publish.mjs)
+//   out/video-<stamp>.card.json  and .comments.txt (publish.mjs)
 
 import fs from "node:fs";
 import path from "node:path";
 import { closesSentence } from "../../timing/sentences.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
-import { writePublish } from "./publish.mjs";
+import { writeCard } from "./publish.mjs";
 
 export const MAX_LINE = 42; // characters per caption line (a common broadcast limit)
 export const MAX_CUE_SECONDS = 5;
@@ -120,6 +120,6 @@ export function writeExtras(projectDir, videoFile, { language = "en", total, app
   fs.writeFileSync(`${base}.srt`, toSrt([...captionCues(words), ...segmentCues(projectDir)].sort((a, b) => a.start - b.start)));
   const ch = chapters(sentences, sentenceSections(md, sentences), total ?? sentences[sentences.length - 1]?.end ?? 0, language);
   fs.writeFileSync(`${base}.chapters.txt`, ch.text + "\n");
-  const pub = writePublish(projectDir, videoFile, { language, total, chapters: ch.chapters, chaptersText: ch.text, appVersion, project, syntheticMedia });
+  const pub = writeCard(projectDir, videoFile, { language, total, chapters: ch.chapters, chaptersText: ch.text, appVersion, project, syntheticMedia });
   return { srt: `${base}.srt`, chaptersFile: `${base}.chapters.txt`, chapters: ch.text, chaptersNote: ch.note, syntheticMedia: !!syntheticMedia, ...pub };
 }

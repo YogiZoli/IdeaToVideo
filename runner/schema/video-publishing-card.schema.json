@@ -1,8 +1,10 @@
 {
-  "$comment": "IdeaToVideo publishing data, schema itv-publish/1 (runner/gates/render/publish.mjs, DECISIONS 77). Written next to every rendered video as <video>.publish.json. The shared language with the publishing tool: facts the app knows exactly, never titles, descriptions or tags. Fields are only ever added; a breaking change gets itv-publish/2.",
+  "$comment": "Video Publishing Card, schema video-publishing-card/1 (runner/gates/render/publish.mjs, DECISIONS 114), the successor of itv-publish/1. Written next to every rendered video as <video>.card.json, and the body of POST {url}/api/v1/cards (Send to Publishing). Facts the app knows exactly, plus the packaging chosen at gate 1. cardId is generated once per project and kept, so a card sent again updates the same one; videoId is the YouTube id, filled by the publishing app. Fields are only ever added; a breaking change gets video-publishing-card/2.",
   "type": "object",
   "required": [
     "schema",
+    "cardId",
+    "videoId",
     "createdAt",
     "video",
     "chapters",
@@ -13,7 +15,17 @@
   ],
   "properties": {
     "schema": {
-      "const": "itv-publish/1"
+      "const": "video-publishing-card/1"
+    },
+    "cardId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "videoId": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "createdAt": {
       "type": "string"
@@ -193,12 +205,52 @@
         "seconds": {
           "type": "number",
           "minimum": 0
+        },
+        "startSec": {
+          "type": "number",
+          "minimum": 0
         }
       }
     },
     "syntheticMedia": {
       "type": "boolean",
       "description": "A generated clip (AI B-roll) is in the video: answer YouTube Studio's altered or synthetic content question."
+    },
+    "packaging": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "titles",
+        "title",
+        "summary",
+        "tags"
+      ],
+      "properties": {
+        "titles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

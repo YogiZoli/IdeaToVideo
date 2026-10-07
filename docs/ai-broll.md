@@ -23,7 +23,7 @@ részben maradnak, újra és újra használhatók.
 Egy dolgot a YouTube kér: ha egy generált klip valóságosnak látszik (ember,
 hely, esemény), a feltöltéskor be kell jelölni az "altered or synthetic
 content" kérdést a YouTube Studióban. Az app ezt a Your video tab YouTube
-lépésénél egy mondattal jelzi, és a `publish.json`-ba is beírja
+lépésénél egy mondattal jelzi, és a `card.json`-ba is beírja
 (`syntheticMedia: true`).
 
 ## 2. Melyik generátor
@@ -203,7 +203,7 @@ legfeljebb 5 mp).
   könyvtárban maradnak, az új terv ingyen használhatja őket).
 - A klip a jelenet-tábla változása: a Preview újra kell, a jelenetek és az
   avatar jóváhagyása marad (az időzítés ugyanaz).
-- A `publish.json` `syntheticMedia: true`, ha a videóban generált klip van;
+- A `card.json` `syntheticMedia: true`, ha a videóban generált klip van;
   a Your video tab a YouTube lépésnél egy mondattal szól.
 
 ### Fájlok

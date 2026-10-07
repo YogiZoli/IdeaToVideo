@@ -17,7 +17,7 @@ import { orderBody, order, fetchClip } from "./generate/heygen-video.mjs";
 import { planBroll, planIssues, eligibleScenes, maxClips, estimateBroll, makeBroll, loadPlan, attach, removeItem, againItem, updateItem, usesGenerated, libraryForPlanner } from "./broll/index.mjs";
 import { sceneRows } from "./gates/scenes/index.mjs";
 import { loadLibrary, catalogForPlanner } from "./footage/library.mjs";
-import { buildPublish } from "./gates/render/publish.mjs";
+import { buildCard } from "./gates/render/publish.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ffdir = path.join(here, "..", "app", "src-tauri", "ffmpeg");
@@ -247,7 +247,7 @@ test("make: orders, downloads into the video and the library, lays the clips und
   assert.equal(fs.existsSync(path.join(proj, "broll", "pending.json")), false, "nothing left pending");
   assert.match(fs.readFileSync(path.join(proj, "log.txt"), "utf8"), /broll: 2 made, 0 from the library, 0 failed, 2 in the scene table, spent about 0.48 USD/);
   assert.equal(usesGenerated(proj, identity), true);
-  assert.equal(buildPublish(proj, path.join(proj, "out", "video-1.mp4"), { total: 48, syntheticMedia: usesGenerated(proj, identity) }).syntheticMedia, true);
+  assert.equal(buildCard(proj, path.join(proj, "out", "video-1.mp4"), { total: 48, syntheticMedia: usesGenerated(proj, identity) }).syntheticMedia, true);
 
   // Remove: out of the table, still in the library. Make again: a new order.
   removeItem(proj, "b1");
