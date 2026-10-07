@@ -8,7 +8,10 @@
 // Sources (docs/phase-2-plan.md, step 4):
 //   Windows  BtbN GPL shared build, a month-end autobuild (BtbN keeps those;
 //            the daily ones are deleted after a few weeks).
-//   macOS    eugeneware/ffmpeg-static GitHub release (BtbN has no macOS build).
+//   macOS    arm64: Martin Riedl's static release build (ffmpeg.martin-riedl.de).
+//            The ffmpeg-static arm64 binary is really 6.0 and lacks overlay,
+//            scale, loudnorm and other filters the pipeline needs (Mac v1 CI).
+//            x64: eugeneware/ffmpeg-static GitHub release (BtbN has no macOS build).
 // Every file is pinned by SHA256 (the digest GitHub shows for the release asset).
 // A download that does not match is refused. Bumping = new URLs + new hashes.
 //
@@ -29,11 +32,14 @@ export const FFMPEG_DIR = path.join(ROOT, "app", "src-tauri", "ffmpeg");
 
 const BTBN = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-31-13-27";
 const BTBN_SOURCE = "https://github.com/BtbN/FFmpeg-Builds (build scripts), https://github.com/FFmpeg/FFmpeg/tree/n8.1.2 (source)";
+const RIEDL = "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2";
+const RIEDL_SOURCE = "https://ffmpeg.martin-riedl.de (build scripts: https://gitlab.com/martinr92/ffmpeg), https://github.com/FFmpeg/FFmpeg/tree/n9.0.2 (source)";
 const STATIC = "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1";
 const STATIC_SOURCE = "https://github.com/eugeneware/ffmpeg-static (build scripts), https://github.com/FFmpeg/FFmpeg/tree/n6.1.1 (source)";
 
 // kind "zip": one archive; its bin/ (minus ffplay) and LICENSE.txt are kept.
-// kind "gz":  single gzipped binaries plus a plain license file.
+// kind "gz":  single binaries (gzipped, or a zip holding just that one file)
+//             plus a plain license file.
 export const FFMPEG_TARGETS = {
   "x86_64-pc-windows-msvc": {
     kind: "zip",
@@ -53,12 +59,12 @@ export const FFMPEG_TARGETS = {
   },
   "aarch64-apple-darwin": {
     kind: "gz",
-    version: "6.1.1 (ffmpeg-static b6.1.1, GPL static)",
-    source: STATIC_SOURCE,
+    version: "9.0.2 (Martin Riedl static release build, GPL)",
+    source: RIEDL_SOURCE,
     files: [
-      { url: `${STATIC}/ffmpeg-darwin-arm64.gz`, sha256: "8923876afa8db5585022d7860ec7e589af192f441c56793971276d450ed3bbfa", out: "ffmpeg" },
-      { url: `${STATIC}/ffprobe-darwin-arm64.gz`, sha256: "d986a8ec7b030899fe66a8a288ed809a3543338705a3ce178cfb85869c5d80be", out: "ffprobe" },
-      { url: `${STATIC}/darwin-arm64.LICENSE`, sha256: "cb48bf09a11f5fb576cddb0431c8f5ed0a60157a9ec942adffc13907cbe083f2", out: "LICENSE.txt" },
+      { url: `${RIEDL}/ffmpeg.zip`, sha256: "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924", out: "ffmpeg" },
+      { url: `${RIEDL}/ffprobe.zip`, sha256: "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6", out: "ffprobe" },
+      { url: "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n9.0.2/COPYING.GPLv3", sha256: "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903", out: "LICENSE.txt" },
     ],
   },
   "x86_64-apple-darwin": {
@@ -144,6 +150,18 @@ export async function fetchFfmpeg(triple, { fetchImpl = fetch, log = console.log
     }
   } else {
     t.files.forEach((f, i) => {
+      if (f.url.endsWith(".zip")) {
+        const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "itv-ffmpeg-"));
+        try {
+          const archive = path.join(tmp, "one.zip");
+          fs.writeFileSync(archive, bufs[i]);
+          execFileSync(bsdtar(), ["-xf", archive, "-C", tmp, f.out], { stdio: "inherit" });
+          fs.copyFileSync(path.join(tmp, f.out), path.join(stage, f.out));
+        } finally {
+          fs.rmSync(tmp, { recursive: true, force: true });
+        }
+        return;
+      }
       const data = f.url.endsWith(".gz") ? zlib.gunzipSync(bufs[i]) : bufs[i];
       fs.writeFileSync(path.join(stage, f.out), data);
     });

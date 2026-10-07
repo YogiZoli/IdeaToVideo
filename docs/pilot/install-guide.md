@@ -52,21 +52,35 @@ video, a little more on an older laptop. While it runs:
 - keep the app open (you can minimize it);
 - do not let the computer go to sleep; keep a laptop plugged in.
 
+While the script is written, the app also makes the YouTube **Packaging**:
+title ideas, a summary and tags. You find it on the **Script** tab. Pick a
+title or write your own, change anything you like, and click **Save**. If it
+is missing, click **Make title, summary and tags (AI)** there.
+
 ## 6. Where your video is
 
 When it is ready, the **Your video** tab plays it. Click **Show in folder** to
 see the file. All videos are in your Documents folder, in
 **IdeaToVideo Projects**, one folder per video.
 
-## 7. If something goes wrong
+## 7. Optional extras
 
-The error box tells you what to do in plain words. If it still does not work:
+You do not need these for the first video.
 
-1. Open **Settings**, then **General** (under App), and click
-   **Export diagnostics**.
-2. Save the zip and send it back to us.
+- **More photos (Unsplash):** **Settings**, **Identity**, **Footage**, then
+  **Get a key** next to Unsplash. Make a free app on the Unsplash site and
+  paste its **Access Key** (never the Secret key). A new key allows 50
+  searches an hour. A free Pixabay key works the same way and also gives
+  video clips. Then search for pictures on the **Scenes** tab.
+- **Publishing connection:** only if we gave you a publishing address and a
+  token. **Settings**, **Publishing**: paste both and click **Save**. Then
+  **Send to Publishing** on the **Your video** tab sends the video's
+  publishing card. Without it, **Export card** saves the same card as a file.
 
-The zip holds the app's log and the steps of each video. It never holds your
-keys, your voice, your video or the text of your script.
+## 8. If something goes wrong
+
+The error box tells you what to do in plain words. If it still does not work,
+send us the diagnostics zip: see **How to send us your logs**
+(`send-logs.md`, in the same Drive folder).
 
 Thank you for testing!
