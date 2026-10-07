@@ -67,7 +67,7 @@ előbb Zoltan válaszai a lenti kérdésekre.
   - Cold (wants a free resource): GUIDE (a free guide), CHECKLIST (a checklist),
     TEMPLATE (a template), PDF (a free PDF), START (where to start)
   - Warm (wants to learn more): TRAINING (a free training), WORKSHOP (a workshop
-    seat), WEBINAR (a webinar seat), COURSE (course details), SURVEY (a short survey)
+    seat), WEBINAR (a webinar seat), COURSE (course details), SURVEY (a short survey (ASK))
   - Hot (ready to buy): TRIGGER (a link to buy now), CALL (a call with you), BUY
     (a link to buy), APPLY (an application), ACTION (the next step)
   - Alap: GUIDE. A DOWNLOAD már nincs benne (a régi commentclient #96 vezette ki).
@@ -244,7 +244,7 @@ vége-CTA), S8 előbb a szegmens, utána a farok. DECISIONS 78.
 Megvalósítás:
 - `runner/cta/segments.mjs` (könyvtár, legfeljebb 30 mp és 3 kulcsszavanként,
   váltakozás), `runner/cta/make.mjs` (HeyGen: `segment-voice`, majd
-  `segment-make`), `runner/cta/profile.mjs` (`modes`, `segmentIds`,
+  `segment-make`), `runner/cta/profile.mjs` (`modes`,
   `endScreen`, `cta-last.json`), Rust `import_segment`.
 - Script kapu: a szegmenses helyre nincs CTA-mondat; `script.json`
   `segmentCalls` (a klip a projekt `segments/` mappájába másolva) és

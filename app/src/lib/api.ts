@@ -259,7 +259,6 @@ export type CtaProfile = {
   updatedAt?: string;
   slots: Record<CtaSlot, string | null>;
   modes?: Record<CtaSlot, CtaMode>;
-  segmentIds?: Partial<Record<CtaSlot, string | null>>;
   offers: Record<string, string>;
   endScreen?: 0 | 5 | 10 | 15 | 20;
 };

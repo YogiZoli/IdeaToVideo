@@ -122,7 +122,8 @@ check("project with approved script and voice", true, `${sentences.length} sente
 const bad = { scenes: [{ from: "S1", to: "S6", component: "headline-slam", vars: { text: "Most videos lose people in seconds" } }] };
 const good = {
   scenes: [
-    { from: "S1", to: "S2", component: "titlecard-calm", vars: { kicker: "THE PROBLEM", headline: "Viewers leave early" } },
+    { from: "S1", component: "titlecard-calm", vars: { kicker: "THE PROBLEM", headline: "Viewers leave early" } },
+    { from: "S2", component: "headline-slam", vars: { text: "Stay focused" } },
     { from: "S3", component: "per-word-rise", vars: { text: "Three steps" } },
     { from: "S4", component: "grid-card-assemble", vars: { items: "Write,Record,Publish" } },
     { from: "S5", component: "marker-highlight", vars: { text: "One idea at a time", emphasis_word: "One" } },
@@ -133,7 +134,7 @@ const good = {
 let llmCalls = 0;
 const fetchImpl = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ choices: [{ message: { content: JSON.stringify(llmCalls++ === 0 ? bad : good) } }] }) });
 const planned = await makeScenes({ llm: { provider: "gemini", apiKey: "stand-in", fetchImpl, sleep: async () => {} }, projectDir: dir, env });
-check("gate 3: scene table planned, one repair", planned.scenes === 5 && llmCalls === 2, `${planned.scenes} scenes, ${llmCalls} LLM calls`);
+check("gate 3: scene table planned, one repair", planned.scenes === 6 && llmCalls === 2, `${planned.scenes} scenes, ${llmCalls} LLM calls`);
 {
   const last = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8")).scenes.at(-1);
   check("CTA: the comment call scene shows its keyword", last.call?.keyword === "START" && last.vars.button_label === "START", JSON.stringify(last.call));
@@ -190,7 +191,7 @@ const cacheBefore = cached();
 {
   const on = runner("broll-settings-save", { identityDir, settings: { enabled: true, generator: "test", quality: "768p", capUsd: 1 } });
   check("AI B-roll: on, with the test clips", on.event === "result" && on.data.settings.generator === "test" && fs.existsSync(path.join(identityDir, "broll.json")));
-  const answer = { clips: [{ scene: 3, from: "S4", prompt: "Hands type on a laptop keyboard on a wooden desk, a notebook and a coffee cup beside it, soft morning light from a window. Slow push in, shallow depth of field, warm tones with coral accents. Photographic, natural, calm, one continuous shot." }] };
+  const answer = { clips: [{ scene: 4, from: "S4", prompt: "Hands type on a laptop keyboard on a wooden desk, a notebook and a coffee cup beside it, soft morning light from a window. Slow push in, shallow depth of field, warm tones with coral accents. Photographic, natural, calm, one continuous shot." }] };
   const llmFetch = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ choices: [{ message: { content: JSON.stringify(answer) } }] }) });
   const { loadSettings } = await import("../../runner/broll/settings.mjs");
   const { loadLibrary } = await import("../../runner/footage/library.mjs");
@@ -228,7 +229,7 @@ const built = runner("build-video", { projectDir: dir, identityDir, look: "blue-
   check("CTA: the call button wears its temperature (cold)", html.includes(`--brand: ${cold}`), cold);
 }
 check("gate 4: build, lint and check", built.event === "result", built.event === "result" ? `${built.data.scenes} scenes in ${built.seconds} s` : built.message);
-check("gate 4: one still per scene", built.data.stills?.length === 5 && built.data.stills.every((s) => fs.existsSync(s.file)), `${built.data.stills?.length} stills`);
+check("gate 4: one still per scene", built.data.stills?.length === 6 && built.data.stills.every((s) => fs.existsSync(s.file)), `${built.data.stills?.length} stills`);
 check("gate 4: approved", runner("approve-gate", { projectDir: dir, gate: "review" }).event === "result");
 
 // The render, with captions and chapters next to it.

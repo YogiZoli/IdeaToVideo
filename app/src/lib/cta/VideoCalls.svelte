@@ -27,7 +27,6 @@
   let slots = $state<Record<CtaSlot, string | null>>({ start: null, middle: null, end: null });
   let on = $state<Record<CtaSlot, boolean>>({ start: false, middle: false, end: false });
   let modes = $state<Record<CtaSlot, CtaMode>>({ start: "auto", middle: "auto", end: "auto" });
-  let segmentIds = $state<Partial<Record<CtaSlot, string | null>>>({});
   let previous = $state(false);
 
   onMount(async () => {
@@ -50,7 +49,6 @@
       slots[s] = current!.slots[s];
       on[s] = current!.slots[s] !== null;
       modes[s] = current!.modes?.[s] ?? "auto";
-      segmentIds[s] = current!.segmentIds?.[s] ?? null;
     }
     editing = true;
   }
@@ -59,7 +57,6 @@
     own = {
       slots: Object.fromEntries(SLOT_IDS.map((s) => [s, on[s] ? slots[s] : null])) as Record<CtaSlot, string | null>,
       modes: { ...modes },
-      segmentIds: Object.fromEntries(SLOT_IDS.filter((s) => segmentIds[s]).map((s) => [s, segmentIds[s]])),
       offers: { ...(identity?.offers ?? {}) },
       endScreen: identity?.endScreen ?? 20,
     };
@@ -96,7 +93,7 @@
   {/if}
   {#if editing}
     <div class="box">
-      <CallsEditor options={st.options} bind:slots bind:on bind:modes bind:segmentIds segments={st.segments} chooseSegment compact />
+      <CallsEditor options={st.options} bind:slots bind:on bind:modes segments={st.segments} compact />
       <div class="row">
         <button type="button" class="primary" disabled={!complete} onclick={apply}>Use for this video</button>
         <button type="button" onclick={() => (editing = false)}>Cancel</button>

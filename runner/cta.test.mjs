@@ -20,7 +20,8 @@ import { speakable } from "./gates/voice/narration.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "itv-cta-"));
 
-// The comment-reply tool's own list (its keyword catalog, 2026-10-05). Change
+// The comment-reply tool's own list, word for word (c2c-saas
+// src/lib/keyword-catalog.ts, Zoltan 2026-10-07, D1). Change
 // it only when that list changes: a keyword it does not know never gets a reply.
 test("the 15 keywords, their temperatures and what the viewer gets, exactly as the reply tool has them", () => {
   assert.deepEqual(KEYWORDS.map((k) => `${k.keyword} ${k.temperature} ${k.gets}`), [
@@ -33,7 +34,7 @@ test("the 15 keywords, their temperatures and what the viewer gets, exactly as t
     "WORKSHOP warm a workshop seat",
     "WEBINAR warm a webinar seat",
     "COURSE warm course details",
-    "SURVEY warm a short survey",
+    "SURVEY warm a short survey (ASK)",
     "TRIGGER hot a link to buy now",
     "CALL hot a call with you",
     "BUY hot a link to buy",

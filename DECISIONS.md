@@ -1450,3 +1450,30 @@
       Autopilot-választás és 4K szűrő. Ezek a próba után jöhetnek.
     - Próba a böngészős UI-mockban (keresés, ötletek, Add); tesztek: 266
       Node (új: `runner/stock.test.mjs`, a fotó-klip ffmpeg-gel).
+
+112. **Kulcsszavak a vidrevvel egyezően, kulcsszavanként egy szegmens**
+    (Zoltan, 2026-10-07, D1 és D2):
+    - **A 15 kulcsszó szó szerint a vidrevé** (`c2c-saas
+      src/lib/keyword-catalog.ts` a forrás): Cold GUIDE, CHECKLIST,
+      TEMPLATE, PDF, START; Warm TRAINING, WORKSHOP, WEBINAR, COURSE,
+      SURVEY; Hot TRIGGER, CALL, BUY, APPLY, ACTION. A "mit kap" szövegek
+      is egyeznek (az egyetlen eltérés a SURVEY volt: "a short survey
+      (ASK)"). A `runner/cta.test.mjs` rögzíti a listát.
+    - **Kulcsszavanként legfeljebb egy szegmens, így legfeljebb 15.** A
+      váltakozás (legrégebben használt jön) és a kulcsszavanként 3
+      megszűnt, vele a videónkénti szegmensválasztás (`segmentIds`) is, a
+      sémából, a UI-ból és a "previously selected" mentésből. Új klip egy
+      kulcsszóra: a régit (a fájlját is) lecseréli. Forrás: feltöltés,
+      HeyGen generálás vagy HeyGen import. Szegmens nélkül a hely Narrátor
+      módban megy. Legfeljebb 30 mp marad.
+    - **Settings, Identity, CTA:** 3 sor (Cold, Warm, Hot), soronként 5
+      kulcsszó-kártya a szegmens állapotával (none, uploaded, HeyGen),
+      "Add" vagy "Replace", és "Delete". A kiválasztott kártya alatt a
+      három forrás.
+    - **Zoltan adatai:** a két Identity (`my-identity`, `updated-ui`)
+      kulcsszavanként eleve egy szegmenst tartott (GUIDE, COURSE,
+      TRIGGER), így nem kellett szegmenst törölni; a `cta-last.json`-ból
+      a `segmentIds` mező kézzel törölve. Átállási kód nincs.
+    - Az e2e jelenettáblája a 7 mp-es plafon (DECISIONS 103) óta elavult
+      volt (S1 és S2 együtt 8 mp): a mainen is elbukott. Javítva, 6
+      jelenet; 39/39.

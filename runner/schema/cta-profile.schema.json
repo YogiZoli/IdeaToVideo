@@ -25,16 +25,6 @@
         "end": { "enum": ["narrator", "segment", "auto"] }
       }
     },
-    "segmentIds": {
-      "$comment": "A ONE Video's own pick per place; without one the least recently used segment of the keyword.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "start": { "type": ["string", "null"], "maxLength": 40 },
-        "middle": { "type": ["string", "null"], "maxLength": 40 },
-        "end": { "type": ["string", "null"], "maxLength": 40 }
-      }
-    },
     "endScreen": { "enum": [0, 5, 10, 15, 20] },
     "modesV": { "$comment": "2: modes saved since the auto default (a saved narrator is a choice); missing: an older save, where narrator was only the default.", "const": 2 },
     "offers": {

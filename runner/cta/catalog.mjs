@@ -4,11 +4,11 @@
 // link. The app never answers comments and never holds a link: it only puts
 // the keyword into the narration and on screen.
 //
-// The 15 keywords, their temperatures and what the viewer gets are exactly
-// the list of the comment-reply tool the method is built for, so one video's
-// keywords work there unchanged. A test pins the list; it changes only when
-// that list changes (Zoltan, 2026-10-05). No own keywords and no translations
-// until that tool has them.
+// The 15 keywords, their temperatures and what the viewer gets are word for
+// word the comment-reply tool's catalog (c2c-saas src/lib/keyword-catalog.ts,
+// the source), so one video's keywords work there unchanged. A test pins the
+// list; it changes only when that list changes (Zoltan, 2026-10-07, D1). No
+// own keywords and no translations until that tool has them.
 
 export const TEMPERATURES = {
   cold: { label: "Cold", meaning: "wants a free resource", dot: "#2E6FE0", surface: "#E7EFFC", text: "#1D4F9C" },
@@ -26,7 +26,7 @@ export const KEYWORDS = [
   { keyword: "WORKSHOP", temperature: "warm", gets: "a workshop seat" },
   { keyword: "WEBINAR", temperature: "warm", gets: "a webinar seat" },
   { keyword: "COURSE", temperature: "warm", gets: "course details" },
-  { keyword: "SURVEY", temperature: "warm", gets: "a short survey" },
+  { keyword: "SURVEY", temperature: "warm", gets: "a short survey (ASK)" },
   { keyword: "TRIGGER", temperature: "hot", gets: "a link to buy now" },
   { keyword: "CALL", temperature: "hot", gets: "a call with you" },
   { keyword: "BUY", temperature: "hot", gets: "a link to buy" },

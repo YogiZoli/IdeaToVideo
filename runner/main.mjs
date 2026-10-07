@@ -46,7 +46,7 @@ import { loadScenes as loadScenesProfile, saveScenes as saveScenesProfile, MIX_P
 import { listPacks, importPack, exportPack, removePack, writeState as writePackState, registerPacks } from "./packs/index.mjs";
 import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
 import { describeClip } from "./footage/describe.mjs";
-import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
+import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX } from "./cta/segments.mjs";
 import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "./cta/catalog.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
 import { cardFromTokens } from "./brand/tokens.mjs";
@@ -186,7 +186,7 @@ function takeSegments(projectDir, identityDir, plan, own) {
   if (identityDir) {
     markUsed(identityDir, segmentCalls.map((c) => c.segmentId));
     const base = own ?? loadCta(identityDir) ?? defaultCta();
-    saveLast(identityDir, { ...base, segmentIds: Object.fromEntries(segmentCalls.map((c) => [c.slot, c.segmentId])), endScreen });
+    saveLast(identityDir, { ...base, endScreen });
   }
   return { segmentCalls, endScreen };
 }
@@ -548,7 +548,7 @@ const commands = {
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
-  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, maxText: SEGMENT_TEXT_MAX, perKeyword: SEGMENTS_PER_KEYWORD }),
+  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, maxText: SEGMENT_TEXT_MAX }),
   "segment-add": async ({ identityDir, file, keyword, name, text }) => ({ segment: await addSegment({ identityDir, file, keyword, name, text, source: "upload" }) }),
   "segment-remove": async ({ identityDir, id }) => removeSegment(identityDir, id),
   // A segment made in the app: the narrator reads the sentence (its key),

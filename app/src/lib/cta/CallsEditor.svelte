@@ -3,9 +3,8 @@
   // keyword of each (docs/wizards/cta.md). Used by the CTA wizard and, per
   // video, at gate 1. `on` says which places have a call; a place that is on
   // but has no keyword yet makes its keywords pulse. Where the keyword has
-  // segments of the Identity, the place is said by the narrator or played by
-  // a segment (`modes`), never both; `chooseSegment` (gate 1) also picks
-  // which one, else the least recently used comes next.
+  // a segment of the Identity (at most one per keyword), the place is said by
+  // the narrator or played by the segment (`modes`), never both.
   import type { CtaMode, CtaSegment, CtaSlot, CtaState } from "../api";
   import KeywordPicker from "./KeywordPicker.svelte";
 
@@ -14,23 +13,19 @@
     slots = $bindable(),
     on = $bindable(),
     modes = $bindable(),
-    segmentIds = $bindable(),
     segments = [],
-    chooseSegment = false,
     compact = false,
   }: {
     options: CtaState["options"];
     slots: Record<CtaSlot, string | null>;
     on: Record<CtaSlot, boolean>;
     modes: Record<CtaSlot, CtaMode>;
-    segmentIds?: Partial<Record<CtaSlot, string | null>>;
     segments?: CtaSegment[];
-    chooseSegment?: boolean;
     compact?: boolean;
   } = $props();
   const segsOf = (k: string | null) => segments.filter((g) => g.keyword === k);
   // Which keywords have the Identity's segments: shown on the cards.
-  const marks = $derived(Object.fromEntries([...new Set(segments.map((g) => g.keyword))].map((k) => [k, `${segsOf(k).length} clip${segsOf(k).length === 1 ? "" : "s"}`])));
+  const marks = $derived(Object.fromEntries(segments.map((g) => [g.keyword, "segment"])));
   const segKeywords = $derived([...new Set(segments.map((g) => g.keyword))]);
   // The keywords of the other places stay marked while one place is open
   // (Zoltan, 2026-10-05: only the last pick stayed highlighted).
@@ -62,7 +57,6 @@
   // still needs a keyword opens.
   let timer: ReturnType<typeof setTimeout> | null = null;
   function pick(s: CtaSlot, k: string) {
-    if (slots[s] !== k && segmentIds) segmentIds[s] = null;
     slots[s] = k;
     open = s;
     if (timer) clearTimeout(timer);
@@ -96,14 +90,8 @@
           {#if on[s] && slots[s] && segsOf(slots[s]).length}
             <div class="mode" role="radiogroup" aria-label="Who says the {options.slots[s].label.toLowerCase()} call">
               <label><input type="radio" name="mode-{s}" checked={!playsSegment(s)} onchange={() => (modes[s] = "narrator")} /> Narrator</label>
-              <label><input type="radio" name="mode-{s}" checked={playsSegment(s)} onchange={() => (modes[s] = "segment")} /> My segment ({segsOf(slots[s]).length})</label>
+              <label><input type="radio" name="mode-{s}" checked={playsSegment(s)} onchange={() => (modes[s] = "segment")} /> My segment</label>
             </div>
-            {#if playsSegment(s) && chooseSegment && segmentIds && segsOf(slots[s]).length > 1}
-              <select value={segmentIds[s] ?? ""} onchange={(e) => (segmentIds![s] = e.currentTarget.value || null)} aria-label="Which segment">
-                <option value="">Next in turn</option>
-                {#each segsOf(slots[s]) as g (g.id)}<option value={g.id}>{g.name} ({g.seconds} s)</option>{/each}
-              </select>
-            {/if}
           {:else if on[s] && slots[s] && segKeywords.length}
             <span class="hint">No segment for {slots[s]}: the narrator says it. Your segments are for {segKeywords.join(", ")}.</span>
           {/if}

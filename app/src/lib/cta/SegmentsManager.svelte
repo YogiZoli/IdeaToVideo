@@ -1,7 +1,9 @@
 <script lang="ts">
   // SegmentsManager: the Identity's reusable comment-call segments
   // (docs/wizards/cta.md, DECISIONS 78). Each belongs to one keyword, at most
-  // 30 s, at most 3 per keyword. Two ways in, kept apart on the page:
+  // 30 s, at most one per keyword (Zoltan, 2026-10-07, D2): three rows (Cold,
+  // Warm, Hot), five keyword cards each, with the segment's state, Replace and
+  // Delete. A keyword without one is said by the narrator. Three ways in:
   //   A. upload a clip you recorded (no key, no cost); optionally write what
   //      it says, for the captions and the publishing data
   //   B. make it here: your narrator reads the sentence, HeyGen makes a
@@ -18,7 +20,6 @@
   import { chooseEngine } from "../avatarEngines";
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
-  import KeywordPicker from "./KeywordPicker.svelte";
 
   let { app, options, cta = null, segments = $bindable([]) }: { app: AppState; options: CtaState["options"]; cta?: CtaProfile | null; segments?: CtaSegment[] } = $props();
 
@@ -38,7 +39,11 @@
 
   const SLOT_IDS: CtaSlot[] = ["start", "middle", "end"];
   const info = $derived(options.keywords.find((k) => k.keyword === keyword) ?? null);
-  const full = $derived(!!keyword && segments.filter((s) => s.keyword === keyword).length >= 3);
+  const ORDER = ["cold", "warm", "hot"];
+  const rows = $derived(ORDER.filter((id) => options.temperatures[id]).map((id) => ({ id, t: options.temperatures[id], words: options.keywords.filter((k) => k.temperature === id) })));
+  const segOf = (k: string) => segments.find((s) => s.keyword === k) ?? null;
+  const current = $derived(keyword ? segOf(keyword) : null);
+  const stateOf = (s: CtaSegment | null) => (!s ? "none" : s.source === "upload" ? "uploaded" : "HeyGen");
   const lookId = $derived(app.identity?.avatar?.lookId ?? app.config?.avatar?.lookId ?? null);
   const narrator = $derived(app.config?.narrator ?? null);
   const temp = (k: string) => options.temperatures[options.keywords.find((x) => x.keyword === k)?.temperature ?? "cold"];
@@ -48,7 +53,6 @@
     for (const s of SLOT_IDS) if (cta?.slots[s]) (out[cta.slots[s]!] ??= []).push(options.slots[s].label);
     return out;
   });
-  const clips = $derived(Object.fromEntries([...new Set(segments.map((g) => g.keyword))].map((k) => [k, `${segments.filter((g) => g.keyword === k).length} clip${segments.filter((g) => g.keyword === k).length === 1 ? "" : "s"}`])));
 
   function choose(k: string) {
     keyword = k;
@@ -135,6 +139,7 @@
 
   async function remove(id: string) {
     error = "";
+    added = null;
     try {
       await runner("segment-remove", { id });
       log("segment_removed", {});
@@ -147,37 +152,36 @@
 
 <section class="card">
   <h2>Your segments</h2>
-  <p class="hint">A short clip you record once, that says one comment call itself, for example a full-screen avatar: "Comment GUIDE below". At most 30 seconds, at most 3 per keyword. Wherever a comment call uses that keyword, your clip plays and the narrator says nothing there, so nothing is said twice.</p>
+  <p class="hint">A short clip you record once, that says one comment call itself, for example a full-screen avatar: "Comment GUIDE below". At most 30 seconds, one per keyword. Wherever a comment call uses that keyword, your clip plays and the narrator says nothing there. A keyword without a segment is said by the narrator.</p>
   {#if error}<ErrorBox message={error} context={{ step: "cta" }} />{/if}
+  {#if Object.keys(inCta).length}<p class="hint">Outlined: the keywords your comment calls use now.</p>{/if}
 
-  {#if segments.length}
-    <ul class="list">
-      {#each segments as s (s.id)}
-        {@const t = temp(s.keyword)}
-        <li id={`seg-${s.id}`} class:new={added?.id === s.id}>
-          <span class="chip" style={`--dot: ${t.dot}; --on-dot: ${t.label === "Warm" ? "#1a1a1a" : "#ffffff"}`}>{s.keyword}</span>
-          <b>{s.name}</b>
-          <span class="hint">{s.seconds} s, {s.source === "heygen" ? "made with HeyGen" : s.source === "heygen-import" ? "imported from HeyGen" : "uploaded"}{s.lastUsedAt ? `, last used ${new Date(s.lastUsedAt).toLocaleDateString()}` : ", not used yet"}{s.text ? `: "${s.text}"` : ""}</span>
-          {#if added?.id === s.id}<span class="newtag">Saved</span>{/if}
-          <span class="spacer"></span>
-          <button type="button" class="ghost" disabled={!!busy} onclick={() => remove(s.id)}>Remove</button>
-        </li>
-      {/each}
-    </ul>
-  {:else}
-    <p>No segments yet.</p>
-  {/if}
+  <div class="grid">
+    {#each rows as row (row.id)}
+      <div class="trow" style={`--dot: ${row.t.dot}; --surface: ${row.t.surface}; --ink: ${row.t.text}; --on-dot: ${row.id === "warm" ? "#1a1a1a" : "#ffffff"}`}>
+        <b class="thead">{row.t.label}</b>
+        <div class="cards">
+          {#each row.words as k (k.keyword)}
+            {@const g = segOf(k.keyword)}
+            <div class="kcard" id={g ? `seg-${g.id}` : undefined} class:has={!!g} class:chosen={keyword === k.keyword} class:incta={!!inCta[k.keyword]} class:new={!!g && added?.id === g.id}>
+              <span class="kw">{k.keyword}</span>
+              <span class="state">{stateOf(g)}{g ? `, ${g.seconds} s` : ""}</span>
+              <div class="acts">
+                <button type="button" class="ghost" disabled={!!busy} onclick={() => choose(k.keyword)}>{g ? "Replace" : "Add"}</button>
+                {#if g}<button type="button" class="ghost" disabled={!!busy} onclick={() => remove(g.id)}>Delete</button>{/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/each}
+  </div>
 
-  <h3>Add a segment</h3>
-  <p class="for">1. Which keyword does it say?</p>
-  {#if Object.keys(inCta).length}<p class="hint">Marked: the keywords your comment calls use now.</p>{/if}
-  <KeywordPicker keywords={options.keywords} temperatures={options.temperatures} value={keyword} compact marks={clips} picked={inCta} onpick={choose} />
   {#if keyword}
-    {#if full}
-      <p class="hint">{keyword} already has 3 segments. Remove one to add another.</p>
-    {:else}
-      <label class="field"><span>2. Name (optional)</span><input type="text" maxlength="60" bind:value={name} placeholder={`${keyword} with my avatar`} /></label>
-      <p class="for">3. Choose one way</p>
+    <h3>{current ? `Replace the ${keyword} segment` : `Add a segment for ${keyword}`}</h3>
+    {#if current}<p class="hint">Now: {current.name}, {current.seconds} s{current.text ? `: "${current.text}"` : ""}. The new clip takes its place, the old one is deleted.</p>{/if}
+      <label class="field"><span>Name (optional)</span><input type="text" maxlength="60" bind:value={name} placeholder={`${keyword} with my avatar`} /></label>
+  <p class="for">Choose one way</p>
       <div class="ways">
         <div class="way">
           <b>A. Upload a clip you recorded</b>
@@ -216,19 +220,27 @@
           {/if}
         {/if}
       </div>
-    {/if}
   {/if}
   {#if busy}<p class="busy">{busy}</p>{/if}
   {#if added}<p class="saved">{added.message}</p>{/if}
 </section>
 
 <style>
-  .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  .list li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-bottom: 1px solid var(--border); border-radius: 6px; }
-  .list li.new { background: var(--success-surface, #e7f6ec); }
-  .newtag { font-size: 12px; font-weight: 700; color: var(--success, #1f7a3a); }
-  .chip { padding: 2px 10px; border-radius: 999px; background: var(--dot); color: var(--on-dot); font: 700 13px ui-monospace, "JetBrains Mono", monospace; }
-  .spacer { flex: 1; }
+  .grid { display: grid; gap: 8px; }
+  .trow { display: grid; grid-template-columns: 56px 1fr; gap: 8px; align-items: center; padding: 8px; border-radius: 8px; background: var(--surface); }
+  .thead { color: var(--ink); }
+  .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .kcard { display: grid; gap: 4px; padding: 8px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--dot) 30%, transparent); background: var(--background, #fff); }
+  .kcard.has { border-color: var(--dot); }
+  .kcard.incta { outline: 2px dashed var(--dot); outline-offset: 1px; }
+  .kcard.chosen { outline: 2px solid var(--dot); }
+  .kcard.new { background: var(--success-surface, #e7f6ec); }
+  .kw { font: 700 13px ui-monospace, "JetBrains Mono", monospace; color: var(--ink); }
+  .kcard.has .kw { display: inline-block; justify-self: start; padding: 1px 8px; border-radius: 999px; background: var(--dot); color: var(--on-dot); }
+  .state { font-size: 12px; color: var(--muted-foreground, #666); }
+  .acts { display: flex; gap: 4px; flex-wrap: wrap; }
+  .acts button { padding: 2px 8px; font-size: 12px; }
+  @media (max-width: 760px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .field { display: grid; gap: 4px; }
   .ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }

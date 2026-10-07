@@ -3,9 +3,9 @@
 // seconds, recorded once, that says one comment call itself ("Comment GUIDE
 // below"), for example a full-screen avatar. Every segment belongs to exactly
 // one of the 15 keywords, so the clip and the place it fills can never say
-// different keywords. At most 3 per keyword; when a place uses a keyword with
-// several, the least recently used one comes next, so videos vary by
-// themselves.
+// different keywords. At most one per keyword, so at most 15 (Zoltan,
+// 2026-10-07, D2): a new clip for a keyword replaces the old one. A keyword
+// without a segment is said by the narrator.
 //
 //   <identity>/segments/segments.json   { schema, segments: [...] }
 //   <identity>/segments/<id>.mp4        the clips
@@ -21,7 +21,6 @@ import { duration } from "../audio.mjs";
 
 export const SEGMENTS_SCHEMA = "itv-segments/1";
 export const SEGMENT_MAX_SECONDS = 30;
-export const SEGMENTS_PER_KEYWORD = 3;
 // What a clip of up to 30 s can say, written out in full: a fast speaker says
 // about 90 words in 30 s, a Hungarian one about 700 characters; 1500 leaves room.
 export const SEGMENT_TEXT_MAX = 1500;
@@ -64,10 +63,6 @@ export async function addSegment({ identityDir, file, keyword, name, text = "", 
     throw new Error("Pick the keyword this segment says.");
   }
   const all = loadSegments(identityDir);
-  if (all.filter((s) => s.keyword === info.keyword).length >= SEGMENTS_PER_KEYWORD) {
-    drop();
-    throw new Error(`${info.keyword} already has ${SEGMENTS_PER_KEYWORD} segments. Remove one first.`);
-  }
   let seconds;
   try {
     seconds = Math.round((await duration(src, env)) * 1000) / 1000;
@@ -82,8 +77,11 @@ export async function addSegment({ identityDir, file, keyword, name, text = "", 
   const id = crypto.randomBytes(5).toString("hex");
   const target = `${id}${path.extname(src).toLowerCase()}`;
   fs.renameSync(src, path.join(dir, target));
-  const seg = { id, keyword: info.keyword, name: String(name ?? "").trim().slice(0, 60) || `${info.keyword} ${all.filter((s) => s.keyword === info.keyword).length + 1}`, file: target, seconds, source, ...(heygenId ? { heygenId: String(heygenId).slice(0, 80) } : {}), text: String(text ?? "").replace(/\s+/g, " ").trim().slice(0, SEGMENT_TEXT_MAX) || null, createdAt: new Date().toISOString(), lastUsedAt: null };
-  saveSegments(identityDir, [...all, seg]);
+  // Replace: the keyword's old clip goes, file and all.
+  const old = all.filter((s) => s.keyword === info.keyword);
+  for (const o of old) fs.rmSync(path.join(dir, o.file), { force: true });
+  const seg = { id, keyword: info.keyword, name: String(name ?? "").trim().slice(0, 60) || info.keyword, file: target, seconds, source, ...(heygenId ? { heygenId: String(heygenId).slice(0, 80) } : {}), text: String(text ?? "").replace(/\s+/g, " ").trim().slice(0, SEGMENT_TEXT_MAX) || null, createdAt: new Date().toISOString(), lastUsedAt: null };
+  saveSegments(identityDir, [...all.filter((s) => s.keyword !== info.keyword), seg]);
   return seg;
 }
 
@@ -96,14 +94,8 @@ export function removeSegment(identityDir, id) {
   return { removed: id };
 }
 
-// The segment for a keyword: the wanted one if it still exists and says that
-// keyword, else the least recently used (never used first).
-export function pickSegment(segments, keyword, wantedId = null) {
-  const mine = segments.filter((s) => s.keyword === keyword);
-  const wanted = wantedId && mine.find((s) => s.id === wantedId);
-  if (wanted) return wanted;
-  return [...mine].sort((a, b) => String(a.lastUsedAt ?? "").localeCompare(String(b.lastUsedAt ?? "")) || a.createdAt.localeCompare(b.createdAt))[0] ?? null;
-}
+// The keyword's segment, or null (the narrator says it).
+export const segmentFor = (segments, keyword) => segments.find((s) => s.keyword === keyword) ?? null;
 
 export function markUsed(identityDir, ids) {
   if (!ids.length) return;
