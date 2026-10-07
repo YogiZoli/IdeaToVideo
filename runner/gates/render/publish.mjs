@@ -42,6 +42,13 @@ export function cardIdOf(projectDir) {
   return cardId;
 }
 
+// The caption file text rides in the card, so the publishing tool gets the
+// word-timed SRT, not one rebuilt from sentences.
+const srtOf = (videoFile) => {
+  const f = videoFile.replace(/\.mp4$/i, "") + ".srt";
+  return fs.existsSync(f) ? { srt: fs.readFileSync(f, "utf8") } : {};
+};
+
 // chapters: [{ start, title }] from export.mjs chapters().
 export function buildCard(projectDir, videoFile, { language = "en", total, chapters = [], chaptersText = "", appVersion = null, project = {}, syntheticMedia = false } = {}) {
   const script = readJson(projectDir, "script.json");
@@ -85,7 +92,7 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
     next: { video: pub.nextVideo ?? null, playlist: pub.playlist ?? null },
     chapters: chapters.map((c) => ({ start: r3(c.start), title: c.title })),
     chaptersText,
-    captions: { file: `${base}.srt`, language },
+    captions: { file: `${base}.srt`, language, ...srtOf(videoFile) },
     // The script as written: exact words, the source for any translation.
     script: narrationFromMarkdown(md).map((b) => ({ heading: b.heading, text: b.text })),
     // The recorded sentences with their times (measured on the voice).

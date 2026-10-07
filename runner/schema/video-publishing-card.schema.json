@@ -107,7 +107,12 @@
       "required": [
         "file",
         "language"
-      ]
+      ],
+      "properties": {
+        "srt": {
+          "type": "string"
+        }
+      }
     },
     "script": {
       "type": "array",
