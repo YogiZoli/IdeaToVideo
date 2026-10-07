@@ -12,8 +12,7 @@
 // slots: which keyword is said where, null = no call there. Any keyword may
 // sit in any place, and the same one may repeat (one cold video, three times
 // GUIDE). modes: the narrator says the call (default), or one of the
-// Identity's segments plays it (segments.mjs), never both. segmentIds: a
-// video's own pick of segment per place. offers: what the viewer gets for a
+// Identity's segments plays it (segments.mjs), never both. offers: what the viewer gets for a
 // keyword, in the user's words; without one the script says the catalog's
 // "gets". endScreen: seconds left at the end for YouTube's end screen
 // (DECISIONS 53: 20 by default, 5 to 20, 0 = none). Treated as data, never as
@@ -23,7 +22,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { validate, loadSchema } from "../schema/validate.mjs";
 import { KEYWORDS, SLOT_IDS, DEFAULT_SLOTS, keywordInfo } from "./catalog.mjs";
-import { loadSegments, pickSegment } from "./segments.mjs";
+import { loadSegments, segmentFor } from "./segments.mjs";
 
 export const CTA_SCHEMA = "cta-profile/1";
 export const CTA_FILE = "cta.json";
@@ -43,7 +42,6 @@ export function normalizeProfile(input) {
   if (errors.length) throw new Error(`The CTA profile is not valid: ${errors.slice(0, 4).join("; ")}`);
   const slots = {};
   const modes = {};
-  const segmentIds = {};
   for (const id of SLOT_IDS) {
     const v = input.slots?.[id] ?? null;
     if (v !== null && !keywordInfo(v)) throw new Error(`Unknown keyword at ${id}: ${v}. Pick one of the 15.`);
@@ -54,7 +52,6 @@ export function normalizeProfile(input) {
     // default: it reads as auto (Zoltan's second test, 2026-10-05).
     const m = input.modes?.[id];
     modes[id] = m === "segment" || (m === "narrator" && input.modesV === 2) ? m : "auto";
-    if (input.segmentIds?.[id]) segmentIds[id] = input.segmentIds[id];
   }
   const offers = {};
   for (const [k, text] of Object.entries(input.offers ?? {})) {
@@ -69,7 +66,6 @@ export function normalizeProfile(input) {
     slots,
     modes,
     modesV: 2,
-    ...(Object.keys(segmentIds).length ? { segmentIds } : {}),
     offers,
     endScreen: input.endScreen ?? END_SCREEN_DEFAULT,
   };
@@ -118,7 +114,7 @@ export function ctaPlan(profile, segments = []) {
     const base = { slot, keyword: info.keyword, temperature: info.temperature, gets: info.gets, offer: p.offers?.[info.keyword] ?? null, mode: "narrator", segment: null };
     const mode = p.modes?.[slot] ?? "auto";
     if (mode === "narrator") return base;
-    const seg = pickSegment(segments, info.keyword, p.segmentIds?.[slot] ?? null);
+    const seg = segmentFor(segments, info.keyword);
     if (seg) return { ...base, mode: "segment", segment: seg };
     return mode === "segment" ? { ...base, note: `No segment for ${info.keyword} yet, so the narrator says it.` } : base;
   });

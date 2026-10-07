@@ -9,7 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { addSegment, loadSegments, pickSegment, removeSegment, markUsed, segmentsDir, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX } from "./cta/segments.mjs";
+import { addSegment, loadSegments, segmentFor, removeSegment, segmentsDir, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX } from "./cta/segments.mjs";
 import { ctaPlan, normalizeProfile } from "./cta/profile.mjs";
 import { makeVoice, insertAfter, VOICE_PROVIDERS } from "./gates/voice/index.mjs";
 import { segmentClips, segmentVideo } from "./gates/build/assemble.mjs";
@@ -33,7 +33,7 @@ function clip(file, seconds, sound = true) {
   return file;
 }
 
-test("the library: a keyword per segment, at most 30 s, at most 3 per keyword, least recently used next", { skip: !haveFf && "bundled ffmpeg not fetched" }, async () => {
+test("the library: a keyword per segment, at most 30 s, at most one per keyword, a new clip replaces the old", { skip: !haveFf && "bundled ffmpeg not fetched" }, async () => {
   const dir = tmp();
   const seg = segmentsDir(dir);
   const add = async (name, seconds, keyword = "GUIDE") => {
@@ -42,20 +42,21 @@ test("the library: a keyword per segment, at most 30 s, at most 3 per keyword, l
   };
   const a = await add("incoming-1.mp4", 2);
   assert.equal(a.keyword, "GUIDE");
-  assert.equal(a.name, "GUIDE 1");
+  assert.equal(a.name, "GUIDE");
   await assert.rejects(add("incoming-2.mp4", SEGMENT_MAX_SECONDS + 2), /at most 30 s/);
   assert.equal(fs.existsSync(path.join(seg, "incoming-2.mp4")), false, "a refused clip is deleted");
   await assert.rejects(add("incoming-3.mp4", 1, "FREE"), /Pick the keyword/);
+  assert.equal(loadSegments(dir)[0].id, a.id, "a refused clip leaves the old one in place");
   const b = await add("incoming-4.mp4", 1);
-  const c = await add("incoming-5.mp4", 1);
-  await assert.rejects(add("incoming-6.mp4", 1), /already has 3 segments/);
-  assert.equal(pickSegment(loadSegments(dir), "GUIDE").id, a.id, "never used: the oldest first");
-  markUsed(dir, [a.id]);
-  assert.equal(pickSegment(loadSegments(dir), "GUIDE").id, b.id, "then the next one in turn");
-  assert.equal(pickSegment(loadSegments(dir), "GUIDE", c.id).id, c.id, "a video's own pick wins");
-  assert.equal(pickSegment(loadSegments(dir), "TRIGGER"), null);
+  assert.deepEqual(loadSegments(dir).map((s) => s.id), [b.id], "the second GUIDE clip replaces the first");
+  assert.equal(fs.existsSync(path.join(seg, a.file)), false, "the replaced clip's file is gone");
+  const c = await add("incoming-5.mp4", 1, "TRIGGER");
+  assert.equal(segmentFor(loadSegments(dir), "GUIDE").id, b.id);
+  assert.equal(segmentFor(loadSegments(dir), "TRIGGER").id, c.id);
+  assert.equal(segmentFor(loadSegments(dir), "COURSE"), null, "no segment: the narrator says it");
   removeSegment(dir, b.id);
-  assert.equal(loadSegments(dir).length, 2);
+  assert.deepEqual(loadSegments(dir).map((s) => s.keyword), ["TRIGGER"]);
+  assert.equal(fs.readdirSync(seg).filter((f) => f.endsWith(".mp4")).length, 1, "no file is left behind");
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

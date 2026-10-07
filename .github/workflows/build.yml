@@ -60,9 +60,6 @@ jobs:
       - name: Runner dependencies (the Anthropic SDK, pinned by runner/package-lock.json)
         run: npm ci --prefix runner --no-audit --no-fund
 
-      - name: Runner tests
-        run: npm test
-
       - name: App dependencies
         working-directory: app
         run: npm ci
@@ -82,6 +79,12 @@ jobs:
 
       - name: Scene library (HyperFrames registry components, pinned and SHA256 checked)
         run: node scripts/fetch-library.mjs
+
+      # After the downloads: the runner tests read the library (components,
+      # presets, fonts, motion registry), which is not in the repo. Before them
+      # the tests failed on a clean machine only (PR #3, 2026-10-06).
+      - name: Runner tests
+        run: npm test
 
       - name: Rust tests
         working-directory: app/src-tauri
