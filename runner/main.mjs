@@ -29,7 +29,7 @@ import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/mus
 import { makeScenes, saveScenes, refillScene, sceneRows, simpleScenes } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
-import { youtubeTexts } from "./gates/render/youtube.mjs";
+import { youtubeTexts, makePackaging, savePackaging, loadPackaging } from "./gates/render/youtube.mjs";
 import { isLightLook, libraryDir, baseTheme, callColor } from "./gates/build/assemble.mjs";
 import { loadCard, saveCard, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
 import { fontsIndex, familyNames, categories } from "./brand/fonts.mjs";
@@ -314,14 +314,6 @@ function readVoiceInfo(projectDir) {
 
 // The newest render of a project, with its captions and chapters, so the UI
 // shows it again after a restart or an Autopilot run.
-// The YouTube texts made for a video (gates/render/youtube.mjs), if any.
-function readYoutube(base) {
-  try {
-    return JSON.parse(fs.readFileSync(`${base}.youtube.json`, "utf8"));
-  } catch {
-    return null;
-  }
-}
 
 function latestVideo(projectDir) {
   const out = path.join(projectDir, "out");
@@ -348,7 +340,7 @@ function latestVideo(projectDir) {
     comments: fs.existsSync(`${base}.comments.txt`) ? fs.readFileSync(`${base}.comments.txt`, "utf8") : null,
     calls,
     syntheticMedia,
-    youtube: readYoutube(base),
+    youtube: youtubeTexts(projectDir, file),
   };
 }
 
@@ -702,8 +694,18 @@ const commands = {
       for (const c of plan) if (c.note) appendLog(projectDir, `script: ${c.note}`);
       writeJson(path.join(projectDir, "script.json"), res.script);
       writeAtomic(path.join(projectDir, "script.md"), res.markdown);
+      // The packaging (title ideas, summary, tags) right with the script
+      // (DECISIONS 86). A problem here never loses the script.
+      try {
+        const pack = await makePackaging({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, language: project.language });
+        appendLog(projectDir, `packaging: ${pack.titles.length} title ideas${pack.chosen ? ", the chosen title kept" : ""}`);
+      } catch (e) {
+        appendLog(projectDir, `packaging: failed, ${e.message}`);
+      }
       project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
-      if (res.script.title && !project.title) project.title = res.script.title;
+      const packTitle = loadPackaging(projectDir)?.title;
+      if (packTitle) project.title = packTitle;
+      else if (res.script.title && !project.title) project.title = res.script.title;
       saveProject(projectDir, project);
       const findings = checkAll(dict, spokenFields(res.script).map(([where, text]) => [`script ${where}`, text]));
       if (res.humanize !== "off") appendLog(projectDir, `script: natural voice ${res.humanize}${res.humanizeNote ? `, ${res.humanizeNote}` : ""}`);
@@ -1082,13 +1084,20 @@ const commands = {
     return { gate: project.gates[gate], status: project.status };
   },
 
-  // The YouTube texts of the rendered video (title ideas, description with
-  // the chapters, tags), for "Upload on YouTube" (DECISIONS 86).
-  "youtube-texts": async ({ projectDir, file, llm }) => {
-    const video = path.resolve(file);
-    if (!video.startsWith(path.resolve(projectDir)) || !/\.mp4$/i.test(video)) throw new Error("That is not a video of this project.");
-    appendLog(projectDir, `youtube: texts with ${llm.provider}/${llm.model || "default model"}`);
-    return youtubeTexts({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }, videoFile: video });
+  // The packaging (DECISIONS 86): made at gate 1 with the script, again on
+  // request; the user's choice of title, summary and tags.
+  "packaging-state": async ({ projectDir }) => ({ packaging: loadPackaging(projectDir) }),
+  "packaging-make": async ({ projectDir, llm }) => {
+    if (!fs.existsSync(path.join(projectDir, "script.md"))) throw new Error("Write the script first.");
+    appendLog(projectDir, `packaging: with ${llm.provider}/${llm.model || "default model"}`);
+    const packaging = await makePackaging({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }, projectDir, language: loadProject(projectDir).language });
+    return { packaging };
+  },
+  "packaging-save": async ({ projectDir, title, summary, tags }) => {
+    const packaging = savePackaging(projectDir, { title, summary, tags });
+    saveProject(projectDir, { ...loadProject(projectDir), title: packaging.title });
+    appendLog(projectDir, `packaging: chosen, "${packaging.title}"`);
+    return { packaging };
   },
 
   "approve-gate": async ({ projectDir, gate }) => {

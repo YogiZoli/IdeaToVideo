@@ -19,7 +19,6 @@
   import { running } from "./work.svelte";
   import { log } from "./logger";
   import type { TabId } from "./tabs";
-  import { llmFor } from "./llm";
 
   type Youtube = { titles: string[]; title: string; summary: string; description: string; tags: string[] };
   type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; publishFile?: string | null; comments?: string | null; youtube?: Youtube | null; syntheticMedia?: boolean };
@@ -76,25 +75,9 @@
     }
   }
 
-  // YouTube: the texts first (one small AI call, kept next to the video)
-  let yt = $state<Youtube | null>(null);
-  $effect(() => {
-    yt = video?.youtube ?? null;
-  });
-  let ytBusy = $state(false);
-  const ytJob = $derived(!!running(dir, ["youtube-texts"]));
-  async function makeTexts() {
-    if (!video) return;
-    ytBusy = true;
-    error = "";
-    try {
-      yt = await runner<Youtube>("youtube-texts", { projectDir: dir, file: video.file, llm: llmFor(app.config, "texts") });
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      ytBusy = false;
-    }
-  }
+  // YouTube: the packaging chosen at gate 1, the description by code
+  // (DECISIONS 86).
+  const yt = $derived(video?.youtube ?? null);
   let copied = $state("");
   async function copy(what: string, text: string) {
     await navigator.clipboard.writeText(text);
@@ -158,17 +141,14 @@
         <p class="hint">YouTube Studio opens in your browser and the video is shown in its folder: drag it into the upload window. Copy the texts below into the upload form.</p>
         {#if video.syntheticMedia}<p class="synthetic">This video has AI-made B-roll clips. In the upload form, under "Altered or synthetic content", answer <b>Yes</b> if a clip looks real (a real-looking person, place or event). It is also noted in the publishing data.</p>{/if}
         {#if !yt}
-          <button type="button" disabled={ytBusy || ytJob} onclick={makeTexts}>{ytBusy || ytJob ? "Writing the texts..." : "Write title, description and tags (AI)"}</button>
+          <p class="hint">No packaging yet: make the title, summary and tags on the Script tab, then the texts appear here.</p>
         {:else}
-          <span class="sub">Title (pick one)</span>
-          {#each yt.titles as t}
-            <div class="copyrow"><span>{t}</span><button type="button" class="ghost" onclick={() => copy(t, t)}>{copied === t ? "Copied" : "Copy"}</button></div>
-          {/each}
-          <div class="copyrow top"><span class="sub">Description, with the chapters</span><button type="button" class="ghost" onclick={() => copy("description", yt!.description)}>{copied === "description" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow"><span class="sub">Title</span></div>
+          <div class="copyrow"><span>{yt.title}</span><button type="button" class="ghost" onclick={() => copy("title", yt.title)}>{copied === "title" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow top"><span class="sub">Description, with the chapters</span><button type="button" class="ghost" onclick={() => copy("description", yt.description)}>{copied === "description" ? "Copied" : "Copy"}</button></div>
           <pre>{yt.description}</pre>
-          <div class="copyrow top"><span class="sub">Tags</span><button type="button" class="ghost" onclick={() => copy("tags", yt!.tags.join(", "))}>{copied === "tags" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow top"><span class="sub">Tags</span><button type="button" class="ghost" onclick={() => copy("tags", yt.tags.join(", "))}>{copied === "tags" ? "Copied" : "Copy"}</button></div>
           <p class="tags">{yt.tags.join(", ")}</p>
-          <button type="button" class="ghost" disabled={ytBusy || ytJob} onclick={makeTexts}>Write new ones</button>
         {/if}
       </div>
 
