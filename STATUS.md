@@ -12,7 +12,9 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   indítási próbával; az arm64 ffmpeg új forrása (a régiből szűrők
   hiányoztak). Leírások: `docs/pilot/install-guide-mac.md`,
   `docs/pilot/send-logs.md`; a Windows leírás az új részekkel frissítve.
-  A telepítők a `G:/My Drive/IdeaToVideo-pilot/` mappában. Következő
+  A telepítők (build `da2d41a`, PR #12): `IdeaToVideo_0.1.0_da2d41a_aarch64.dmg`
+  és `IdeaToVideo_0.1.0_da2d41a_x64-setup.exe` a `G:/My Drive/IdeaToVideo-pilot/`
+  mappában, a Windows-os a `C:/Users/gdp/ITV-sandbox/share/`-ben is. Következő
   lépés: a Mac-es barátok próbája, a naplóik alapján javítás.
 
 - **HeyGen v3** (116): minden HeyGen hívás már v3 volt; teszt rögzíti, hogy
