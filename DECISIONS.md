@@ -1512,3 +1512,27 @@
     - **Video tab:** Files (MP4, `.srt`, `chapters.txt`, a kártya),
       Publishing ("Export card"), Upload on YouTube (YouTube Studio
       megnyitása, a cím, a leírás és a tagek másolás gombbal), Backup.
+
+115. **Publishing kapcsolat, "Send to Publishing"** (Zoltan, 2026-10-07, D4):
+    - **Settings, Publishing** (App szint): a publikáló app címe
+      (`config.json` `publishing.url`) és a token az OS kulcstárban
+      (kulcsnév `publishing`, mint a többi kulcs). A UI-ban nincs
+      márkanév, csak "Publishing".
+    - **Video tab:** "Send to Publishing": `POST {url}/api/v1/cards`,
+      `Authorization: Bearer <token>`, a törzs a kártya. 200 vagy 201
+      `{"cardId", "url"}`: a link megnyitható; 4xx `{"error"}`: a mondat
+      változatlanul; hálózati hiba, 30 mp csend és 5xx: érthető üzenet
+      "Try again" gombbal. Ugyanaz a `cardId` újraküldve frissít. Mellette
+      "Export card".
+    - **A kérést a runner (Node) küldi, nem az ablak**, ezért a CSP és a
+      Tauri http jogosultság nem nyílik ki: szűkebb felület, mint a
+      user-hoszt engedélyezése a webview-ban. A cím csak https lehet
+      (http csak localhost), felhasználónév, jelszó, `?` és `#` nélkül.
+      A visszakapott linket csak a beállított hoszton nyitja meg az app
+      (Rust `open_publishing_link`, mert az opener fix listája a user
+      hosztját nem ismeri); más hoszt linkje nem jelenik meg linkként.
+    - **Mock szerver:** `scripts/publishing-mock.mjs` (ugyanaz a
+      szerződés, a kártyát a sémával ellenőrzi); kézi próbához
+      `node scripts/publishing-mock.mjs --port 8787 --token test-token`.
+      Tesztek: `runner/publishing.test.mjs` (201, 200 frissítés, 401, 400,
+      503, nincs válasz, időtúllépés, címszabályok), Rust: a link-hoszt.
