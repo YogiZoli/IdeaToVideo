@@ -1,10 +1,10 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-07 (3. fázis folyamatban, branch `phase-3`, DECISIONS 101-109)
+Frissítve: 2026-10-07 (3. fázis lezárva, PR #5 merge-ölve, DECISIONS 101-111; README kész)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
-Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot · 4 kiadás.
+Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
 ## Most (2026-10-06, este)
 
@@ -45,7 +45,7 @@ móddal a renderig).
 
 **Itt kezdd:** `docs/hatralevo.md` (a sorrend és mi kész), utána
 `docs/video-quality-plan.md` (a videóminőség terve), a DECISIONS 101-109.
-A branch pusholva (`origin/phase-3`), PR még nincs (a fázis végén).
+PR #5, merge-ölve a mainbe (2026-10-07).
 
 **Zoltan sorrendje (DECISIONS 103):** (1) élénkebb alap, (2) ikonok, (3)
 kimondott szó és feliratok, (4) a 39 archetípus csomagként, (5) Scenes
@@ -74,8 +74,7 @@ README is kész. A Sandbox-próba elhagyva, a telepítőt Zoltan próbálja, a h
 **Következő:** Zoltan próbája; a későbbi, ingyenes teendők (updater, `release.yml`,
 `ci-test-order`, a GSAP licenc-kérdés eladás előtt) a `docs/hatralevo.md`-ben.
 
-**Tesztek:** 266 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
-az új funkciók a 4. fázis végi telepítővel próbálhatók (Zoltan döntése).
+**Tesztek:** 266 Node, 47 Rust, UI check 0 hiba. Telepítő: `IdeaToVideo_0.1.0_981636b_x64-setup.exe`.
 Mintavideók: `C:/Users/gdp/Videos/IdeaToVideo-mintak/`.
 
 Régebbi sorrend: utána a 3. fázis (pilot).
