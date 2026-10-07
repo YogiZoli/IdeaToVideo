@@ -52,6 +52,7 @@ export const SERVICE_KEY_URLS: Record<string, string> = {
   heygen: "https://app.heygen.com/settings?nav=API",
   vidiq: "https://app.vidiq.com/account/settings/mcp",
   pixabay: "https://pixabay.com/api/docs/",
+  unsplash: "https://unsplash.com/oauth/applications",
 };
 
 export const LANGUAGES: { code: string; label: string; voice: string }[] = [

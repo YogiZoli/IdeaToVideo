@@ -23,6 +23,7 @@ pub const ALLOWED: &[&str] = &[
     "heygen",
     "vidiq",
     "pixabay",
+    "unsplash",
     "publishing",
 ];
 

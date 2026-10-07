@@ -36,6 +36,7 @@ export const DEFAULT_PRESET = "balanced";
 export const PICTURE_SOURCES = {
   footage: { label: "Your own footage", hint: "Clips you added in Settings, Identity, Footage. Free.", kinds: ["video", "image"] },
   pixabay: { label: "Pixabay", hint: "Free stock photos and videos, also for commercial use. Needs a free Pixabay key (Settings, Identity, Footage).", kinds: ["image", "video"] },
+  unsplash: { label: "Unsplash", hint: "Free stock photos, also for commercial use. Needs your own Unsplash Access Key (Settings, Identity, Footage); Demo mode allows 50 searches an hour.", kinds: ["image"] },
   "ai-broll": { label: "AI B-roll (HeyGen)", hint: "Generated clips; costs HeyGen API credits, off by default (Settings, Identity, Footage).", kinds: ["video"] },
   "ai-image": { label: "AI pictures", hint: "Generated pictures with your Gemini key. Coming soon; costs a little per picture.", kinds: ["image"], later: true },
 };
@@ -44,7 +45,7 @@ export const scenesPath = (identityDir) => path.join(identityDir, SCENES_FILE);
 const ROLES_WITH_LIBRARY = Object.keys(ROLES).filter((r) => r !== "closing" && Object.values(COMPONENTS).some((c) => c.role === r && !c.retired));
 
 export function defaultScenes({ off = [] } = {}) {
-  return { schema: SCENES_SCHEMA, preset: DEFAULT_PRESET, mix: { ...MIX_PRESETS[DEFAULT_PRESET].mix }, off: [...off], icons: { families: [...FAMILIES] }, pictures: { sources: ["footage", "pixabay"] } };
+  return { schema: SCENES_SCHEMA, preset: DEFAULT_PRESET, mix: { ...MIX_PRESETS[DEFAULT_PRESET].mix }, off: [...off], icons: { families: [...FAMILIES] }, pictures: { sources: ["footage", "pixabay", "unsplash"] } };
 }
 
 // The profile checked and evened out: the mix adds up to 100, unknown names
