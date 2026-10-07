@@ -25,6 +25,8 @@ Hátravan:
 
 ## 4. fázis
 
+Kész: Mac v1, aláíratlan .dmg Apple Silicon gépre, Mac telepítési leírás, naplóküldési leírás (DECISIONS 118, 2026-10-08).
+
 Kész: README (2026-10-07), THIRD-PARTY-NOTICES, az About oldal licencsorai.
 
 Később, ingyenes, Zoltan döntése szerint megmarad (2026-10-07):
@@ -40,7 +42,7 @@ Elhagyva: a Windows Sandbox próba (Zoltan, 2026-10-07; a telepítőt ő próbá
 Fizetős vagy várakozó:
 - Windows aláírás: kb. 10 USD/hó.
 - Apple Developer ID: 99 USD/év.
-- Mac build és Mac kézi teszt.
+- Mac kézi teszt (a Mac v1 .dmg kész, DECISIONS 118; a próba a barátoknál).
 - Név, cégforma, domain.
 - AI kép (Gemini) és HeyGen API kredit (AI B-roll, avatar próba).
 - A baráti pilot (B kör).

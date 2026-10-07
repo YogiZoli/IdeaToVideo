@@ -50,6 +50,10 @@
       "../../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.md"
     },
     "shortDescription": "From idea to video, on your own machine",
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "11.0"
+    },
     "windows": {
       "nsis": {
         "installerHooks": "windows/hooks.nsh",

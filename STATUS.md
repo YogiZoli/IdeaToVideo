@@ -1,12 +1,19 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-08 (HeyGen v3 és Unsplash, DECISIONS 116-117)
+Frissítve: 2026-10-08 (Mac v1, DECISIONS 118)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
 ## Most (2026-10-08)
+
+- **Mac v1** (118): aláíratlan .dmg Apple Silicon gépre, a CI-ban
+  indítási próbával; az arm64 ffmpeg új forrása (a régiből szűrők
+  hiányoztak). Leírások: `docs/pilot/install-guide-mac.md`,
+  `docs/pilot/send-logs.md`; a Windows leírás az új részekkel frissítve.
+  A telepítők a `G:/My Drive/IdeaToVideo-pilot/` mappában. Következő
+  lépés: a Mac-es barátok próbája, a naplóik alapján javítás.
 
 - **HeyGen v3** (116): minden HeyGen hívás már v3 volt; teszt rögzíti, hogy
   nincs v1 vagy v2 hívás. Határidő 2026-10-31 rendben.

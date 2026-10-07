@@ -92,7 +92,27 @@ jobs:
 
       - name: Installer
         working-directory: app
-        run: npm run tauri -- build --bundles ${{ matrix.bundles }}
+        run: npm run tauri -- build --bundles ${{ matrix.bundles == 'dmg' && 'app,dmg' || matrix.bundles }}
+
+      # No Mac to try the build on (Mac v1): a cheap check on the runner that
+      # the bundle is ad-hoc signed and its sidecars run from inside the .app.
+      - name: macOS bundle smoke test
+        if: runner.os == 'macOS'
+        working-directory: app/src-tauri/target/release/bundle/macos
+        run: |
+          set -e
+          APP=IdeaToVideo.app
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          "$APP/Contents/MacOS/node" --version
+          "$APP/Contents/Resources/ffmpeg/ffmpeg" -hide_banner -version | head -1
+          "$APP/Contents/Resources/ffmpeg/ffprobe" -hide_banner -version | head -1
+          test -f "$APP/Contents/Resources/runner/main.mjs"
+          test -d "$APP/Contents/Resources/engine/node_modules/hyperframes"
+          # the app itself starts and stays up for 15 seconds
+          "$APP/Contents/MacOS/IdeaToVideo" & PID=$!
+          sleep 15
+          kill -0 $PID
+          kill $PID
 
       - uses: actions/upload-artifact@v4
         with:

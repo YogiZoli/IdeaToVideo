@@ -12,7 +12,8 @@ test("every ffmpeg file is pinned: https, a fixed release, a sha256", () => {
     assert.ok(t.source.includes("github.com/FFmpeg/FFmpeg"), `${triple}: source link for the GPL`);
     for (const f of t.files) {
       assert.match(f.sha256, /^[0-9a-f]{64}$/);
-      assert.ok(f.url.startsWith("https://github.com/"), f.url);
+      // GitHub releases, or Martin Riedl's versioned (timestamp_version) download folder
+      assert.ok(/^https:\/\/(github\.com\/|raw\.githubusercontent\.com\/FFmpeg\/FFmpeg\/n[0-9.]+\/|ffmpeg\.martin-riedl\.de\/download\/macos\/arm64\/\d+_[0-9.]+\/)/.test(f.url), f.url);
       assert.ok(!/\/latest\//.test(f.url), `${f.url} must be a pinned release, not latest`);
     }
   }
