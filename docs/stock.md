@@ -174,7 +174,10 @@ egy esetleges vitához.
 újra), a kulcs-teszt egy kérés. Ha elfogy: "Unsplash allows 50 searches an
 hour while the key is in Demo mode..." üzenet, és a Pixabay közben használható.
 
-### Production kérelem: Zoltan lépése
+### Production kérelem: nem lesz (Zoltan, 2026-10-08)
+
+Zoltan döntése: Production kérelem soha nem lesz, az Unsplash Demo módban
+marad (50 kérés óránként). Az alábbi lépések csak emlékeztetőnek maradnak.
 
 1. Az appban add meg a saját Access Key-t, és keress az Unsplash forrással a
    Scenes tabon ("Photos and videos").
