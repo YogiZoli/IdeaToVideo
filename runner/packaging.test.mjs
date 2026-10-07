@@ -55,7 +55,7 @@ test("packaging: the Video tab's texts, the description by code from the publish
   assert.equal(youtubeTexts(dir, video), null, "no packaging, no texts");
   await makePackaging({ llm: llmWith(1), projectDir: dir });
   fs.mkdirSync(path.dirname(video));
-  fs.writeFileSync(video.replace(/\.mp4$/, ".publish.json"), JSON.stringify({ landingUrl: "https://x.example/guide", commentCalls: [{ keyword: "GUIDE", gets: "a free guide" }], chaptersText: "0:00 Intro" }));
+  fs.writeFileSync(video.replace(/\.mp4$/, ".card.json"), JSON.stringify({ landingUrl: "https://x.example/guide", commentCalls: [{ keyword: "GUIDE", gets: "a free guide" }], chaptersText: "0:00 Intro" }));
   const yt = youtubeTexts(dir, video);
   assert.equal(yt.title, loadPackaging(dir).title);
   assert.equal(yt.description, "Summary 1.\n\nhttps://x.example/guide\n\nGUIDE: a free guide\n\n0:00 Intro\n");

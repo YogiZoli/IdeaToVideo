@@ -176,7 +176,7 @@ export function youtubeTexts(projectDir, videoFile) {
   if (!pack) return null;
   let publish = null;
   try {
-    publish = JSON.parse(fs.readFileSync(videoFile.replace(/\.mp4$/i, ".publish.json"), "utf8"));
+    publish = JSON.parse(fs.readFileSync(videoFile.replace(/\.mp4$/i, ".card.json"), "utf8"));
   } catch {
     publish = null;
   }

@@ -240,8 +240,8 @@ check("captions (.srt) next to the video", fs.existsSync(rendered.data.srt ?? ""
 check("brand: no font was downloaded for the build, the stills or the render", cached() === cacheBefore);
 check("YouTube chapters next to the video", rendered.data.chapters?.startsWith("0:00 Intro") === true, (rendered.data.chapters ?? "").replace(/\n/g, " / "));
 {
-  const pub = JSON.parse(fs.readFileSync(rendered.data.publishFile ?? "", "utf8"));
-  check("AI B-roll: the publishing data asks for YouTube's synthetic content answer", pub.syntheticMedia === true && rendered.data.syntheticMedia === true);
+  const pub = JSON.parse(fs.readFileSync(rendered.data.cardFile ?? "", "utf8"));
+  check("AI B-roll: the publishing card asks for YouTube's synthetic content answer", pub.syntheticMedia === true && rendered.data.syntheticMedia === true);
 }
 check("the project remembers the video", runner("load-project", { projectDir: dir }).data?.latestVideo?.file === rendered.data.file);
 

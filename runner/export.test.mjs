@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createProject } from "./project.mjs";
 import { captionCues, toSrt, chapters, chapterTitle, writeExtras, MAX_LINE } from "./gates/render/export.mjs";
 
 const w = (text, start, end) => ({ text, start, end });
@@ -46,7 +47,7 @@ test("chapters: first at 0:00, short ones join the one before, YouTube's minimum
 });
 
 test("both files go next to the video", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-export-"));
+  const { dir } = createProject({ projectsDir: fs.mkdtempSync(path.join(os.tmpdir(), "itv-export-")), title: "T" });
   fs.writeFileSync(path.join(dir, "words.json"), JSON.stringify([w("Hi.", 0.1, 0.4), w("Bye.", 20, 20.5)]));
   fs.writeFileSync(path.join(dir, "sentences.json"), JSON.stringify([{ ...S("S1", 0.1, 0.4), text: "Hi.", words: 1 }, { ...S("S2", 20, 20.5), text: "Bye.", words: 1 }]));
   fs.writeFileSync(path.join(dir, "script.md"), "# T\n\n## OPEN\n\nHi.\n\n## OWN\n\nBye.\n");

@@ -880,23 +880,23 @@ fn import_segment(app: AppHandle, path: String) -> Result<String, String> {
     Ok(name)
 }
 
-/// "Export publishing data": copies a rendered video's <video>.publish.json
-/// (runner/gates/render/publish.mjs) to where the user chose. Only that kind
-/// of file, only from inside the projects folder.
+/// "Export card": copies a rendered video's Video Publishing Card,
+/// <video>.card.json (runner/gates/render/publish.mjs), to where the user
+/// chose. Only that kind of file, only from inside the projects folder.
 #[tauri::command]
-fn export_publish(app: AppHandle, file: String, path: String) -> Result<String, String> {
+fn export_card(app: AppHandle, file: String, path: String) -> Result<String, String> {
     let cfg = load_app_config(&app)?;
     let root = projects_dir(&app, cfg.as_ref())?;
     runner::check_paths(&json!({ "projectDir": file }), &root, &[])?;
-    if !file.to_ascii_lowercase().ends_with(".publish.json") {
-        return Err("Only the publishing data of a video can be exported here.".into());
+    if !file.to_ascii_lowercase().ends_with(".card.json") {
+        return Err("Only the publishing card of a video can be exported here.".into());
     }
     let mut out = PathBuf::from(path);
     if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("json".into()) {
         out.set_extension("json");
     }
-    std::fs::copy(&file, &out).map_err(|e| format!("Could not save the publishing data: {e}"))?;
-    note(&app, "info", "publish_exported", json!({ "file": out }));
+    std::fs::copy(&file, &out).map_err(|e| format!("Could not save the card: {e}"))?;
+    note(&app, "info", "card_exported", json!({ "file": out }));
     Ok(out.to_string_lossy().to_string())
 }
 
@@ -1049,7 +1049,7 @@ pub fn run() {
             import_brand,
             read_tokens_file,
             import_music,
-            export_publish,
+            export_card,
             export_video,
             import_segment,
             import_footage,

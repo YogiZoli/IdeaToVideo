@@ -173,10 +173,11 @@ test("main.mjs: cta-state, cta-check and cta-save through the protocol", () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test("publish.json and comments.txt: facts for the publishing tool, valid against itv-publish/1", async () => {
+test("the Video Publishing Card and comments.txt: facts and packaging, valid against video-publishing-card/1, one cardId per project", async () => {
   const { writeExtras } = await import("./gates/render/export.mjs");
   const { validate, loadSchema } = await import("./schema/validate.mjs");
-  const dir = tmp();
+  const { createProject, loadProject } = await import("./project.mjs");
+  const { dir } = createProject({ projectsDir: tmp(), title: "Own your audience", identity: "my-identity" });
   const script = { ...goodScript(), commentCalls: [{ slot: "start", keyword: "GUIDE", temperature: "cold", gets: "a free guide", offer: "the free checklist" }], publishing: { searchKeyword: "own your audience", landingUrl: "https://x.example/start", nextVideo: null, playlist: null } };
   fs.writeFileSync(path.join(dir, "script.json"), JSON.stringify(script));
   fs.writeFileSync(path.join(dir, "sentences.json"), JSON.stringify(sentences));
@@ -185,8 +186,23 @@ test("publish.json and comments.txt: facts for the publishing tool, valid agains
   fs.mkdirSync(path.join(dir, "out"));
   const video = path.join(dir, "out", "video-1.mp4");
   const r = writeExtras(dir, video, { language: "en", total: 12.5, project: { title: "Own your audience" } });
-  const pub = JSON.parse(fs.readFileSync(r.publishFile, "utf8"));
-  assert.deepEqual(validate(pub, loadSchema("itv-publish")), []);
+  const pub = JSON.parse(fs.readFileSync(r.cardFile, "utf8"));
+  assert.match(r.cardFile, /video-1\.card\.json$/);
+  assert.deepEqual(validate(pub, loadSchema("video-publishing-card")), []);
+  assert.equal(pub.schema, "video-publishing-card/1");
+  assert.match(pub.cardId, /^[0-9a-f-]{36}$/);
+  assert.equal(pub.cardId, loadProject(dir).cardId, "kept in project.json");
+  assert.equal(pub.videoId, null);
+  assert.equal(pub.packaging, null, "no packaging yet");
+  fs.writeFileSync(path.join(dir, "packaging.json"), JSON.stringify({ schema: "packaging/1", titles: ["A", "B"], title: "B", summary: "S.", tags: ["t"], chosen: true }));
+  fs.mkdirSync(path.join(dir, "audio"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "audio", "voice.json"), JSON.stringify({ inserts: [], endScreen: { start: 10.5, seconds: 2 } }));
+  const again = JSON.parse(fs.readFileSync(writeExtras(dir, video, { language: "en", total: 12.5, project: { title: "Own your audience" } }).cardFile, "utf8"));
+  assert.equal(again.cardId, pub.cardId, "the same card id on every render");
+  assert.deepEqual(again.packaging, { titles: ["A", "B"], title: "B", summary: "S.", tags: ["t"] });
+  assert.equal(again.endScreen.startSec, 10.5);
+  assert.deepEqual(validate(again, loadSchema("video-publishing-card")), []);
+  assert.deepEqual(validate({ ...again, cardId: "x" }, loadSchema("video-publishing-card")).length > 0, true);
   assert.equal(pub.video.title, "Own your audience");
   assert.equal(pub.landingUrl, "https://x.example/start");
   assert.deepEqual(pub.commentCalls, [{ slot: "start", keyword: "GUIDE", temperature: "cold", gets: "the free checklist", via: "narrator", start: 6.2, end: 7.6 }]);

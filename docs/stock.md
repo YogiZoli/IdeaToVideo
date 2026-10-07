@@ -45,7 +45,7 @@ Zoltan, 2026-10-06: a videó alatt ne legyen forráslista.
   **nem kér forrásmegjelölést**. A YouTube leírásba ezért semmi nem kerül.
 - Minden letöltött elemhez belül eltesszük: forrás, azonosító, szerző, a
   licenc neve és címe, az oldal címe, a letöltés ideje. A klip mellett, a
-  saját felvétel-könyvtárban, és a `publish.json` `credits` listájában. Ez
+  saját felvétel-könyvtárban, és a `card.json` `credits` listájában. Ez
   csak a mi bizonyítékunk egy esetleges vitához (Content ID claim), a néző
   nem látja.
 - Az Unsplash API szabálya a megjelölést az appon belül kéri (a kereső

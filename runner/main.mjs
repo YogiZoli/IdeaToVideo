@@ -326,7 +326,7 @@ function latestVideo(projectDir) {
   let calls = null;
   let syntheticMedia = false;
   try {
-    const pub = JSON.parse(fs.readFileSync(`${base}.publish.json`, "utf8"));
+    const pub = JSON.parse(fs.readFileSync(`${base}.card.json`, "utf8"));
     calls = pub.commentCalls;
     syntheticMedia = pub.syntheticMedia === true;
   } catch {
@@ -336,7 +336,7 @@ function latestVideo(projectDir) {
     file,
     chapters,
     srt: fs.existsSync(`${base}.srt`) ? `${base}.srt` : null,
-    publishFile: fs.existsSync(`${base}.publish.json`) ? `${base}.publish.json` : null,
+    cardFile: fs.existsSync(`${base}.card.json`) ? `${base}.card.json` : null,
     comments: fs.existsSync(`${base}.comments.txt`) ? fs.readFileSync(`${base}.comments.txt`, "utf8") : null,
     calls,
     syntheticMedia,

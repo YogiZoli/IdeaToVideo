@@ -1493,3 +1493,22 @@
     `publish.json`-ból rakja össze a szövegeket (`youtube.json` nincs
     többé). Ha a csomagolás AI-hívása elbukik, a script megmarad, és a
     Script tabon kézzel újrapróbálható. Tesztek: `runner/packaging.test.mjs`.
+
+114. **Video Publishing Card, az itv-publish/1 utódja** (Zoltan, 2026-10-07,
+    D3 és a D5 visszavonása utáni 3. és 4. pont):
+    - **Séma `video-publishing-card/1`**
+      (`runner/schema/video-publishing-card.schema.json`); a mezőnevek
+      (camelCase) a régiek. Új: `cardId` (UUID, projektenként egyszer
+      generálva, a `project.json`-ban megtartva), `videoId: null` (a
+      publikáló app tölti), `endScreen.startSec` (ha van végképernyő), és
+      `packaging {titles, title, summary, tags}` a Script tab
+      csomagolásából (DECISIONS 86), `null`, ha még nincs.
+    - **Fájl: `<video>.card.json`**, írás előtt a sémával ellenőrizve; a
+      `comments.txt` marad. Az `itv-publish/1` sémája, a `.publish.json`
+      írása és a Rust `export_publish` megszűnt (helyette `export_card`,
+      csak `.card.json`), átállási kód nélkül. A már renderelt régi
+      videók mellett maradt `.publish.json` fájlokat az app nem olvassa:
+      egy új render megírja a kártyát.
+    - **Video tab:** Files (MP4, `.srt`, `chapters.txt`, a kártya),
+      Publishing ("Export card"), Upload on YouTube (YouTube Studio
+      megnyitása, a cím, a leírás és a tagek másolás gombbal), Backup.
