@@ -900,6 +900,38 @@ fn export_card(app: AppHandle, file: String, path: String) -> Result<String, Str
     Ok(out.to_string_lossy().to_string())
 }
 
+/// The origin (scheme://host[:port]) of a Publishing address: https, or
+/// plain http only on this computer; no user name or password in it.
+fn publishing_origin(url: &str) -> Option<String> {
+    let (scheme, rest) = url.trim().split_once("://")?;
+    let scheme = scheme.to_ascii_lowercase();
+    let authority = rest.split(['/', '?', '#']).next()?.to_ascii_lowercase();
+    if authority.is_empty() || authority.contains('@') {
+        return None;
+    }
+    let host = if authority.starts_with('[') { authority.split(']').next().map(|h| format!("{h}]"))? } else { authority.split(':').next()?.to_string() };
+    let local = matches!(host.as_str(), "localhost" | "127.0.0.1" | "[::1]");
+    if scheme == "https" || (scheme == "http" && local) {
+        Some(format!("{scheme}://{authority}"))
+    } else {
+        None
+    }
+}
+
+/// The card's page in the publishing app, the link "Send to Publishing"
+/// got back (DECISIONS 115). Opens only an address on the host the user set
+/// in Settings, Publishing: the opener's fixed list cannot know that host.
+#[tauri::command]
+fn open_publishing_link(app: AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let cfg = load_app_config(&app)?.unwrap_or(Value::Null);
+    let base = cfg.pointer("/publishing/url").and_then(Value::as_str).unwrap_or("");
+    match (publishing_origin(base), publishing_origin(&url)) {
+        (Some(a), Some(b)) if a == b => app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string()),
+        _ => Err("This link is not on your publishing app's address, so it is not opened.".into()),
+    }
+}
+
 /// The finished video, out of the project (Zoltan, 2026-10-05): "Download"
 /// (a place the user picked in the save dialog) and "Save a copy to Google
 /// Drive" (the cloud's own folder on this computer, from `cloud_folders`).
@@ -1050,6 +1082,7 @@ pub fn run() {
             read_tokens_file,
             import_music,
             export_card,
+            open_publishing_link,
             export_video,
             import_segment,
             import_footage,
@@ -1084,4 +1117,19 @@ pub fn run() {
                 tray::show(_app);
             }
         });
+}
+
+#[cfg(test)]
+mod publishing_tests {
+    #[test]
+    fn publishing_links_open_only_on_the_set_host() {
+        use super::publishing_origin as o;
+        assert_eq!(o("https://Pub.example/app/").as_deref(), Some("https://pub.example"));
+        assert_eq!(o("http://localhost:8787/x").as_deref(), Some("http://localhost:8787"));
+        assert_eq!(o("http://[::1]:9/").as_deref(), Some("http://[::1]:9"));
+        assert_eq!(o("http://pub.example"), None);
+        assert_eq!(o("https://u:p@pub.example"), None);
+        assert_eq!(o("javascript:alert(1)"), None);
+        assert_ne!(o("https://pub.example.evil.com/"), o("https://pub.example/"));
+    }
 }

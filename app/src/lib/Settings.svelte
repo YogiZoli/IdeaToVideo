@@ -321,6 +321,14 @@
           {#each app.identities as i}<li>{i.name}</li>{/each}
         </ul>
       </section>
+    {:else if pageId === "publishing"}
+      <section class="card">
+        <h2>Publishing connection</h2>
+        <p class="hint">Where "Send to Publishing" on the Your video tab sends a finished video's publishing card: your publishing app's address and its token. The address starts with https:// (plain http only for localhost). The token is kept in your computer's keychain, never in a file.</p>
+        <label class="field"><span>Address</span><input type="url" placeholder="https://..." value={appCfg.publishing?.url ?? ""} oninput={(e) => (appCfg.publishing = { url: e.currentTarget.value.trim() || null })} /></label>
+        <KeyField name="publishing" label="Publishing token" scope="app" bind:isSet={keys.publishing} />
+        <p class="hint">Save settings after changing the address.</p>
+      </section>
     {:else if pageId === "general"}
       <section class="card about">
         <h2>About</h2>

@@ -38,7 +38,13 @@
         "auto": {"type": "boolean"}
       }
     },
-    "defaults": {"type": "object", "additionalProperties": false, "properties": {"autopilot": {"type": "boolean"}}}
+    "defaults": {"type": "object", "additionalProperties": false, "properties": {"autopilot": {"type": "boolean"}}},
+    "publishing": {
+      "$comment": "Send to Publishing (DECISIONS 115): the publishing app's address; its token is in the OS keychain (key name publishing), never here.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"url": {"type": ["string", "null"], "maxLength": 500}}
+    }
   },
   "definitions": {
     "stepLlm": {

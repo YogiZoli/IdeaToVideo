@@ -29,6 +29,7 @@ import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/mus
 import { makeScenes, saveScenes, refillScene, sceneRows, simpleScenes } from "./gates/scenes/index.mjs";
 import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
+import { sendCard } from "./publishing.mjs";
 import { youtubeTexts, makePackaging, savePackaging, loadPackaging } from "./gates/render/youtube.mjs";
 import { isLightLook, libraryDir, baseTheme, callColor } from "./gates/build/assemble.mjs";
 import { loadCard, saveCard, cardTheme, cardFamilies, contrastReport, normalizeCard } from "./brand/card.mjs";
@@ -345,6 +346,15 @@ function latestVideo(projectDir) {
 }
 
 const commands = {
+  // Send to Publishing (publishing.mjs, DECISIONS 115): the card of a
+  // rendered video to the user's publishing app, with its token.
+  "card-send": async ({ projectDir, file, url }) => {
+    const card = path.resolve(String(file ?? ""));
+    if (!card.startsWith(path.resolve(projectDir)) || !/\.card\.json$/i.test(card)) throw new Error("That is not a card of this project.");
+    const r = await sendCard({ url, token: key(), cardFile: card });
+    appendLog(projectDir, r.ok ? `publishing: card ${r.updated ? "updated" : "sent"}` : `publishing: not sent (${r.status ?? "no answer"}), ${r.message}`);
+    return r;
+  },
   providers: async () => ({ providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, model: p.model })) }),
 
   // The App settings (config.json) and/or one Identity (identity.json),
