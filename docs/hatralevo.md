@@ -33,7 +33,7 @@ Később, ingyenes, Zoltan döntése szerint megmarad (2026-10-07):
 - A `ci-test-order` PR (a CI tesztsorrendje).
 - **Eladás előtt kötelező:** a GSAP licenc-kérdés (a no-charge licenc
   Webflow-versenytárs kitétele egy videót gyártó appra), írásban, elküldés
-  Zoltan igenjével.
+  Zoltan igenjével. **Megfogalmazva:** `docs/gsap-license-question.md` (2026-10-07), elküldésre vár.
 
 Elhagyva: a Windows Sandbox próba (Zoltan, 2026-10-07; a telepítőt ő próbálja).
 
