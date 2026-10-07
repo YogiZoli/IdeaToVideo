@@ -43,8 +43,14 @@ import { cardForPreset, cardTheme, cardFamilies, fixContrast } from "../../brand
 import { TEMPERATURES } from "../../cta/catalog.mjs";
 import { fontFaces, categories } from "../../brand/fonts.mjs";
 import { sentenceSections } from "../scenes/index.mjs";
-import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE } from "../../motion/transitions.mjs";
+import { loadRegistry, planTransitions, transitionBuild, SHADER_FILE, CUT } from "../../motion/transitions.mjs";
 import { backgroundFor, backgroundPieces, cameraLines } from "../../motion/stage.mjs";
+import { pickIcons, withSketch, findIcon } from "../../icons/index.mjs";
+import { adaptCaption, loadCaption } from "../../captions/index.mjs";
+import { spokenTimes, withSpoken } from "./spoken.mjs";
+import { isPackComponent, loadPackBlock, fitPackBlock } from "../../packs/index.mjs";
+// the icon names a pack block has built in (scripts/make-pack.mjs ICON_NAMES)
+const PACK_ICON_NAMES = new Set(["comment", "client", "script", "voice", "visuals", "face", "check", "cross", "clock", "money", "place", "title", "caption", "globe", "spark", "lock", "branch", "funnel", "cycle", "gauge", "quote", "question", "warn", "heart", "code", "grid", "mail", "tag", "bang", "query", "dash", "paint"]);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,6 +64,13 @@ export function libraryDir(env = process.env) {
 }
 
 export function loadComponent(name, { env = process.env } = {}) {
+  // a block of an imported pack, "<pack>:<block>" (packs/, DECISIONS 107)
+  if (isPackComponent(name)) {
+    const pb = loadPackBlock(name, env.ITV_IDENTITY_DIR);
+    const compositionId = (/data-composition-id="([a-z0-9-]+)"/.exec(pb.html) ?? [])[1];
+    if (!compositionId) throw new Error(`${name}: the block has no composition id.`);
+    return { name, item: pb.item, html: pb.html, target: null, assets: [], pack: { fontface: pb.fontface, seconds: pb.block.seconds, followBrand: pb.pack.followBrand, compositionId } };
+  }
   if (!/^[a-z0-9-]+$/.test(String(name))) throw new Error(`Not a component name: ${name}`);
   const dir = path.join(libraryDir(env), "components", name);
   const itemFile = path.join(dir, "registry-item.json");
@@ -117,6 +130,16 @@ export function widerFit(html, component) {
   const out = html.replace("actionCharacters * 0.47", `actionCharacters * ${CTA_ADVANCE}`);
   if (out === html) throw new Error("cta-close changed upstream: its line fit could not be adjusted. Update assemble.mjs widerFit.");
   return out;
+}
+
+// Tight tracking is drawn for the registry's own fonts (Inter and the like);
+// with a heavy, wide display face the user picks in the Brand wizard the
+// letters run into each other (Zoltan, 2026-10-06, Archivo Black in
+// headline-slam at -0.5cqw). The build copy never tracks tighter than
+// -0.01em; positive tracking (small caps labels) is left as it is.
+export const MIN_TRACKING = "-0.01em";
+export function trackingFit(html) {
+  return html.replace(/letter-spacing:\s*-\s*(\d*\.?\d+)(em|cqw|cqh|px|rem)/g, (m, v) => (Number(v) === 0 ? m : `letter-spacing: ${MIN_TRACKING}`));
 }
 
 export function transparentGround(html) {
@@ -312,6 +335,10 @@ export function speechCues(sc, words, start, end) {
   });
   if (!cues.some((c) => c !== null)) return null;
   if (!spec.blanks && cues.includes(null)) return null;
+  // The first one is on screen from the start (Zoltan, 2026-10-06: an empty
+  // frame for 3 s while the voice led up to the first item); the rest still
+  // come in as they are said.
+  if (spec.skip === 0 && cues[0] !== null && cues[0] > 0.2) cues[0] = 0.2;
   return cues.map((c) => (c === null ? "" : String(c))).join(",");
 }
 
@@ -457,7 +484,7 @@ const hostHtml = (m, width, height, motion) => {
 };
 const NL = "\n";
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null, captions = null }) {
   const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
   const ground = motion?.backgrounds?.length
     ? motion.backgrounds
@@ -513,7 +540,7 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
 ${ground}${footageMode === "background" ? footage.map((f) => "\n" + footageVideo(f, "background")).join("") : ""}
 ${hosts}${footageMode === "background" ? "" : footage.map((f) => "\n" + footageVideo(f, "scene")).join("")}
-${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}
+${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}${captions ? `\n    <div id="captions" class="clip" data-composition-id="${captions.compositionId}" data-composition-src="${captions.src}" data-start="0" data-duration="${total}" data-track-index="9" data-width="${width}" data-height="${height}" data-layout-allow-overlap></div>` : ""}
     <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
     </div>
     <script>
@@ -525,15 +552,20 @@ ${extra}    </script>
 `;
 }
 
+// What a build moves with when the Identity has no Motion profile: cuts, a
+// plain background and the continuous camera push (motion/stage.mjs).
+export const BASE_MOTION = Object.freeze({ transition: { mood: "premium", primary: CUT, accent: null, energy: "calm", where: "every" }, background: { type: "plain", vars: {} }, camera: { move: "push" }, scenes: { off: [], style: {} } });
+
 // The Motion profile's part of a build (motion/): scene changes, camera
 // wrappers, background pieces. `sectionStarts`: the scenes that open a new
 // script section (the topic changes of HyperFrames' narrative positions).
 export function motionPlan(profile, { times, theme, light, width, height, sectionStarts = new Set(), env = process.env }) {
-  const dir = libraryDir(env);
-  const registry = loadRegistry(dir);
   const ids = times.map((_, n) => `scene-${n + 1}`);
-  const plan = planTransitions(times, { transition: profile.transition, registry, sectionStarts });
-  const built = transitionBuild(times, plan, { ids, registry, theme, width, height });
+  // Only cuts (the base motion): no transition registry is needed.
+  const allCut = profile.transition?.primary === CUT && !profile.transition?.accent;
+  const registry = allCut ? null : loadRegistry(libraryDir(env));
+  const plan = allCut ? times.slice(1).map(() => ({ type: CUT })) : planTransitions(times, { transition: profile.transition, registry, sectionStarts });
+  const built = allCut ? { extend: times.map(() => 0), lines: [], shader: false } : transitionBuild(times, plan, { ids, registry, theme, width, height });
   const move = profile.camera?.move ?? "off";
   const cameras = times.map((t, n) => (move === "off" ? null : `cam-${n + 1}`));
   const lines = [...built.lines];
@@ -565,7 +597,10 @@ export function sectionStartsOf(projectDir, scenes, sentences) {
 // sections read from script.md (the previews).
 export async function assemble(projectDir, { env = process.env, total, language, title, look: wanted = DEFAULT_LOOK, motion, sectionStarts } = {}) {
   const look = resolveLook(wanted);
-  const profile = motion !== undefined ? motion : look.motion ?? null;
+  // Without a Motion profile the video still moves: cuts between scenes and
+  // the continuous camera push (Zoltan, 2026-10-06: skipping the wizard must
+  // not give a slideshow). An explicit motion: null keeps the bare build.
+  const profile = motion !== undefined ? motion : look.motion ?? BASE_MOTION;
   const read = (f, what) => {
     const p = path.join(projectDir, f);
     if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet (${f}).`);
@@ -628,8 +663,30 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // The user's own footage under its sentences (DECISIONS 82).
   const footage = footagePlan(table, sentences, look.footage, path.basename(projectDir));
   const underFootage = (n) => look.footage?.mode === "background" && footage.some((f) => f.start < times[n].start + times[n].duration && f.end > times[n].start);
+  // The whiteboard scenes draw an icon that fits their words, never the same
+  // one twice in a video and preferably not one of the Identity's recent ones
+  // (icons/, DECISIONS 105). Without the icon sets the preset sketches stay.
+  const icons = pickIcons(scenes, { sentences, recent: look.iconsRecent ?? [], families: look.scenes?.icons?.families, env });
   const fitted = scenes.map((sc, n) => {
-    const html = widerFit(fitDuration(components.get(sc.component).html, sc.component, r3(times[n].duration + ext(n))), sc.component);
+    const comp = components.get(sc.component);
+    if (comp.pack) {
+      // a pack block: its own font, the scene's length, the Brand when the pack follows it
+      const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
+      // an icon variable may name any simple thing: the three icon sets have it
+      const icons = {};
+      for (const v of comp.item.variables ?? []) {
+        const want = v.icon ? String(sc.vars?.[v.id] ?? "").trim() : "";
+        if (!want || PACK_ICON_NAMES.has(want)) continue;
+        const hit = findIcon(want, { env });
+        if (hit) icons[want] = hit.d.map((d) => `<path d="${d}"/>`).join("");
+      }
+      return fitPackBlock(comp.html, { fontface: comp.pack.fontface, seconds: r3(times[n].duration + ext(n)), drawn: comp.pack.seconds, theme: comp.pack.followBrand ? { ...baseTheme(look), ...(table.theme ?? {}) } : null, family: comp.pack.followBrand ? family : null, icons });
+    }
+    let html = trackingFit(widerFit(fitDuration(comp.html, sc.component, r3(times[n].duration + ext(n))), sc.component));
+    if (icons[n]) html = withSketch(html, icons[n]);
+    // the spoken word in colour while it is said, no impact shake (spoken.mjs);
+    // the Motion profile can turn it off
+    if (profile?.spokenWord !== "off") html = withSpoken(html, sc.component, spokenTimes(sc, spoken, times[n].start, times[n].start + times[n].duration));
     return bgComponent || underFootage(n) ? transparentGround(html).html : html;
   });
   const avatars = avatarClips(projectDir); // throws if they belong to an earlier voice
@@ -647,9 +704,9 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // transitions the scenes alternate between tracks 1 and 4.
   const overlap = Boolean(mp && mp.extend.some((x) => x > 0));
   const mounts = scenes.map((sc, n) => {
-    const src = `compositions/components/scene-${n + 1}-${sc.component}.html`;
+    const src = `compositions/components/scene-${n + 1}-${sc.component.replace(":", "--")}.html`;
     fs.writeFileSync(path.join(out, src), fitted[n]);
-    const m = { id: `scene-${n + 1}`, compositionId: sc.component, src, ...mountTheme(sc.vars), ...times[n] };
+    const m = { id: `scene-${n + 1}`, compositionId: components.get(sc.component).pack?.compositionId ?? sc.component, src, ...mountTheme(sc.vars), ...times[n] };
     if (sc.call) m.style += `; --brand: ${callColor(sc.call, { ...baseTheme(look), ...(table.theme ?? {}) })}`;
     if (mp) {
       m.duration = r3(times[n].duration + ext(n));
@@ -688,12 +745,28 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const covered = [...segments.map((g) => ({ at: g.start, seconds: g.seconds })), ...footage.map((f) => ({ at: f.start, seconds: Math.round((f.end - f.start) * 1000) / 1000 }))];
   if (covered.length) fs.writeFileSync(path.join(out, COVERED_FILE), JSON.stringify(covered, null, 2) + "\n");
   const motionPart = mp ? { lines: mp.lines, shader: mp.shader, backgrounds } : null;
+  // Burned-in captions over the whole video, in the Motion profile's style
+  // (captions/, DECISIONS 106): the narration's own words and timing.
+  let captionMount = null;
+  const captionStyle = profile?.captions?.style;
+  if (captionStyle && captionStyle !== "off") {
+    const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
+    const src = `compositions/components/captions-${captionStyle}.html`;
+    fs.writeFileSync(path.join(out, src), adaptCaption(captionStyle, loadCaption(captionStyle, { env }), { words: spoken, total, family, theme: { ...baseTheme(look), ...(table.theme ?? {}) }, light: Boolean(look.light) }));
+    // the HyperFrames runtime asks for word-level overrides whenever there
+    // are captions; none here
+    fs.writeFileSync(path.join(out, "caption-overrides.json"), "[]\n");
+    // a style's own assets (caption-texture's texture pictures) next to it
+    const capDir = path.join(libraryDir(env), "captions", captionStyle);
+    for (const f of fs.readdirSync(capDir)) if (/\.(png|jpe?g|webp|svg)$/i.test(f) && f !== "preview.png") fs.copyFileSync(path.join(capDir, f), path.join(out, "compositions", "components", f));
+    captionMount = { compositionId: captionStyle, src };
+  }
   if (mp) {
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart }));
-  return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [] };
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount }));
+  return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
 }
 
 export { buildDir };

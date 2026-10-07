@@ -1,0 +1,8 @@
+{
+  "$comment": "Icon sets for the whiteboard scene and the cards (DECISIONS 105). Line icons only, so a scene can draw them stroke by stroke. Pinned npm tarballs, checked against the registry's sha512 integrity; scripts/fetch-icons.mjs (run by fetch-library) turns each into library/icons/<id>.json: every icon as path data on its 24 grid, with its search words. Nothing is copied into this repo.",
+  "families": [
+    { "id": "lucide", "label": "Lucide", "license": "ISC", "package": "lucide-static", "version": "1.52.0", "tarball": "https://registry.npmjs.org/lucide-static/-/lucide-static-1.52.0.tgz", "integrity": "sha512-0zZYihAze4ZmUCcyNa9OkWYqn/Y5f9AdTh02AZIxMtP5ravcTTfoSIAnUPBH6ZvKxt+ZW28JB0ldzLRyD82fcw==", "svgDir": "package/icons", "tags": { "file": "package/tags.json", "shape": "lucide" } },
+    { "id": "tabler", "label": "Tabler Icons", "license": "MIT", "package": "@tabler/icons", "version": "3.49.0", "tarball": "https://registry.npmjs.org/@tabler/icons/-/icons-3.49.0.tgz", "integrity": "sha512-l+GnSkFETx0U26icxv1VUFnxxiTqXfCcVRiRAnyMwibupM2S2L/hSaZ9gmSgz01rkrsH/93NvLsxykqdanc6lw==", "svgDir": "package/icons/outline", "tags": { "file": "package/icons.json", "shape": "tabler" } },
+    { "id": "iconoir", "label": "Iconoir", "license": "MIT", "package": "iconoir", "version": "7.12.1", "tarball": "https://registry.npmjs.org/iconoir/-/iconoir-7.12.1.tgz", "integrity": "sha512-7ei4jd1bss0Ukyz/bbM9Zc96aLfZuwTEkSW8u5fx5h3X9912MsnmWwPw9LyTUtcf0ShfTzQeQ9oG7IslW3hrLg==", "svgDir": "package/icons/regular", "tags": null }
+  ]
+}

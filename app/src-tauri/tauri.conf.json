@@ -46,7 +46,8 @@
       "../../runner/": "runner/",
       "ffmpeg/": "ffmpeg/",
       "engine/": "engine/",
-      "library/": "library/"
+      "library/": "library/",
+      "../../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.md"
     },
     "shortDescription": "From idea to video, on your own machine",
     "windows": {

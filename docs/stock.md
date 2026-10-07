@@ -19,7 +19,7 @@ A HeyGen ezekből dolgozik: Pexels, Getty, Unsplash, Storyblocks.
 | Forrás | Mit ad | Állapot (2026-10-06) | Az appban |
 |---|---|---|---|
 | Pixabay | videó, kép | Zoltannak van kulcsa | **első kör** |
-| Coverr | videó | Zoltannak van kulcsa | **első kör** |
+| Coverr | videó | **kivéve** (DECISIONS 108): az API ingyenes hozzáférése nem kereskedelmi célra szól | nem |
 | Unsplash | csak kép | jelentkezés beadva 2026-10-06, válasz 5-10 munkanap | rejtve, amíg nincs jóváhagyás |
 | Pexels | videó, kép | új kulcs kiadása szünetel | rejtve, amíg nem ad kulcsot |
 | Shutterstock | videó, kép, fizetős licenc | félretéve (lásd lent) | később, ha Zoltan dönt |

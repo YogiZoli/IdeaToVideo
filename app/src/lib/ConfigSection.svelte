@@ -14,6 +14,7 @@
   import AiSection from "./AiSection.svelte";
   import VoicePicker from "./VoicePicker.svelte";
   import AvatarPicker from "./AvatarPicker.svelte";
+  import EnginePicker from "./EnginePicker.svelte";
   import LayoutPicker from "./LayoutPicker.svelte";
 
   let {
@@ -137,6 +138,7 @@
   <label class="radio"><input type="checkbox" bind:checked={config.avatar!.enabled} disabled={!keys.heygen} /> Add an avatar to my videos</label>
   {#if config.avatar?.enabled}
     <AvatarPicker bind:lookId={config.avatar!.lookId} keySet={!!keys.heygen} />
+    <EnginePicker bind:engine={config.avatar!.engine} />
     <LayoutPicker bind:style={config.avatar!.style} bind:position={config.avatar!.position} bind:size={config.avatar!.size} />
     <p class="hint">The default for new videos. You can change it for each video on its 4. Avatar tab.</p>
   {/if}

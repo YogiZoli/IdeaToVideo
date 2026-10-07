@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-06 (AI B-roll megépült, branch `ai-broll`, DECISIONS 98-99)
+Frissítve: 2026-10-07 (3. fázis folyamatban, branch `phase-3`, DECISIONS 101-109)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -41,7 +41,44 @@ móddal a renderig).
    feltöltésként adja hozzá (ingyen). Kérdés a próbán: ad-e az Avatar III
    átlátszó hátterű (WebM) klipet.
 
-Utána a 3. fázis (pilot).
+## 3. fázis, branch `phase-3` (frissítve 2026-10-07)
+
+**Itt kezdd:** `docs/hatralevo.md` (a sorrend és mi kész), utána
+`docs/video-quality-plan.md` (a videóminőség terve), a DECISIONS 101-109.
+A branch pusholva (`origin/phase-3`), PR még nincs (a fázis végén).
+
+**Zoltan sorrendje (DECISIONS 103):** (1) élénkebb alap, (2) ikonok, (3)
+kimondott szó és feliratok, (4) a 39 archetípus csomagként, (5) Scenes
+varázsló, (6) kép és videó források, utána telepítési leírás, új telepítő,
+Zoltan próbája Windows Sandboxban; csak ezután README, `release.yml`, updater.
+Zoltan kérése: kérdés nélkül haladni a javaslatok szerint.
+
+**Kész ebben a fázisban:**
+- avatar motorválasztás (alap Avatar III), Import from HeyGen, szegmens szöveg
+  1500 karakter (101); sampler a 11 presettel, olvashatóság, betűköz,
+  THIRD-PARTY-NOTICES (102);
+- élénkebb alap: folyamatos kamera, új kép 3-5 mp-enként (103); tempó
+  választható, Pixabay kulcs (104; a Coverr kivéve, 108);
+- ikonok: Lucide, Tabler, Iconoir a rajzos jelenetben (105);
+- 15 felirat-stílus és a kimondott szó kiemelése (106);
+- blokk-csomagok (`.itvpack`), Import, Export a Settings, Identity, Scenes
+  oldalon; a 39 archetípus márkanyom nélkül és eredetiben (107);
+- Open Sans; Zoltan ZG/C2C márkája importálható Identity-fájlban:
+  `C:/Users/gdp/ITV-packs/ZG-C2C.identity.zip` (109, `C:/Users/gdp/ITV-packs/README.md`).
+
+**Kész a Scenes varázsló** (DECISIONS 110) **és a Pixabay keresés** (111: a
+Scenes tabon, fotó lassú ráközelítéssel). Kész az egyoldalas angol telepítési leírás (`docs/pilot/install-guide.md`) és az új
+telepítő (`C:/Users/gdp/ITV-sandbox/share/IdeaToVideo_0.1.0_981636b_x64-setup.exe`, 106 MB).
+**A 3. fázis lezárva (2026-10-07):** PR a mainre, Zoltan jóváhagyásával merge; a
+README is kész. A Sandbox-próba elhagyva, a telepítőt Zoltan próbálja, a hibákat megírja.
+**Következő:** Zoltan próbája; a későbbi, ingyenes teendők (updater, `release.yml`,
+`ci-test-order`, a GSAP licenc-kérdés eladás előtt) a `docs/hatralevo.md`-ben.
+
+**Tesztek:** 266 Node, 47 Rust, UI check 0 hiba. Új telepítő nem készült:
+az új funkciók a 4. fázis végi telepítővel próbálhatók (Zoltan döntése).
+Mintavideók: `C:/Users/gdp/Videos/IdeaToVideo-mintak/`.
+
+Régebbi sorrend: utána a 3. fázis (pilot).
 
 ## Előtte (2026-10-06)
 

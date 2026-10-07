@@ -5,7 +5,7 @@
 
 import type { StepId } from "./steps";
 
-export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "motion" | "cta" | "footage" | "dictionary" | "voice" | "research" | "identity-ai";
+export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "motion" | "cta" | "scenes" | "footage" | "dictionary" | "voice" | "research" | "identity-ai";
 export type Group = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; group: Group; steps: StepId[] };
@@ -25,6 +25,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "motion", title: "Motion", group: "identity", steps: [] },
   // the CTA wizard's comment calls (docs/wizards/cta.md)
   { id: "cta", title: "CTA", group: "identity", steps: [] },
+  // block packs: scene types someone designed (DECISIONS 107)
+  { id: "scenes", title: "Scenes", group: "identity", steps: [] },
   // your own clips as B-roll (DECISIONS 82)
   { id: "footage", title: "Footage", group: "identity", steps: [] },
   { id: "dictionary", title: "Dictionary", group: "identity", steps: [] },

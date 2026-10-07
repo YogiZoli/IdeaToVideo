@@ -130,3 +130,40 @@ test("clips made for an earlier voice are refused, not silently misplaced", () =
   assert.equal(currentAvatar(dir), null);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("engines: Avatar III is the default, a look that does not take it falls back to the cheapest it does, and the order carries the engine", async () => {
+  assert.deepEqual(heygen.chooseEngine(undefined, ["avatar_iii", "avatar_iv"]), { engine: "avatar_iii", note: null });
+  assert.deepEqual(heygen.chooseEngine("avatar_v", ["avatar_iii", "avatar_v"]), { engine: "avatar_v", note: null });
+  const down = heygen.chooseEngine("avatar_iii", ["avatar_iv", "avatar_v"]);
+  assert.equal(down.engine, "avatar_iv");
+  assert.match(down.note, /Avatar III.*Avatar IV is used/);
+  assert.equal(heygen.chooseEngine("avatar_iv", []).engine, "avatar_iv", "a look that lists nothing is tried as asked");
+  assert.equal(heygen.chooseEngine("nonsense", null).engine, "avatar_iii");
+  const f = fakeFetch([["/v3/videos", json(200, { data: { video_id: "v1" } })]]);
+  await heygen.createVideo({ apiKey: KEY, avatarId: "look1", audioAssetId: "ast1", background: "#fff", title: "t", engine: "avatar_iii", fetchImpl: f });
+  await heygen.createVideo({ apiKey: KEY, avatarId: "look1", audioAssetId: "ast1", background: "#fff", title: "t", fetchImpl: f });
+  assert.deepEqual(JSON.parse(f.calls[0].body).engine, { type: "avatar_iii" });
+  assert.equal("engine" in JSON.parse(f.calls[1].body), false, "no engine asked: HeyGen's own default");
+  const [a3, a4] = [heygen.estimateUsd(60, "avatar_iii"), heygen.estimateUsd(60, "avatar_iv")];
+  assert.ok(a3.high < a4.low, "Avatar III is the cheaper estimate");
+});
+
+test("import from HeyGen: finished videos only, paged, then one downloaded by its id", async () => {
+  const f = fakeFetch([
+    ["/v3/videos/vid2", json(200, { data: { id: "vid2", status: "completed", video_url: "https://files.heygen.ai/v2.mp4", duration: 8.4, title: "Comment GUIDE" } })],
+    ["files.heygen.ai/v2.mp4", json(200, {})],
+    ["/v3/videos?", (calls) => (calls.filter((c) => c.url.includes("/v3/videos?")).length === 1
+      ? json(200, { data: [{ id: "vid1", status: "processing" }, { id: "vid2", status: "completed", title: "Comment GUIDE", duration: 8.44, video_url: "https://files.heygen.ai/v2.mp4", thumbnail_url: "https://files.heygen.ai/t2.jpg", created_at: 1760000000 }], has_more: true, next_token: "n2" })
+      : json(200, { data: [{ id: "vid3", status: "completed", title: "old", duration: 41, video_url: "https://files.heygen.ai/v3.mp4" }], has_more: false }))],
+  ]);
+  const list = await heygen.listVideos({ apiKey: KEY, fetchImpl: f });
+  assert.deepEqual(list.map((v) => [v.id, v.seconds, v.title]), [["vid2", 8.4, "Comment GUIDE"], ["vid3", 41, "old"]]);
+  assert.ok(f.calls.some((c) => c.url.includes("token=n2")), "the second page is read");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-imp-"));
+  const got = await heygen.downloadVideo({ apiKey: KEY, id: "vid2", out: path.join(dir, "x", "in.mp4"), fetchImpl: f });
+  assert.equal(got.title, "Comment GUIDE");
+  assert.equal(fs.readFileSync(got.file, "utf8"), "MP4DATA");
+  const pending = fakeFetch([["/v3/videos/vid9", json(200, { data: { id: "vid9", status: "processing" } })]]);
+  await assert.rejects(heygen.downloadVideo({ apiKey: KEY, id: "vid9", out: path.join(dir, "n.mp4"), fetchImpl: pending }), /not finished/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});

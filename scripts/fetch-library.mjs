@@ -32,6 +32,8 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { codepoints, coverage } from "../runner/brand/cmap.mjs";
 
+import { fetchIcons } from "./fetch-icons.mjs";
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const LIST = path.join(ROOT, "library", "components.json");
 export const LOCK = path.join(ROOT, "library", "library.lock.json");
@@ -197,6 +199,28 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
     }
     log(`library: ${name}`);
   }
+  // Caption styles (DECISIONS 106): the component file and its preview
+  // picture, both pinned in the lock.
+  for (const name of list.captions ?? []) {
+    const item = await get(rawUrl(list.commit, name, "registry-item.json"), fetchImpl);
+    const meta = JSON.parse(item.toString("utf8"));
+    // every file the item lists (the HTML, and assets such as textures)
+    const files = meta.files?.map((f) => f.path) ?? [`${name}.html`];
+    if (!files.includes(`${name}.html`)) throw new Error(`${name}: registry-item.json does not list ${name}.html`);
+    const parts = [["registry-item.json", item], ...files.map((f) => [f, null])];
+    if (meta.preview?.poster) parts.push(["preview.png", null]);
+    for (const [file, have] of parts) {
+      const buf = have ?? (file === "preview.png" ? await get(meta.preview.poster, fetchImpl) : await get(rawUrl(list.commit, name, file), fetchImpl));
+      const key = `captions/${name}/${file}`;
+      const got = sha256(buf);
+      if (update) lock.files[key] = got;
+      else if (lock.files[key] !== got) throw new Error(`SHA256 mismatch for ${key}: expected ${lock.files[key]}, got ${got}`);
+      const dst = path.join(stage, key);
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, file.endsWith(".html") ? localizeGsap(buf.toString("utf8")) : buf);
+    }
+  }
+  log(`library: ${list.captions?.length ?? 0} caption styles`);
   for (const name of list.presets ?? []) {
     const buf = await get(presetUrl(list.commit, name), fetchImpl);
     const key = `presets/${name}/FRAME.md`;
@@ -222,6 +246,7 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   log(`library: ${list.presets?.length ?? 0} presets`);
   await fetchFonts({ update, fetchImpl, log, out: path.join(stage, "fonts") });
   await fetchOpenDesign({ update, fetchImpl, log, out: path.join(stage, "opendesign") });
+  await fetchIcons({ fetchImpl, log, out: path.join(stage, "icons") });
   fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], backgrounds: list.motion?.backgrounds ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); fonts OFL-1.1 (see fonts/<id>/LICENSE)" }, null, 2) + "\n");
   if (update) fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + "\n");
   fs.rmSync(out, { recursive: true, force: true });

@@ -269,10 +269,21 @@ fn copy_tree(from: &Path, to: &Path) -> Result<(), String> {
 }
 
 fn allowed_asset(p: &Path) -> bool {
-    p.extension()
-        .and_then(|e| e.to_str())
-        .map(|e| ASSET_EXTS.contains(&e.to_ascii_lowercase().as_str()))
-        .unwrap_or(false)
+    let ext = p.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase());
+    let Some(ext) = ext else { return false };
+    if ASSET_EXTS.contains(&ext.as_str()) {
+        return true;
+    }
+    // a block pack's blocks and shared styles (DECISIONS 107), only under packs/
+    PACK_EXTS.contains(&ext.as_str()) && in_packs(p)
+}
+
+/// The block packs' own file types, allowed only inside packs/<id>/.
+const PACK_EXTS: &[&str] = &["html", "css"];
+
+fn in_packs(p: &Path) -> bool {
+    let mut parts = p.components().map(|c| c.as_os_str().to_string_lossy().to_string());
+    parts.any(|c| c == "packs")
 }
 
 /// Moves a logo chosen during setup (before the Identity existed) into it.
@@ -497,7 +508,9 @@ fn safe_entry(name: &str) -> Option<PathBuf> {
         return None;
     }
     let parts: Vec<&str> = name.split('/').collect();
-    if parts.len() > 3 || parts.iter().any(|p| p.is_empty() || *p == "." || *p == ".." || p.contains(':')) {
+    // packs/<id>/blocks/<block>.html is four levels; everything else at most three
+    let max = if parts.first() == Some(&"packs") { 4 } else { 3 };
+    if parts.len() > max || parts.iter().any(|p| p.is_empty() || *p == "." || *p == ".." || p.contains(':')) {
         return None;
     }
     let ok_chars = |p: &str| p.chars().all(|c| c.is_alphanumeric() || matches!(c, '.' | '_' | '-' | ' '));
@@ -505,6 +518,11 @@ fn safe_entry(name: &str) -> Option<PathBuf> {
         return None;
     }
     let path: PathBuf = parts.iter().collect();
+    // a pack's HTML and CSS only directly under packs/ (not "a/packs/x.html")
+    let pack_type = path.extension().and_then(|e| e.to_str()).map(|e| PACK_EXTS.contains(&e.to_ascii_lowercase().as_str())).unwrap_or(false);
+    if pack_type && parts.first() != Some(&"packs") {
+        return None;
+    }
     allowed_asset(&path).then_some(path)
 }
 
@@ -787,7 +805,10 @@ mod tests {
         let manifest = br#"{"format":"ideatovideo-identity","version":1}"#;
         let ident = br#"{"name":"X","channel":{},"narrator":{"provider":"gemini"}}"#;
         assert!(read_export(&make(&[("manifest.json", manifest), ("identity.json", ident)])).is_ok());
-        for evil in ["../evil.png", "/abs.png", "brand/../../x.png", "brand/run.exe", "a/b/c/d.png", "C:x.png"] {
+        // a block pack travels with its Identity (DECISIONS 107)
+        let (_, files) = read_export(&make(&[("manifest.json", manifest), ("identity.json", ident), ("packs/zg/blocks/split.html", b"<b>"), ("packs/zg/shared/fontface.css", b"x"), ("packs/zg/pack.json", b"{}")])).unwrap();
+        assert_eq!(files.len(), 3);
+        for evil in ["../evil.png", "/abs.png", "brand/../../x.png", "brand/run.exe", "a/b/c/d.png", "C:x.png", "brand/x.html", "a/packs/x.html", "packs/a/b/c/d.html"] {
             let e = read_export(&make(&[("manifest.json", manifest), ("identity.json", ident), (evil, b"x")])).unwrap_err();
             assert!(e.contains("unexpected file"), "{evil}: {e}");
         }

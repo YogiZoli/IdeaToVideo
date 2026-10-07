@@ -2,8 +2,9 @@
   // MotionWizard: the Identity's Motion profile (docs/motion-wizard.md, docs/
   // wizards/motion.md 6), in the shared WizardShell. Everything it offers is
   // HyperFrames' own: its transition registry and shader transitions, grouped
-  // by its moods and energies, its background components, its camera rules
-  // held to its explainer motion doctrine (stillness first). Saved as
+  // by its moods and energies, its background components, its camera rules.
+  // The camera moves through every scene and the pace sets how often the
+  // picture changes (Zoltan, 2026-10-06: a still frame reads as a slide). Saved as
   // <identity>/motion.json; every ONE Video of the Identity inherits it.
   import { onMount, onDestroy } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";
@@ -20,7 +21,8 @@
     { id: "changes", title: "Scene changes" },
     { id: "background", title: "Background" },
     { id: "camera", title: "Camera" },
-    { id: "scenes", title: "Scenes" },
+    { id: "captions", title: "Captions" },
+    { id: "scenes", title: "Scene styles" },
     { id: "preview", title: "Preview and save" },
   ];
   const language = $derived(app.config?.channel.contentLanguage ?? "en");
@@ -99,7 +101,7 @@
     error = "";
     try {
       const r = await runner<{ profile: MotionProfile }>("motion-save", { profile: $state.snapshot(profile) });
-      log("motion_saved", { mood: r.profile.transition.mood, background: r.profile.background.type, camera: r.profile.camera.move, off: r.profile.scenes.off.length });
+      log("motion_saved", { mood: r.profile.transition.mood, background: r.profile.background.type, camera: r.profile.camera.move, pace: r.profile.pace ?? "balanced", captions: r.profile.captions?.style ?? "off", off: r.profile.scenes.off.length });
       onsaved(r.profile);
     } catch (e) {
       error = errorText(e);
@@ -155,6 +157,13 @@
           <label class="radio"><input type="radio" name="energy" checked={profile.transition.energy === e.id} onchange={() => (profile!.transition.energy = e.id as MotionProfile["transition"]["energy"])} /> {e.label} <span class="hint">({e.seconds} s per change)</span></label>
         {/each}
       </div>
+      <h2>Pace</h2>
+      <p class="hint">How often the picture changes. Each sentence gets its own picture; slower paces join sentences that belong together.</p>
+      <div class="opts">
+        {#each st.options.paces ?? [] as p (p.id)}
+          <label class="radio"><input type="radio" name="pace" checked={(profile.pace ?? "balanced") === p.id} onchange={() => (profile!.pace = p.id as MotionProfile["pace"])} /> {p.label}{p.id === "balanced" ? " (recommended)" : ""} <span class="hint">({p.picture})</span></label>
+        {/each}
+      </div>
       <p class="hint">Moods, energies and transitions come from HyperFrames by HeyGen (Apache-2.0): its transition overview, its transition registry and its shader transitions.</p>
     {:else if step === 1}
       <p class="lead">One main change between related points, a different one where a new section starts. The last change is always a slow crossfade.</p>
@@ -189,27 +198,47 @@
         {/each}
       </div>
     {:else if step === 3}
-      <p class="lead">HyperFrames' own advice for explainers: rather no motion than bad motion. A still frame is fine.</p>
+      <p class="lead">A slow camera move keeps every scene alive after it has landed, so nothing looks like a slide.</p>
       <div class="opts cards">
         {#each st.options.cameras as c (c.id)}
           <label class="radio card">
             <input type="radio" name="camera" checked={profile.camera.move === c.id} onchange={() => (profile!.camera = { move: c.id as MotionProfile["camera"]["move"] })} />
-            <b>{c.label}{c.id === "off" ? " (recommended)" : ""}</b>
-            {#if c.id === "off"}<span class="hint">The scenes hold still once they have landed.</span>{/if}
+            <b>{c.label}{c.id === "push" ? " (recommended)" : ""}</b>
+            {#if c.id === "off"}<span class="hint">The scenes hold still once they have landed. Can look like a slide.</span>{/if}
             {#if c.id === "jitter"}<span class="hint">A tiny movement that keeps a held frame alive.</span>{/if}
-            {#if c.id === "push"}<span class="hint">A slow push in during the first half of each scene, then it holds.</span>{/if}
+            {#if c.id === "push"}<span class="hint">A slow push in with a gentle drift through the whole scene, never stopping.</span>{/if}
           </label>
         {/each}
       </div>
     {:else if step === 4}
-      <p class="lead">Which scene types the AI may use, and how they look. Each kind keeps at least one. The closing scenes are set in the CTA wizard.</p>
+      <p class="lead">Captions burned into the video: the narrator's words as they are spoken, the spoken word highlighted. Viewers who watch without sound read along. The captions file (.srt) for YouTube is made either way.</p>
+      <label class="radio"><input type="checkbox" checked={(profile.spokenWord ?? "highlight") === "highlight"} onchange={(e) => (profile!.spokenWord = e.currentTarget.checked ? "highlight" : "off")} /> Highlight the spoken word in the scene's own text too (and no shaking headlines)</label>
+      <p class="hint">Fifteen caption styles from HyperFrames by HeyGen, in your brand's font and colors. The calm ones suit explainers; the loud ones suit short, punchy videos.</p>
+      <div class="capgrid">
+        <label class="capcard" class:chosen={(profile.captions?.style ?? "off") === "off"}>
+          <input type="radio" name="captions" checked={(profile.captions?.style ?? "off") === "off"} onchange={() => (profile!.captions = { style: "off" })} />
+          <span class="capimg off">No captions</span>
+          <b>Off</b>
+          <span class="hint">Only the captions file.</span>
+        </label>
+        {#each st.options.captions ?? [] as c (c.id)}
+          <label class="capcard" class:chosen={profile.captions?.style === c.id}>
+            <input type="radio" name="captions" checked={profile.captions?.style === c.id} onchange={() => (profile!.captions = { style: c.id })} />
+            {#if c.image}<img class="capimg" src={convertFileSrc(c.image)} alt="" />{:else}<span class="capimg"></span>{/if}
+            <b>{c.label}{c.calm ? "" : " (loud)"}</b>
+            <span class="hint">{c.hint}</span>
+          </label>
+        {/each}
+      </div>
+    {:else if step === 5}
+      <p class="lead">How each scene type looks. Which scene types the AI may use is set in the Scenes wizard; the closing scenes in the CTA wizard.</p>
       {#each st.options.scenes as r (r.role)}
         <section class="role">
           <h2>{r.label} <span class="hint">{r.hint}</span></h2>
           {#each r.components as c (c.name)}
             {@const on = !profile.scenes.off.includes(c.name)}
             <div class="comp">
-              <label class="check"><input type="checkbox" checked={on} disabled={on && onCount(r.role) <= 1} onchange={(e) => setOff(c.name, e.currentTarget.checked)} /> <b>{c.label}</b></label>
+              <b>{c.label}{on ? "" : " (turned off in the Scenes wizard)"}</b>
               <span class="hint">{c.description}</span>
               {#if on}
                 {#each c.style as v (v.id)}
@@ -243,6 +272,11 @@
 {/if}
 
 <style>
+  .capgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .capcard { display: grid; gap: 4px; align-content: start; padding: 8px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+  .capcard.chosen { border-color: var(--primary, currentColor); box-shadow: 0 0 0 1px var(--primary, currentColor); }
+  .capcard input { position: absolute; opacity: 0; pointer-events: none; }
+  .capimg { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: var(--muted, #eee); display: grid; place-items: center; font-size: 13px; color: var(--muted-foreground); }
   .loading { padding: 24px; display: grid; gap: 12px; }
   .lead { margin: 0; }
   .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
@@ -255,7 +289,7 @@
   .pick { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   .field { display: grid; gap: 4px; }
   .field.small { grid-template-columns: 140px 1fr; align-items: center; margin-left: 24px; }
-  .radio, .check { display: flex; gap: 6px; align-items: center; }
+  .radio { display: flex; gap: 6px; align-items: center; }
   .role { display: grid; gap: 8px; }
   .role h2 .hint { font-weight: 400; font-size: 13px; margin-left: 8px; color: var(--muted-foreground); }
   .comp { display: grid; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--border); }

@@ -22,6 +22,9 @@ import { duration } from "../audio.mjs";
 export const SEGMENTS_SCHEMA = "itv-segments/1";
 export const SEGMENT_MAX_SECONDS = 30;
 export const SEGMENTS_PER_KEYWORD = 3;
+// What a clip of up to 30 s can say, written out in full: a fast speaker says
+// about 90 words in 30 s, a Hungarian one about 700 characters; 1500 leaves room.
+export const SEGMENT_TEXT_MAX = 1500;
 const VIDEO_EXT = /\.(mp4|mov|webm|m4v)$/i;
 
 export const segmentsDir = (identityDir) => path.join(identityDir, "segments");
@@ -46,7 +49,7 @@ function saveSegments(identityDir, segments) {
 // checked here; a refused one is deleted.
 // text: what the clip says, optional; it goes into the captions and the
 // publishing data (an upload's words are not in the narration).
-export async function addSegment({ identityDir, file, keyword, name, text = "", source = "upload", env = process.env }) {
+export async function addSegment({ identityDir, file, keyword, name, text = "", source = "upload", heygenId = null, env = process.env }) {
   const dir = segmentsDir(identityDir);
   const src = path.join(dir, path.basename(String(file ?? "")));
   const drop = () => fs.rmSync(src, { force: true });
@@ -79,7 +82,7 @@ export async function addSegment({ identityDir, file, keyword, name, text = "", 
   const id = crypto.randomBytes(5).toString("hex");
   const target = `${id}${path.extname(src).toLowerCase()}`;
   fs.renameSync(src, path.join(dir, target));
-  const seg = { id, keyword: info.keyword, name: String(name ?? "").trim().slice(0, 60) || `${info.keyword} ${all.filter((s) => s.keyword === info.keyword).length + 1}`, file: target, seconds, source, text: String(text ?? "").replace(/\s+/g, " ").trim().slice(0, 400) || null, createdAt: new Date().toISOString(), lastUsedAt: null };
+  const seg = { id, keyword: info.keyword, name: String(name ?? "").trim().slice(0, 60) || `${info.keyword} ${all.filter((s) => s.keyword === info.keyword).length + 1}`, file: target, seconds, source, ...(heygenId ? { heygenId: String(heygenId).slice(0, 80) } : {}), text: String(text ?? "").replace(/\s+/g, " ").trim().slice(0, SEGMENT_TEXT_MAX) || null, createdAt: new Date().toISOString(), lastUsedAt: null };
   saveSegments(identityDir, [...all, seg]);
   return seg;
 }

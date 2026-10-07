@@ -123,5 +123,5 @@ export async function buildAndReview(projectDir, { env = process.env, language, 
   const built = await assemble(projectDir, { env, language, title, look });
   await lintAndCheck(projectDir, { env, onProgress });
   const sheet = await contactSheet(projectDir, { env, onProgress });
-  return { scenes: built.scenes, seconds: built.seconds, notes: built.notes ?? [], transitions: (built.transitions ?? []).map((t) => t.type), ...sheet };
+  return { scenes: built.scenes, seconds: built.seconds, notes: built.notes ?? [], transitions: (built.transitions ?? []).map((t) => t.type), icons: built.icons ?? [], ...sheet };
 }

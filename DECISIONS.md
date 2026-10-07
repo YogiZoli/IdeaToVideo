@@ -1156,3 +1156,297 @@
     CTA-szegmensekhez a fiók videólistájából (`GET /v3/videos`, ingyenes
     olvasás). Addig a kész szegmensek letöltve és feltöltve kerülnek be,
     ez ingyen van.
+
+## 2026-10-06 (a 3. fázis kezdete)
+
+101. **3. fázis terv, avatar motor és import, szegmens-szöveg** (Zoltan,
+    2026-10-06, `docs/phase-3-plan.md`):
+    - **Ingyenes lépésekkel haladunk** (a pénz 1-2 hét múlva jön). Későbbre:
+      Windows aláírás, Apple Developer ID, a Mac build és Mac teszt, a PRD 14
+      nyitott kérdései (név, cégforma, domain). **Baráti tesztek egyelőre
+      nincsenek**, nem tudni, mikor. A pilot első köre Zoltané, tiszta
+      környezetben (Windows Sandbox), a végén, egyben.
+    - **A telepítő egyszer épül újra, a 4. fázis végén**; addig minden
+      megvalósul a kódban. A Mac build egyetlen alkalommal, Windows és Mac
+      együtt, utána. Ez eltér a PRD 12-től (a pilot Mac-es része a kiadás elé
+      csúszik); a DECISIONS 95 szerinti sorrend marad.
+    - A phase-3 PR CI-ja piros maradhat a 4. fázis végéig (`ci-test-order`,
+      Actions perc).
+    - **Avatar motor** (a DECISIONS 100 megvalósítása): `avatar_iii` (alap),
+      `avatar_iv`, `avatar_v`; az Identity `avatar.engine` mezője, és
+      videónként az Avatar tabon. A megrendelés `engine.type`-ot küld; a look
+      `supported_api_engines` listája szerint csak támogatott motor
+      választható, az alap nem támogatott motornál a legolcsóbb támogatottra
+      esik vissza, kiírva. Becslés motoronként (HeyGen súgója, 2026-10: III
+      0,60-0,99 USD/perc, IV 2,31-4,83; az V ára nem publikus, a IV tartományával
+      becsülünk és jelöljük).
+    - **Az "Unlimited" Avatar III az API-ra nem vonatkozik** (utánanézve): az
+      API külön dollár alapú rendszer; a webes unlimited csak a régi csomagokon
+      él, az új kreditalapú csomagokon az Avatar III 3 kredit percenként. A
+      Settingsben ez egy mondattal kiírva. Következmény: a CTA-szegmenseket a
+      webes HeyGenben érdemes elkészíteni, és letöltve (A) vagy importálva (C)
+      használni, API-hívás nélkül.
+    - **Import from HeyGen** (CTA, Your segments, C): `GET /v3/videos`
+      (olvasás), a kész videók listája, kiválasztás, kulcsszóhoz rendelés,
+      letöltés (`source: heygen-import`, a szegmens megjegyzi a `heygenId`-t,
+      így látszik, mi van már importálva). **Kipróbálva Zoltan kulcsával
+      (2026-10-06, csak olvasás, ingyen, a kulcs nem került sehova):** a lista
+      50 videót ad oldalanként (van következő oldal), a kész videókhoz van
+      letöltési cím és kép (`files2.heygen.ai`), és a webes felületen készült
+      videók is benne vannak (például az "Avatar Video" és a "Meet your
+      avatar"). A lista zsúfolt (az app saját open és close klipjei, tesztek),
+      ezért az importnak címkereső mezője és dátuma van. Nem próbáltam: a
+      letöltés és a klip minősége (vízjel nincs-e), azt az első importnál látjuk.
+    - **Szegmens szövege 1500 karakter** (volt 400): egy 30 mp-es klip teljes
+      szövege beleférjen, a mezők alatt számláló. A felirat és a publikálási
+      adat (`said`) ezt használja.
+    - Az újrahasznosítás modellje változatlan (DECISIONS 78): egy szegmens egy
+      kulcsszóé, a kulcsszó a kapocs, kulcsszavanként legfeljebb 3, váltakozva.
+    Tesztek: 233 Node (2 új a motorokra és az importra, 1 a szövegre), cargo
+    test zöld.
+102. **Sampler, licenclista, updater kulcs, javítások Zoltan esti videója
+    után** (2026-10-06, `docs/pilot/sampler.md`, `feedback/2026-10-06/NOTES.md`):
+    - **Sampler (PRD 14.5):** `scripts/phase2/pilot.mjs --preset all`, a 11
+      HyperFrames preset, 13 komponens és egy magyar ékezetes sor: mind a 11
+      build és check 0 hiba, az ékezetek jók. Talált hiba: a második és
+      harmadik szín nem volt olvashatóra igazítva (sárga kiemelt szó krémen).
+      Javítva: `cardTheme` mindhárom színt 3:1-re igazítja (teszt).
+    - **Betűköz:** a build-másolat soha nem szorosabb -0.01em-nél (`trackingFit`),
+      mert a registry szoros betűköze a user vastag betűjével összeér (Zoltan
+      videója: Archivo Black, headline-slam). A registry fájl érintetlen.
+    - **Nincs üres kép a kimondásra váró listánál:** a grid-card-assemble és a
+      constellation-hub első eleme a jelenet elején megjelenik, a többi a
+      kimondáskor (Zoltan: 3 mp üres kép).
+    - **THIRD-PARTY-NOTICES.md** (`scripts/notices.mjs`, a lockfájlokból, a
+      Rust crate-ekből és a csomagolt részekből), a telepítőbe kerül, az About
+      oldal hivatkozik rá, és kiírja a Node.js és az FFmpeg (GPL-3.0, külön
+      program, a forrás helye) sorát (DECISIONS 43 teljesítve).
+    - **Updater kulcspár** (Zoltan kérte): a nyilvános kulcs a repóba kerül az
+      updater beállításakor; a privát kulcs és a jelszava csak
+      `C:/Users/gdp/ITV-updater-key` alatt, onnan Zoltan a jelszókezelőjébe
+      teszi, és a mappát törli. Repóba, logba, chatbe nem került.
+    - Nyitott, Zoltan döntésére (lásd a NOTES-ot): ikonkönyvtár a rajzokhoz (a
+      HyperFrames registryben nincs ikonkészlet, csak két ikon-mozgás elem), a
+      kimondott szó kiemelése, élénkebb jelenetek, és a CTA-szegmens, nyitó és
+      záró klip közös modellje.
+103. **Videóminőség: Zoltan döntései** (2026-10-06, `docs/video-quality-plan.md`):
+    - **Sorrend:** (1) élénkebb alap, (2) ikonok, (3) kimondott szó és
+      feliratok, (4) a 39 archetípus csomagként, Import és Export gombbal,
+      (5) Scenes varázsló, (6) kép és videó források. Csak utána a README, a
+      `release.yml` és az updater.
+    - **Scenes varázsló: igen, negyedikként, bőségesen** (nem rövid; minden
+      lépés átugorható). Ide tartozik a blokk-csomag és az ikoncsalád is,
+      külön blokk- vagy ikonvarázsló nem kell.
+    - **Ikonok: Lucide, Tabler, Iconoir**, mind a három.
+    - **Feliratok: mind a 17 registry felirat-stílus választható** a Motion
+      varázslóban, nem csak három, a kimondott szó kiemelésével együtt.
+    - **A 39 archetípus: a kánon NEM módosul.** Egy importálható csomag-fájl
+      készül belőle (a kánonból csak olvasva), a változók a csomag
+      másolatába kerülnek; az appban Import és Export gomb. Előtte alapos
+      átnézés és javaslatlista (Zoltan kérése). A csomag nem kerül az app
+      repójába és telepítőjébe (DECISIONS 18, 48 marad).
+    - **Képforrás:** AI kép a Gemini kulccsal, amikor lesz rá pénz (1-2 hét).
+      Stock: a Pexels új kulcsot nem ad; Zoltannak Pixabay és Coverr kulcsa
+      van, az Unsplash jelentkezés folyamatban (`docs/stock.md`). A stock
+      felfüggesztésének feloldása Zoltan döntésére vár.
+    - **(1) élénkebb alap, első rész kész:** a kamera push a jelenet teljes
+      hosszán fut (5%, folyamatos, jelenetenként váltakozó oldalirányú
+      sodródással), nem áll meg a felénél; a Motion profil alapja push; profil
+      nélkül is van kamera (vágások, push: `BASE_MOTION`). A HyperFrames
+      explainer doktrínája ("no slow push in the back half") itt Zoltan
+      visszajelzésének enged: semmi nem állhat meg.
+    - **(1) élénkebb alap, második rész: új kép 3-5 mp-enként.** A tervező
+      minden mondatnak külön jelenetet ad, csak a nagyon rövideket vonja
+      össze; több mondatos jelenet legfeljebb 7 mp (volt 12), különben a
+      javító hívás szétbontja; a Simple plan legfeljebb 6 mp-ig von össze.
+      Zoltan videójában a hosszú képek fő oka az összevonás volt (0-11,4 mp
+      egy címkártya). Egy hosszú mondat egy jelenet marad; a mondaton belüli
+      bontás a kimondott szó kiemelésével (3. lépés) jön. Próba: 46 mp-es
+      render, egy jeleneten belül 0,8 mp alatt a kép mozdul (SSIM 0,98).
+104. **Tempó választható, stock kulcsok** (Zoltan, 2026-10-06: "ez nem olyasmi,
+    amiben a usernek kéne döntenie?"; "Pixabay és Coverr menjen már most"):
+    - **Tempó a Motion varázsló első képernyőjén:** Calm (új kép 5-8 mp-enként,
+      összevont jelenet legfeljebb 10 mp), Balanced (3-5 mp, legfeljebb 7 mp,
+      ajánlott, az alap), Fast (2-4 mp, legfeljebb 5 mp). A Motion profil
+      `pace` mezője; a tervező promptja, a gépi ellenőrzés és a Simple plan
+      ezt követi (`roles.mjs` PACES). A Camera képernyő ajánlása Push in lett.
+    - **Stock felfüggesztés feloldva** (Zoltan): Pixabay és Coverr most, az
+      Unsplash a jóváhagyása után. Most a kulcsok: Settings, Identity,
+      Footage, "Stock photos and videos" (Test key). A keresés a kép és videó
+      források lépésében jön (DECISIONS 103 sorrend, 6.).
+    - **Figyelem, Coverr:** az API leírása szerint az ingyenes hozzáférés
+      addig jár, amíg az app nem kér érte pénzt, és a videókat nem használják
+      kereskedelmi célra; a forrást (logó, kattintható) mutatni kell. A
+      Pixabay licence kereskedelmi célra is szabad, forrásmegjelölés nélkül;
+      a találatokat 24 óráig gyorsítótárazni kell, a képeket letölteni. A
+      Coverr használata a kiadás előtt Zoltan döntése.
+105. **Ikonok a rajzos jelenethez** (Zoltan: "ugyanaz a rajz minden
+    videóban"; Lucide, Tabler, Iconoir, mind a három):
+    - **Letöltés a buildben** (`scripts/fetch-icons.mjs`, a `fetch-library`
+      futtatja): rögzített npm csomagok (`library/icons.json`: lucide-static
+      1.52.0, @tabler/icons 3.49.0 outline, iconoir 7.12.1 regular), sha512
+      ellenőrzéssel. Családonként egy JSON: ikononként path adat a 24-es
+      rácson és keresőszavak (a Lucide és a Tabler saját címkéi). 2130 + 5184
+      + 1382 ikon, 2,6 MB. A licencek mellettük, a THIRD-PARTY-NOTICES-ben is.
+    - **A tervező** minden whiteboard-ink jelenethez `icon` mezőt ad: egy-három
+      angol szó egy kézzelfogható tárgyra, minden rajzhoz más; enélkül a
+      gépi ellenőrzés visszaküldi.
+    - **A build választ** (`runner/icons/index.mjs`): a legjobban illő ikon,
+      egy videóban soha kétszer, és lehetőleg nem az Identity előző 12
+      videójának ikonja (`<identity>/icons-used.json`; az újrabuild a saját
+      ikonjait megtartja). Márkalogó soha (Tabler `brand-*` és a többi
+      logó). A "kikapcsolt" változat (például `lightbulb-off`) csak kérésre.
+      A felirat vagy a mondat szövegéből csak erős találat jöhet; különben
+      a jelenet saját rajza marad. A rajz a jelenet saját helyén (strokes
+      slot), vonalról vonalra, egy kiemelt vonallal; a registry fájl érintetlen.
+    - A tiltott nevek szabálya az ikonok nevére és címkéire is áll: a
+      tiltott szót tartalmazó címke kimarad, egy Iconoir ikon emiatt kimaradt.
+    - Később: a rács-kártyák ikonjai, és a Scenes varázslóban a családok és
+      a kedvencek Identity-nként.
+106. **Feliratok és a kimondott szó** (Zoltan: "mind a 17", "a kimondott szó
+    legyen kiemelve, mint egy átiratban, rázás helyett"):
+    - **15 felirat-stílus** a HyperFrames registryből (`caption-*`), a
+      rögzített commitról, SHA256 lockkal, előnézeti képpel és a saját
+      fájljaikkal (a Texture hat textúrája). A 17 felirat-címkés elemből kettő
+      nem felirat-stílus: a `caption-blend-difference` csak egy CSS keverési
+      hatás, a `caption-camera-follow` egymondatos jelenettípus (a Scenes
+      varázslóba kerülhet).
+    - **Build-másolat** (`runner/captions/`): a videó saját szavai és
+      időzítése (`words.json`), saját csoportok (legfeljebb 4 szó, új csoport
+      mondatjel vagy szünet után), a videó hossza, az Identity betűje, helyi
+      GSAP, Google Fonts nélkül. A színek a márkából, 3:1 felett: világos
+      kinézetnél a fehér és halvány betű a szöveg színét kapja, a neon és a
+      kódzöld a fő színt; a karaoke pirula a felület színét. Egy fedőréteg az
+      egész videó fölött (track 9); a HyperFrames futtató `caption-overrides.json`
+      fájlját üres listával adjuk; a feliratszavak átfedés-jelölést kapnak
+      (szándékos rétegzés).
+    - **Motion varázsló, új "Captions" képernyő:** Off (alap) és a 15 stílus
+      képpel, a hangos stílusok jelölve; a `.srt` mindig elkészül.
+    - **A kimondott szó a jelenet saját szövegében** (`spoken.mjs`, alapból
+      be, a Captions képernyőn kikapcsolható): a headline-slam és a
+      per-word-rise szavai a kimondás idejére átszíneződnek (márkaszín, vagy a
+      szöveg színe, ha már márkaszínű), a jelenet saját GSAP idővonalán; a
+      headline-slam háromkockás rázása nincs többé.
+    - Próba: mind a 15 stílus build, lint és check (Blue Professional). A
+      check nem mindent lát: a kontakt lapokon a Gradient fill, a Clip wipe,
+      a Neon és a Particle burst világos háttéren alig látszott, az Editorial
+      a kép közepére került. Javítva: világos kinézetnél a sötét felvételre
+      készült élénk palettákat (arany, neon, színátmenetek) a márka három
+      színe váltja, a félig fehér betűt a halvány szövegszín, az Editorial az
+      alsó harmadba került. A Parallax nagy háttérszava hangos marad, ezért
+      jelölt. Render próba (Pill karaoke): a kimondott szó sorban sötétedik.
+107. **Blokk-csomagok (.itvpack) és a 39 archetípus csomagként** (Zoltan,
+    2026-10-06 és 07; `docs/pilot/archetypes-review.md`, `docs/import-export.md`):
+    - **A kánon érintetlen.** Egy általános csomagkészítő
+      (`scripts/make-pack.mjs`) a kánon blokkjaiból csak olvasva gyártja a
+      csomagot; a forrás-leíró (`C:/Users/gdp/ITV-packs/explainer-archetypes/pack.src.json`)
+      és a csomag (`C:/Users/gdp/ITV-packs/explainer-archetypes.itvpack`,
+      1,1 MB) a repón kívül van, az app telepítőjében sincs.
+    - **Formátum:** zip (`runner/packs/zip.mjs`, saját kis író és olvasó; a
+      Windows kibontója is olvassa): `pack.json` (`itv-pack/1`: id, név,
+      kinézet, blokkonként szerep, leírás, változók és határaik, rajzolt
+      hossz), `blocks/<id>.html`, `shared/fontface.css` (a betű egyszer).
+    - **A csomagban javítva** (a kánonban nem): egységes változók (a
+      deklarált és a használt egyezik); a sampler-feliratok (kick, subcap,
+      caption) opcionálisak és üresen eltűnnek; a display-word blur nélkül;
+      **márkanyom sehol** (Zoltan: "se saját márka, se C2C, se zg"): a
+      megjegyzések ki, a kódnevek semlegesek, a márkás mintaszövegek
+      semlegesek, a csatornánkénti színblokkok ki, és a készítő leáll, ha
+      bármi marad. **Ikonok: Lucide** (ISC, Zoltan: ne a saját 37 legyen az
+      alap, hanem egy bevált ingyenes készlet), a blokk saját körében; egy
+      ikon-változóba írt bármely tárgyat a build a három ikonkészletből
+      kikeres.
+    - **Kinézet: alapból a user Identity Brandje** (Zoltan), kapcsolóval a
+      csomag saját kinézete. Ismert korlát: néhány blokk fix színe (például a
+      tölcsér sávjai) marad.
+    - **Kitalált nevek:** a személy- és rekordkártyák szándékosan kitalált
+      példák (Zoltan); a tervező utasítása: soha valódi márka, cég vagy
+      híres ember.
+    - **Az appban:** Settings, Identity, Scenes: Import pack, Export pack,
+      Remove, "Use this pack", "Use this Identity's Brand", blokkonként be és
+      ki. Identity-nként tárolva (`<identity>/packs/<id>/`); az Identity
+      export és import viszi (a Rust oldal a `packs/` alatt a HTML és CSS
+      fájlt is engedi, négy szint mélyen, máshol nem). A tervező a csomag
+      blokkjait is látja (új szerepek: kapcsolat, ellentét, folyamat,
+      részlet, felvétel fölé, komment-felhívás), a Scenes tab cserelistája
+      is; a felvételt igénylő blokkok csak saját felvétellel. A build a
+      blokkba teszi a betűt, a jelenet hosszát (rövid jelenetnél a belépők
+      arányosan korábban), és a Brand színeit.
+    - Próba: hét blokk egy videóban, a saját és a Brand kinézettel is,
+      build, lint, check 0 hiba; az "arrow" Lucide villanykörte és rakéta
+      ikonnal.
+108. **A Coverr kivéve** (Zoltan, 2026-10-07: "semmi copyright kockázatot nem
+    akarok"). Az API leírása szerint az ingyenes hozzáférés nem kereskedelmi
+    célra szól. Kivéve a kulcsmezőt, a kulcslistából, a Test key-ből és az
+    app jogosultságai közül. Stock: Pixabay (kereskedelmi célra is szabad),
+    az Unsplash a jóváhagyása után.
+109. **Zoltan saját márkája importálható fájlban, és az Open Sans** (Zoltan,
+    2026-10-07: "a ZG és C2C pontos másolata kell, hogy ne kelljen újra
+    kitalálni"; az Open Sans marad):
+    - **Open Sans az app betűi között** (OFL, fontsource 5.3.0, rögzítve), mint
+      bármelyik másik; a Brand kártya választhatja.
+    - **A csomagkészítő két módja:** "neutral" (alap: márkanyom nélkül, Lucide
+      ikonok, a befogadó Brandjében) és "original" (`neutral: false`: a
+      tervező saját kinézete, ikonjai és nevei).
+    - **A fájlok** (`C:/Users/gdp/ITV-packs/`, a repón kívül, leírás:
+      `README.md`): `ZG-C2C.identity.zip` (teljes Identity: a kánon ZG/C2C
+      színei és betűje, a kánon szerinti Motion, az eredeti csomag, a
+      "Zoltan Gero" Identity csatornája, hangja és avatarja; CTA, kulcs és
+      videó nélkül), `zg-archetypes-original.itvpack`,
+      `neutral-explainer-archetypes.itvpack`. Elnevezési rend:
+      `<MÁRKA>.identity.zip`, `<tulaj>-<tartalom>-original.itvpack`,
+      `neutral-<tartalom>.itvpack`.
+    - A ZG/C2C Motion a kánonból (`MOTION.md`, `BLOCKS.md`): folyamatos push
+      kamera, Dot field háttér, egy átmenet ismétlődik (crossfade, a kánon
+      fade-through-jához legközelebbi), Balanced tempó, a kimondott szó
+      kiemelve, felirat ki.
+    - A fájlok az új telepítővel működnek (csomag-import, Open Sans).
+110. **Scenes varázsló** (Zoltan: "negyedik varázsló, bőséges"; DECISIONS 103):
+    - **Identity-szintű `scenes.json`** (`runner/scenes-profile.mjs`): keverék
+      (szöveg, ikon és rajz, kép, videó, százalékban, 100-ra kiegyenlítve),
+      a kikapcsolt beépített jelenettípusok, az ikoncsaládok sorrendben, a
+      kép- és videóforrások. Az Identity export viszi.
+    - **Hét képernyő:** Start (Balanced, Visual, Drawn, Word-led ajánlatok),
+      Mix (csúszkák, figyelmeztetés, ha egy fajtához nincs forrás), Scene
+      types (szerepenként be és ki, legalább egy marad), Scene packs (a
+      csomagok helyben, Import), Icons (családok minta-ikonokkal, sorrend),
+      Pictures and video (saját felvétel, Pixabay, AI B-roll; AI kép később),
+      Check and save. A tempó a Motion varázslóban marad.
+    - **A be- és kikapcsolás átköltözött a Motion varázslóból** (ott a
+      lépés neve "Scene styles", csak a kinézet maradt). Egy régi Motion
+      profil kikapcsolásai továbbra is érvényesek, és az első Scenes profil
+      átveszi őket.
+    - **A tervező** a keveréket utasításként kapja (prompt `{{MIX}}`); egy
+      fajta, amihez a videónak nincs forrása, a többibe olvad (a kép a
+      Pixabay keresésig az ikonokhoz). A build a profil ikoncsaládjait
+      használja.
+    - Settings, Identity, Scenes: összegzés, "Open Scenes wizard", alatta a
+      csomagok. A `ZG-C2C.identity.zip` a Scenes profilt is hozza.
+    - Próba a böngészős UI-mockban: mind a hét képernyő; tesztek: 262 Node.
+
+111. **Pixabay keresés: kép és videó a jelenetekhez** (`runner/stock/`,
+    `docs/stock.md`; Zoltan: "6. Pixabay keresés", 2026-10-07):
+    - **Egy panel a Scenes tabon**, a jelenettábla alatt: "Photos and
+      videos". Keresőmező, a scriptből vett ötletek (cím, fejezetcímek, a
+      gyakori szavak), Photos vagy Videos, 18 találat előnézettel, "Add".
+      Kulcs nélkül csak a teendő látszik (Settings, Identity, Footage).
+    - **A választott elem a felvétel-könyvtárba kerül**, mint a saját
+      felvétel, licenc-rekorddal (forrás, azonosító, szerző, Pixabay
+      Content License, oldal). A tervező a következő tervezésnél tesz alá
+      mondatot, ami ugyanazt mutatja; a keverék képrésze csak akkor él, ha
+      van ilyen klip. Ugyanaz az elem kétszer nem töltődik le.
+    - **Fotó: 6 mp-es 1920x1080 klip lassú ráközelítéssel** (ffmpeg zoompan,
+      5 százalék, középre vágva), így nem áll a kép. A `docs/stock.md` 5
+      registry-komponense helyett ez, mert a klip a meglévő felvétel-útra
+      megy, új jelenettípus nélkül.
+    - **A Pixabay feltételei:** a találatok 24 órán át tárolva (nem kérdez
+      újra), a fájl letöltve (nincs hotlink), a forrás a panelen látszik.
+      Biztonságos keresés, fekvő formátum, legalább 1280 px; videóból a
+      1920-as, soha 4K. Csak `pixabay.com` címről tölt; a felület csak a
+      találat azonosítóját küldi vissza, a letöltési cím a runner saját
+      tárából jön. A kulcs a kérés címében megy, hibaüzenetben maszkolva.
+    - **Egyszerűbb, mint a `docs/stock.md` terve:** nincs jelenetenkénti
+      "Find stock" gomb, nincs Settings-beli "Add from stock", nincs
+      Autopilot-választás és 4K szűrő. Ezek a próba után jöhetnek.
+    - Próba a böngészős UI-mockban (keresés, ötletek, Add); tesztek: 266
+      Node (új: `runner/stock.test.mjs`, a fotó-klip ffmpeg-gel).

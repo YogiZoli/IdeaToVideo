@@ -194,7 +194,7 @@ pub fn redact_value(v: &Value, secrets: &[&str]) -> Value {
 /// Fields whose text is a choice or an identifier, not the user's content.
 const PLAIN: &[&str] = &[
     "command", "provider", "model", "service", "look", "quality", "field", "gate", "mode", "state", "voice", "voiceId",
-    "lookId", "style", "position", "size", "language", "contentLanguage", "keyScope", "scriptTemplate", "preset", "id",
+    "lookId", "engine", "pace", "captions", "style", "position", "size", "language", "contentLanguage", "keyScope", "scriptTemplate", "preset", "id",
     "name", "folder", "status", "kind", "segment", "level", "event", "code", "step", "format", "version", "tier",
     "projectDir", "projectsDir", "projectsRoot", "backupRoot", "dir", "file", "path", "srt", "chaptersFile", "message",
     "error", "warning", "at", "createdAt", "youtubeUrl", "landingUrl", "logo", "identity", "activeIdentity", "music",

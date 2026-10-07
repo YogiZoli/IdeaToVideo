@@ -17,6 +17,7 @@
   import { tabLabel, type TabId } from "./tabs";
   import StepModel from "./StepModel.svelte";
   import BrollPanel from "./BrollPanel.svelte";
+  import StockPanel from "./StockPanel.svelte";
   import { llmFor } from "./llm";
 
   let { app, dir, gate, voiceApproved, changed, goto, next, saved }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId; saved: (s: AppState) => void } = $props();
@@ -241,6 +242,7 @@
       {/if}
       {#if table.gaps.length}<p class="hint">For {table.gaps.length} sentence{table.gaps.length > 1 ? "s" : ""} the AI would have liked a scene type the app does not have yet. This is noted in the project log.</p>{/if}
       <BrollPanel {app} {dir} tableChanged={async () => { await load(); await changed(); }} />
+      <StockPanel {app} {dir} />
     {/if}
 
     <div class="actionbar">

@@ -64,6 +64,23 @@ const recommended = recommendMood(card);
   fs.writeFileSync(path.join(out, "cta-state.json"), JSON.stringify({ profile: null, start: ctaDefault(), options: { keywords: catalogForUi(), temperatures: TEMPERATURES, slots: SLOTS, placesForCount: PLACES_FOR_COUNT }, look, last: null, segments: [{ id: "a1b2c3d4e5", keyword: "GUIDE", name: "GUIDE with my avatar", file: "a1b2c3d4e5.mp4", seconds: 9.4, source: "heygen", createdAt: "2026-10-05T10:00:00Z", lastUsedAt: null }] }));
 }
 fs.writeFileSync(path.join(out, "motion-state.json"), JSON.stringify({ profile: null, recommended, start: profileFromMood(recommended.mood), light: card.appearance === "light", options: wizardOptions() }));
+// The Scenes wizard and the scene packs (DECISIONS 107, 110): the runner's
+// own answers for a throwaway Identity with the neutral pack imported, when
+// the pack file is on this computer.
+{
+  const { spawnSync } = await import("node:child_process");
+  const os = await import("node:os");
+  const ident = fs.mkdtempSync(path.join(os.tmpdir(), "itv-mock-ident-"));
+  const pack = "C:/Users/gdp/ITV-packs/neutral-explainer-archetypes.itvpack";
+  if (fs.existsSync(pack)) (await import("../../runner/packs/index.mjs")).importPack(ident, pack);
+  const ask = (command) => {
+    const r = spawnSync(process.execPath, [path.join(here, "..", "..", "runner", "main.mjs"), command], { input: JSON.stringify({ identityDir: ident }), encoding: "utf8" });
+    const line = r.stdout.trim().split(/\r?\n/).map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((e) => e?.event === "result");
+    return line?.data ?? null;
+  };
+  fs.writeFileSync(path.join(out, "scenes-state.json"), JSON.stringify(ask("scenes-state")));
+  fs.writeFileSync(path.join(out, "packs-list.json"), JSON.stringify(ask("packs-list")));
+}
 const dataDir = process.env.ITV_DATA_DIR ?? path.join(process.env.LOCALAPPDATA ?? "", "app.ideatovideo.desktop");
 const motionOut = path.join(dataDir, "motion-preview", "out");
 if (fs.existsSync(motionOut)) {

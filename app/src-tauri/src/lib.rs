@@ -246,6 +246,8 @@ fn allow_media(app: &AppHandle, projects: &Path) {
     if let Ok(d) = app.path().app_local_data_dir() {
         let _ = scope.allow_directory(d.join("voice-previews"), true);
         let _ = scope.allow_directory(d.join("avatar-previews"), true);
+        // the stock search's preview pictures (runner/stock/, DECISIONS 111)
+        let _ = scope.allow_directory(d.join("stock-previews"), true);
         // the Brand wizard's real preview (runner/brand/preview.mjs)
         let _ = scope.allow_directory(d.join("brand-preview"), true);
         // the Motion wizard's preview video (runner/motion/preview.mjs)
@@ -257,6 +259,8 @@ fn allow_media(app: &AppHandle, projects: &Path) {
     }
     if let Ok(r) = app.path().resource_dir() {
         let _ = scope.allow_directory(runner::plain_path(r.join("library").join("fonts")), true);
+        // the caption styles' preview pictures (the Motion wizard)
+        let _ = scope.allow_directory(runner::plain_path(r.join("library").join("captions")), true);
     }
 }
 

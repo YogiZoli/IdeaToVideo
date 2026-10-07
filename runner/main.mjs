@@ -38,9 +38,15 @@ import { loadProfile, saveProfile, normalizeProfile, profileFromMood, recommendM
 import { motionPreview, motionPreviewDir } from "./motion/preview.mjs";
 import { loadProfile as loadCta, saveProfile as saveCta, normalizeProfile as normalizeCta, defaultProfile as defaultCta, videoPlan, catalogForUi, endScreenOf, loadLast, saveLast } from "./cta/profile.mjs";
 import { segmentVoice, segmentVideo } from "./cta/make.mjs";
+import * as pixabay from "./stock/pixabay.mjs";
+import { addStock, suggestQueries } from "./stock/index.mjs";
+import { FAMILIES as ICON_FAMILIES, loadFamily as loadIconFamily } from "./icons/index.mjs";
+import { ROLES as SCENE_ROLES, COMPONENTS as SCENE_COMPONENTS } from "./gates/scenes/roles.mjs";
+import { loadScenes as loadScenesProfile, saveScenes as saveScenesProfile, MIX_PRESETS, KINDS, KIND_LABELS, PICTURE_SOURCES } from "./scenes-profile.mjs";
+import { listPacks, importPack, exportPack, removePack, writeState as writePackState, registerPacks } from "./packs/index.mjs";
 import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
 import { describeClip } from "./footage/describe.mjs";
-import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
+import { loadSegments, addSegment, removeSegment, markUsed, segmentsDir, incomingName, SEGMENT_MAX_SECONDS, SEGMENT_TEXT_MAX, SEGMENTS_PER_KEYWORD } from "./cta/segments.mjs";
 import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "./cta/catalog.mjs";
 import { galleryCards, STYLE_NOTE } from "./brand/gallery.mjs";
 import { cardFromTokens } from "./brand/tokens.mjs";
@@ -120,7 +126,28 @@ const key = () => process.env.STUDIO_API_KEY || "";
 function lookOf({ identityDir, look }) {
   if (!identityDir) return look;
   const { card } = loadCard(identityDir);
-  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion: motionOf(identityDir), footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
+  const motion = motionOf(identityDir);
+  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion, scenes: loadScenesProfile(identityDir, { motionOff: motion?.scenes?.off ?? [] }).profile, footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
+}
+
+// The icons the Identity's other videos draw (<identity>/icons-used.json, one
+// list per ONE Video, the last 12 videos): a new video prefers others, so
+// two videos never look alike (icons/index.mjs, DECISIONS 105). A rebuild of
+// the same video keeps its own icons.
+const ICONS_USED = "icons-used.json";
+function iconsUsed(identityDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(identityDir, ICONS_USED), "utf8"));
+  } catch {
+    return {};
+  }
+}
+const recentIcons = (identityDir, videoId) => Object.entries(iconsUsed(identityDir)).filter(([id]) => id !== videoId).flatMap(([, v]) => v.icons ?? []);
+function rememberIcons(identityDir, videoId, icons) {
+  if (!identityDir) return;
+  const all = { ...iconsUsed(identityDir), [videoId]: { icons, at: new Date().toISOString() } };
+  const keep = Object.entries(all).sort((a, b) => String(b[1].at).localeCompare(String(a[1].at))).slice(0, 12);
+  fs.writeFileSync(path.join(identityDir, ICONS_USED), JSON.stringify(Object.fromEntries(keep), null, 2) + "\n");
 }
 
 // The Identity's Motion profile, or null (motion/profile.mjs). A broken file
@@ -188,7 +215,10 @@ function loadCtaChecked(identityDir) {
     throw new Error(`The CTA profile cannot be used: ${e.message} Open Settings, Identity, CTA to fix it.`);
   }
 }
-const offOf = (look) => (typeof look === "object" ? look?.motion?.scenes?.off ?? [] : []);
+// scene types turned off: the Scenes profile, and an old Motion profile's list
+const offOf = (look) => (typeof look === "object" ? [...new Set([...(look?.motion?.scenes?.off ?? []), ...(look?.scenes?.off ?? [])])] : []);
+// How often the picture changes (the Motion profile, roles.mjs PACES).
+const paceOfLook = (look) => (typeof look === "object" ? look?.motion?.pace ?? undefined : undefined);
 
 // Dictionary findings for a ONE Video: the script's spoken text and every
 // text of the scene table (DECISIONS 68). Never blocks, the gates show them.
@@ -518,15 +548,124 @@ const commands = {
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
-  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, perKeyword: SEGMENTS_PER_KEYWORD }),
+  "segments-list": async ({ identityDir }) => ({ segments: loadSegments(identityDir), dir: segmentsDir(identityDir), maxSeconds: SEGMENT_MAX_SECONDS, maxText: SEGMENT_TEXT_MAX, perKeyword: SEGMENTS_PER_KEYWORD }),
   "segment-add": async ({ identityDir, file, keyword, name, text }) => ({ segment: await addSegment({ identityDir, file, keyword, name, text, source: "upload" }) }),
   "segment-remove": async ({ identityDir, id }) => removeSegment(identityDir, id),
   // A segment made in the app: the narrator reads the sentence (its key),
   // then HeyGen makes the avatar video on it (the HeyGen key).
   "segment-voice": async ({ identityDir, narrator, text, language }) => segmentVoice({ identityDir, narrator, apiKey: key(), text, language }),
-  "segment-make": async ({ identityDir, lookId, audio, keyword, name, text }) => ({
-    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, text, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "segment-make": async ({ identityDir, lookId, audio, keyword, name, text, engine, lookEngines }) => ({
+    segment: await segmentVideo({ identityDir, apiKey: key(), lookId, audio, keyword, name, text, engine, lookEngines, background: ctaLook(identityDir).bg, onProgress: (p) => emit({ event: "progress", ...p }) }),
   }),
+
+  // A clip made in HeyGen itself (the web app or an earlier run) becomes a
+  // segment: the account's finished videos, then the chosen one downloaded
+  // (reads only, no cost; DECISIONS 101). Pictures are cached locally like
+  // the avatar previews.
+  "segment-import-list": async ({ identityDir, title }) => {
+    const videos = await heygen.listVideos({ apiKey: key(), title: String(title ?? "").trim().slice(0, 100) || undefined });
+    const have = new Set(loadSegments(identityDir).map((s) => s.heygenId).filter(Boolean));
+    const dir = path.join(dataDir(), "avatar-previews");
+    const queue = [...videos];
+    const worker = async () => {
+      for (let v = queue.shift(); v; v = queue.shift()) {
+        try {
+          v.image = v.image ? await heygen.cachePreview({ url: v.image, dir }) : null;
+        } catch {
+          v.image = null;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: 6 }, worker));
+    return { videos: videos.map(({ url, ...v }) => ({ ...v, tooLong: v.seconds != null && v.seconds > SEGMENT_MAX_SECONDS, imported: have.has(v.id) })), maxSeconds: SEGMENT_MAX_SECONDS };
+  },
+  "segment-import": async ({ identityDir, id, keyword, name, text }) => {
+    const dir = segmentsDir(identityDir);
+    const file = incomingName(".mp4");
+    const got = await heygen.downloadVideo({ apiKey: key(), id, out: path.join(dir, file) });
+    return { segment: await addSegment({ identityDir, file, keyword, name: name || got.title, text, source: "heygen-import", heygenId: id }) };
+  },
+
+  // The Scenes wizard (scenes-profile.mjs, DECISIONS 110): the profile and
+  // every choice, with what this Identity has (footage, packs).
+  "scenes-state": async ({ identityDir }) => {
+    const motion = identityDir ? motionOf(identityDir) : null;
+    const { profile, saved } = loadScenesProfile(identityDir, { motionOff: motion?.scenes?.off ?? [] });
+    let footage = 0;
+    try {
+      footage = (loadLibrary(identityDir).clips ?? []).filter((c) => c.source !== "generated").length;
+    } catch {
+      footage = 0;
+    }
+    const SAMPLE = ["lightbulb", "rocket", "calendar", "mail", "target", "users", "chart-bar", "clock", "heart", "message-circle"];
+    const icons = ICON_FAMILIES.map((id) => {
+      const fam = loadIconFamily(id);
+      const sample = fam ? SAMPLE.map((n) => fam.icons[n] ?? Object.entries(fam.icons).find(([k]) => k.startsWith(n))?.[1]).filter(Boolean).slice(0, 8).map((i) => i.d) : [];
+      return { id, label: fam?.label ?? id, license: fam?.license ?? "", count: fam ? Object.keys(fam.icons).length : 0, sample };
+    });
+    const roles = Object.entries(SCENE_ROLES)
+      .filter(([r]) => r !== "closing")
+      .map(([r, meta]) => ({ role: r, label: meta.label, hint: meta.hint, components: Object.entries(SCENE_COMPONENTS).filter(([, c]) => c.role === r && !c.retired).map(([name, c]) => ({ name, label: c.label })) }))
+      .filter((r) => r.components.length);
+    return {
+      profile,
+      saved,
+      options: {
+        presets: Object.entries(MIX_PRESETS).map(([id, p]) => ({ id, ...p })),
+        kinds: KINDS.map((k) => ({ id: k, label: KIND_LABELS[k] })),
+        roles,
+        icons,
+        sources: Object.entries(PICTURE_SOURCES).map(([id, s]) => ({ id, label: s.label, hint: s.hint, kinds: s.kinds, later: Boolean(s.later) })),
+        footage,
+        pace: motion?.pace ?? "balanced",
+      },
+    };
+  },
+  "scenes-save": async ({ identityDir, profile }) => {
+    if (!identityDir) throw new Error("No Identity to save the Scenes profile in.");
+    return { profile: saveScenesProfile(identityDir, profile) };
+  },
+
+  // Stock photos and videos from Pixabay (stock/, DECISIONS 111): search
+  // words from the script, a search with local previews (cached a day, as
+  // Pixabay asks), and the one the user picks into the footage library.
+  "stock-suggest": async ({ projectDir }) => {
+    const project = loadProject(projectDir);
+    const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
+    return { queries: suggestQueries({ title: project.title ?? "", markdown: md }) };
+  },
+  "stock-search": async ({ q, kind = "image" }) => {
+    const r = await pixabay.search({ apiKey: key(), q, kind, cacheDir: path.join(dataDir(), "stock-cache") });
+    const dir = path.join(dataDir(), "stock-previews");
+    const hits = [];
+    for (const h of r.hits) {
+      let preview = null;
+      try {
+        preview = h.preview ? await pixabay.cachePreview({ url: h.preview, dir }) : null;
+      } catch {
+        preview = null;
+      }
+      hits.push({ id: h.id, kind: h.kind, width: h.width, height: h.height, seconds: h.seconds, tags: h.tags, author: h.author, preview });
+    }
+    return { hits, cached: r.cached };
+  },
+  "stock-add": async ({ identityDir, q, kind = "image", id }) => {
+    if (!identityDir) throw new Error("No Identity to add the footage to.");
+    const hit = pixabay.cachedHit(path.join(dataDir(), "stock-cache"), kind, q, id);
+    return addStock({ identityDir, hit, query: q });
+  },
+
+  // Block packs (packs/, DECISIONS 107), per Identity.
+  "packs-list": async ({ identityDir }) => ({
+    packs: listPacks(identityDir).map((p) => ({ id: p.id, name: p.name, author: p.author ?? "", version: p.version ?? "", description: p.description ?? "", look: p.look, on: p.on, followBrand: p.followBrand, off: p.off, blocks: p.blocks.map((b) => ({ id: b.id, label: b.label, role: b.role, what: b.what ?? "", needs: b.needs ?? [], realOnly: Boolean(b.realOnly) })) })),
+  }),
+  "pack-import": async ({ identityDir, file }) => {
+    if (!identityDir) throw new Error("No Identity to import the pack into.");
+    return importPack(identityDir, file);
+  },
+  "pack-export": async ({ identityDir, id, file }) => exportPack(identityDir, id, file),
+  "pack-remove": async ({ identityDir, id }) => removePack(identityDir, id),
+  "pack-state": async ({ identityDir, id, state }) => ({ state: writePackState(identityDir, id, state ?? {}) }),
 
   "dictionary-load": async ({ identityDir }) => ({ dictionary: loadDictionary(identityDir) }),
 
@@ -692,6 +831,8 @@ const commands = {
           name,
           themeIsLight: isLightLook(look),
           off: offOf(look),
+          pace: paceOfLook(look),
+          mix: typeof look === "object" ? look?.scenes?.mix ?? null : null,
           footage: typeof look === "object" ? look?.footage ?? null : null,
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
@@ -715,7 +856,7 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: simple plan without AI");
     try {
-      const r = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look) });
+      const r = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look), pace: paceOfLook(look) });
       brollBack(projectDir);
       project = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: "default" });
       saveProject(projectDir, project);
@@ -731,7 +872,7 @@ const commands = {
   "scene-table": async ({ projectDir, look }) => sceneRows(projectDir, { off: offOf(look) }),
 
   "save-scenes": async ({ projectDir, scenes, look }) => {
-    const r = await saveScenes({ projectDir, scenes });
+    const r = await saveScenes({ projectDir, scenes, pace: paceOfLook(look) });
     const project = edited(projectDir, "scenes");
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: edited by hand");
@@ -785,7 +926,7 @@ const commands = {
 
   "avatar-preview": async ({ url }) => ({ file: await heygen.cachePreview({ url, dir: path.join(dataDir(), "avatar-previews") }) }),
 
-  "avatar-plan": async ({ projectDir }) => {
+  "avatar-plan": async ({ projectDir, engine }) => {
     const plan = await avatarPlan(projectDir);
     let account = null;
     try {
@@ -794,23 +935,28 @@ const commands = {
       account = { error: String(e.message) };
     }
     const seconds = plan.segments.reduce((n, s) => n + s.duration, 0);
-    return { ...plan, estimate: heygen.estimateUsd(seconds), account };
+    return {
+      ...plan,
+      estimate: heygen.estimateUsd(seconds, engine),
+      estimates: Object.fromEntries(heygen.ENGINES.map((e) => [e, { ...heygen.estimateUsd(seconds, e), guess: !!heygen.USD_PER_SECOND_BY_ENGINE[e].guess }])),
+      account,
+    };
   },
 
-  "make-avatar": async ({ projectDir, identityDir, lookId, lookName, which, look, layout }) => {
+  "make-avatar": async ({ projectDir, identityDir, lookId, lookName, which, look, layout, engine, lookEngines }) => {
     let project = setGate(loadProject(projectDir), "avatar", { state: "running", mode: "custom" });
     saveProject(projectDir, project);
-    appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}`);
+    appendLog(projectDir, `avatar: ${lookId}, ${(which ?? []).join("+")}, engine ${heygen.chooseEngine(engine, lookEngines).engine}`);
     try {
       const plan = await avatarPlan(projectDir);
       const seconds = plan.segments.filter((s) => (which ?? []).includes(s.name)).reduce((n, s) => n + s.duration, 0);
-      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, layout, onProgress: (p) => emit({ event: "progress", ...p }) }));
+      const r = await timed("avatar", seconds, emit, () => makeAvatar({ projectDir, apiKey: key(), lookId, which, look, layout, engine, lookEngines, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = loadProject(projectDir);
       if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
       project = setGate(project, "avatar", { state: "pending", mode: "custom" });
       saveProject(projectDir, project);
       appendLog(projectDir, `avatar: done, ${r.segments.map((s) => `${s.name} ${s.duration}s`).join(", ")}`);
-      rememberUsed(identityDir, { avatar: { lookId, name: lookName ?? null, layout: r.layout } });
+      rememberUsed(identityDir, { avatar: { lookId, name: lookName ?? null, layout: r.layout, engine: r.engine } });
       return { avatar: r, gate: project.gates.avatar, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "avatar", { state: "failed", error: String(e.message).slice(0, 2000) }));
@@ -855,8 +1001,9 @@ const commands = {
 
   // Gate 4: build the video from the approved scene table, lint + check, and
   // the contact sheet (review/contact.png) to approve before the render.
-  "build-video": async ({ projectDir, look }) => {
+  "build-video": async ({ projectDir, identityDir, look }) => {
     let project = loadProject(projectDir);
+    if (identityDir && typeof look === "object") look = { ...look, iconsRecent: recentIcons(identityDir, path.basename(projectDir)) };
     if (project.gates.scenes?.state !== "approved") throw new Error("Approve the scene table first.");
     project = setGate(project, "review", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
@@ -866,6 +1013,10 @@ const commands = {
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
+      if (r.icons?.length) {
+        appendLog(projectDir, `review: icons ${r.icons.join(" ")}`);
+        rememberIcons(identityDir, path.basename(projectDir), r.icons);
+      }
       if (r.transitions?.some((t) => t !== "cut")) appendLog(projectDir, `review: Motion profile, scene changes ${r.transitions.join(" ")}`);
       for (const n of r.notes ?? []) appendLog(projectDir, `review: ${n}`);
       return { ...r, gate: project.gates.review, status: project.status };
@@ -994,6 +1145,18 @@ async function main() {
   }
   heartbeat();
   try {
+    if (req.identityDir) {
+      // the Identity's block packs: the build finds them, the planner and the
+      // scene table's checks know their blocks (packs/, DECISIONS 107)
+      process.env.ITV_IDENTITY_DIR = req.identityDir;
+      let hasFootage = false;
+      try {
+        hasFootage = (loadLibrary(req.identityDir).clips ?? []).some((c) => c.source !== "generated");
+      } catch {
+        hasFootage = false;
+      }
+      await registerPacks(req.identityDir, { hasFootage });
+    }
     if (req.identityDir && LOOK_COMMANDS.has(name)) req.look = lookOf(req);
     emit({ event: "result", data: await cmd(req) });
     return 0;

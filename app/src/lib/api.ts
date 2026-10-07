@@ -50,7 +50,7 @@ export type Config = {
     humanize?: "off" | "light" | "strong";
   };
   narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
-  avatar?: { enabled: boolean; lookId?: string | null; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
+  avatar?: { enabled: boolean; lookId?: string | null; engine?: "avatar_iii" | "avatar_iv" | "avatar_v"; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
 };
@@ -209,6 +209,12 @@ export type MotionProfile = {
   transition: { mood: string; primary: string; accent: string | null; energy: "calm" | "medium" | "high"; where: "every" | "sections"; direction?: "LEFT" | "RIGHT" | "UP" | "DOWN" };
   background: { type: "plain" | "grain-field" | "aurora-drift"; vars: Record<string, string | number | boolean> };
   camera: { move: "off" | "jitter" | "push" };
+  /** How often the picture changes (runner/gates/scenes/roles.mjs PACES). */
+  pace?: "calm" | "balanced" | "fast";
+  /** Burned-in captions (runner/captions/): a caption-* style or "off". */
+  captions?: { style: string };
+  /** The spoken word highlighted in a scene's own text (runner/gates/build/spoken.mjs). */
+  spokenWord?: "highlight" | "off";
   scenes: { off: string[]; style: Record<string, Record<string, string | number | boolean>> };
 };
 export type MotionTransition = { name: string; kind: "cut" | "css" | "shader"; label: string };
@@ -220,7 +226,25 @@ export type MotionOptions = {
   backgrounds: { id: string; label: string; darkOnly: boolean; cost: string | null }[];
   shaderCost: string;
   cameras: { id: string; label: string }[];
+  paces?: { id: string; label: string; picture: string }[];
+  captions?: { id: string; label: string; hint: string; calm: boolean; image: string | null }[];
   scenes: { role: string; label: string; hint: string; components: { name: string; label: string; description: string; style: MotionStyleVar[] }[] }[];
+};
+/** The Identity's Scenes profile (runner/scenes-profile.mjs, DECISIONS 110). */
+export type SceneKind = "text" | "icon" | "image" | "video";
+export type ScenesProfile = { schema: "scenes-profile/1"; preset: string; mix: Record<SceneKind, number>; off: string[]; icons: { families: string[] }; pictures: { sources: string[] }; updatedAt?: string };
+export type ScenesState = {
+  profile: ScenesProfile;
+  saved: boolean;
+  options: {
+    presets: { id: string; label: string; hint: string; mix: Record<SceneKind, number> }[];
+    kinds: { id: SceneKind; label: string }[];
+    roles: { role: string; label: string; hint: string; components: { name: string; label: string }[] }[];
+    icons: { id: string; label: string; license: string; count: number; sample: string[][] }[];
+    sources: { id: string; label: string; hint: string; kinds: SceneKind[]; later: boolean }[];
+    footage: number;
+    pace: string;
+  };
 };
 export type MotionState = { profile: MotionProfile | null; recommended: { mood: string; energy?: string; reason: string | null }; start: MotionProfile; light: boolean; options: MotionOptions };
 export type MotionPreview = { file: string; seconds: number; renderSeconds: number; notes: string[]; transitions: string[] };
@@ -239,7 +263,7 @@ export type CtaProfile = {
   offers: Record<string, string>;
   endScreen?: 0 | 5 | 10 | 15 | 20;
 };
-export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen"; text?: string | null; createdAt: string; lastUsedAt: string | null };
+export type CtaSegment = { id: string; keyword: string; name: string; file: string; seconds: number; source: "upload" | "heygen" | "heygen-import"; heygenId?: string; text?: string | null; createdAt: string; lastUsedAt: string | null };
 export type CtaState = {
   profile: CtaProfile | null;
   start: CtaProfile;

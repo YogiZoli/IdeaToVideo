@@ -239,8 +239,11 @@ export function cardTheme(card, categories = {}) {
     surface: c.surface,
     border: c.border,
     brand: fixContrast(c.primary, c.background, 3),
-    accent: c.secondary,
-    "accent-2": c.tertiary,
+    // the second and third colour fill words too (headline-slam's accent
+    // word, a chart's bar): the same 3:1 rule (sampler, 2026-10-06: a yellow
+    // "today" on cream in four presets)
+    accent: fixContrast(c.secondary, c.background, 3),
+    "accent-2": fixContrast(c.tertiary, c.background, 3),
     radius: `${card.shape.radiusPx ?? CORNERS[card.shape.corners] ?? 14}px`,
     "font-display": stack(f.display.family, categories[f.display.family]),
     "font-body": stack(f.body.family, categories[f.body.family]),

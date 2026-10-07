@@ -7,6 +7,10 @@ import { testVidiq } from "./research/vidiq.mjs";
 const CHECKS = {
   elevenlabs: { label: "ElevenLabs", url: "https://api.elevenlabs.io/v1/user", header: "xi-api-key" },
   heygen: { label: "HeyGen", url: "https://api.heygen.com/v3/users/me", header: "x-api-key" },
+  // Stock (docs/stock.md, DECISIONS 104, 108): one search of three results. Pixabay
+  // takes the key only as a query parameter, so the address is built with it
+  // and every message is redacted.
+  pixabay: { label: "Pixabay", url: (k) => `https://pixabay.com/api/?key=${encodeURIComponent(k)}&q=office&per_page=3` },
 };
 
 export const KEY_SERVICES = [...Object.keys(CHECKS), "vidiq"];
@@ -19,7 +23,8 @@ export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeo
   if (!apiKey) throw new Error(`No API key set for ${c.label}. Add it in Settings.`);
   let res;
   try {
-    res = await fetchImpl(c.url, { headers: { [c.header]: apiKey }, signal: AbortSignal.timeout(timeoutMs) });
+    const url = typeof c.url === "function" ? c.url(apiKey) : c.url;
+    res = await fetchImpl(url, { headers: c.header ? { [c.header]: c.bearer ? `Bearer ${apiKey}` : apiKey } : {}, signal: AbortSignal.timeout(timeoutMs) });
   } catch (e) {
     throw new Error(`Could not reach ${c.label}: ${redact(e.message, apiKey)}`);
   }

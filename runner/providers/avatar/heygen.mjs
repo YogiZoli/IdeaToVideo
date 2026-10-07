@@ -17,7 +17,36 @@ const API = "https://api.heygen.com";
 // Public figures, for the estimate only (2026: about 0.0167 to 0.0667 USD per
 // second, by engine). The real balance comes from the account (balance()).
 export const USD_PER_SECOND = { low: 0.0167, high: 0.0667 };
-export const estimateUsd = (seconds) => ({ low: Math.round(seconds * USD_PER_SECOND.low * 100) / 100, high: Math.round(seconds * USD_PER_SECOND.high * 100) / 100 });
+export const estimateUsd = (seconds, engine) => {
+  const r = engine && USD_PER_SECOND_BY_ENGINE[engine] ? USD_PER_SECOND_BY_ENGINE[engine] : USD_PER_SECOND;
+  return { low: Math.round(seconds * r.low * 100) / 100, high: Math.round(seconds * r.high * 100) / 100 };
+};
+
+// The three engines POST /v3/videos takes (engine.type), cheapest first, and
+// what each one costs per second over all avatar types (HeyGen's help page
+// "HeyGen API pricing explained", 2026-10: Avatar III 0.60 to 0.99 USD per
+// minute, Avatar IV 2.31 to 4.83). Avatar V's price was not published where
+// we looked, so its estimate is Avatar IV's range and is said to be one.
+// DECISIONS 100, 101: the default is the cheapest, Avatar III.
+export const ENGINES = ["avatar_iii", "avatar_iv", "avatar_v"];
+export const DEFAULT_ENGINE = "avatar_iii";
+export const ENGINE_LABELS = { avatar_iii: "Avatar III", avatar_iv: "Avatar IV", avatar_v: "Avatar V" };
+export const USD_PER_SECOND_BY_ENGINE = {
+  avatar_iii: { low: 0.01, high: 0.0165 },
+  avatar_iv: { low: 0.0385, high: 0.0805 },
+  avatar_v: { low: 0.0385, high: 0.0805, guess: true },
+};
+
+// The engine to order with: the wanted one if the look takes it, else the
+// cheapest the look does take (HeyGen refuses an engine the look does not
+// list). A look that lists nothing (older data) is tried with the wanted one.
+export function chooseEngine(wanted, supported) {
+  const want = ENGINES.includes(wanted) ? wanted : DEFAULT_ENGINE;
+  const list = (supported ?? []).filter((e) => ENGINES.includes(e));
+  if (!list.length || list.includes(want)) return { engine: want, note: null };
+  const engine = ENGINES.find((e) => list.includes(e));
+  return { engine, note: `This look does not work with ${ENGINE_LABELS[want]} at HeyGen, so ${ENGINE_LABELS[engine]} is used.` };
+}
 
 export function friendly(status, body) {
   let code = "";
@@ -136,10 +165,11 @@ export async function uploadAudio({ apiKey, file, fetchImpl }) {
 // background value. aspect_ratio "auto" keeps the look's own proportions, so
 // nothing is ever stretched; the app only scales and crops. Full screen keeps
 // a 16:9 frame filled on the theme color.
-export async function createVideo({ apiKey, avatarId, audioAssetId, background, title, format = "mp4", full = false, fetchImpl }) {
+export async function createVideo({ apiKey, avatarId, audioAssetId, background, title, format = "mp4", full = false, engine = null, fetchImpl }) {
   const body = {
     type: "avatar",
     avatar_id: avatarId,
+    ...(ENGINES.includes(engine) ? { engine: { type: engine } } : {}),
     audio_asset_id: audioAssetId,
     resolution: "1080p",
     title,
@@ -155,6 +185,39 @@ export const noMatting = (e) => /webm|matting/i.test(String(e?.message ?? e));
 
 export async function getVideo({ apiKey, id, fetchImpl }) {
   return call(apiKey, `/v3/videos/${encodeURIComponent(id)}`, { fetchImpl });
+}
+
+// The account's videos, newest first (GET /v3/videos, a read, no cost). Used
+// to import clips made in HeyGen itself (CTA segments, DECISIONS 101). Only
+// finished ones with a download address are returned.
+export async function listVideos({ apiKey, limit = 50, pages = 2, title, fetchImpl }) {
+  const out = [];
+  let token = "";
+  for (let page = 0; page < pages; page++) {
+    const q = new URLSearchParams({ limit: String(Math.min(100, limit)) });
+    if (title) q.set("title", title);
+    if (token) q.set("token", token);
+    const r = await call(apiKey, `/v3/videos?${q}`, { fetchImpl, raw: true });
+    for (const v of r?.data ?? []) {
+      if (v.status !== "completed" || !v.video_url) continue;
+      out.push({ id: v.id, title: v.title ?? "", seconds: typeof v.duration === "number" ? Math.round(v.duration * 10) / 10 : null, createdAt: v.created_at ?? null, image: v.thumbnail_url ?? null, url: v.video_url });
+    }
+    if (!r?.has_more || !r.next_token) break;
+    token = r.next_token;
+  }
+  return out;
+}
+
+// One finished video of the account, by id, to `out` (a fresh address: the
+// list's addresses are short-lived, so import reads the video again).
+export async function downloadVideo({ apiKey, id, out, fetchImpl = fetch }) {
+  const v = await getVideo({ apiKey, id, fetchImpl });
+  if (v?.status !== "completed" || !v.video_url) throw new Error("This video is not finished at HeyGen yet.");
+  const res = await fetchImpl(v.video_url, { signal: AbortSignal.timeout(300000) });
+  if (!res.ok) throw new Error(`Could not download the video (HTTP ${res.status}).`);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));
+  return { file: out, seconds: v.duration ?? null, title: v.title ?? "" };
 }
 
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  export type Look = { id: string; name: string; type?: string; gender?: string | null; image: string | null; video?: string | null };
+  export type Look = { id: string; name: string; type?: string; gender?: string | null; image: string | null; video?: string | null; engines?: string[] };
   export type Group = { id: string; name: string; image: string | null; status?: string; note: string | null; looks: Look[] };
 </script>
 

@@ -14,14 +14,17 @@ import path from "node:path";
 import { validate, loadSchema } from "../schema/validate.mjs";
 import { ALL_MOODS, moodPair, loadRegistry, knownTransition, CUT, SHADERS, ENERGIES } from "./transitions.mjs";
 import { BACKGROUNDS, CAMERAS } from "./stage.mjs";
-import { COMPONENTS, ROLES } from "../gates/scenes/roles.mjs";
+import { CAPTION_STYLES, captionDir } from "../captions/index.mjs";
+import { COMPONENTS, ROLES, PACES, DEFAULT_PACE } from "../gates/scenes/roles.mjs";
 import { loadComponent, checkVars, libraryDir } from "../gates/build/assemble.mjs";
 import { cssVars } from "../brand/tokens.mjs";
 
 export const MOTION_SCHEMA = "motion-profile/1";
 export const MOTION_FILE = "motion.json";
 // The closing role belongs to the CTA wizard (docs/wizards/motion.md 9).
-export const WIZARD_ROLES = Object.keys(ROLES).filter((r) => r !== "closing");
+// the roles of the built-in library (block packs bring more, packs/)
+const LIBRARY_ROLES = Object.keys(ROLES).filter((r) => Object.values(COMPONENTS).some((c) => c.role === r));
+export const WIZARD_ROLES = LIBRARY_ROLES.filter((r) => r !== "closing");
 export const DEFAULT_MOOD = "premium";
 // Style variables the wizard never offers: the accent is the Brand's, and a
 // scene's exit belongs to the scene change (HyperFrames: "exit defaults to
@@ -31,9 +34,9 @@ const NOT_STYLE = new Set(["accent", "exit"]);
 
 export const motionPath = (identityDir) => path.join(identityDir, MOTION_FILE);
 
-// A whole profile from a mood (the Start screen's cards). HyperFrames'
-// doctrine prefers stillness, so the camera starts off and the background
-// plain; the user turns them on.
+// A whole profile from a mood (the Start screen's cards). The camera starts
+// on (push): a still frame read as a slide (Zoltan, 2026-10-06); the
+// background starts plain.
 export function profileFromMood(mood = DEFAULT_MOOD, { energy } = {}) {
   const m = ALL_MOODS[mood];
   if (!m) throw new Error(`Unknown mood: ${mood}.`);
@@ -41,7 +44,8 @@ export function profileFromMood(mood = DEFAULT_MOOD, { energy } = {}) {
     schema: MOTION_SCHEMA,
     transition: { mood, ...moodPair(mood), energy: energy ?? m.energy, where: "every" },
     background: { type: "plain", vars: {} },
-    camera: { move: "off" },
+    camera: { move: "push" },
+    pace: DEFAULT_PACE,
     scenes: { off: [], style: {} },
   };
 }
@@ -63,13 +67,13 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     const item = loadComponent(BACKGROUNDS[b.type].component, { env: { ITV_LIBRARY_DIR: dir } }).item;
     errors.push(...checkVars(item, b.vars));
   }
-  const camera = { move: "off", ...(input.camera ?? {}) };
+  const camera = { move: "push", ...(input.camera ?? {}) };
   const off = [...new Set(input.scenes?.off ?? [])];
   for (const name of off) {
     if (!COMPONENTS[name]) errors.push(`Unknown scene component: ${name}.`);
     else if (!WIZARD_ROLES.includes(COMPONENTS[name].role)) errors.push(`${COMPONENTS[name].label} is not chosen here (its role belongs to the CTA wizard).`);
   }
-  for (const role of Object.keys(ROLES)) {
+  for (const role of LIBRARY_ROLES) {
     const left = Object.entries(COMPONENTS).filter(([n, c]) => c.role === role && !off.includes(n));
     if (!left.length) errors.push(`Keep at least one scene for "${ROLES[role].label}".`);
   }
@@ -86,7 +90,9 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     if (Object.keys(vars).length) style[name] = { ...vars };
   }
   if (errors.length) throw new Error(errors.join(" "));
-  const out = { schema: MOTION_SCHEMA, transition: t, background: b, camera, scenes: { off, style } };
+  const captions = { style: input.captions?.style ?? "off" };
+  if (captions.style !== "off" && !CAPTION_STYLES[captions.style]) throw new Error(`Unknown caption style: ${captions.style}.`);
+  const out = { schema: MOTION_SCHEMA, transition: t, background: b, camera, pace: input.pace ?? DEFAULT_PACE, spokenWord: input.spokenWord === "off" ? "off" : "highlight", captions, scenes: { off, style } };
   if (input.updatedAt) out.updatedAt = input.updatedAt;
   return out;
 }
@@ -187,6 +193,11 @@ export function wizardOptions({ dir = libraryDir() } = {}) {
     backgrounds: Object.entries(BACKGROUNDS).map(([id, b]) => ({ id, label: b.label, darkOnly: Boolean(b.dark), cost: b.component ? RENDER_COST.background : null })),
     shaderCost: RENDER_COST.shader,
     cameras: Object.entries(CAMERAS).map(([id, c]) => ({ id, label: c.label })),
+    paces: Object.entries(PACES).map(([id, p]) => ({ id, label: p.label, picture: p.picture })),
+    captions: Object.entries(CAPTION_STYLES).map(([id, c]) => {
+      const image = path.join(captionDir(), id, "preview.png");
+      return { id, label: c.label, hint: c.hint, calm: c.calm, image: fs.existsSync(image) ? image : null };
+    }),
     scenes,
   };
 }

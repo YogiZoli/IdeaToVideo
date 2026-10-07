@@ -93,9 +93,10 @@ test("the background is laid in seamless pieces of 5-15 s, aurora only on a dark
   assert.equal(backgroundFor({ type: "grain-field" }, { light: true }).component, "grain-field");
 });
 
-test("the camera follows the explainer doctrine: finite, deterministic, push only in the first half", () => {
+test("the camera never stops: one continuous push over the whole scene, at least 4%, drifting the other way each scene (2026-10-06)", () => {
   const push = cameraLines("push", { id: "cam-1", start: 4, duration: 6 });
-  assert.deepEqual(push, ['tl.fromTo("#cam-1", { scale: 1 }, { scale: 1.04, duration: 3, ease: "power3.out" }, 4);']);
+  assert.deepEqual(push, ['tl.fromTo("#cam-1", { scale: 1, x: 0 }, { scale: 1.05, x: 16, duration: 6, ease: "none" }, 4);']);
+  assert.match(cameraLines("push", { id: "cam-2", start: 10, duration: 5, index: 1 })[0], /x: -16, duration: 5/);
   const a = cameraLines("jitter", { id: "cam-2", start: 0, duration: 6, index: 1 });
   assert.deepEqual(a, cameraLines("jitter", { id: "cam-2", start: 0, duration: 6, index: 1 }));
   assert.doesNotMatch(a.join(), /repeat|yoyo|random/);
@@ -106,7 +107,7 @@ test("the camera follows the explainer doctrine: finite, deterministic, push onl
 test("a profile is checked: names, roles, style settings", () => {
   const p = normalizeProfile(profileFromMood("editorial"));
   assert.equal(p.transition.primary, "push-slide");
-  assert.equal(p.camera.move, "off", "stillness first");
+  assert.equal(p.camera.move, "push", "the camera starts on: a still frame reads as a slide (2026-10-06)");
   assert.throws(() => normalizeProfile({ ...p, transition: { ...p.transition, primary: "spin-o-rama" } }), /Unknown transition: spin-o-rama/);
   assert.throws(() => normalizeProfile({ ...p, scenes: { off: ["titlecard-lockup", "titlecard-calm"], style: {} } }), /Keep at least one scene for "Opening or chapter"/);
   assert.throws(() => normalizeProfile({ ...p, scenes: { off: ["cta-close"], style: {} } }), /CTA wizard/);
