@@ -1569,3 +1569,5 @@
       Demo marad vagy proxy kell.
     - Tesztek: `runner/unsplash.test.mjs` mock válaszokkal; éles keresés, ha a
       `UNSPLASH_ACCESS_KEY` be van állítva.
+    - **Production kérelem nem lesz** (Zoltan, 2026-10-08): az Unsplash
+      végleg Demo módban marad.

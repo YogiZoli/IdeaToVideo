@@ -14,9 +14,17 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   Demo módban látható. Megjelölés az appban, download tracking, licenc-rekord.
 - Tesztek: Node 277 zöld (2 éles kihagyva kulcs nélkül), Rust 48, e2e 39/39.
 
-**Következő:** Zoltan: a két éles próba a saját kulcsaival (UNSPLASH_ACCESS_KEY,
-HEYGEN_API_KEY), az Unsplash Production kérelem (`docs/stock.md` 10); utána
-Mac build, CI, egy közös telepítő.
+- Unsplash éles keresés Zoltan kulcsával: zöld (5/5). PR #10 merge-ölve.
+
+**Zoltan döntései (2026-10-08):**
+- **Unsplash Production kérelem: nem lesz soha.** Az Unsplash Demo módban
+  marad (50 kérés óránként), és ez így végleges.
+- **HeyGen éles próba:** elfogyott a HeyGen keret, 1-2 hét múlva jön
+  (`runner/heygen-v3.test.mjs`, HEYGEN_API_KEY-jel). A határidő 2026-10-31.
+- **Mac build:** másik, külön chatben készül, nem itt.
+
+**Következő:** a HeyGen éles próba, amikor van keret; a Mac build a külön
+chatben; utána CI és egy közös telepítő.
 
 ## Most (2026-10-07, este)
 
