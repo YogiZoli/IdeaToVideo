@@ -1,6 +1,6 @@
 # GSAP licenc-kérdés (eladás előtt)
 
-Állapot: 2026-10-07, megfogalmazva, **nincs elküldve**. Zoltan küldi el a
+Állapot: 2026-10-07, megfogalmazva, **nincs elküldve, és nem is küldjük** (Zoltan döntése, 2026-10-07: kicsi a kockázat, az app videót gyárt, nem animációszerkesztő). Ha a helyzet változik, innen elküldhető. Zoltan küldi el a
 https://gsap.com/contact űrlapon (vagy Claude, Zoltan kifejezett igenjével).
 
 ## Miért kell
