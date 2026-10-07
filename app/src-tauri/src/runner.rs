@@ -107,6 +107,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("broll-update", None),
     ("broll-again", None),
     ("broll-remove", None),
+    ("card-send", Some(&["service"])),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

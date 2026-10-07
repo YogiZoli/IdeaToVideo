@@ -23,6 +23,7 @@ pub const ALLOWED: &[&str] = &[
     "heygen",
     "vidiq",
     "pixabay",
+    "publishing",
 ];
 
 const APP_ACCOUNT: &str = "default";

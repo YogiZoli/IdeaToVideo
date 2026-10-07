@@ -15,7 +15,7 @@
   import Needs from "./Needs.svelte";
   import ProjectBackup from "./ProjectBackup.svelte";
   import type { AppState } from "./api";
-  import { runner, errorText, exportCard, exportVideo, cloudFolders } from "./api";
+  import { runner, errorText, exportCard, openPublishingLink, exportVideo, cloudFolders } from "./api";
   import { running } from "./work.svelte";
   import { log } from "./logger";
   import type { TabId } from "./tabs";
@@ -89,6 +89,36 @@
     revealItemInDir(video.file);
     openUrl("https://studio.youtube.com/");
     log("youtube_open", {});
+  }
+
+  // Send to Publishing (DECISIONS 115): the card to the user's publishing
+  // app. A sentence from the app (4xx) is shown as it is; no answer or a
+  // server problem can be tried again.
+  type Sent = { ok: boolean; retry?: boolean; message?: string; url?: string | null; updated?: boolean };
+  let sent = $state<Sent | null>(null);
+  let sending = $state(false);
+  const pubUrl = $derived(app.app?.publishing?.url ?? "");
+  const pubReady = $derived(!!pubUrl && !!app.keys["publishing"]);
+  async function sendCard() {
+    if (!video?.cardFile) return;
+    sending = true;
+    sent = null;
+    try {
+      sent = await runner<Sent>("card-send", { projectDir: dir, file: video.cardFile, url: pubUrl, service: "publishing" });
+      log("card_sent", { ok: sent.ok, updated: !!sent.updated });
+    } catch (e) {
+      sent = { ok: false, retry: false, message: errorText(e) };
+    } finally {
+      sending = false;
+    }
+  }
+  async function openSent() {
+    if (!sent?.url) return;
+    try {
+      await openPublishingLink(sent.url);
+    } catch (e) {
+      sent = { ...sent, message: errorText(e) };
+    }
   }
 
   let exported = $state("");
@@ -167,8 +197,16 @@
           <div class="bhead"><span class="label">Publishing</span></div>
           <p class="hint">The video's publishing card: chapters with times, the script, the comment keywords with their times, your landing page, and the title, summary and tags from the Script tab.</p>
           <div class="row">
+            <button type="button" class="primary" disabled={!pubReady || sending} onclick={sendCard}>{sending ? "Sending..." : "Send to Publishing"}</button>
             <button type="button" onclick={exportData}>Export card</button>
           </div>
+          {#if !pubReady}<p class="hint">To send it, set the address and the token in Settings, Publishing.</p>{/if}
+          {#if sent?.ok}
+            <p class="good">{sent.updated ? "Updated in Publishing." : "Sent to Publishing."} {#if sent.url}<button type="button" class="link" onclick={openSent}>{sent.url}</button>{/if}</p>
+          {:else if sent}
+            <p class="err">{sent.message}</p>
+            {#if sent.retry}<button type="button" disabled={sending} onclick={sendCard}>Try again</button>{/if}
+          {/if}
           {#if exported}<p class="hint">{exported}</p>{/if}
         </div>
       {/if}
@@ -222,4 +260,6 @@
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
   .synthetic { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .err { color: var(--danger, #b42318); font-weight: 600; }
+  .link { background: none; border: none; padding: 0; color: var(--primary, #2563eb); text-decoration: underline; cursor: pointer; }
 </style>

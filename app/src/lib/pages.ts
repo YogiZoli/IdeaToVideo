@@ -5,7 +5,7 @@
 
 import type { StepId } from "./steps";
 
-export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "motion" | "cta" | "scenes" | "footage" | "dictionary" | "voice" | "research" | "identity-ai";
+export type PageId = "app-ai" | "folders" | "backup" | "plan" | "general" | "identity" | "channel" | "look" | "motion" | "cta" | "scenes" | "footage" | "dictionary" | "voice" | "research" | "identity-ai" | "publishing";
 export type Group = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; group: Group; steps: StepId[] };
@@ -15,6 +15,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "folders", title: "Folders", group: "app", steps: [] },
   { id: "backup", title: "Backup", group: "app", steps: [] },
   { id: "plan", title: "Plan", group: "app", steps: [] },
+  { id: "publishing", title: "Publishing", group: "app", steps: [] },
   { id: "general", title: "General", group: "app", steps: [] },
   { id: "identity", title: "Identity", group: "identity", steps: ["name"] },
   { id: "channel", title: "YouTube channel and audience", group: "identity", steps: ["audience", "brandVoice", "profile", "youtube", "landing", "language"] },
