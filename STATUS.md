@@ -1,10 +1,33 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-07 (3. fázis lezárva, PR #5 merge-ölve, DECISIONS 101-111; README kész)
+Frissítve: 2026-10-07 (publikálási csomag, DECISIONS 112-115, PR #6-#8)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-07, este)
+
+**Publikálási csomag kész** (Zoltan döntései 2026-10-07, DECISIONS 112-115;
+PR #6, #7, #8, mind merge-ölve):
+- **15 kulcsszó szó szerint a vidrevből**, kulcsszavanként legfeljebb egy
+  szegmens; Settings, Identity, CTA: 3 sor x 5 kártya, Add/Replace, Delete
+  (112).
+- **Csomagolás a Script tabon** (86 frissítve, 113): cím-ötletek,
+  összefoglaló, tagek a scripttel; a választott cím a script címe; a user
+  választása megmarad újraírásnál. A Video tab ebből és a pontos adatokból
+  rakja össze a YouTube szövegeket, másolás gombbal.
+- **Video Publishing Card** (114): `<video>.card.json`, séma
+  `video-publishing-card/1`, `cardId` projektenként, `packaging` mező.
+- **Send to Publishing** (115): Settings, Publishing (cím, token a
+  kulcstárban), POST `/api/v1/cards`, mock szerver
+  (`scripts/publishing-mock.mjs`).
+- Tesztek: 272 Node, 48 Rust, e2e 39/39 (az e2e jelenettáblája javítva).
+- **Telepítő nem készült** (Zoltan, 2026-10-07): a Mac build és a CI után,
+  egyben.
+
+**Következő:** Zoltan kézi próbája a mock szerverrel; a PDT végpontja
+ugyanerre a szerződésre; utána Mac build, CI, egy közös telepítő.
 
 ## Most (2026-10-06, este)
 
