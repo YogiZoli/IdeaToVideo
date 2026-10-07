@@ -9,7 +9,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { ffmpegRun } from "../audio.mjs";
 import { addClip, footageDir, incomingFootage, loadLibrary } from "../footage/library.mjs";
-import { download, LICENSE } from "./pixabay.mjs";
+import * as pixabay from "./pixabay.mjs";
+import * as unsplash from "./unsplash.mjs";
+
+// The stock sources by id: label for the credit, and the module.
+export const SOURCES = { pixabay: { label: "Pixabay", mod: pixabay }, unsplash: { label: "Unsplash", mod: unsplash } };
 
 export const PHOTO_SECONDS = 6;
 
@@ -27,17 +31,21 @@ export async function photoClip(image, out, { seconds = PHOTO_SECONDS, env = pro
   return out;
 }
 
-// The hit into the library: { clip }. The same Pixabay item twice is not
-// downloaded again.
-export async function addStock({ identityDir, hit, query = "", fetchImpl, env = process.env }) {
+// The hit into the library: { clip }. The same item twice is not downloaded
+// again. Unsplash: the download is registered first (its API Guidelines).
+export async function addStock({ identityDir, hit, query = "", service = "pixabay", apiKey = "", fetchImpl, env = process.env }) {
+  const src = SOURCES[service];
+  if (!src) throw new Error(`Unknown stock source: ${service}`);
+  const { download, LICENSE } = src.mod;
   const lib = loadLibrary(identityDir);
-  const have = lib.clips.find((c) => c.credit?.source === "Pixabay" && c.credit?.id === hit.id);
+  const have = lib.clips.find((c) => c.credit?.source === src.label && c.credit?.id === hit.id);
   if (have) return { clip: have, again: true };
   const dir = footageDir(identityDir);
   fs.mkdirSync(dir, { recursive: true });
   const target = incomingFootage(".mp4");
+  if (service === "unsplash") await unsplash.trackDownload({ apiKey, hit, ...(fetchImpl ? { fetchImpl } : {}) });
   if (hit.kind === "image") {
-    const img = path.join(dir, `pixabay-${hit.id}${path.extname(new URL(hit.download).pathname) || ".jpg"}`);
+    const img = path.join(dir, `${service}-${hit.id}${path.extname(new URL(hit.download).pathname) || ".jpg"}`);
     await download({ hit, out: img, ...(fetchImpl ? { fetchImpl } : {}) });
     try {
       await photoClip(img, path.join(dir, target), { env });
@@ -47,14 +55,14 @@ export async function addStock({ identityDir, hit, query = "", fetchImpl, env = 
   } else {
     await download({ hit, out: path.join(dir, target), ...(fetchImpl ? { fetchImpl } : {}) });
   }
-  const what = hit.tags.split(",").map((t) => t.trim()).filter(Boolean).join(", ");
+  const what = (service === "unsplash" ? hit.tags.replace(/,/g, " ") : hit.tags).split(",").map((t) => t.trim()).filter(Boolean).join(", ");
   const clip = await addClip({
     identityDir,
     file: target,
     name: `${hit.kind === "image" ? "Photo" : "Video"}: ${what.split(", ").slice(0, 3).join(", ") || query}`.slice(0, 80),
     description: `${hit.kind === "image" ? "Stock photo" : "Stock video"} of ${what}${query ? ` (searched for: ${query})` : ""}.`,
-    source: "pixabay",
-    credit: { source: "Pixabay", id: hit.id, kind: hit.kind, author: hit.author, license: LICENSE.name, licenseUrl: LICENSE.url, pageUrl: hit.pageUrl, at: new Date().toISOString() },
+    source: service,
+    credit: { source: src.label, id: hit.id, kind: hit.kind, author: hit.author, ...(hit.authorUrl ? { authorUrl: hit.authorUrl } : {}), license: LICENSE.name, licenseUrl: LICENSE.url, pageUrl: hit.pageUrl, at: new Date().toISOString() },
     env,
   });
   return { clip, again: false };

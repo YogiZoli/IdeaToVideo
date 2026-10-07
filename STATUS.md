@@ -1,10 +1,22 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-07 (publikálási csomag, DECISIONS 112-115, PR #6-#8)
+Frissítve: 2026-10-08 (HeyGen v3 és Unsplash, DECISIONS 116-117)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-08)
+
+- **HeyGen v3** (116): minden HeyGen hívás már v3 volt; teszt rögzíti, hogy
+  nincs v1 vagy v2 hívás. Határidő 2026-10-31 rendben.
+- **Unsplash** (117): kép-forrás a Pixabay mellett, saját Access Key,
+  Demo módban látható. Megjelölés az appban, download tracking, licenc-rekord.
+- Tesztek: Node 277 zöld (2 éles kihagyva kulcs nélkül), Rust 48, e2e 39/39.
+
+**Következő:** Zoltan: a két éles próba a saját kulcsaival (UNSPLASH_ACCESS_KEY,
+HEYGEN_API_KEY), az Unsplash Production kérelem (`docs/stock.md` 10); utána
+Mac build, CI, egy közös telepítő.
 
 ## Most (2026-10-07, este)
 

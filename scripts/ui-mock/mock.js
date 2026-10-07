@@ -62,11 +62,11 @@ const core = {
     ...(q.get("one") ? [] : [{ schema: 1, id: "voxflow", name: "VoxFlow", folder: "VoxFlow", ...fields({ llm: { provider: "claude", model: "claude-sonnet-5" }, channel: { contentLanguage: "hu", audience: "coaches", youtubeUrl: null } }) }]),
   ],
   // "<name>@app" or "<name>@<identity id>"
-  keys: new Set(["gemini@app", "elevenlabs@app", "heygen@app", "vidiq@voxflow", "pixabay@app"]),
+  keys: new Set(["gemini@app", "elevenlabs@app", "heygen@app", "vidiq@voxflow", "pixabay@app", "unsplash@app"]),
 };
 const tier = q.get("tier") === "solo" ? "Solo" : "Agency";
 const edition = { product: "IdeaToVideo", tier, identityLimit: tier === "Solo" ? 1 : null, copyKeysDefault: tier !== "Solo" };
-const NAMES = ["gemini", "openrouter", "claude", "openai", "deepseek", "grok", "elevenlabs", "heygen", "vidiq", "pixabay"];
+const NAMES = ["gemini", "openrouter", "claude", "openai", "deepseek", "grok", "elevenlabs", "heygen", "vidiq", "pixabay", "unsplash"];
 const slug = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "identity";
 const active = () => core.identities.find((i) => i.id === core.app?.activeIdentity) ?? core.identities[0] ?? null;
 function sources() {
@@ -280,7 +280,7 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "segments-list") { const c = await (await fetch("/cta-state.json")).json(); return { segments: c.segments, maxSeconds: 30, perKeyword: 3 }; }
         if (args.command === "cta-save") { ctaProfile = { schema: "cta-profile/1", ...args.request.profile, updatedAt: new Date().toISOString() }; return { profile: ctaProfile }; }
         if (args.command === "stock-suggest") return { queries: ["plan week", "morning routine", "calendar", "coffee"] };
-        if (args.command === "stock-search") { await new Promise((r) => setTimeout(r, 600)); const hue = [210, 30, 140, 280, 0, 90]; return { cached: false, hits: hue.map((h, i) => ({ id: String(100 + i), kind: args.request.kind, width: 1920, height: 1080, seconds: args.request.kind === "video" ? 8 + i : null, tags: `${args.request.q}, desk, light`, author: "someone", preview: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='hsl(${h},45%,60%)'/></svg>`)}` })) }; }
+        if (args.command === "stock-search") { await new Promise((r) => setTimeout(r, 600)); const hue = [210, 30, 140, 280, 0, 90]; return { cached: false, hits: hue.map((h, i) => ({ id: String(100 + i), kind: args.request.kind, width: 1920, height: 1080, seconds: args.request.kind === "video" ? 8 + i : null, tags: `${args.request.q}, desk, light`, author: "someone", ...(args.request.service === "unsplash" ? { authorUrl: "https://unsplash.com/@someone?utm_source=ideatovideo&utm_medium=referral", pageUrl: "https://unsplash.com/photos/x?utm_source=ideatovideo&utm_medium=referral" } : {}), preview: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='hsl(${h},45%,60%)'/></svg>`)}` })) }; }
         if (args.command === "stock-add") { await new Promise((r) => setTimeout(r, 1200)); return { clip: { name: "Photo: desk" }, again: args.request.id === "101" }; }
         if (args.command === "scenes-state") return await (await fetch("/scenes-state.json")).json();
         if (args.command === "scenes-save") return { profile: args.profile };

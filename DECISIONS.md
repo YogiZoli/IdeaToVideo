@@ -1536,3 +1536,36 @@
       `node scripts/publishing-mock.mjs --port 8787 --token test-token`.
       Tesztek: `runner/publishing.test.mjs` (201, 200 frissítés, 401, 400,
       503, nincs válasz, időtúllépés, címszabályok), Rust: a link-hoszt.
+
+116. **HeyGen API v3, a v1 és v2 leállása előtt** (Zoltan, 2026-10-08;
+    határidő 2026-10-31, a HeyGen táblázata szerint a v1 és v2 2026-11-01-től
+    nem támogatott, developers.heygen.com/endpoint-version-comparison):
+    - **Átnézve minden hívás:** az app minden HeyGen hívása már v3
+      (`/v3/users/me`, `/v3/avatars`, `/v3/avatars/looks`, `/v3/assets`,
+      `/v3/videos`, `/v3/videos/{id}`, `/v3/models/videos`), kód csere nem
+      kellett. A `/v2/voices` és a `/v1/text-to-speech` az ElevenLabs API-ja,
+      nem a HeyGené, ezek maradnak.
+    - **Teszt rögzíti** (`runner/heygen-v3.test.mjs`): a `runner`, `app/src`,
+      `app/src-tauri/src` és `scripts` egyetlen fájlja sem hív
+      `api.heygen.com/v1` vagy `/v2` címet, és a két HeyGen kliens minden
+      útvonala `/v3/`-mal kezdődik. Éles ellenőrzés csak ingyenes végponttal
+      (`users/me`, avatar-lista), ha a `HEYGEN_API_KEY` be van állítva;
+      videó nem készül.
+
+117. **Unsplash forrás a Pixabay mellett** (Zoltan, 2026-10-08; a 111 mintájára,
+    `runner/stock/unsplash.mjs`, `docs/stock.md` 10):
+    - **Csak kép**, lassú ráközelítéssel, a felvétel-könyvtárba, licenc-rekorddal.
+      Kereső a Scenes tabon, forrásválasztóval (csak a kulccsal bírók látszanak).
+    - **Kulcs:** a user saját Access Key-e (BYOK), az OS kulcstárban
+      (`unsplash`), Settings, Identity, Footage, "Get a key". A Secret key-t az
+      app soha nem kéri.
+    - **API Guidelines:** hotlinkelt előnézet (`images.unsplash.com`, CSP),
+      `download_location` hívás a letöltés előtt, "Photo by X on Unsplash"
+      linkekkel és utm paraméterrel minden kártyán. A videóba és a leírásba
+      nem kerül megjelölés: a licenc nem kéri, a Guidelines csak az appban.
+    - **Demo mód** (50 kérés óránként): egy órás keresés-tár, érthető hibaüzenet.
+      A Production kérelem Zoltan lépése (`docs/stock.md` 10). Kockázat: a
+      Guidelines a user saját fejlesztői fiókját nem szereti; ha elutasítják,
+      Demo marad vagy proxy kell.
+    - Tesztek: `runner/unsplash.test.mjs` mock válaszokkal; éles keresés, ha a
+      `UNSPLASH_ACCESS_KEY` be van állítva.

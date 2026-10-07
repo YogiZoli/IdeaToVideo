@@ -11,6 +11,9 @@ const CHECKS = {
   // takes the key only as a query parameter, so the address is built with it
   // and every message is redacted.
   pixabay: { label: "Pixabay", url: (k) => `https://pixabay.com/api/?key=${encodeURIComponent(k)}&q=office&per_page=3` },
+  // Unsplash (DECISIONS 117): the Access Key in the header, one photo listed
+  // (one of the 50 Demo-mode requests an hour).
+  unsplash: { label: "Unsplash", url: "https://api.unsplash.com/photos?per_page=1", header: "Authorization", prefix: "Client-ID " },
 };
 
 export const KEY_SERVICES = [...Object.keys(CHECKS), "vidiq"];
@@ -24,7 +27,7 @@ export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeo
   let res;
   try {
     const url = typeof c.url === "function" ? c.url(apiKey) : c.url;
-    res = await fetchImpl(url, { headers: c.header ? { [c.header]: c.bearer ? `Bearer ${apiKey}` : apiKey } : {}, signal: AbortSignal.timeout(timeoutMs) });
+    res = await fetchImpl(url, { headers: c.header ? { [c.header]: c.bearer ? `Bearer ${apiKey}` : `${c.prefix ?? ""}${apiKey}` } : {}, signal: AbortSignal.timeout(timeoutMs) });
   } catch (e) {
     throw new Error(`Could not reach ${c.label}: ${redact(e.message, apiKey)}`);
   }
@@ -33,6 +36,7 @@ export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeo
   // key) tells the user what to fix. Redacted and cut short, never the raw body.
   const reason = redact(providerReason(await res.text().catch(() => "")), apiKey);
   const why = reason ? ` (${reason})` : "";
+  if (res.status === 429 || (res.status === 403 && res.headers?.get?.("x-ratelimit-remaining") === "0")) throw new Error(`${c.label} accepted the key, but its hourly request limit is used up. Try again in an hour.`);
   if (res.status === 401 || res.status === 403) throw new Error(`${c.label} rejected the API key${why}. Check the key and its permissions.`);
   throw new Error(`${c.label} answered with HTTP ${res.status}${why}. Try again later.`);
 }

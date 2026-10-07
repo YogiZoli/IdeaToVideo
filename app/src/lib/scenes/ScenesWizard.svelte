@@ -42,7 +42,8 @@
   const total = $derived(profile ? Object.values(profile.mix).reduce((a, b) => a + b, 0) : 0);
   const pct = (k: SceneKind) => (profile && total ? Math.round((profile.mix[k] * 100) / total) : 0);
   const hasPixabay = $derived(!!app.keys["pixabay"]);
-  const pictureReady = $derived(!!profile && ((profile.pictures.sources.includes("pixabay") && hasPixabay) || (profile.pictures.sources.includes("footage") && (st?.options.footage ?? 0) > 0)));
+  const hasUnsplash = $derived(!!app.keys["unsplash"]);
+  const pictureReady = $derived(!!profile && ((profile.pictures.sources.includes("pixabay") && hasPixabay) || (profile.pictures.sources.includes("unsplash") && hasUnsplash) || (profile.pictures.sources.includes("footage") && (st?.options.footage ?? 0) > 0)));
   const videoReady = $derived(!!profile && profile.pictures.sources.some((s) => s === "footage" || s === "ai-broll") && (st?.options.footage ?? 0) > 0);
 
   function usePreset(id: string) {
@@ -131,7 +132,7 @@
           <span class="lbl"><b>{k.label}</b> <span class="hint">{pct(k.id)}%</span></span>
           <input type="range" min="0" max="100" step="5" value={profile.mix[k.id]} oninput={(e) => setMix(k.id, Number(e.currentTarget.value))} />
         </label>
-        {#if k.id === "image" && !pictureReady}<p class="warn">No picture source yet: add a free Pixabay key (Settings, Identity, Footage) or your own footage, and turn the source on under "Pictures and video".</p>{/if}
+        {#if k.id === "image" && !pictureReady}<p class="warn">No picture source yet: add a free Pixabay or Unsplash key (Settings, Identity, Footage) or your own footage, and turn the source on under "Pictures and video".</p>{/if}
         {#if k.id === "video" && !videoReady}<p class="warn">No video source yet: add your own clips (Settings, Identity, Footage), or turn on AI B-roll there.</p>{/if}
       {/each}
       <p class="hint">Icons and drawings are always free: the app ships 8700 line icons.</p>
@@ -174,6 +175,7 @@
           <span><b>{s.label}</b>{s.later ? " (coming)" : ""}<br /><span class="hint">{s.hint}</span>
             {#if s.id === "footage"}<br /><span class="hint">{st.options.footage ? `${st.options.footage} clips in your library.` : "No clips yet."}</span>{/if}
             {#if s.id === "pixabay"}<br /><span class="hint">{hasPixabay ? "Key saved." : "No key yet."}</span>{/if}
+            {#if s.id === "unsplash"}<br /><span class="hint">{hasUnsplash ? "Key saved." : "No key yet."}</span>{/if}
           </span>
         </label>
       {/each}

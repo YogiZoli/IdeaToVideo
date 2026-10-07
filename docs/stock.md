@@ -1,4 +1,4 @@
-# Stock videó és kép: terv (még nem épül)
+# Stock videó és kép: terv és állapot
 
 Állapot: **felfüggesztve** (Zoltan, 2026-10-06, DECISIONS 95): amíg másképp nem
 dönt, csak az AI B-roll iránya marad (`docs/ai-broll.md`), így copyright
@@ -20,7 +20,7 @@ A HeyGen ezekből dolgozik: Pexels, Getty, Unsplash, Storyblocks.
 |---|---|---|---|
 | Pixabay | videó, kép | Zoltannak van kulcsa | **első kör** |
 | Coverr | videó | **kivéve** (DECISIONS 108): az API ingyenes hozzáférése nem kereskedelmi célra szól | nem |
-| Unsplash | csak kép | jelentkezés beadva 2026-10-06, válasz 5-10 munkanap | rejtve, amíg nincs jóváhagyás |
+| Unsplash | csak kép | a user saját Access Key-e (BYOK), Demo módban (50 kérés óránként) | **látható, Demo módban** (DECISIONS 117) |
 | Pexels | videó, kép | új kulcs kiadása szünetel | rejtve, amíg nem ad kulcsot |
 | Shutterstock | videó, kép, fizetős licenc | félretéve (lásd lent) | később, ha Zoltan dönt |
 | Storyblocks | videó, kép | API csak üzleti ügyfélnek, egyedi áron | félretéve |
@@ -141,3 +141,53 @@ needed" állásában.
 2. (Eldőlt: nincs forrássor a videó alatt, a licenc csak belül van eltéve.)
 3. Képek: maradjanak benne, ha a `yt-camera-move` jól mozgatja őket?
 4. Autopilot kapcsoló: elég, ha alapból kikapcsolt?
+
+## 10. Unsplash (DECISIONS 117, 2026-10-08)
+
+Kép csak, ugyanúgy, mint a Pixabay fotó: a választott kép 6 mp-es, lassú
+ráközelítésű klip lesz a felvétel-könyvtárban, licenc-rekorddal (Unsplash,
+azonosító, szerző és profil-link, Unsplash License, oldal, idő).
+
+**Kulcs:** a user saját Access Key-e, a kulcstárban (`unsplash`), Settings,
+Identity, Footage, "Get a key" linkkel (unsplash.com/oauth/applications). A
+Secret key-t az app soha nem kéri és nem tárolja.
+
+**Az API Guidelines és ahogy betartjuk:**
+
+1. Hotlink: az előnézet közvetlenül az `images.unsplash.com` címről jön (a
+   CSP `img-src` erre a hosztra nyitva), nem másoljuk el.
+2. Letöltés-követés: a "Add" először a `links.download_location` végpontot
+   hívja, és csak utána tölti le a fájlt. Ha a követés elbukik, a fájl sem
+   jön le.
+3. Megjelölés az appban: minden kártyán "Photo by X on Unsplash", a név a
+   fotós profiljára, az "Unsplash" a főoldalra mutat, mindkettő
+   `utm_source=ideatovideo&utm_medium=referral` paraméterrel.
+4. Nincs automatikus használat: csak amit a user keres és kiválaszt.
+5. Az app neve nem tartalmazza az "Unsplash" szót, logót nem használunk.
+
+**A videóban és a leírásban nincs megjelölés.** Az Unsplash License nem kéri
+(ingyenes, kereskedelmi célra is, megjelölés nélkül), a Guidelines csak az
+appon belüli megjelölést írja elő. A licenc-rekord belül, a könyvtárban van,
+egy esetleges vitához.
+
+**Demo mód: 50 kérés óránként.** A keresés egy órán át tárolva van (nem kérdez
+újra), a kulcs-teszt egy kérés. Ha elfogy: "Unsplash allows 50 searches an
+hour while the key is in Demo mode..." üzenet, és a Pixabay közben használható.
+
+### Production kérelem: Zoltan lépése
+
+1. Az appban add meg a saját Access Key-t, és keress az Unsplash forrással a
+   Scenes tabon ("Photos and videos").
+2. Képernyőkép 1: a találatok rácsa, rajta a "Photo by X on Unsplash"
+   megjelöléssel (a linkek látszanak).
+3. Képernyőkép 2: egy "Add" utáni állapot ("Added to your footage"). Ehhez
+   írd mellé: az Add a `download_location` végpontot hívja a fájl letöltése
+   előtt (`runner/stock/unsplash.mjs`, `trackDownload`).
+4. unsplash.com/oauth/applications, az app oldalán "Apply for Production".
+   Töltsd ki: mire való az app (YouTube videó B-roll, a user által kiválasztott
+   képek), csatold a két képernyőképet.
+5. Ha jóváhagyják: 1000 kérés óránként; az appban nincs teendő.
+
+**Kockázat:** a Guidelines szerint a usernek nem kellene saját fejlesztői
+fiókot nyitnia (proxy vagy OAuth ajánlott). A BYOK modell miatt a Production
+kérelmet elutasíthatják; ekkor a Demo mód marad, vagy proxy kell (külön döntés).
