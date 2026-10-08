@@ -10,6 +10,7 @@
   // guide on the page says this, with or without changes.
   import { convertFileSrc } from "@tauri-apps/api/core";
   import ErrorBox from "./ErrorBox.svelte";
+  import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
   import type { AppState, Gate, Still } from "./api";
@@ -216,14 +217,14 @@
     <div class="actionbar">
       {#if approved && !changes}
         <span class="say"><b>Approved.</b> {rendering ? "The video is rendering on 6. Your video." : "Next: 6. Your video."}</span>
-        <button type="button" disabled={locked} onclick={build}>Build again</button>
+        <Advanced><button type="button" disabled={locked} onclick={build}>Build again</button></Advanced>
         <button type="button" class="primary" onclick={() => goto("video")}>Go to 6. Your video</button>
       {:else if changes > 0 || (edited && stills.length > 0)}
         <span class="say">Your changes are saved. The preview shows them after the update.</span>
         <button type="button" class="primary" disabled={locked} onclick={build}>Update the preview</button>
       {:else if built}
         <span class="say">Look at every picture: cut-off text, an empty picture, a wrong word? Then approve, and the render starts.</span>
-        <button type="button" disabled={locked} onclick={build}>Build again</button>
+        <Advanced><button type="button" disabled={locked} onclick={build}>Build again</button></Advanced>
         <button type="button" class="primary" disabled={locked} onclick={approveAndRender}>Approve and render</button>
       {:else}
         <span class="say">Building and checking takes about a minute.</span>

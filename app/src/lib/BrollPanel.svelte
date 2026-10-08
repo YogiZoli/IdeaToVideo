@@ -125,7 +125,7 @@
     if (!(await ask(what, { title: "B-roll clips", kind: "info" }))) return;
     let allowOverCap = false;
     if (e.overCap) {
-      if (!(await ask(`This is over the limit for this video: ${usd(e.capUsd)}, of which ${usd(e.spentUsd)} is spent. Together it would be about ${usd(e.spentUsd + e.usd)}. Make them anyway, this once? (You can change the limit in Settings, Identity, Footage.)`, { title: "Over the limit", kind: "warning" }))) return;
+      if (!(await ask(`This is over the limit for this video: ${usd(e.capUsd)}, of which ${usd(e.spentUsd)} is spent. Together it would be about ${usd(e.spentUsd + e.usd)}. Make them anyway, this once? (You can change the limit in Identity, Footage.)`, { title: "Over the limit", kind: "warning" }))) return;
       allowOverCap = true;
     }
     log("broll_make", { clips: n, usd: e.usd, overCap: allowOverCap, test: isTest });
@@ -245,7 +245,7 @@
           <button type="button" class="primary" disabled={locked || (!isTest && !app.keys["heygen"])} onclick={() => make()}>{isTest ? `Make ${est.items} test clip${est.items === 1 ? "" : "s"} (free)` : `Make ${est.items} clip${est.items === 1 ? "" : "s"} (about ${usd(est.usd)})`}</button>
         {/if}
       </div>
-      {#if !isTest && !app.keys["heygen"]}<p class="warn">No HeyGen key: add it in Settings, Identity, Voice and avatar.</p>{/if}
+      {#if !isTest && !app.keys["heygen"]}<p class="warn">No HeyGen key: add it in Settings, Connections.</p>{/if}
     {/if}
   </section>
 {/if}

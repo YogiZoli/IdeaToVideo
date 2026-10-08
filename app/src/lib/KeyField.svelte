@@ -17,6 +17,8 @@
     isSet = $bindable(false),
     test,
     scope = "app",
+    own = false,
+    hint = "",
   }: {
     name: string;
     label: string;
@@ -24,6 +26,9 @@
     isSet?: boolean;
     test?: () => Record<string, unknown> & { command: string };
     scope?: KeyScope;
+    /** Connections: the Identity's own key was asked for, so its input shows at once. */
+    own?: boolean;
+    hint?: string;
   } = $props();
 
   let value = $state("");
@@ -36,9 +41,10 @@
   const src = $derived(keySources[name] ?? { app: scope === "app" && isSet, identity: false });
   // the key this field edits
   const here = $derived(scope === "app" ? src.app : src.identity);
-  const showInput = $derived(scope === "app" || src.identity || !src.app || override);
+  const showInput = $derived(scope === "app" || own || src.identity || !src.app || override);
+  // Connections (D3): Connected, Not set, or Failed after a test that failed
   const badge = $derived(
-    scope === "app" ? (src.app ? "Saved" : "Not set") : src.identity ? "Own key" : src.app ? "Using the App key" : "Not set",
+    ok === false && !busy ? "Failed" : scope === "app" ? (src.app ? "Connected" : "Not set") : src.identity ? "Own key" : src.app ? "Using the App key" : "Not set",
   );
 
   async function refresh() {
@@ -110,16 +116,17 @@
 <div class="keyfield">
   <div class="row">
     <label for={`key-${name}-${scope}`}>{label} API key</label>
-    <span class="badge" class:on={here || (scope === "identity" && src.app)}>{badge}</span>
+    <span class="badge" class:on={badge !== "Failed" && (here || (scope === "identity" && src.app))} class:bad={badge === "Failed"}>{badge}</span>
     {#if keyUrl}
       <button type="button" class="link" onclick={() => openUrl(keyUrl)}>Get a key</button>
     {/if}
   </div>
-  {#if scope === "identity"}
+  {#if hint}<p class="msg">{hint}</p>{/if}
+  {#if scope === "identity" && !own}
     <p class="msg">
       {#if src.identity}This Identity uses its own key, for example so that the costs go to the client's account.
-      {:else if src.app}This Identity uses the key saved for all Identities (Settings, App, AI and keys).
-      {:else}No key yet. A key saved here is only for this Identity. A key for every Identity goes in Settings, App, AI and keys.{/if}
+      {:else if src.app}This Identity uses the key saved for all Identities (Settings, Connections).
+      {:else}No key yet. A key saved here is only for this Identity. A key for every Identity goes in Settings, Connections.{/if}
     </p>
   {/if}
   {#if showInput}
@@ -166,6 +173,7 @@
   .row input { flex: 1; }
   .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
   .badge.on { background: var(--success-surface); color: var(--success); }
+  .badge.bad { background: var(--danger-surface); color: var(--danger-text); }
   .msg { margin: 0; font-size: 13px; color: var(--muted-foreground); }
   .msg.good { color: var(--success); }
 </style>

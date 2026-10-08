@@ -1,8 +1,9 @@
 <script lang="ts">
   // The Identity menu in the top bar (docs/identity.md 7): the active
   // Identity's name and YouTube handle; open, it lists every Identity and
-  // offers New, Duplicate, Import and the Identity's settings. On a full plan
-  // (Solo) New, Duplicate and Import are greyed out, with the reason.
+  // offers New, Duplicate and Manage Identity. On a full plan (Solo) New and
+  // Duplicate are greyed out, with the reason. Import is on Settings, Import
+  // & Export (DECISIONS 119).
   import type { AppState } from "./api";
   import { youtubeHandle, roomForIdentity } from "./identity";
   import { fullPlanText, IDENTITY } from "./edition";
@@ -12,14 +13,12 @@
     choose,
     newIdentity,
     duplicate,
-    importIdentity,
     settings,
   }: {
     app: AppState;
     choose: (id: string) => void;
     newIdentity: () => void;
     duplicate: () => void;
-    importIdentity: () => void;
     settings: () => void;
   } = $props();
 
@@ -59,8 +58,7 @@
       <hr />
       <button type="button" role="menuitem" class="item" disabled={!room} title={full} onclick={() => act(newIdentity)}>New Identity</button>
       <button type="button" role="menuitem" class="item" disabled={!room} title={full} onclick={() => act(duplicate)}>Duplicate this Identity</button>
-      <button type="button" role="menuitem" class="item" disabled={!room} title={full} onclick={() => act(importIdentity)}>Import Identity</button>
-      <button type="button" role="menuitem" class="item" onclick={() => act(settings)}>Identity settings</button>
+      <button type="button" role="menuitem" class="item" onclick={() => act(settings)}>Manage Identity</button>
       {#if !room}<p class="note">{full}</p>{/if}
     </div>
   {/if}

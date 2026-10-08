@@ -49,7 +49,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
     const c = JSON.parse(fs.readFileSync(cached, "utf8"));
     if (now - c.at < CACHE_MS) return { hits: c.hits, cached: true };
   }
-  if (!apiKey) throw new Error("No Pixabay key yet. Add a free key in Settings, Identity, Footage.");
+  if (!apiKey) throw new Error("No Pixabay key yet. Add a free key in Settings, Connections.");
   const params = new URLSearchParams({ key: apiKey, q: query, safesearch: "true", per_page: "18", order: "popular" });
   if (kind === "image") params.set("image_type", "photo"), params.set("orientation", "horizontal"), params.set("min_width", "1280");
   const url = `${API}${kind === "video" ? "videos/" : ""}?${params}`;
@@ -61,7 +61,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
     throw new Error(`Could not reach Pixabay: ${redact(String(e.message), apiKey).replace(/key=[^&\s]+/g, "key=[hidden]")}`);
   }
   if (res.status === 429) throw new Error("Pixabay asks to slow down. Wait a minute and search again.");
-  if (res.status === 400 || res.status === 401 || res.status === 403) throw new Error("Pixabay did not accept the key. Check it in Settings, Identity, Footage.");
+  if (res.status === 400 || res.status === 401 || res.status === 403) throw new Error("Pixabay did not accept the key. Check it in Settings, Connections.");
   if (!res.ok) throw new Error(`Pixabay answered with HTTP ${res.status}. Try again later.`);
   const body = await res.json();
   const hits = (body.hits ?? []).map((h) => shapeHit(kind, h)).filter(Boolean);

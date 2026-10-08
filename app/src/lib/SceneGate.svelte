@@ -8,6 +8,7 @@
   import { onDestroy } from "svelte";
   import { ask } from "@tauri-apps/plugin-dialog";
   import ErrorBox from "./ErrorBox.svelte";
+  import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
   import DictionaryFindings from "./brand/DictionaryFindings.svelte";
@@ -248,7 +249,7 @@
     <div class="actionbar">
       {#if !table.rows.length || stale}
         <span class="say">The AI plans every scene in about a minute. No AI at hand? The simple plan works without it.</span>
-        <button type="button" disabled={locked} onclick={simple}>Simple plan without AI</button>
+        <Advanced><button type="button" disabled={locked} onclick={simple}>Simple plan without AI</button></Advanced>
         <button type="button" class="primary" disabled={locked} onclick={plan}>Plan scenes (Recommended)</button>
       {:else}
         {#if approved && !dirty}
@@ -256,12 +257,14 @@
         {:else}
           <span class="say">{dirty ? "You changed some texts: they are saved when you approve." : "Look through the scenes. Happy with them? Approve them."}</span>
         {/if}
-        <button type="button" disabled={locked} onclick={plan}>Plan again</button>
-        {#if dirty}<button type="button" disabled={locked} onclick={save}>Save my edits</button>{/if}
+        <Advanced>
+          <button type="button" disabled={locked} onclick={plan}>Plan again</button>
+          {#if dirty}<button type="button" disabled={locked} onclick={save}>Save my edits</button>{/if}
+        </Advanced>
         {#if approved && !dirty}
           <button type="button" class="primary" onclick={() => goto(next)}>Go to {tabLabel(next)}</button>
         {:else}
-          <button type="button" class="primary" disabled={locked} onclick={approve}>Approve scenes</button>
+          <button type="button" class="primary" disabled={locked} onclick={approve}>Approve and continue</button>
         {/if}
       {/if}
     </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // BrollSettings: Settings, Identity, Footage, AI B-roll (docs/ai-broll.md,
+  // BrollSettings: Identity, Footage, AI B-roll (docs/ai-broll.md,
   // DECISIONS 95, 98). Off by default, it costs money. On: the generator
   // (HeyGen Video 1, or free test clips), the quality and the most one ONE
   // Video may spend. The Scenes tab shows "Make B-roll clips" only when on.
@@ -63,7 +63,7 @@
           {#if s.generator === "test"}
             <p class="note">Test clips are free test patterns made on this computer, so you can try the whole flow before there is money on your HeyGen account. They are marked as tests and never put into a video by the scene planner.</p>
           {:else if !hasKey}
-            <p class="warn">No HeyGen key yet. Add it in Settings, Identity, Voice and avatar. Video clips need a paid HeyGen API balance.</p>
+            <p class="warn">No HeyGen key yet. Add it in Settings, Connections. Video clips need a paid HeyGen API balance.</p>
           {/if}
         </div>
 

@@ -103,7 +103,7 @@
         <button type="button" onclick={useDefault}>Use the method: GUIDE, COURSE, TRIGGER</button>
       </div>
       <CallsEditor options={st.options} bind:slots bind:on bind:modes segments={st.segments} />
-      {#if !st.segments.length}<p class="hint">Recorded a call once, for example with your avatar? Add it in Settings, Identity, CTA, at Your segments: then a place can play it instead of the narrator.</p>{/if}
+      {#if !st.segments.length}<p class="hint">Recorded a call once, for example with your avatar? Add it in Wizards, CTA: then a place can play it instead of the narrator.</p>{/if}
       <p class="hint">Someone has to answer the keyword comments with the link, by hand or with a tool. The video never shows or says a link for them.</p>
     {:else if step === 1}
       <p class="lead">What does a viewer get for each keyword? In your words, short. The narrator says it in the call. Leave it empty for the general wording.</p>

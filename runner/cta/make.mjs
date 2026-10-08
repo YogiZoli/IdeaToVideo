@@ -17,7 +17,7 @@ import { keywordInfo } from "./catalog.mjs";
 
 export async function segmentVoice({ identityDir, narrator, apiKey, text, language = "en", fetchImpl, env = process.env }) {
   const provider = VOICE_PROVIDERS[narrator?.provider];
-  if (!provider) throw new Error("Choose a narrator voice in Settings, Voice and avatar first.");
+  if (!provider) throw new Error("Choose a narrator voice in Identity, Voice & Avatar first.");
   const clean = String(text ?? "").replace(/\s+/g, " ").trim();
   if (!clean) throw new Error("Write the sentence the segment says.");
   if (clean.length > SEGMENT_TEXT_MAX) throw new Error("The text is too long for a segment of at most 30 seconds.");
@@ -35,7 +35,7 @@ export async function segmentVoice({ identityDir, narrator, apiKey, text, langua
 }
 
 export async function segmentVideo({ identityDir, apiKey, lookId, audio, keyword, name, text = "", background = "#ffffff", engine: wantedEngine, lookEngines, fetchImpl = fetch, sleep, onProgress = () => {}, env = process.env }) {
-  if (!lookId) throw new Error("Choose an avatar in Settings, Voice and avatar first.");
+  if (!lookId) throw new Error("Choose an avatar in Identity, Voice & Avatar first.");
   const info = keywordInfo(keyword);
   if (!info) throw new Error("Pick the keyword this segment says.");
   const dir = segmentsDir(identityDir);

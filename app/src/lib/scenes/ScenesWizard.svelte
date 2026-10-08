@@ -132,8 +132,8 @@
           <span class="lbl"><b>{k.label}</b> <span class="hint">{pct(k.id)}%</span></span>
           <input type="range" min="0" max="100" step="5" value={profile.mix[k.id]} oninput={(e) => setMix(k.id, Number(e.currentTarget.value))} />
         </label>
-        {#if k.id === "image" && !pictureReady}<p class="warn">No picture source yet: add a free Pixabay or Unsplash key (Settings, Identity, Footage) or your own footage, and turn the source on under "Pictures and video".</p>{/if}
-        {#if k.id === "video" && !videoReady}<p class="warn">No video source yet: add your own clips (Settings, Identity, Footage), or turn on AI B-roll there.</p>{/if}
+        {#if k.id === "image" && !pictureReady}<p class="warn">No picture source yet: add a free Pixabay or Unsplash key (Settings, Connections) or your own footage (Identity, Footage), and turn the source on under "Pictures and video".</p>{/if}
+        {#if k.id === "video" && !videoReady}<p class="warn">No video source yet: add your own clips (Identity, Footage), or turn on AI B-roll there.</p>{/if}
       {/each}
       <p class="hint">Icons and drawings are always free: the app ships 8700 line icons.</p>
     {:else if step === 2}

@@ -99,7 +99,7 @@ export function packCatalog(identityDir, { hasFootage = false } = {}) {
 export function loadPackBlock(name, identityDir) {
   const { pack, block } = split(name);
   const p = listPacks(identityDir).find((x) => x.id === pack);
-  if (!p) throw new Error(`The pack ${pack} is not in this Identity. Import it in Settings, Identity, Scenes.`);
+  if (!p) throw new Error(`The pack ${pack} is not in this Identity. Import it in Settings, Import & Export.`);
   const b = p.blocks.find((x) => x.id === block);
   if (!b) throw new Error(`The pack ${p.name} has no block ${block}.`);
   const file = path.join(p.dir, "blocks", `${block}.html`);

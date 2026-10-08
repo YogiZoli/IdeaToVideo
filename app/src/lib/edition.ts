@@ -12,7 +12,7 @@ export const IDENTITIES = "Identities";
 // a sentence needs a plural, it says "videos".
 export const ONE_VIDEO = "ONE Video";
 
-/** The plan line in Settings, App, Plan. */
+/** The plan line in Settings, Plan. */
 export function planText(e: Edition, count: number): string {
   const limit = e.identityLimit === null ? "unlimited Identities" : `${e.identityLimit} ${e.identityLimit === 1 ? IDENTITY : IDENTITIES}`;
   return `${e.tier} plan: ${limit}. You have ${count}.`;

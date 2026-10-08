@@ -10,6 +10,7 @@
   import { open, ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
   import VoiceCards, { type Voice } from "./VoiceCards.svelte";
@@ -197,7 +198,7 @@
     <Needs text="The voice reads the approved script. Approve the script first." tab="script" {goto} />
   {:else if !hasKey}
     <p class="hint">
-      {provider === "gemini" ? "The free voice uses a Gemini key. Add it in Settings, at Narrator Voice." : "Add your ElevenLabs key in Settings. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use."}
+      {provider === "gemini" ? "The free voice uses a Gemini key. Add it on Settings, Connections." : "Add your ElevenLabs key on Settings, Connections. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use."}
     </p>
   {:else}
     <div class="grid">
@@ -250,14 +251,18 @@
     <div class="actionbar">
       {#if approved}
         <span class="say"><b>Approved.</b> Next: 3. Scenes.</span>
-        <button type="button" disabled={locked} onclick={make}>Make the voice again</button>
-        <button type="button" disabled={locked} onclick={applyMusic}>Use the selected music</button>
+        <Advanced>
+          <button type="button" disabled={locked} onclick={make}>Make the voice again</button>
+          <button type="button" disabled={locked} onclick={applyMusic}>Use the selected music</button>
+        </Advanced>
         <button type="button" class="primary" onclick={() => goto("scenes")}>Go to 3. Scenes</button>
       {:else if made}
         <span class="say">Listen to it. Happy with it? Approve it, and the scenes come next.</span>
-        <button type="button" disabled={locked} onclick={make}>Make the voice again</button>
-        <button type="button" disabled={locked} onclick={applyMusic}>Use the selected music</button>
-        <button type="button" class="primary" disabled={locked} onclick={approve}>Approve voice and music</button>
+        <Advanced>
+          <button type="button" disabled={locked} onclick={make}>Make the voice again</button>
+          <button type="button" disabled={locked} onclick={applyMusic}>Use the selected music</button>
+        </Advanced>
+        <button type="button" class="primary" disabled={locked} onclick={approve}>Approve and continue</button>
       {:else}
         <span class="say">Pick a voice and the music, then make the voice. The bar shows how long it takes.</span>
         <button type="button" class="primary" disabled={locked || !voiceId} onclick={make}>Make voice (Recommended)</button>

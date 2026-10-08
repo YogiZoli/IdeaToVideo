@@ -1,5 +1,5 @@
 <script lang="ts">
-  // ScenesPage: Settings, Identity, Scenes. What the Identity's videos show,
+  // ScenesPage: Wizards, Scenes. What the Identity's videos show,
   // in short, the way into the Scenes wizard (DECISIONS 110), and the scene
   // packs (DECISIONS 107).
   import { onMount } from "svelte";
@@ -8,7 +8,7 @@
   import ErrorBox from "../ErrorBox.svelte";
   import PacksPage from "../packs/PacksPage.svelte";
 
-  let { onopen, refresh = 0 }: { onopen: () => void; refresh?: number } = $props();
+  let { onopen, refresh = 0, goto }: { onopen: () => void; refresh?: number; goto?: (page: "transfer") => void } = $props();
 
   let st = $state<ScenesState | null>(null);
   let error = $state("");
@@ -38,7 +38,7 @@
   {/if}
   <div class="row"><button type="button" class="primary" onclick={onopen}>Open Scenes wizard</button></div>
 </section>
-<PacksPage />
+<PacksPage {goto} />
 
 <style>
   .row { display: flex; gap: 8px; margin-top: 8px; }

@@ -1603,3 +1603,73 @@
       engedélykérés, a render böngésző letöltése, egy teljes videó a
       renderig, a Show in folder, az Export diagnostics. Ez a barátok próbáján
       derül ki; a naplót a `docs/pilot/send-logs.md` szerint küldik.
+
+## 2026-10-08 (UI egyszerűsítés)
+
+119. **UI egyszerűsítés: öt menü, egy hely minden kulcsnak és fájlnak**
+    (Zoltan, 2026-10-08, `docs/ui-simplify.md`; branch `ui-simplify`):
+    - **Felső menü** (D1, `app/src/lib/pages.ts`): Home, Videos, Wizards
+      (CTA, Brand, Motion, Scenes), Identity (YouTube Channel & Audience,
+      Voice & Avatar, Footage, Dictionary, Resources, Manage Identity),
+      Settings (General, Connections, Import & Export, Folders, Backup,
+      Plan). Menünként legfeljebb hat oldal. A szó "Identity" marad. A régi
+      Settings csoportok (App, Identity) megszűntek; egy oldal `scope`-ja
+      mondja meg, hogy az Appot vagy az aktív Identityt írja. Az
+      Identity-választó a felső sávban marad, Import nélkül.
+    - **Home** (D2, `Home.svelte`): "Ready to make videos?" sorokkal (AI
+      kulcs, hang kulcs, Identity, a 3 CTA kulcsszó a klipje állapotával,
+      Publishing "Optional"), mindegyik Ready vagy Missing, gombbal a
+      helyére. Kell: AI kulcs, hang kulcs, Identity (közönség megadva); a
+      CTA klip és a Publishing nem (klip nélkül a narrátor mondja). Ha a
+      szükségesek készek: fő gomb "Make a video" (a Videos az új videó
+      űrlapjával nyílik). Alatta a legutóbbi öt videó.
+    - **Connections** (D3): minden kulcs egy oldalon (`ConnectionRow.svelte`):
+      név, állapot (Connected, Not set, Failed egy elbukott teszt után),
+      Get a key, Test, mentés. AI (szolgáltató, modell, lépésenkénti modell)
+      és az összes AI szolgáltató kulcsa, ElevenLabs, HeyGen, Pixabay,
+      Unsplash, vidIQ, Publishing (cím és token). Kulcsonként "Use a
+      different key for this Identity"; a meglévő Identity-kulcsok
+      bepipálva látszanak. Az AI-nál ugyanígy: "Use a different AI for this
+      Identity". A régi App AI and keys, Identity AI and keys, Publishing
+      oldal és a Footage kulcsai ide kerültek.
+    - **Import & Export** (D4, `TransferPage.svelte`): legfelül az Identity
+      Import és Export, alatta soronként: Brand Identity Card, tokens.css
+      (csak Import: a design tokens az Identity kinézete lesz, a logó marad),
+      .itvpack, HeyGen videó egy CTA kulcsszónak (`cta/HeygenImport.svelte`),
+      Video Publishing Card (videó választóval, csak Export), Export
+      diagnostics, Back up now. A régi helyeken link mutat ide (Manage
+      Identity, Brand, Brand varázsló, Scenes, CTA, General, Backup). A
+      videó saját kártya-exportja a videó tabján, a Files alatt marad (D7),
+      a videónkénti "Back up now" a videó Backup részében.
+    - **CTA: a házi hármas elöl** (D5, `cta/CtaPage.svelte`, `cta/clips.ts`):
+      a választott három kulcsszó nagyban, mindegyik a klipforrásával; a
+      többi 12 egy csukott "Other keywords" alatt. Források: feltöltött klip,
+      korábbi HeyGen klip ("Previously used"), "Generate with HeyGen" (ár
+      kiírva), Narrator. Az alap: feltöltött, különben korábbi HeyGen,
+      különben HeyGen ha be van kötve (kulcs és avatar look), különben
+      Narrator; mindig átválasztható. HeyGen nélkül a HeyGen opciók szürkék,
+      mellettük "Connect HeyGen" link a Connectionsre.
+      - **Új CTA mód: `heygen`** (séma `cta-profile`, `runner/cta/profile.mjs`):
+        amíg nincs klip, a narrátor mondja (megjegyzéssel); ha van, szegmens.
+      - **Mikor készül a HeyGen klip:** a Script tab "Write script" előtt
+        az app megkérdezi (az árral), és elkészíti a hiányzó klipet, így a
+        script már a klipre hagyja a hívást (semmi nem hangzik el kétszer).
+        Nem: a narrátor mondja most. Az Autopilot nem rendel HeyGen klipet
+        (ahogy avatart sem). Egy kulcsszónak továbbra is egy klipje van.
+    - **Videó tabok** (D6, `Advanced.svelte`): tabonként egy kiemelt fő gomb
+      ("Approve and continue", "Go to ...", vagy a tab saját szava: Write
+      script, Plan scenes, Build the preview, Approve and render, Render
+      video); minden más (újra, finomhangolás, "Write it myself", "Simple
+      plan without AI", "Continue without an avatar") az "Advanced" alatt.
+      A "Finish on Autopilot" a cím mellett, kiemelve.
+    - **A kész videó tabja** (D7): fő gomb "Send to Publishing" (beállítás
+      nélkül szürke, link a Connectionsre); a YouTube szövegek (címek,
+      összefoglaló, tagek, leírás) nyitva, másolás gombbal; a fájlok (Open
+      MP4, SRT, chapters.txt, kártya, Export card) a csukott "Files" alatt;
+      a Render again és a minőség az Advanced alatt.
+    - A runner és az app szövegei az új helyekre mutatnak (például "Settings,
+      Connections", "Wizards, CTA", "Identity, Footage").
+    - Tesztek: `scripts/app/pages.test.mjs` (öt menü, legfeljebb hat oldal,
+      minden régi oldal megvan), `runner/segments.test.mjs` (`heygen` mód).
+      Node 279 zöld (2 éles kihagyva), Rust 48, e2e 39/39, UI check 0 hiba;
+      az oldalak a `scripts/ui-mock`-kal megnézve. Telepítő nem készült.

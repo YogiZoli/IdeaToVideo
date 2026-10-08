@@ -130,7 +130,7 @@ function folderFor(backupRoot, identityFolder, project, record, title) {
 /** Backs up one ONE Video. `level`: the App default; the project's own
  * override (backup.json) wins. Returns what happened. */
 export function backupProject({ projectDir, backupRoot, identityFolder, level = 4, now = new Date(), onProgress = () => {} }) {
-  if (!backupRoot) throw new Error("No backup folder set. Choose one in Settings, App, Backup.");
+  if (!backupRoot) throw new Error("No backup folder set. Choose one in Settings, Backup.");
   const project = JSON.parse(fs.readFileSync(path.join(projectDir, "project.json"), "utf8"));
   const record = readRecord(projectDir);
   const lvl = LEVELS.includes(record.level) ? record.level : level;

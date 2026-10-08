@@ -67,7 +67,7 @@
     {/if}
   </label>
 </div>
-{#if keys && !keys[value.provider]}<p class="hint">No {LLM_PROVIDERS.find((p) => p.id === value.provider)?.label} key yet: add it in Settings, AI and keys.</p>{/if}
+{#if keys && !keys[value.provider]}<p class="hint">No {LLM_PROVIDERS.find((p) => p.id === value.provider)?.label} key yet: add it in Settings, Connections.</p>{/if}
 
 <style>
   .picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); gap: 8px; align-items: end; }

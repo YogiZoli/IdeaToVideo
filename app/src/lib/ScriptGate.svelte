@@ -6,6 +6,7 @@
   import { ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
   import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import VideoCalls from "./cta/VideoCalls.svelte";
@@ -15,6 +16,7 @@
   import { llmFor } from "./llm";
   import type { AppState, Gate, CtaProfile, CtaSlot } from "./api";
   import { runner, onProgress, errorText } from "./api";
+  import { pendingHeygen, makeHeygenClip, priceText } from "./cta/clips";
   import { running } from "./work.svelte";
 
   type Kw = { keyword: string; monthlySearches: number | null; competition: number | null; score: number | null; growthPct: number | null };
@@ -29,6 +31,7 @@
     calls,
     changed,
     saved,
+    goto,
   }: {
     app: AppState;
     dir: string;
@@ -40,6 +43,7 @@
     calls: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
     changed: () => Promise<void>;
     saved: (s: AppState) => void;
+    goto?: (t: "voice") => void;
   } = $props();
 
   const COMMANDS = ["write-script", "save-script", "keyword-ideas"];
@@ -103,6 +107,7 @@
     notice = "";
     step = "Starting...";
     try {
+      await heygenClips();
       const r = await runner<{ words: number; humanizeNote?: string | null }>("write-script", {
         projectDir: dir,
         llm: stepLlm,
@@ -118,6 +123,26 @@
     } finally {
       busy = false;
       step = "";
+    }
+  }
+
+  // "Generate with HeyGen" (Wizards, CTA; D5, DECISIONS 119): a keyword of
+  // this script without a clip yet gets it now, before the script, so the
+  // script leaves that call to the clip. Asked first, with the price; no or
+  // an error: the narrator says it this time.
+  async function heygenClips() {
+    const pend = await pendingHeygen(app, ownCalls ? ($state.snapshot(ownCalls) as never) : null).catch(() => []);
+    if (!pend.length) return;
+    const engine = app.identity?.avatar?.engine ?? app.config?.avatar?.engine ?? null;
+    const list = pend.map((p) => `${p.keyword} (${priceText(p.text, engine)})`).join(", ");
+    if (!(await ask(`HeyGen makes the comment call clip for ${list} first, then the script is written. It takes a few minutes and uses HeyGen credits. Make it now? No: the narrator says it this time.`, { title: "Generate with HeyGen", kind: "info" }))) return;
+    for (const p of pend) {
+      step = `HeyGen makes the ${p.keyword} clip. This takes a few minutes...`;
+      try {
+        await makeHeygenClip(app, p.keyword, p.text);
+      } catch (e) {
+        notice = `The ${p.keyword} clip could not be made, so the narrator says it: ${errorText(e)}`;
+      }
     }
   }
 
@@ -230,13 +255,17 @@
       <span class="say">The first step: the words of your video.</span>
     {/if}
     {#if !editing}
-      <button type="button" disabled={locked} onclick={() => (own = true)}>Write it myself</button>
+      <Advanced><button type="button" disabled={locked} onclick={() => (own = true)}>Write it myself</button></Advanced>
       <button type="button" class="primary" disabled={locked} onclick={writeRecommended}>Write script (Recommended)</button>
     {:else}
-      <button type="button" disabled={locked} onclick={writeRecommended}>{markdown ? "Write a new one with AI" : "Write it with AI"}</button>
-      {#if dirty}<button type="button" disabled={locked} onclick={saveCustom}>Save my edits</button>{/if}
+      <Advanced>
+        <button type="button" disabled={locked} onclick={writeRecommended}>{markdown ? "Write a new one with AI" : "Write it with AI"}</button>
+        {#if dirty}<button type="button" disabled={locked} onclick={saveCustom}>Save my edits</button>{/if}
+      </Advanced>
       {#if !approved || dirty}
-        <button type="button" class="primary" disabled={locked || !draft.trim()} onclick={approve}>Approve script</button>
+        <button type="button" class="primary" disabled={locked || !draft.trim()} onclick={approve}>Approve and continue</button>
+      {:else}
+        <button type="button" class="primary" onclick={() => goto?.("voice")}>Go to 2. Voice and music</button>
       {/if}
     {/if}
   </div>

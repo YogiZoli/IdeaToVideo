@@ -71,7 +71,7 @@ const headers = (apiKey) => ({ Authorization: `Client-ID ${apiKey}`, "Accept-Ver
 export function failure(res) {
   const left = res.headers?.get?.("x-ratelimit-remaining");
   if (res.status === 429 || (res.status === 403 && left === "0")) return RATE_LIMIT_MESSAGE;
-  if (res.status === 401 || res.status === 403) return "Unsplash did not accept the key. Use the Access Key (not the Secret key) in Settings, Identity, Footage.";
+  if (res.status === 401 || res.status === 403) return "Unsplash did not accept the key. Use the Access Key (not the Secret key) in Settings, Connections.";
   return `Unsplash answered with HTTP ${res.status}. Try again later.`;
 }
 
@@ -93,7 +93,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
     const c = JSON.parse(fs.readFileSync(cached, "utf8"));
     if (now - c.at < CACHE_MS) return { hits: c.hits, cached: true };
   }
-  if (!apiKey) throw new Error("No Unsplash key yet. Add your Access Key in Settings, Identity, Footage.");
+  if (!apiKey) throw new Error("No Unsplash key yet. Add your Access Key in Settings, Connections.");
   const params = new URLSearchParams({ query, per_page: "18", orientation: "landscape", content_filter: "high" });
   const res = await get(`${API}/search/photos?${params}`, apiKey, fetchImpl, "");
   if (!res.ok) throw new Error(failure(res));
@@ -119,7 +119,7 @@ export function cachedHit(cacheDir, kind, q, id) {
 // used. It counts against the hourly limit, the file itself does not.
 export async function trackDownload({ apiKey, hit, fetchImpl = fetch }) {
   if (!isUnsplashApiUrl(hit.downloadLocation)) throw new Error("Not an Unsplash address.");
-  if (!apiKey) throw new Error("No Unsplash key yet. Add your Access Key in Settings, Identity, Footage.");
+  if (!apiKey) throw new Error("No Unsplash key yet. Add your Access Key in Settings, Connections.");
   const res = await get(hit.downloadLocation, apiKey, fetchImpl, " to register the download");
   if (!res.ok) throw new Error(failure(res));
   return true;

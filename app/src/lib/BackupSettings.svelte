@@ -1,22 +1,17 @@
 <script lang="ts">
-  // Settings, App, Backup (DECISIONS 66, docs/backup.md): the backup folder
+  // Settings, Backup (DECISIONS 66, docs/backup.md): the backup folder
   // (the Google Drive, OneDrive or Dropbox desktop folder uploads it), the
   // default level with sizes from the ONE Videos on this computer, automatic
-  // backups, and "Back up now" for every ONE Video and the settings.
+  // backups. "Back up now" is on Settings, Import & Export (DECISIONS 119).
   import { open } from "@tauri-apps/plugin-dialog";
   import type { AppState, BackupSettings } from "./api";
-  import { runner, cloudFolders, backupSettingsNow, errorText } from "./api";
-  import Progress from "./Progress.svelte";
-  import ErrorBox from "./ErrorBox.svelte";
+  import { runner, cloudFolders } from "./api";
 
-  let { app, backup = $bindable() }: { app: AppState; backup: BackupSettings } = $props();
+  let { app, backup = $bindable(), goto }: { app: AppState; backup: BackupSettings; goto?: (page: "transfer") => void } = $props();
 
   let clouds = $state<{ label: string; path: string }[]>([]);
   let sizes = $state<Record<string, number> | null>(null);
   let projects = $state(0);
-  let busy = $state(false);
-  let error = $state("");
-  let result = $state("");
 
   cloudFolders().then((c) => (clouds = c)).catch(() => {});
   runner<{ projects: number; levels: Record<string, number> }>("backup-estimate", {})
@@ -26,8 +21,6 @@
     })
     .catch(() => {});
 
-  const saved = $derived(app.app?.backup ?? {});
-  const unsaved = $derived((saved.dir ?? null) !== (backup.dir ?? null) || (saved.level ?? 4) !== (backup.level ?? 4) || (saved.auto ?? true) !== (backup.auto ?? true));
 
   const LEVELS: { n: 1 | 2 | 3 | 4; title: string; what: string }[] = [
     { n: 1, title: "Script", what: "The script and the ONE Video's settings." },
@@ -43,21 +36,6 @@
     if (typeof dir === "string") backup = { ...backup, dir };
   }
 
-  async function now() {
-    busy = true;
-    error = "";
-    result = "";
-    try {
-      const r = await runner<{ projects: number; copied: number; bytes: number; failed: { project: string; error: string }[] }>("backup-all", {});
-      const n = await backupSettingsNow();
-      result = `Backed up ${r.projects} ${r.projects === 1 ? "video" : "videos"} (${r.copied} files changed, ${mb(r.bytes)}) and the settings of ${n} ${n === 1 ? "Identity" : "Identities"}.`;
-      if (r.failed.length) error = `Not backed up: ${r.failed.map((f) => `${f.project}: ${f.error}`).join("; ")}`;
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = false;
-    }
-  }
 </script>
 
 <section class="card">
@@ -92,17 +70,7 @@
 
 <section class="card">
   <h2>Back up now</h2>
-  {#if unsaved}
-    <p class="hint">Save settings first, then back up.</p>
-  {:else if !app.backupRoot}
-    <p class="hint">Choose a backup folder and save settings first.</p>
-  {:else}
-    <p class="hint">Every ONE Video of every Identity, and the settings (never the keys). Only changed files are copied. Nothing is ever deleted from the backup.</p>
-  {/if}
-  <div class="row"><button type="button" class="primary" disabled={busy || unsaved || !app.backupRoot} onclick={now}>{busy ? "Backing up..." : "Back up now"}</button></div>
-  {#if busy}<Progress command="backup-all" label="Backup" />{/if}
-  {#if result}<p class="good">{result}</p>{/if}
-  {#if error}<ErrorBox message={error} context={{ step: "backup" }} />{/if}
+  <p class="hint">Every ONE Video of every Identity and the settings, at once: on {#if goto}<button type="button" class="link" onclick={() => goto("transfer")}>Settings, Import & Export</button>{:else}Settings, Import & Export{/if}. Save settings first if you changed the folder.</p>
 </section>
 
 <style>
@@ -111,5 +79,5 @@
   .radio { display: flex; gap: 8px; align-items: baseline; margin: 8px 0; font-weight: 400; }
   .hint { font-size: 13px; color: var(--muted-foreground); }
   .path { font-family: var(--font-mono); font-size: 13px; word-break: break-all; }
-  .good { color: var(--success); margin: 8px 0 0; }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
 </style>

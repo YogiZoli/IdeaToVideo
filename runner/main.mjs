@@ -158,7 +158,7 @@ function motionOf(identityDir) {
   try {
     return loadProfile(identityDir);
   } catch (e) {
-    throw new Error(`The Motion profile cannot be used: ${e.message} Open Settings, Identity, Motion to fix it.`);
+    throw new Error(`The Motion profile cannot be used: ${e.message} Open Wizards, Motion to fix it.`);
   }
 }
 // The comment calls of a ONE Video: its own choice at gate 1 (`own`), else
@@ -214,7 +214,7 @@ function loadCtaChecked(identityDir) {
   try {
     return identityDir ? loadCta(identityDir) : null;
   } catch (e) {
-    throw new Error(`The CTA profile cannot be used: ${e.message} Open Settings, Identity, CTA to fix it.`);
+    throw new Error(`The CTA profile cannot be used: ${e.message} Open Wizards, CTA to fix it.`);
   }
 }
 // scene types turned off: the Scenes profile, and an old Motion profile's list
@@ -502,13 +502,13 @@ const commands = {
   "footage-describe": async ({ identityDir, id, llm }) => ({ clip: await describeClip({ identityDir, id, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } }) }),
 
   // AI B-roll (broll/, generate/, docs/ai-broll.md). The settings are the
-  // Identity's (Settings, Identity, Footage); the plan is the ONE Video's.
+  // Identity's (Identity, Footage); the plan is the ONE Video's.
   "broll-settings": async ({ identityDir }) => ({ settings: loadBrollSettings(identityDir), cap: BROLL_CAP, ...brollChoices() }),
   "broll-settings-save": async ({ identityDir, settings }) => ({ settings: saveBrollSettings(identityDir, settings) }),
   "broll-state": async ({ projectDir, identityDir }) => brollState(projectDir, identityDir),
   "broll-plan": async ({ projectDir, identityDir, llm }) => {
     const settings = loadBrollSettings(identityDir);
-    if (!settings.enabled) throw new Error("AI B-roll is off. Turn it on in Settings, Identity, Footage.");
+    if (!settings.enabled) throw new Error("AI B-roll is off. Turn it on in Identity, Footage.");
     appendLog(projectDir, `broll: planning with ${llm.provider}/${llm.model || "default model"}`);
     const identity = identityDir ? { card: loadCard(identityDir).card, mood: moodOf(identityDir) } : {};
     const r = await logged(projectDir, "broll: planning", () =>
@@ -522,7 +522,7 @@ const commands = {
   "broll-balance": async () => ({ account: await heygen.balance({ apiKey: key() }) }),
   "broll-make": async ({ projectDir, identityDir, ids = null, allowOverCap = false }) => {
     const settings = loadBrollSettings(identityDir);
-    if (!settings.enabled) throw new Error("AI B-roll is off. Turn it on in Settings, Identity, Footage.");
+    if (!settings.enabled) throw new Error("AI B-roll is off. Turn it on in Identity, Footage.");
     const est = estimateBroll({ projectDir, settings, ids });
     appendLog(projectDir, `broll: making ${est.items} clips with ${settings.generator} ${settings.quality}, about ${est.usd.toFixed(2)} USD${allowOverCap ? ", over the limit with the user's yes" : ""}`);
     const r = await logged(projectDir, "broll: making", () =>
@@ -1149,7 +1149,7 @@ async function readStdin() {
 // the details on stderr (the core puts them in the app's log).
 function lastResort(e) {
   process.stderr.write(`${e?.stack ?? e}\n`);
-  if (!answered) emit({ event: "error", message: `Something unexpected went wrong inside the app (${String(e?.message ?? e).slice(0, 200)}). Press the button again; if it happens again, send the diagnostics (Settings, App, General).` });
+  if (!answered) emit({ event: "error", message: `Something unexpected went wrong inside the app (${String(e?.message ?? e).slice(0, 200)}). Press the button again; if it happens again, send the diagnostics (Settings, General).` });
   process.exit(1);
 }
 

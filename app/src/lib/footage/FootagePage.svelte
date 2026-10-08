@@ -1,5 +1,5 @@
 <script lang="ts">
-  // FootagePage: Settings, Identity, Footage (DECISIONS 82). The Identity's
+  // FootagePage: Identity, Footage (DECISIONS 82). The Identity's
   // own clips as B-roll: muted, under the narrator, in the scenes whose
   // sentences they fit. Each clip gets its cut points found and three
   // stills; the AI writes what is on it (the user can edit it), which is what
@@ -14,9 +14,8 @@
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
   import BrollSettings from "./BrollSettings.svelte";
-  import StockKeys from "./StockKeys.svelte";
 
-  let { app }: { app: AppState } = $props();
+  let { app, goto }: { app: AppState; goto?: (page: "connections") => void } = $props();
 
   let st = $state<FootageState | null>(null);
   let error = $state("");
@@ -167,7 +166,10 @@
 </section>
 
 <BrollSettings {app} />
-<StockKeys {app} />
+<section class="card">
+  <h2>Stock photos and videos</h2>
+  <p class="hint">Free stock pictures and clips for your scenes (Pixabay, Unsplash), searched on the Scenes tab of a video. Their keys: {#if goto}<button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>{:else}Settings, Connections{/if}.</p>
+</section>
 
 {#if st && generated.length}
   <section class="card">
@@ -210,4 +212,5 @@
   .tag { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--muted); color: var(--muted-foreground); }
   section.card + section.card { margin-top: 16px; }
   @media (max-width: 760px) { .clips li { grid-template-columns: 1fr; } }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
 </style>

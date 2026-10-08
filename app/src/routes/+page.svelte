@@ -1,27 +1,31 @@
 <script lang="ts">
-  // App shell: first run shows the setup, afterwards the Identity menu, the
-  // Jobs list, ONE Videos and Settings. "New Identity" runs the setup's
-  // Identity steps (docs/identity.md 7).
+  // App shell: first run shows the setup, afterwards the top menu (Home,
+  // Videos, Wizards, Identity, Settings; DECISIONS 119), the Identity menu
+  // and the Jobs list. "New Identity" runs the setup's Identity steps
+  // (docs/identity.md 7).
   import { open } from "@tauri-apps/plugin-dialog";
-  import { appState, saveSettings, setActiveIdentity, importIdentity, restoreSettings, errorText, type AppState, type Config, type Job } from "$lib/api";
+  import { appState, saveSettings, setActiveIdentity, restoreSettings, errorText, type AppState, type Config, type Job } from "$lib/api";
   import { installLogger, log, setScreen, setIdentity } from "$lib/logger";
   import { defaultConfig, cleanConfig } from "$lib/catalog";
   import { appFromConfig, identityFromConfig } from "$lib/identity";
   import { IDENTITY_STEPS } from "$lib/steps";
   import { setKeySources, refreshKeySources } from "$lib/keystate.svelte";
   import { PRODUCT, ONE_VIDEO } from "$lib/edition";
-  import type { PageId } from "$lib/pages";
+  import { MENUS, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
   import Onboarding from "$lib/Onboarding.svelte";
   import Projects from "$lib/Projects.svelte";
   import ProjectView from "$lib/ProjectView.svelte";
   import Settings from "$lib/Settings.svelte";
   import IdentityMenu from "$lib/IdentityMenu.svelte";
   import Jobs from "$lib/Jobs.svelte";
+  import Home from "$lib/Home.svelte";
   import "../app.css";
 
   let app = $state<AppState | null>(null);
   let fatal = $state("");
-  let view = $state<"projects" | "settings" | "new-identity">("projects");
+  let view = $state<"home" | "projects" | "settings" | "new-identity">("home");
+  // Home's "Make a video": the list opens with the new ONE Video form
+  let startNew = $state(false);
   let projectDir = $state<string | null>(null);
   let notice = $state("");
   let settingsPage = $state<PageId>("identity");
@@ -77,7 +81,7 @@
     try {
       take(await restoreSettings(dir));
       notice = `Restored from the backup. Add your API keys again in Settings: they are never in a backup.${notice ? " " + notice : ""}`;
-      view = "projects";
+      view = "home";
     } catch (e) {
       restoreError = errorText(e);
     } finally {
@@ -95,13 +99,22 @@
       // keep the last known state
     }
   }
-  async function show(v: "projects" | "settings", page: PageId = settingsPage) {
+  async function show(v: "home" | "projects" | "settings", page: PageId = settingsPage) {
     settingsPage = page;
     if (v === "settings") settingsEpoch++;
+    if (v !== "projects") startNew = false;
     view = v;
     projectDir = null;
     await refreshKeys();
   }
+  // one of the five top menus
+  function menu(m: MenuId) {
+    if (m === "home") return show("home");
+    if (m === "videos") return show("projects");
+    return show("settings", view === "settings" && menuOf(settingsPage) === m ? settingsPage : firstPage(m));
+  }
+  const goto = (page: PageId) => show("settings", page);
+  const current = $derived<MenuId>(view === "home" ? "home" : view === "settings" ? menuOf(settingsPage) : "videos");
   async function openProject(d: string) {
     await refreshKeys();
     projectDir = d;
@@ -113,7 +126,7 @@
       take(await setActiveIdentity(id));
       settingsEpoch++;
       projectDir = null;
-      if (view === "new-identity") view = "projects";
+      if (view === "new-identity") view = "home";
     } catch (e) {
       notice = errorText(e);
     }
@@ -124,18 +137,6 @@
     setScreen("new-identity");
     view = "new-identity";
     projectDir = null;
-  }
-
-  async function importOne() {
-    const path = await open({ multiple: false, directory: false, filters: [{ name: "Identity", extensions: ["zip"] }] });
-    if (typeof path !== "string") return;
-    try {
-      take(await importIdentity(path));
-      notice = `Imported "${app?.identity?.name}". Its own API keys are not in the file: add them on its "AI and keys" page if it needs any.`;
-      await show("settings", "identity");
-    } catch (e) {
-      notice = errorText(e);
-    }
   }
 
   async function openJob(j: Job) {
@@ -178,11 +179,11 @@
         {choose}
         {newIdentity}
         duplicate={() => show("settings", "identity")}
-        importIdentity={importOne}
         settings={() => show("settings", "identity")}
       />
-      <button type="button" class:active={view === "projects"} onclick={() => show("projects")}>{ONE_VIDEO}</button>
-      <button type="button" class:active={view === "settings"} onclick={() => show("settings", "identity")}>Settings</button>
+      {#each MENUS as m (m.id)}
+        <button type="button" class:active={current === m.id} onclick={() => menu(m.id)}>{m.title}</button>
+      {/each}
       <Jobs {openJob} />
     </nav>
     {#if notice}
@@ -198,22 +199,26 @@
         bind:keys
         only={IDENTITY_STEPS}
         save={saveNew}
-        done={(s) => { take(s); view = "projects"; }}
-        cancel={() => (view = "projects")}
+        done={(s) => { take(s); view = "home"; }}
+        cancel={() => (view = "home")}
         title="New Identity"
         newIdentity
       />
     {:else if view === "settings"}
       {#key settingsEpoch}
-        <Settings {app} saved={take} startPage={settingsPage} />
+        <Settings {app} saved={take} startPage={settingsPage} {goto} />
       {/key}
     {:else if projectDir}
       {#key projectDir}
-        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} saved={take} />
+        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} saved={take} connections={() => goto("connections")} />
+      {/key}
+    {:else if view === "home"}
+      {#key app.identity.id}
+        <Home {app} {goto} {openProject} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
       {/key}
     {:else}
       {#key app.identity.id}
-        <Projects {app} {openProject} />
+        <Projects {app} {openProject} {startNew} />
       {/key}
     {/if}
     {#snippet failed(error, reset)}

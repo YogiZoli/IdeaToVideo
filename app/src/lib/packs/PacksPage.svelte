@@ -1,11 +1,11 @@
 <script lang="ts">
-  // PacksPage: Settings, Identity, Scenes (DECISIONS 107). Block packs are
+  // PacksPage: Wizards, Scenes (DECISIONS 107). Block packs are
   // scene types someone designed, imported per Identity from an .itvpack
   // file: the planner may use their blocks, the Scenes tab offers them as
   // swaps. On and off per pack and per block; a pack keeps its own look or
-  // follows this Identity's Brand. Export gives the pack back as a file.
+  // follows this Identity's Brand. Import and Export are on Settings,
+  // Import & Export (DECISIONS 119).
   import { onMount } from "svelte";
-  import { open, save } from "@tauri-apps/plugin-dialog";
   import { runner, errorText } from "../api";
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
@@ -18,6 +18,7 @@
   let busy = $state("");
   let saved = $state("");
   let openId = $state<string | null>(null);
+  let { goto }: { goto?: (page: "transfer") => void } = $props();
 
   async function load() {
     try {
@@ -27,38 +28,6 @@
     }
   }
   onMount(load);
-
-  async function importOne() {
-    error = "";
-    saved = "";
-    const file = await open({ multiple: false, directory: false, filters: [{ name: "IdeaToVideo pack", extensions: ["itvpack"] }] });
-    if (typeof file !== "string") return;
-    busy = "Checking and importing the pack...";
-    try {
-      const r = await runner<{ id: string; name: string; blocks: number }>("pack-import", { file });
-      saved = `Imported: ${r.name}, ${r.blocks} scene types.`;
-      log("pack_imported", { id: r.id, blocks: r.blocks });
-      await load();
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = "";
-    }
-  }
-
-  async function exportOne(p: Pack) {
-    error = "";
-    saved = "";
-    const file = await save({ title: "Export pack", defaultPath: `${p.id}.itvpack`, filters: [{ name: "IdeaToVideo pack", extensions: ["itvpack"] }] });
-    if (!file) return;
-    try {
-      const r = await runner<{ file: string }>("pack-export", { id: p.id, file });
-      saved = `Saved: ${r.file}`;
-      log("pack_exported", { id: p.id });
-    } catch (e) {
-      error = errorText(e);
-    }
-  }
 
   async function removeOne(p: Pack) {
     error = "";
@@ -89,7 +58,7 @@
   <h2>Scene packs</h2>
   <p class="hint">Extra scene types someone designed, imported from a pack file (.itvpack). The AI may use them when it plans your scenes, and you can swap them in on the Scenes tab. They belong to this Identity; an Identity export takes them along.</p>
   {#if error}<ErrorBox message={error} context={{ step: "packs" }} />{/if}
-  <div class="row"><button type="button" class="primary" disabled={!!busy} onclick={importOne}>Import pack</button></div>
+  <p class="hint">Import a pack file, or export one: {#if goto}<button type="button" class="link" onclick={() => goto("transfer")}>Settings, Import & Export</button>{:else}Settings, Import & Export{/if}.</p>
   {#if busy}<p class="busy">{busy}</p>{/if}
   {#if saved}<p class="saved">{saved}</p>{/if}
 
@@ -105,7 +74,6 @@
         <label class="radio"><input type="checkbox" checked={p.followBrand} onchange={(e) => setState(p, { followBrand: e.currentTarget.checked })} /> Use this Identity's Brand colors and font (off: the pack's own look)</label>
         <div class="row">
           <button type="button" class="ghost" onclick={() => (openId = openId === p.id ? null : p.id)}>{openId === p.id ? "Hide the scene types" : "Choose scene types"}</button>
-          <button type="button" onclick={() => exportOne(p)}>Export pack</button>
           <button type="button" class="ghost" onclick={() => removeOne(p)}>Remove</button>
         </div>
         {#if openId === p.id}
@@ -133,4 +101,5 @@
   .blocks li { display: grid; gap: 2px; }
   .busy { font-weight: 600; }
   .saved { padding: 10px 12px; border-radius: 8px; background: var(--success-surface, #e7f6ec); color: var(--success, #1f7a3a); font-weight: 600; }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // MotionPage: Settings, Identity, Motion. What the Identity's videos do
+  // MotionPage: Wizards, Motion. What the Identity's videos do
   // between and behind their scenes, and the way into the Motion wizard
   // (docs/wizards/motion.md 6).
   import { onMount } from "svelte";
