@@ -80,6 +80,18 @@ test("Generate with HeyGen (DECISIONS 119): the clip plays once it exists, the n
   assert.equal(ctaPlan(p, segs)[0].mode, "segment");
 });
 
+test("one video's own choice (DECISIONS 120): upload, previous HeyGen clip, or none", () => {
+  const segs = [
+    { id: "u1", keyword: "GUIDE", name: "GUIDE", file: "u1.mp4", seconds: 9, source: "upload", createdAt: "2026-10-08", lastUsedAt: null },
+    { id: "h1", keyword: "COURSE", name: "COURSE", file: "h1.mp4", seconds: 6, source: "heygen", createdAt: "2026-10-08", lastUsedAt: null },
+  ];
+  const plan = (mode) => ctaPlan(normalizeProfile({ slots: { start: "GUIDE", middle: "COURSE", end: null }, modes: { start: mode, middle: mode }, modesV: 2 }), segs).map((c) => c.mode).join(" ");
+  assert.equal(plan("upload"), "segment narrator", "only the uploaded clip plays");
+  assert.equal(plan("previous"), "narrator segment", "only the earlier HeyGen clip plays");
+  assert.equal(plan("narrator"), "narrator narrator", "no avatar");
+  assert.equal(plan("heygen-new"), "segment segment", "the new clip is made before the script and then plays");
+});
+
 test("where a segment goes: after OPEN, after the highest-value section, after OWN", () => {
   const blocks = [{ heading: "OPEN" }, { heading: "1. A" }, { heading: "2. B" }, { heading: "3. C" }, { heading: "OWN" }];
   assert.deepEqual(insertAfter(blocks, { sections: [{}, { highestValue: true }, {}] }), { start: 0, middle: 2, end: 4 });

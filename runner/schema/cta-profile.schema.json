@@ -16,13 +16,13 @@
       }
     },
     "modes": {
-      "$comment": "Per place: the narrator says the call, or one of the Identity's segments plays it (cta/segments.mjs); auto (the default): a segment when the keyword has one; heygen: HeyGen makes the keyword's clip at the start of the next video (the app does it before the script), then it plays like a segment (DECISIONS 119).",
+      "$comment": "Per place: the narrator says the call, or one of the Identity's segments plays it (cta/segments.mjs); auto (the default): a segment when the keyword has one; heygen: HeyGen makes the keyword's clip at the start of the next video (the app does it before the script), then it plays like a segment (DECISIONS 119). Chosen per video (DECISIONS 120): upload = only an uploaded clip; previous = only a HeyGen clip made or imported before; heygen-new = HeyGen makes a new clip before the script.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "start": { "enum": ["narrator", "segment", "auto", "heygen"] },
-        "middle": { "enum": ["narrator", "segment", "auto", "heygen"] },
-        "end": { "enum": ["narrator", "segment", "auto", "heygen"] }
+        "start": { "enum": ["narrator", "segment", "auto", "heygen", "upload", "previous", "heygen-new"] },
+        "middle": { "enum": ["narrator", "segment", "auto", "heygen", "upload", "previous", "heygen-new"] },
+        "end": { "enum": ["narrator", "segment", "auto", "heygen", "upload", "previous", "heygen-new"] }
       }
     },
     "endScreen": { "enum": [0, 5, 10, 15, 20] },

@@ -1,10 +1,19 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-08 (UI egyszerűsítés, DECISIONS 119)
+Frissítve: 2026-10-08 este (avatar-választás, DECISIONS 120)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-08 este)
+
+- **Videónként négy választás a hívásokra** (120): feltöltött klip, HeyGen új,
+  HeyGen korábbi, avatar nélkül; nincs alapértelmezett, a HeyGen soha nem
+  automatikus. Szürke opció mellett link a pótláshoz.
+- **Javítva a naplóból:** a Script tab packaging (cím, összefoglaló, tagek)
+  és a tokens.css import a telepített appban (a mag engedélylistája), teszttel.
+- Telepítők (Windows és Mac): a merge után, a G:/My Drive/IdeaToVideo-pilot/ alá.
 
 ## Most (2026-10-08, UI egyszerűsítés)
 

@@ -256,7 +256,7 @@ export type MotionPreview = { file: string; seconds: number; renderSeconds: numb
 export type CtaSlot = "start" | "middle" | "end";
 export type CtaKeyword = { keyword: string; temperature: "cold" | "warm" | "hot"; gets: string };
 export type CtaTemperature = { label: string; meaning: string; dot: string; surface: string; text: string };
-export type CtaMode = "narrator" | "segment" | "auto" | "heygen";
+export type CtaMode = "narrator" | "segment" | "auto" | "heygen" | "upload" | "previous" | "heygen-new";
 export type CtaProfile = {
   schema?: string;
   updatedAt?: string;

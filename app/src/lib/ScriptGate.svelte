@@ -32,6 +32,7 @@
     changed,
     saved,
     goto,
+    openPage,
   }: {
     app: AppState;
     dir: string;
@@ -44,6 +45,7 @@
     changed: () => Promise<void>;
     saved: (s: AppState) => void;
     goto?: (t: "voice") => void;
+    openPage?: (page: "cta" | "connections" | "voice") => void;
   } = $props();
 
   const COMMANDS = ["write-script", "save-script", "keyword-ideas"];
@@ -190,7 +192,7 @@
     <span class="hint">minutes</span>
   </div>
 
-  <VideoCalls bind:own={ownCalls} used={calls} disabled={locked} />
+  <VideoCalls {app} bind:own={ownCalls} used={calls} disabled={locked} {openPage} />
 
   <details class="angle">
     <summary>Your own angle and natural voice <span class="hint">(optional{angle.trim() ? ", angle added" : ""}{humanize !== "off" ? `, natural voice ${humanize}` : ""})</span></summary>
