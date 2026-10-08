@@ -53,7 +53,8 @@ export function normalizeProfile(input) {
     const m = input.modes?.[id];
     // heygen (DECISIONS 119): HeyGen makes the clip before the next script;
     // until it exists it reads as auto.
-    modes[id] = m === "segment" || m === "heygen" || (m === "narrator" && input.modesV === 2) ? m : "auto";
+    // upload, previous, heygen-new: one ONE Video's own choice (DECISIONS 120)
+    modes[id] = ["segment", "heygen", "upload", "previous", "heygen-new"].includes(m) || (m === "narrator" && input.modesV === 2) ? m : "auto";
   }
   const offers = {};
   for (const [k, text] of Object.entries(input.offers ?? {})) {
@@ -117,7 +118,13 @@ export function ctaPlan(profile, segments = []) {
     const mode = p.modes?.[slot] ?? "auto";
     if (mode === "narrator") return base;
     const seg = segmentFor(segments, info.keyword);
+    if (mode === "upload" || mode === "previous") {
+      const fits = seg && (seg.source === "upload") === (mode === "upload");
+      if (fits) return { ...base, mode: "segment", segment: seg };
+      return { ...base, note: `No ${mode === "upload" ? "uploaded" : "earlier HeyGen"} clip for ${info.keyword}, so the narrator says it.` };
+    }
     if (seg) return { ...base, mode: "segment", segment: seg };
+    if (mode === "heygen-new") return { ...base, note: `No HeyGen clip for ${info.keyword} yet, so the narrator says it.` };
     if (mode === "heygen") return { ...base, note: `No HeyGen clip for ${info.keyword} yet, so the narrator says it.` };
     return mode === "segment" ? { ...base, note: `No segment for ${info.keyword} yet, so the narrator says it.` } : base;
   });

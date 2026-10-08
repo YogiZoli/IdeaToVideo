@@ -256,8 +256,9 @@
           <button type="button" disabled={locked || !lookId || !which.length || !plan} onclick={make}>{current ? "Make the clips again" : "Make the avatar clips"}</button>
         </Advanced>
       {:else}
-        <Advanced><button type="button" disabled={locked} onclick={skip}>Continue without an avatar</button></Advanced>
-        <button type="button" class="primary" disabled={locked || !lookId || !which.length || !plan} onclick={make}>Make the avatar clips</button>
+        <!-- no default (DECISIONS 120): both ways side by side -->
+        <button type="button" disabled={locked || !lookId || !which.length || !plan} onclick={make}>Make the avatar clips (HeyGen)</button>
+        <button type="button" class="primary" disabled={locked} onclick={skip}>Continue without an avatar</button>
       {/if}
       {#if current && !approved}<button type="button" class="primary" disabled={locked} onclick={approve}>Approve and continue</button>{/if}
       {#if approved || (skipped && !current)}<button type="button" class="primary" onclick={() => goto("preview")}>Go to 5. Preview</button>{/if}

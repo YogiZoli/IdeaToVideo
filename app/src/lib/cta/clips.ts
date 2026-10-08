@@ -4,8 +4,10 @@
 //   previous  a HeyGen clip made or imported before (it is the segment)
 //   heygen    HeyGen makes it at the start of the next video, then it is kept
 //   narrator  the narrator says the call, no avatar (the CTA scene)
-// The default depends on what there is: an uploaded segment, else a HeyGen
-// clip used before, else HeyGen when it is connected, else the narrator.
+// No source wins by itself (Zoltan, 2026-10-08, DECISIONS 120): a clip
+// there is plays, else the narrator; HeyGen only when it is chosen. Each
+// ONE Video chooses its own at gate 1 (VideoCalls): upload, previous,
+// heygen-new or none.
 // Stored in the CTA profile's modes: upload and previous are "segment",
 // narrator "narrator", heygen "heygen"; "auto" means the default.
 import type { AppState, CtaMode, CtaSegment } from "../api";
@@ -27,8 +29,8 @@ const segSource = (seg: CtaSegment | null): ClipSource | null => (!seg ? null : 
 /** HeyGen can make a clip: a key and an avatar look. */
 export const heygenReady = (app: AppState) => !!app.keys["heygen"] && !!(app.identity?.avatar?.lookId ?? app.config?.avatar?.lookId);
 
-export function defaultSource(seg: CtaSegment | null, heygen: boolean): ClipSource {
-  return segSource(seg) ?? (heygen ? "heygen" : "narrator");
+export function defaultSource(seg: CtaSegment | null, _heygen = false): ClipSource {
+  return segSource(seg) ?? "narrator";
 }
 
 /** The source a place uses now, from its saved mode. */
@@ -36,6 +38,9 @@ export function effectiveSource(mode: CtaMode | undefined, seg: CtaSegment | nul
   if (mode === "narrator") return "narrator";
   if (mode === "segment") return segSource(seg) ?? "narrator";
   if (mode === "heygen") return segSource(seg) ?? (heygen ? "heygen" : "narrator");
+  if (mode === "heygen-new") return heygen ? "heygen" : (segSource(seg) ?? "narrator");
+  if (mode === "upload") return seg?.source === "upload" ? "upload" : "narrator";
+  if (mode === "previous") return seg && seg.source !== "upload" ? "previous" : "narrator";
   return defaultSource(seg, heygen);
 }
 
@@ -87,7 +92,10 @@ export async function pendingHeygen(app: AppState, own: Calls | null = null): Pr
     const k = p.slots[slot];
     if (!k || out.some((x) => x.keyword === k)) continue;
     const seg = st.segments.find((s) => s.keyword === k) ?? null;
-    if (effectiveSource(p.modes?.[slot] as CtaMode | undefined, seg, true) !== "heygen") continue;
+    const mode = p.modes?.[slot] as CtaMode | undefined;
+    // heygen: only a missing clip; heygen-new: a new one even if there is one
+    // never over an uploaded clip: one clip per keyword, and a new one replaces the old
+    if (mode === "heygen-new" ? seg?.source === "upload" : effectiveSource(mode, seg, true) !== "heygen") continue;
     const info = st.options.keywords.find((x) => x.keyword === k);
     out.push({ keyword: k, text: callText(k, p.offers?.[k] ?? info?.gets ?? "the details") });
   }

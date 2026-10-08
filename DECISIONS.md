@@ -1673,3 +1673,38 @@
       minden régi oldal megvan), `runner/segments.test.mjs` (`heygen` mód).
       Node 279 zöld (2 éles kihagyva), Rust 48, e2e 39/39, UI check 0 hiba;
       az oldalak a `scripts/ui-mock`-kal megnézve. Telepítő nem készült.
+
+120. **Ki mondja a hívásokat: videónként négy választás, nincs alapértelmezett**
+    (Zoltan, 2026-10-08 este, a 119 próbája után; branch `avatar-choice`):
+    - **A gond:** HeyGen kulccsal az app mindig a HeyGent ajánlotta (a 119
+      szerint a HeyGen lett az alap, ha be van kötve), a feltöltött
+      szegmenst nem lehetett választani, akkor sem, amikor a HeyGen keret
+      elfogyott. Az Avatar tabon a "Continue without an avatar" az
+      Advanced alá került (D6).
+    - **Most:** a Script tabon minden videónál "Who says the calls in this
+      video?" négy opcióval: My uploaded clips, HeyGen avatar newly
+      generated, HeyGen avatar previously used, No avatar. Nincs
+      előválasztás. Ami most nem működhet, szürke, mellette link a helyére:
+      feltöltés nélkül "Add one in Wizards, CTA"; HeyGen kulcs nélkül "You
+      have not added a HeyGen key yet. Add it here" (Connections); avatar
+      look nélkül Identity, Voice & Avatar. A "previously used" csak
+      kulccsal és korábbi HeyGen klippel választható.
+    - **Új CTA módok** (séma `cta-profile`): `upload` (csak feltöltött klip),
+      `previous` (csak korábbi HeyGen klip), `heygen-new` (új HeyGen klip a
+      script előtt). A videó saját hívásaiban mindhárom helyre ugyanaz.
+      Ahol a választott klip nincs, a narrátor mondja.
+    - **A HeyGen soha nem automatikus:** az Identity alapja ("auto") már nem
+      vált HeyGenre; ami klip van, az játszik, különben a narrátor. A
+      "newly generated" egy feltöltött klipet soha nem ír felül (egy
+      kulcsszónak egy klipje van, az új a régit cserélné).
+    - **Avatar tab:** klipek nélkül a "Make the avatar clips (HeyGen)" és a
+      "Continue without an avatar" egymás mellett, a kihagyás a kiemelt.
+    - **Hiba a naplóból:** a Rust mag engedélylistájáról hiányzott a
+      `packaging-state`, `packaging-save`, `packaging-make` és a
+      `brand-import`: a Script tab címei, összefoglalója és tagjei
+      ("Unknown runner command") és a tokens.css import nem működött a
+      telepített appban. Felvéve; új teszt (`scripts/app/commands.test.mjs`)
+      ellenőrzi, hogy minden parancs, amit a UI hív, a magban és a
+      runnerben is megvan.
+    - Tesztek: Node 281 zöld (2 éles kihagyva), Rust 48, e2e 39/39, UI check
+      0 hiba; a Script tab a `scripts/ui-mock`-kal megnézve.

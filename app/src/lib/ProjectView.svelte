@@ -26,7 +26,7 @@
   import { notifyDone } from "./notify";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
-  let { app, dir: dirProp, back, saved, connections }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void; connections?: () => void } = $props();
+  let { app, dir: dirProp, back, saved, connections, openPage }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void; connections?: () => void; openPage?: (page: "cta" | "connections" | "voice") => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
   // render) keeps writing to it even if the user opens Settings meanwhile.
   const dir = untrack(() => dirProp);
@@ -263,7 +263,7 @@
 
     <div class="body" bind:this={body}>
       {#if active === "script"}
-        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} goto={show} />
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}

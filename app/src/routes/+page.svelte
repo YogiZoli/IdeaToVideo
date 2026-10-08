@@ -210,7 +210,7 @@
       {/key}
     {:else if projectDir}
       {#key projectDir}
-        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} saved={take} connections={() => goto("connections")} />
+        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} saved={take} connections={() => goto("connections")} openPage={goto} />
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}

@@ -108,6 +108,11 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("broll-again", None),
     ("broll-remove", None),
     ("card-send", Some(&["service"])),
+    // were missing: the UI called them, the core refused them (2026-10-08 log)
+    ("packaging-state", None),
+    ("packaging-save", None),
+    ("packaging-make", Some(&["llm", "provider"])),
+    ("brand-import", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {
