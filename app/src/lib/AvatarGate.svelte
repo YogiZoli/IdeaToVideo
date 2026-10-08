@@ -11,6 +11,7 @@
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { onDestroy } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
+  import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
   import LayoutPicker from "./LayoutPicker.svelte";
@@ -249,10 +250,16 @@
       {:else}
         <span class="say">Pick who says it, then make the clips. Or go on without an avatar.</span>
       {/if}
-      {#if current}<button type="button" class="ghost" disabled={locked} onclick={remove}>Remove the avatar</button>{/if}
-      {#if !current && !skipped && !approved}<button type="button" disabled={locked} onclick={skip}>Continue without an avatar</button>{/if}
-      <button type="button" class={current || skipped || approved ? "" : "primary"} disabled={locked || !lookId || !which.length || !plan} onclick={make}>{current ? "Make the clips again" : "Make the avatar clips"}</button>
-      {#if current && !approved}<button type="button" class="primary" disabled={locked} onclick={approve}>Approve the avatar</button>{/if}
+      {#if current || skipped || approved}
+        <Advanced>
+          {#if current}<button type="button" disabled={locked} onclick={remove}>Remove the avatar</button>{/if}
+          <button type="button" disabled={locked || !lookId || !which.length || !plan} onclick={make}>{current ? "Make the clips again" : "Make the avatar clips"}</button>
+        </Advanced>
+      {:else}
+        <Advanced><button type="button" disabled={locked} onclick={skip}>Continue without an avatar</button></Advanced>
+        <button type="button" class="primary" disabled={locked || !lookId || !which.length || !plan} onclick={make}>Make the avatar clips</button>
+      {/if}
+      {#if current && !approved}<button type="button" class="primary" disabled={locked} onclick={approve}>Approve and continue</button>{/if}
       {#if approved || (skipped && !current)}<button type="button" class="primary" onclick={() => goto("preview")}>Go to 5. Preview</button>{/if}
     </div>
   {/if}

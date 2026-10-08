@@ -89,7 +89,7 @@
   <p class="hint">Free stock photos and videos from <button type="button" class="link" onclick={() => openUrl("https://pixabay.com/")}>Pixabay</button> and photos from <button type="button" class="link" onclick={() => openUrl(UNSPLASH_HOME)}>Unsplash</button>, free for commercial use. What you pick goes into your footage; a photo becomes a slow push-in clip. Plan the scenes again to use them.</p>
   {#if open}
     {#if !hasKey}
-      <p class="warn">Add a free Pixabay key or your Unsplash Access Key first: Settings, Identity, Footage, "Stock photos and videos".</p>
+      <p class="warn">Add a free Pixabay key or your Unsplash Access Key first: Settings, Connections.</p>
     {:else}
       {#if error}<ErrorBox message={error} context={{ step: "stock", provider: source }} />{/if}
       {#if keyed.length > 1}

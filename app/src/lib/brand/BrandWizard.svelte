@@ -8,7 +8,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { convertFileSrc } from "@tauri-apps/api/core";
   import type { AppState, BrandCard, BrandState, CardColors, Still } from "../api";
-  import { runner, importLogo, errorText, readTokensFile, HYPERFRAMES_GROUP } from "../api";
+  import { runner, importLogo, errorText, HYPERFRAMES_GROUP } from "../api";
   import { ensureFonts } from "./fontsDom";
   import { contrastReport, deriveFrom, fontPairs, previewFamily, paletteFromPixels, normHex, SAMPLE_LINE, COLOR_ROLES, fileName } from "../brand";
   import { log } from "../logger";
@@ -75,25 +75,7 @@
     }
   });
 
-  // "Import tokens.css": a design system's tokens (Claude Design,
-  // open-design, shadcn...) become the card to edit; nothing is saved yet.
-  async function importTokens() {
-    error = "";
-    notice = "";
-    const path = await open({ multiple: false, directory: false, filters: [{ name: "Design tokens", extensions: ["css"] }] });
-    if (typeof path !== "string") return;
-    try {
-      const text = await readTokensFile(path);
-      const r = await runner<{ card: BrandCard; fonts: string[] }>("brand-import", { text, fileName: fileName(path) });
-      const keep = { logo: card!.logo, nameplate: card!.nameplate };
-      card = { ...r.card, ...keep };
-      log("brand_tokens_imported", { fonts: r.fonts.length });
-      notice = `Imported from ${fileName(path)}.${r.fonts.length ? ` Fonts the app does not ship were replaced by free look-alikes: ${[...new Set(r.fonts)].join(", ")}.` : ""} Check it on the next screens, then Save.`;
-    } catch (e) {
-      error = errorText(e);
-    }
-  }
-
+  // "Import tokens.css" moved to Settings, Import & Export (DECISIONS 119).
   function usePreset(id: string) {
     const p = st!.presets.find((x) => x.id === id)!;
     const keep = { logo: card!.logo, nameplate: card!.nameplate };
@@ -223,8 +205,8 @@
       <div class="starts">
         <button type="button" class="start" onclick={() => (step = 1)}><b>From my logo</b><span>Upload your logo, then pick colors from it.</span></button>
         <button type="button" class="start" onclick={() => { card!.source = { kind: "scratch" }; step = 2; }}><b>From scratch</b><span>Start from your current look and change it.</span></button>
-        <button type="button" class="start" onclick={importTokens}><b>Import tokens.css</b><span>From Claude Design, open-design or any design system's tokens file.</span></button>
       </div>
+      <p class="hint">Have a tokens.css from Claude Design, open-design or another design system? Import it on Settings, Import & Export; it becomes this look, and you fine-tune it here.</p>
       <h2>Or pick a look</h2>
       <div class="filter">
         <select bind:value={group} aria-label="Group" disabled={!!search.trim()}>

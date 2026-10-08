@@ -1,22 +1,25 @@
 <script lang="ts">
-  // Settings: every onboarding field, editable any time (PRD 5), split into
-  // sub-pages (pages.ts) in two groups (docs/identity.md 7): "App", for every
-  // Identity on this computer, and the active Identity's own pages. Each page
+  // The pages of the Wizards, Identity and Settings menus (pages.ts,
+  // DECISIONS 119): every onboarding field, editable any time (PRD 5), one
+  // page at a time, the menu's pages on the left. A page edits the App
+  // (every Identity) or the active Identity (docs/identity.md 2). Each page
   // can re-run its part of the setup wizard. Keys save immediately; the rest
   // on "Save settings".
   import { untrack } from "svelte";
   import { open, save as saveDialog, ask } from "@tauri-apps/plugin-dialog";
   import type { Config, AppState, AppConfig, Llm } from "./api";
-  import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity, exportIdentity } from "./api";
+  import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity } from "./api";
   import { cleanConfig, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
-  import { SETTINGS_PAGES, GROUP_NOTE, type PageId } from "./pages";
+  import { SETTINGS_PAGES, MENU_NOTE, menuOf, type PageId } from "./pages";
   import { identityFromConfig, roomForIdentity, copyName } from "./identity";
   import { planText, fullPlanText, PRODUCT } from "./edition";
   import { refreshKeySources } from "./keystate.svelte";
   import ConfigSection from "./ConfigSection.svelte";
   import AiSection from "./AiSection.svelte";
   import KeyField from "./KeyField.svelte";
+  import ConnectionRow from "./ConnectionRow.svelte";
+  import TransferPage from "./TransferPage.svelte";
   import Onboarding from "./Onboarding.svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import BackupSettings from "./BackupSettings.svelte";
@@ -37,7 +40,7 @@
   import { log, setScreen, changedPaths } from "./logger";
 
 
-  let { app, saved, startPage = "identity" }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId } = $props();
+  let { app, saved, startPage = "identity", goto }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId; goto: (page: PageId) => void } = $props();
 
   // working copies: edits stay local until "Save settings". $state.snapshot,
   // not structuredClone: a reactive proxy cannot be cloned (DataCloneError).
@@ -47,7 +50,11 @@
   let config = $state<Config>(untrack(() => snap(app.config!)));
   let ownLlm = $state(untrack(() => !!app.identity?.llm));
   let identLlm = $state<Llm>(untrack(() => snap(app.identity?.llm ?? app.app!.llm)));
-  let keys = $state(untrack(() => ({ ...app.keys })));
+  // every key a field can bind to, false when not set (a bound prop with a
+  // fallback must not get undefined)
+  const KEY_NAMES = [...LLM_PROVIDERS.map((p) => p.id), "elevenlabs", "heygen", "pixabay", "unsplash", "vidiq", "publishing"];
+  const allKeys = (k: Record<string, boolean>) => ({ ...Object.fromEntries(KEY_NAMES.map((n) => [n, false])), ...k });
+  let keys = $state(untrack(() => allKeys(app.keys)));
   let busy = $state(false);
   let message = $state("");
   let error = $state("");
@@ -81,6 +88,7 @@
     const path = await saveDialog({ defaultPath: `${app.identity!.name}.brand.zip`, filters: [{ name: "Brand Identity Card", extensions: ["zip"] }] });
     if (typeof path !== "string") return;
     await run(async () => {
+      if (!brand) await loadBrand();
       if (!brand?.own) await runner("brand-save", { card: $state.snapshot(brand!.card) });
       const out = await exportBrand(path);
       message = `Exported to ${out}: the Brand Identity Card, its FRAME.md and the logos.`;
@@ -116,8 +124,13 @@
     });
   }
   const page = $derived(SETTINGS_PAGES.find((p) => p.id === pageId)!);
-  const GROUPS = ["app", "identity"] as const;
-  const appProvider = $derived(LLM_PROVIDERS.find((p) => p.id === appCfg.llm.provider) ?? LLM_PROVIDERS[0]);
+  const menu = $derived(menuOf(pageId));
+  // a page of this menu opens here; one of another menu through the shell
+  function openPage(id: PageId) {
+    message = "";
+    if (menuOf(id) === menu) pageId = id;
+    else goto(id);
+  }
 
   let dupName = $state(untrack(() => copyName(app.identity?.name ?? "", app.identities.map((i) => i.name))));
   let dupKeys = $state(untrack(() => app.edition.copyKeysDefault));
@@ -128,7 +141,7 @@
     config = snap(s.config!);
     ownLlm = !!s.identity?.llm;
     identLlm = snap(s.identity?.llm ?? s.app!.llm);
-    keys = { ...s.keys };
+    keys = allKeys(s.keys);
     dupName = copyName(s.identity?.name ?? "", s.identities.map((i) => i.name));
   }
 
@@ -169,7 +182,7 @@
 
   // the wizard of one page: an App page edits the App's AI, the others the Identity
   function wizardSave(c: Config): Promise<AppState> {
-    if (page.group === "app") {
+    if (page.scope === "app") {
       appCfg.llm = { ...c.llm };
       return persist(config);
     }
@@ -191,7 +204,7 @@
     if (!(await ask("Remove every API key this app saved in the system keychain, for the App and every Identity? You can add them again any time.", { title: "Remove all keys", kind: "warning" }))) return;
     await run(async () => {
       await deleteAllKeys();
-      keys = await refreshKeySources();
+      keys = allKeys(await refreshKeySources());
       message = "All keys removed from the system keychain.";
     });
   }
@@ -207,15 +220,6 @@
       after(s, `Made "${s.identity?.name}". You are now working in it. Change what is different, for example the name, the YouTube channel and the language.`);
       pageId = "identity";
     });
-
-  async function exportIt() {
-    const path = await saveDialog({ defaultPath: `${app.identity!.name}.identity.zip`, filters: [{ name: "Identity", extensions: ["zip"] }] });
-    if (typeof path !== "string") return;
-    await run(async () => {
-      const out = await exportIdentity(app.identity!.id, path);
-      message = `Exported to ${out}. No API key is in the file.`;
-    });
-  }
 
   async function remove() {
     const name = app.identity!.name;
@@ -243,29 +247,27 @@
     save={wizardSave}
     done={wizardDone}
     cancel={() => (wizard = false)}
-    keyScope={page.group === "app" ? "app" : "identity"}
-    title={page.group === "identity" ? app.identity?.name : "App"}
+    keyScope={page.scope === "app" ? "app" : "identity"}
+    title={page.scope === "identity" ? app.identity?.name : "App"}
   />
 {:else}
 <div class="layout">
   <nav class="pages">
-    {#each GROUPS as group}
-      <div class="group">
-        <span class="gname">{group === "app" ? "App" : app.identity?.name}</span>
-        <span class="gnote">{GROUP_NOTE[group]}</span>
-      </div>
-      {#each SETTINGS_PAGES.filter((p) => p.group === group) as p}
-        <button type="button" class:current={p.id === pageId} onclick={() => { pageId = p.id; message = ""; }}>{p.title}</button>
-      {/each}
+    <div class="group">
+      <span class="gname">{menu === "settings" ? "Settings" : menu === "wizards" ? "Wizards" : app.identity?.name}</span>
+      <span class="gnote">{MENU_NOTE[menu]}</span>
+    </div>
+    {#each SETTINGS_PAGES.filter((p) => p.menu === menu) as p}
+      <button type="button" class:current={p.id === pageId} onclick={() => openPage(p.id)}>{p.title}</button>
     {/each}
   </nav>
   <div class="page">
     <header>
       <div>
-        <p class="for">{page.group === "app" ? "Settings for all Identities" : `Settings for: ${app.identity?.name}`}</p>
+        <p class="for">{page.scope === "app" ? "For the whole app, every Identity" : `For: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      {#if pageId !== "look" && pageId !== "dictionary" && pageId !== "motion" && pageId !== "cta" && pageId !== "footage"}
+      {#if !["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan"].includes(pageId)}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
@@ -279,26 +281,45 @@
       </div>
     {/if}
 
-    {#if pageId === "app-ai"}
+    {#if pageId === "connections"}
       <section class="card">
-        <h2>AI for every Identity</h2>
-        <p class="hint">The default. An Identity can use a different AI on its own "AI and keys" page.</p>
+        <h2>AI</h2>
+        <p class="hint">The AI that writes the scripts, plans the scenes and the small texts, for every Identity.</p>
         <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" steps />
+        <label class="radio own"><input type="checkbox" checked={ownLlm} onchange={(e) => (ownLlm = e.currentTarget.checked)} /> Use a different AI for this Identity ({app.identity?.name})</label>
+        {#if ownLlm}
+          <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" steps /></div>
+        {/if}
+        <p class="hint">Save settings after changing the AI or the model. Keys are saved at once.</p>
       </section>
       <section class="card">
-        <h2>Service keys for every Identity</h2>
-        <p class="hint">An Identity can use its own key instead, for example a client's, so that the costs go to the client.</p>
-        <div class="keys">
-          <KeyField name="elevenlabs" label="ElevenLabs" scope="app" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
-          <KeyField name="heygen" label="HeyGen" scope="app" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
-          <KeyField name="vidiq" label="vidIQ" scope="app" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
-        </div>
+        <h2>AI providers</h2>
+        <p class="hint">Gemini and the other AI providers, for example when one step of the script uses another model.</p>
+        {#each LLM_PROVIDERS as p (p.id)}
+          <ConnectionRow name={p.id} label={p.label} keyUrl={p.keyUrl} identityName={app.identity?.name} bind:isSet={keys[p.id]} test={() => ({ command: "test-llm", provider: p.id, model: p.id === appCfg.llm.provider ? appCfg.llm.model : p.model })} />
+        {/each}
+      </section>
+      <section class="card">
+        <h2>Services</h2>
+        <ConnectionRow name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} hint="The narrator voice and the music." identityName={app.identity?.name} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
+        <ConnectionRow name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} hint="Avatars, CTA clips and AI B-roll." identityName={app.identity?.name} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
+        <ConnectionRow name="pixabay" label="Pixabay" keyUrl={SERVICE_KEY_URLS.pixabay} hint="Free stock photos and videos (Pixabay Content License: also commercially, no credit required)." identityName={app.identity?.name} bind:isSet={keys.pixabay} test={() => ({ command: "test-service", service: "pixabay" })} />
+        <ConnectionRow name="unsplash" label="Unsplash Access Key" keyUrl={SERVICE_KEY_URLS.unsplash} hint="Free stock photos (Unsplash License). Make an app at Unsplash and paste its Access Key, never the Secret key. Demo mode: 50 searches an hour." identityName={app.identity?.name} bind:isSet={keys.unsplash} test={() => ({ command: "test-service", service: "unsplash" })} />
+        <ConnectionRow name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} hint="Optional: keyword data for your topics." identityName={app.identity?.name} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
+      </section>
+      <section class="card">
+        <h2>Publishing</h2>
+        <p class="hint">Where "Send to Publishing" on a finished video sends its publishing card: your publishing app's address and its token. The address starts with https:// (plain http only for localhost). The token is kept in your computer's keychain, never in a file. Save settings after changing the address.</p>
+        <label class="field"><span>Address</span><input type="url" placeholder="https://..." value={appCfg.publishing?.url ?? ""} oninput={(e) => (appCfg.publishing = { url: e.currentTarget.value.trim() || null })} /></label>
+        <KeyField name="publishing" label="Publishing token" scope="app" bind:isSet={keys.publishing} />
       </section>
       <section class="card">
         <h2>Remove all keys</h2>
-        <p class="hint">Keys are stored only in your system keychain. This removes the App keys and every Identity's own keys, for example before you uninstall.</p>
+        <p class="hint">Keys are stored only in your system keychain. This removes the keys for every Identity and every Identity's own keys, for example before you uninstall.</p>
         <div class="row"><button type="button" disabled={busy} onclick={removeAllKeys}>Remove all keys</button></div>
       </section>
+    {:else if pageId === "transfer"}
+      <TransferPage {app} {busy} saved={(s, text) => after(s, text)} {importCard} exportCardFile={exportCard} goto={(id) => openPage(id)} />
     {:else if pageId === "folders"}
       <section class="card">
         <h2>Projects folder</h2>
@@ -312,7 +333,7 @@
         </div>
       </section>
     {:else if pageId === "backup"}
-      <BackupSettings {app} bind:backup={appCfg.backup!} />
+      <BackupSettings {app} bind:backup={appCfg.backup!} goto={(id) => openPage(id)} />
     {:else if pageId === "plan"}
       <section class="card">
         <h2>{app.edition.tier}</h2>
@@ -320,14 +341,6 @@
         <ul class="list">
           {#each app.identities as i}<li>{i.name}</li>{/each}
         </ul>
-      </section>
-    {:else if pageId === "publishing"}
-      <section class="card">
-        <h2>Publishing connection</h2>
-        <p class="hint">Where "Send to Publishing" on the Your video tab sends a finished video's publishing card: your publishing app's address and its token. The address starts with https:// (plain http only for localhost). The token is kept in your computer's keychain, never in a file.</p>
-        <label class="field"><span>Address</span><input type="url" placeholder="https://..." value={appCfg.publishing?.url ?? ""} oninput={(e) => (appCfg.publishing = { url: e.currentTarget.value.trim() || null })} /></label>
-        <KeyField name="publishing" label="Publishing token" scope="app" bind:isSet={keys.publishing} />
-        <p class="hint">Save settings after changing the address.</p>
       </section>
     {:else if pageId === "general"}
       <section class="card about">
@@ -337,7 +350,7 @@
         <p>Also shipped: Node.js (MIT) and FFmpeg (GPL-3.0, a separate program; its source: git.ffmpeg.org and github.com/BtbN/FFmpeg-Builds). The full list with every license: THIRD-PARTY-NOTICES.md in the app's program folder.</p>
         <p>No support, no installation help.</p>
       </section>
-      <LogCard initial={app.log} />
+      <LogCard initial={app.log} goto={(id) => openPage(id)} />
     {:else if pageId === "look"}
       <section class="card brand">
         <h2>Your videos' look</h2>
@@ -355,45 +368,20 @@
           <p class="hint">Loading...</p>
         {/if}
       </section>
-      <section class="card">
-        <h2>Brand Identity Card file</h2>
-        <p class="hint">One file with this look (colors, fonts, shapes, name on screen) and the logos, for another Identity, another computer or your other tools. Import replaces this Identity's look.</p>
-        <div class="row">
-          <button type="button" disabled={busy || !brand} onclick={exportCard}>Export Brand Identity Card</button>
-          <button type="button" disabled={busy} onclick={importCard}>Import Brand Identity Card</button>
-        </div>
-      </section>
+      <p class="hint">The Brand Identity Card as a file, and tokens.css: <button type="button" class="link" onclick={() => openPage("transfer")}>Settings, Import & Export</button>.</p>
     {:else if pageId === "motion"}
       <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
     {:else if pageId === "cta"}
-      <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} />
+      <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} goto={(id) => openPage(id)} />
     {:else if pageId === "scenes"}
-      <ScenesPage refresh={scenesSaved} onopen={() => { message = ""; scenesWizard = true; }} />
+      <ScenesPage refresh={scenesSaved} onopen={() => { message = ""; scenesWizard = true; }} goto={(id) => openPage(id)} />
     {:else if pageId === "footage"}
-      <FootagePage {app} />
+      <FootagePage {app} goto={(id) => openPage(id)} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
-    {:else if pageId === "identity-ai"}
-      <section class="card">
-        <h2>AI for this Identity</h2>
-        <label class="radio"><input type="radio" name="ownllm" checked={!ownLlm} onchange={() => (ownLlm = false)} /> Use the App's AI ({appProvider.label}, {appCfg.llm.model})</label>
-        <label class="radio"><input type="radio" name="ownllm" checked={ownLlm} onchange={() => (ownLlm = true)} /> Use a different AI for this Identity</label>
-        {#if ownLlm}
-          <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" steps /></div>
-        {/if}
-      </section>
-      <section class="card">
-        <h2>Service keys of this Identity</h2>
-        <p class="hint">Without its own key, this Identity uses the App key.</p>
-        <div class="keys">
-          <KeyField name="elevenlabs" label="ElevenLabs" scope="identity" keyUrl={SERVICE_KEY_URLS.elevenlabs} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
-          <KeyField name="heygen" label="HeyGen" scope="identity" keyUrl={SERVICE_KEY_URLS.heygen} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
-          <KeyField name="vidiq" label="vidIQ" scope="identity" keyUrl={SERVICE_KEY_URLS.vidiq} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
-        </div>
-      </section>
     {/if}
 
-    {#each STEPS.filter((s) => page.group === "identity" && page.steps.includes(s.id) && s.id !== "brand") as s (s.id)}
+    {#each STEPS.filter((s) => page.scope === "identity" && page.steps.includes(s.id) && s.id !== "brand") as s (s.id)}
       <section class="card">
         <div class="head">
           <h2>{s.id === "name" ? "Name" : s.title}</h2>
@@ -420,9 +408,8 @@
         {/if}
       </section>
       <section class="card">
-        <h2>Export</h2>
-        <p class="hint">One file with this Identity's settings, logo and look, to start an Identity from it on another computer or for another person. API keys are never in it.</p>
-        <div class="row"><button type="button" disabled={busy} onclick={exportIt}>Export Identity</button></div>
+        <h2>Export and import</h2>
+        <p class="hint">One file with this Identity's settings, logo and look, for another computer or another person: <button type="button" class="link" onclick={() => openPage("transfer")}>Settings, Import & Export</button>.</p>
       </section>
       <section class="card">
         <h2>Delete</h2>
@@ -458,7 +445,6 @@
   .head { display: flex; justify-content: space-between; align-items: center; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row input { flex: 1; }
-  .keys { display: grid; gap: 18px; }
   .radio { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
   .inner { margin-top: 12px; }
   .list { margin: 8px 0 0; padding-left: 18px; color: var(--muted-foreground); }
@@ -467,4 +453,7 @@
   .about p { margin: 4px 0; color: var(--muted-foreground); }
   .brandrow { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 20px; align-items: start; }
   .brandtext p { margin: 0 0 8px; }
+  .own { margin-top: 14px; font-weight: 600; }
+  .field { display: grid; gap: 4px; margin-bottom: 12px; }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
 </style>

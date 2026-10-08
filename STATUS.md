@@ -1,10 +1,27 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-08 (Mac v1, DECISIONS 118)
+Frissítve: 2026-10-08 (UI egyszerűsítés, DECISIONS 119)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-08, UI egyszerűsítés)
+
+- **Új felső menü** (119): Home, Videos, Wizards, Identity, Settings. Home:
+  "Ready to make videos?" lista és a legutóbbi videók. Settings,
+  Connections: minden kulcs egy oldalon, Identityként felülírható.
+  Settings, Import & Export: minden import és export egy oldalon. Wizards,
+  CTA: a házi hármas nagyban, klipforrással ("Generate with HeyGen" új
+  móddal). Videó tabok: egy fő gomb, a többi Advanced alatt; a kész videó
+  fő gombja "Send to Publishing".
+- Funkció nem veszett el, csak máshova került; a régi helyeken link.
+- Tesztek: Node 279 zöld, Rust 48, e2e 39/39, UI check 0 hiba. Telepítő
+  nem készült (Zoltan).
+- QUICKSTART frissítve az új helyekkel (`G:/My Drive/IdeaToVideo-QUICKSTART-Zoltan.md`).
+
+**Következő:** Zoltan kézi próbája az új menüvel (a következő telepítővel);
+a HeyGen éles próba, amikor van keret ("Generate with HeyGen" CTA klippel együtt).
 
 ## Most (2026-10-08)
 

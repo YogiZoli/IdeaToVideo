@@ -405,7 +405,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
 
   const est = estimateBroll({ projectDir, settings, ids });
   if (est.overCap && !allowOverCap) {
-    const e = new Error(`These clips cost about ${est.usd.toFixed(2)} USD; this video's B-roll limit is ${settings.capUsd.toFixed(2)} USD and ${est.spentUsd.toFixed(2)} USD is spent. Confirm the higher amount, raise the limit in Settings, Identity, Footage, or choose fewer clips.`);
+    const e = new Error(`These clips cost about ${est.usd.toFixed(2)} USD; this video's B-roll limit is ${settings.capUsd.toFixed(2)} USD and ${est.spentUsd.toFixed(2)} USD is spent. Confirm the higher amount, raise the limit in Identity, Footage, or choose fewer clips.`);
     e.code = "OVER_CAP";
     throw e;
   }

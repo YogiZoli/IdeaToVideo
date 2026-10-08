@@ -11,7 +11,7 @@
 import * as heygenVideo from "./heygen-video.mjs";
 import * as standin from "./standin.mjs";
 
-// The user's choice in Settings, Identity, Footage, AI B-roll (Zoltan,
+// The user's choice in Identity, Footage, AI B-roll (Zoltan,
 // 2026-10-06): 480p, 768p (the default) and 1080p. HeyGen Video 1 has no
 // 1080p: "1080p" orders its 2k clip (three times the 768p price, 16:9 or
 // 9:16 only), and the render scales it to the video's 1920x1080.

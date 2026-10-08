@@ -34,10 +34,10 @@ export const DEFAULT_PRESET = "balanced";
 
 // Where pictures and video come from; "later" ones are shown but not usable yet.
 export const PICTURE_SOURCES = {
-  footage: { label: "Your own footage", hint: "Clips you added in Settings, Identity, Footage. Free.", kinds: ["video", "image"] },
-  pixabay: { label: "Pixabay", hint: "Free stock photos and videos, also for commercial use. Needs a free Pixabay key (Settings, Identity, Footage).", kinds: ["image", "video"] },
-  unsplash: { label: "Unsplash", hint: "Free stock photos, also for commercial use. Needs your own Unsplash Access Key (Settings, Identity, Footage); Demo mode allows 50 searches an hour.", kinds: ["image"] },
-  "ai-broll": { label: "AI B-roll (HeyGen)", hint: "Generated clips; costs HeyGen API credits, off by default (Settings, Identity, Footage).", kinds: ["video"] },
+  footage: { label: "Your own footage", hint: "Clips you added in Identity, Footage. Free.", kinds: ["video", "image"] },
+  pixabay: { label: "Pixabay", hint: "Free stock photos and videos, also for commercial use. Needs a free Pixabay key (Settings, Connections).", kinds: ["image", "video"] },
+  unsplash: { label: "Unsplash", hint: "Free stock photos, also for commercial use. Needs your own Unsplash Access Key (Settings, Connections); Demo mode allows 50 searches an hour.", kinds: ["image"] },
+  "ai-broll": { label: "AI B-roll (HeyGen)", hint: "Generated clips; costs HeyGen API credits, off by default (Identity, Footage).", kinds: ["video"] },
   "ai-image": { label: "AI pictures", hint: "Generated pictures with your Gemini key. Coming soon; costs a little per picture.", kinds: ["image"], later: true },
 };
 

@@ -1,4 +1,22 @@
-# UI egyszerűsítés: javaslatok (2026-10-08, még nem épül)
+# UI egyszerűsítés (2026-10-08)
+
+**Állapot: megépült** (Zoltan feladata, 2026-10-08, DECISIONS 119, branch
+`ui-simplify`). Mi kész:
+
+| Pont | Kész | Hol |
+|---|---|---|
+| D1 Felső menü: Home, Videos, Wizards, Identity, Settings, menünként legfeljebb 6 oldal | kész | `app/src/lib/pages.ts`, `routes/+page.svelte`, `Settings.svelte` |
+| D2 Home: "Ready to make videos?" és a legutóbbi videók | kész | `Home.svelte` |
+| D3 Connections: minden kulcs egy oldalon, Identity-felülírással | kész | `ConnectionRow.svelte`, `KeyField.svelte` |
+| D4 Import & Export: egy oldal, a régi helyeken link | kész | `TransferPage.svelte`, `cta/HeygenImport.svelte` |
+| D5 CTA: a házi hármas elöl, klipforrással, a többi 12 csukva | kész | `cta/CtaPage.svelte`, `cta/clips.ts` |
+| D6 Videó tabok: egy fő gomb, a többi Advanced alatt, Autopilot kiemelve | kész | `Advanced.svelte`, a kapuk |
+| D7 Kész videó: Send to Publishing, YouTube szövegek nyitva, Files csukva | kész | `VideoTab.svelte` |
+
+Eltérés a lenti javaslattól: a 7. pont (Identity helyett Channel) nem
+lett: Zoltan döntése, a szó "Identity" marad.
+
+## Az eredeti javaslatok (2026-10-08)
 
 Zoltan: a funkciók most a lényegesek, a UI-t menet közben egyszerűsítjük. Ez a
 lista a következő UI-körhöz. Sorrend: a legnagyobb nyereség elöl.

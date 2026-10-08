@@ -174,7 +174,7 @@ export function runHyperframes(args, { env = process.env, cwd, browser, onLine =
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      if (stuck) reject(new Error(`The video engine gave no sign of life for ${Math.round(idleMs / 60000)} minutes, so the app stopped it (hyperframes ${args[0]}). Press the button again; if it happens again, send the diagnostics (Settings, App, General).`));
+      if (stuck) reject(new Error(`The video engine gave no sign of life for ${Math.round(idleMs / 60000)} minutes, so the app stopped it (hyperframes ${args[0]}). Press the button again; if it happens again, send the diagnostics (Settings, General).`));
       else resolve({ code, tail: tail.join("\n") });
     });
   });

@@ -70,6 +70,16 @@ test("the plan: a place is said by the narrator or played by a segment, never bo
   assert.equal(p.endScreen, 20, "YouTube end screen: 20 s by default (DECISIONS 53)");
 });
 
+test("Generate with HeyGen (DECISIONS 119): the clip plays once it exists, the narrator says it until then", () => {
+  const p = normalizeProfile({ slots: { start: "GUIDE", middle: null, end: null }, modes: { start: "heygen" }, modesV: 2 });
+  assert.equal(p.modes.start, "heygen", "the choice is kept");
+  const before = ctaPlan(p, []);
+  assert.equal(before[0].mode, "narrator");
+  assert.match(before[0].note, /No HeyGen clip for GUIDE yet/);
+  const segs = [{ id: "h1", keyword: "GUIDE", name: "GUIDE", file: "h1.mp4", seconds: 5, source: "heygen", createdAt: "2026-10-08", lastUsedAt: null }];
+  assert.equal(ctaPlan(p, segs)[0].mode, "segment");
+});
+
 test("where a segment goes: after OPEN, after the highest-value section, after OWN", () => {
   const blocks = [{ heading: "OPEN" }, { heading: "1. A" }, { heading: "2. B" }, { heading: "3. C" }, { heading: "OWN" }];
   assert.deepEqual(insertAfter(blocks, { sections: [{}, { highestValue: true }, {}] }), { start: 0, middle: 2, end: 4 });

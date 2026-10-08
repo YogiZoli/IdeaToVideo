@@ -1,6 +1,6 @@
 <script lang="ts">
   // VideoCalls: gate 1's comment calls for one ONE Video (docs/wizards/cta.md).
-  // By default the Identity's (Settings, Identity, CTA); "Change for this
+  // By default the Identity's (Wizards, CTA); "Change for this
   // video" sets this video's own, which goes into the next Write script.
   // `own` is null while the Identity's calls apply. A new video starts from
   // the previous video's choice ("previously selected", cta-last.json).
@@ -81,7 +81,7 @@
     {:else}
       <span class="hint">none</span>
     {/each}
-    <span class="hint">{previous ? "previously selected" : own ? "for this video" : "from Settings, Identity, CTA"}</span>
+    <span class="hint">{previous ? "previously selected" : own ? "for this video" : "from Wizards, CTA"}</span>
     <span class="spacer"></span>
     {#if !editing}
       <button type="button" class="ghost" {disabled} onclick={edit}>Change for this video</button>

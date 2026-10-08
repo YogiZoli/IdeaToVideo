@@ -1,13 +1,13 @@
 <script lang="ts">
-  // Settings, App, General, "Log" (docs/backup.md B): where the local log is,
+  // Settings, General, "Log" (docs/backup.md B): where the local log is,
   // how big it is, this session's errors and warnings, and the only way it
   // goes away (Zoltan, 2026-10-01: never deleted by the app).
   import { untrack } from "svelte";
-  import { ask, save } from "@tauri-apps/plugin-dialog";
+  import { ask } from "@tauri-apps/plugin-dialog";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
-  import { logStatus, deleteLogs, exportDiagnostics, errorText, type LogStatus } from "./api";
+  import { logStatus, deleteLogs, errorText, type LogStatus } from "./api";
 
-  let { initial }: { initial: LogStatus } = $props();
+  let { initial, goto }: { initial: LogStatus; goto?: (page: "transfer") => void } = $props();
 
   let st = $state<LogStatus>(untrack(() => ({ ...initial })));
   let message = $state("");
@@ -17,27 +17,6 @@
 
   async function openFolder() {
     if (st.dir) await revealItemInDir(st.dir).catch((e) => (message = errorText(e)));
-  }
-
-  // One zip to send when something went wrong (2026-10-06): the log, the
-  // settings and every ONE Video's state, never a key or a video.
-  let exporting = $state(false);
-  let exported = $state("");
-  async function diagnostics() {
-    const d = new Date();
-    const p = (n: number) => String(n).padStart(2, "0");
-    const path = await save({ title: "Export diagnostics", defaultPath: `IdeaToVideo-diagnostics-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.zip`, filters: [{ name: "Zip", extensions: ["zip"] }] });
-    if (!path) return;
-    exporting = true;
-    message = "";
-    try {
-      exported = await exportDiagnostics(path);
-      message = "Saved. Send this file to the person helping you; it holds no key, no video and no script text.";
-    } catch (e) {
-      message = errorText(e);
-    } finally {
-      exporting = false;
-    }
   }
 
   async function remove() {
@@ -57,12 +36,11 @@
   <p class="line">Since the app started: {st.errors} {st.errors === 1 ? "error" : "errors"}, {st.warnings} {st.warnings === 1 ? "warning" : "warnings"}. {st.files} {st.files === 1 ? "file" : "files"}, {size}.</p>
   {#if st.dir}<p class="path">{st.dir}</p>{/if}
   <div class="row">
-    <button type="button" class="primary" onclick={diagnostics} disabled={exporting}>{exporting ? "Exporting..." : "Export diagnostics"}</button>
     <button type="button" onclick={openFolder} disabled={!st.dir}>Open log folder</button>
     <button type="button" class="ghost" onclick={remove} disabled={!st.files}>Delete logs</button>
   </div>
   {#if message}<p class="hint">{message}</p>{/if}
-  {#if exported}<p class="path">{exported} <button type="button" class="link" onclick={() => revealItemInDir(exported)}>Show in folder</button></p>{/if}
+  <p class="hint">To send the log to the person helping you: Export diagnostics, on {#if goto}<button type="button" class="link" onclick={() => goto("transfer")}>Settings, Import & Export</button>{:else}Settings, Import & Export{/if}.</p>
 </section>
 
 <style>
@@ -71,4 +49,5 @@
   .hint { font-size: 13px; color: var(--muted-foreground); }
   .line { margin: 6px 0; }
   .path { font-family: var(--font-mono); font-size: 13px; word-break: break-all; color: var(--muted-foreground); }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
 </style>

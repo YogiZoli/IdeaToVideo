@@ -12,13 +12,14 @@
   import EngineBanner from "./EngineBanner.svelte";
 
 
-  let { app, openProject }: { app: AppState; openProject: (dir: string) => void } = $props();
+  let { app, openProject, startNew = false }: { app: AppState; openProject: (dir: string) => void; startNew?: boolean } = $props();
 
   let projects = $state<ProjectSummary[]>([]);
   let loading = $state(true);
   let error = $state("");
 
-  let showNew = $state(false);
+  // Home's "Make a video" opens the list with the new ONE Video form open
+  let showNew = $state(untrack(() => startNew));
   let title = $state("");
   let language = $state(untrack(() => app.config?.channel.contentLanguage ?? "en"));
   let autopilot = $state(untrack(() => app.config?.defaults?.autopilot ?? false));

@@ -26,7 +26,7 @@
   import { notifyDone } from "./notify";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
-  let { app, dir: dirProp, back, saved }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void } = $props();
+  let { app, dir: dirProp, back, saved, connections }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void; connections?: () => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
   // render) keeps writing to it even if the user opens Settings meanwhile.
   const dir = untrack(() => dirProp);
@@ -236,7 +236,7 @@
     <button type="button" class="ghost" onclick={back}>Back to the list</button>
     <h1 title={data?.project.title}>{data?.project.title ?? ""}</h1>
     {#if data}
-      <button type="button" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
+      <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
       <button type="button" class="ghost" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
     {/if}
   </header>
@@ -263,7 +263,7 @@
 
     <div class="body" bind:this={body}>
       {#if active === "script"}
-        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} />
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} goto={show} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}
@@ -273,7 +273,7 @@
       {:else if active === "preview"}
         <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} />
       {:else}
-        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} {renderError} {render} goto={show} />
+        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} {renderError} {render} goto={show} {connections} />
       {/if}
     </div>
   {/if}
@@ -282,6 +282,8 @@
 <style>
   .page { height: 100%; display: grid; grid-template-rows: auto auto auto 1fr; max-width: 1100px; margin: 0 auto; padding: 10px 20px 0; gap: 8px; }
   header { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  /* D6: Autopilot where the eye goes, next to the title */
+  .pilot { border-color: var(--primary); color: var(--primary); font-weight: 600; }
   h1 { flex: 1; margin: 0; font-size: 20px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
   .tab { position: relative; overflow: hidden; display: grid; gap: 1px; justify-items: start; text-align: left; min-height: 0; padding: 7px 10px; border-radius: 10px; border: 2px solid transparent; background: var(--muted); font-size: 13px; }

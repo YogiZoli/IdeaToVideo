@@ -51,7 +51,9 @@ export function normalizeProfile(input) {
     // A save from before "auto" (no modesV) wrote narrator as a mere
     // default: it reads as auto (Zoltan's second test, 2026-10-05).
     const m = input.modes?.[id];
-    modes[id] = m === "segment" || (m === "narrator" && input.modesV === 2) ? m : "auto";
+    // heygen (DECISIONS 119): HeyGen makes the clip before the next script;
+    // until it exists it reads as auto.
+    modes[id] = m === "segment" || m === "heygen" || (m === "narrator" && input.modesV === 2) ? m : "auto";
   }
   const offers = {};
   for (const [k, text] of Object.entries(input.offers ?? {})) {
@@ -116,6 +118,7 @@ export function ctaPlan(profile, segments = []) {
     if (mode === "narrator") return base;
     const seg = segmentFor(segments, info.keyword);
     if (seg) return { ...base, mode: "segment", segment: seg };
+    if (mode === "heygen") return { ...base, note: `No HeyGen clip for ${info.keyword} yet, so the narrator says it.` };
     return mode === "segment" ? { ...base, note: `No segment for ${info.keyword} yet, so the narrator says it.` } : base;
   });
 }

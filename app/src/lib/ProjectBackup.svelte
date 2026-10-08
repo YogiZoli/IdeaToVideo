@@ -60,7 +60,7 @@
   <div class="row">
     <h2>Backup</h2>
     <span class="state">
-      {#if !app.backupRoot}Off: no backup folder (Settings, App, Backup).
+      {#if !app.backupRoot}Off: no backup folder (Settings, Backup).
       {:else if rec.at}Backed up {when(rec.at)}, level {rec.lastLevel ?? deflt}.
       {:else}Not backed up yet.{/if}
     </span>

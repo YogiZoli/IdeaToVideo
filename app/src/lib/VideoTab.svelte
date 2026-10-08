@@ -7,6 +7,8 @@
   // opens, the file is shown in its folder, the title, description and tags
   // are one click to copy; no Google sign-in from this app, DECISIONS 86),
   // the Video Publishing Card (Export card; DECISIONS 114), and the backup.
+  // D7 (DECISIONS 119): the main button is "Send to Publishing"; the YouTube
+  // texts stay open with Copy buttons; the files are in a closed "Files".
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { revealItemInDir, openUrl } from "@tauri-apps/plugin-opener";
   import { save as saveDialog } from "@tauri-apps/plugin-dialog";
@@ -14,6 +16,7 @@
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
   import ProjectBackup from "./ProjectBackup.svelte";
+  import Advanced from "./Advanced.svelte";
   import type { AppState } from "./api";
   import { runner, errorText, exportCard, openPublishingLink, exportVideo, cloudFolders } from "./api";
   import { running } from "./work.svelte";
@@ -32,7 +35,8 @@
     renderError = "",
     render,
     goto,
-  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void } = $props();
+    connections,
+  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; connections?: () => void } = $props();
 
   const rendering = $derived(!!running(dir, ["render-video"]));
   const video = $derived(latest);
@@ -155,7 +159,7 @@
         <video controls src={convertFileSrc(video.file)}></video>
         <div class="side">
           <span class="label">Keep it</span>
-          <button type="button" class="primary" onclick={download}>Download</button>
+          <button type="button" onclick={download}>Download</button>
           {#each clouds as c}<button type="button" onclick={() => toCloud(c)}>Save a copy to {c.label}</button>{/each}
           <button type="button" class="ghost" onclick={() => revealItemInDir(video.file)}>Show in folder</button>
           {#if saved}<p class="note">{saved}</p>{/if}
@@ -173,8 +177,14 @@
         {#if !yt}
           <p class="hint">No packaging yet: make the title, summary and tags on the Script tab, then the texts appear here.</p>
         {:else}
-          <div class="copyrow"><span class="sub">Title</span></div>
-          <div class="copyrow"><span>{yt.title}</span><button type="button" class="ghost" onclick={() => copy("title", yt.title)}>{copied === "title" ? "Copied" : "Copy"}</button></div>
+          <div class="copyrow"><span class="sub">Titles</span></div>
+          {#each (yt.titles?.length ? yt.titles : [yt.title]) as t, i (i)}
+            <div class="copyrow"><span>{t}{t === yt.title ? " (chosen)" : ""}</span><button type="button" class="ghost" onclick={() => copy(`title-${i}`, t)}>{copied === `title-${i}` ? "Copied" : "Copy"}</button></div>
+          {/each}
+          {#if yt.summary}
+            <div class="copyrow top"><span class="sub">Summary</span><button type="button" class="ghost" onclick={() => copy("summary", yt.summary)}>{copied === "summary" ? "Copied" : "Copy"}</button></div>
+            <p class="tags">{yt.summary}</p>
+          {/if}
           <div class="copyrow top"><span class="sub">Description, with the chapters</span><button type="button" class="ghost" onclick={() => copy("description", yt.description)}>{copied === "description" ? "Copied" : "Copy"}</button></div>
           <pre>{yt.description}</pre>
           <div class="copyrow top"><span class="sub">Tags</span><button type="button" class="ghost" onclick={() => copy("tags", yt.tags.join(", "))}>{copied === "tags" ? "Copied" : "Copy"}</button></div>
@@ -182,32 +192,29 @@
         {/if}
       </div>
 
-      <div class="block">
-        <div class="bhead"><span class="label">Files</span></div>
+      <details class="block">
+        <summary class="label">Files</summary>
         <div class="row">
-          <button type="button" class="ghost" onclick={() => revealItemInDir(video.file)}>MP4</button>
+          <button type="button" class="ghost" onclick={() => revealItemInDir(video.file)}>Open MP4</button>
           {#if video.srt}<button type="button" class="ghost" onclick={() => revealItemInDir(video.srt!)}>Captions (.srt)</button>{/if}
           {#if video.chapters}<button type="button" class="ghost" onclick={() => revealItemInDir(video.file.replace(/\.mp4$/i, ".chapters.txt"))}>chapters.txt</button>{/if}
           {#if video.cardFile}<button type="button" class="ghost" onclick={() => revealItemInDir(video.cardFile!)}>Card (.card.json)</button>{/if}
+          {#if video.cardFile}<button type="button" onclick={exportData}>Export card</button>{/if}
         </div>
-      </div>
+        {#if exported}<p class="hint">{exported}</p>{/if}
+      </details>
 
       {#if video.cardFile}
         <div class="block">
           <div class="bhead"><span class="label">Publishing</span></div>
           <p class="hint">The video's publishing card: chapters with times, the script, the comment keywords with their times, your landing page, and the title, summary and tags from the Script tab.</p>
-          <div class="row">
-            <button type="button" class="primary" disabled={!pubReady || sending} onclick={sendCard}>{sending ? "Sending..." : "Send to Publishing"}</button>
-            <button type="button" onclick={exportData}>Export card</button>
-          </div>
-          {#if !pubReady}<p class="hint">To send it, set the address and the token in Settings, Publishing.</p>{/if}
+          {#if !pubReady}<p class="hint">To send it, set the address and the token on {#if connections}<button type="button" class="link" onclick={connections}>Settings, Connections</button>{:else}Settings, Connections{/if}.</p>{/if}
           {#if sent?.ok}
             <p class="good">{sent.updated ? "Updated in Publishing." : "Sent to Publishing."} {#if sent.url}<button type="button" class="link" onclick={openSent}>{sent.url}</button>{/if}</p>
           {:else if sent}
             <p class="err">{sent.message}</p>
             {#if sent.retry}<button type="button" disabled={sending} onclick={sendCard}>Try again</button>{/if}
           {/if}
-          {#if exported}<p class="hint">{exported}</p>{/if}
         </div>
       {/if}
 
@@ -221,18 +228,32 @@
       {#if rendering}
         <span class="say">Rendering. You can look at the other tabs, or close the window: the app keeps working in the corner of the taskbar.</span>
       {:else if video}
-        <span class="say"><b>Your video is ready.</b> Download it or upload it.</span>
+        <span class="say"><b>Your video is ready.</b> Send it to Publishing, or upload it with the texts above.</span>
       {:else}
         <span class="say">Render the approved preview into the final video.</span>
       {/if}
-      <label class="q">Quality
-        <select bind:value={quality} disabled={rendering}>
-          <option value="draft">Draft (fast)</option>
-          <option value="standard">Standard</option>
-          <option value="high">High</option>
-        </select>
-      </label>
-      <button type="button" class={video ? "" : "primary"} disabled={rendering || !reviewApproved} onclick={() => render(quality)}>{video ? "Render again" : "Render video"}</button>
+      {#if video && !rendering}
+        <Advanced>
+          <label class="q">Quality
+            <select bind:value={quality}>
+              <option value="draft">Draft (fast)</option>
+              <option value="standard">Standard</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <button type="button" disabled={!reviewApproved} onclick={() => render(quality)}>Render again</button>
+        </Advanced>
+        <button type="button" class="primary" disabled={!pubReady || sending || !video.cardFile} title={!video.cardFile ? "This video has no publishing card: render it again." : pubReady ? "" : "Set the address and the token on Settings, Connections"} onclick={sendCard}>{sending ? "Sending..." : "Send to Publishing"}</button>
+      {:else}
+        <label class="q">Quality
+          <select bind:value={quality} disabled={rendering}>
+            <option value="draft">Draft (fast)</option>
+            <option value="standard">Standard</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <button type="button" class="primary" disabled={rendering || !reviewApproved} onclick={() => render(quality)}>Render video</button>
+      {/if}
     </div>
   {/if}
 </section>

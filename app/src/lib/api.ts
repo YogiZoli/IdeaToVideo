@@ -150,7 +150,7 @@ export const importLogo = (path: string, forNew = false, variant: "light" | "dar
 export const jobList = () => call<Job[]>("job_list");
 /** Stop: a waiting job leaves the queue, a running one ends with all it started. */
 export const stopJob = (id: number) => call<void>("stop_job", { id });
-/** Settings, App, General: one zip with the logs and every ONE Video's state, no keys. */
+/** Settings, General: one zip with the logs and every ONE Video's state, no keys. */
 export const exportDiagnostics = (path: string) => call<string>("export_diagnostics", { path });
 export const backupSettingsNow = () => call<number>("backup_settings_now");
 export const restoreSettings = (path: string) => call<RawState>("restore_settings", { path }).then(withConfig);
@@ -256,7 +256,7 @@ export type MotionPreview = { file: string; seconds: number; renderSeconds: numb
 export type CtaSlot = "start" | "middle" | "end";
 export type CtaKeyword = { keyword: string; temperature: "cold" | "warm" | "hot"; gets: string };
 export type CtaTemperature = { label: string; meaning: string; dot: string; surface: string; text: string };
-export type CtaMode = "narrator" | "segment" | "auto";
+export type CtaMode = "narrator" | "segment" | "auto" | "heygen";
 export type CtaProfile = {
   schema?: string;
   updatedAt?: string;
