@@ -5,9 +5,9 @@ ask for it.
 
 ## 1. Make the zip
 
-1. In IdeaToVideo, open **Settings**.
-2. Click **General** (under App).
-3. Click **Export diagnostics**.
+1. In IdeaToVideo, open **Settings** (top menu).
+2. Click **Import & Export**.
+3. At **Diagnostics**, click **Export**.
 4. A save window opens. Save the zip on your Desktop, so you find it easily.
 
 ## 2. Send it to us

@@ -67,15 +67,16 @@ see the file. All videos are in your Documents folder, in
 
 You do not need these for the first video.
 
-- **More photos (Unsplash):** **Settings**, **Identity**, **Footage**, then
+- **More photos (Unsplash):** **Settings**, **Connections**, then
   **Get a key** next to Unsplash. Make a free app on the Unsplash site and
   paste its **Access Key** (never the Secret key). A new key allows 50
   searches an hour. A free Pixabay key works the same way and also gives
   video clips. Then search for pictures on the **Scenes** tab.
 - **Publishing connection:** only if we gave you a publishing address and a
-  token. **Settings**, **Publishing**: paste both and click **Save**. Then
+  token. **Settings**, **Connections**, **Publishing**: paste both and click
+  **Save settings**. Then
   **Send to Publishing** on the **Your video** tab sends the video's
-  publishing card. Without it, **Export card** saves the same card as a file.
+  publishing card. Without it, **Export card** (under **Files**) saves the same card as a file.
 
 ## 8. If something goes wrong
 
