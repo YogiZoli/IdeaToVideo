@@ -13,6 +13,21 @@
     "identity": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$" },
     "createdAt": { "type": "string" },
     "cardId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "$comment": "the Video Publishing Card id, made once at the first render and kept (DECISIONS 114)" },
+    "series": {
+      "type": "object",
+      "$comment": "this ONE Video is one lesson of an imported course (runner/course/index.mjs, DECISIONS 121); courseSlug plus lessonId is the lesson's key",
+      "required": ["courseSlug", "lessonId", "playlistPosition"],
+      "additionalProperties": false,
+      "properties": {
+        "courseSlug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 60 },
+        "courseTitle": { "type": "string", "maxLength": 300 },
+        "lessonId": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 40 },
+        "playlistPosition": { "type": "integer", "minimum": 1 },
+        "playlistCount": { "type": "integer", "minimum": 1 },
+        "playlistId": { "type": ["string", "null"], "maxLength": 100 },
+        "playlistUrl": { "type": ["string", "null"], "maxLength": 300 }
+      }
+    },
     "autopilotRun": {
       "type": "object",
       "$comment": "Finish on Autopilot is under way (the UI goes on with it when the ONE Video is opened again)",

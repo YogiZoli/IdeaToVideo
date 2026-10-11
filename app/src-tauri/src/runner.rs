@@ -113,6 +113,11 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("packaging-save", None),
     ("packaging-make", Some(&["llm", "provider"])),
     ("brand-import", None),
+    // Course import (DECISIONS 121): files only, no key, no service
+    ("course-preview", None),
+    ("course-import", None),
+    ("course-list", None),
+    ("course-export", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

@@ -1,10 +1,35 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-08 este (avatar-választás, DECISIONS 120)
+Frissítve: 2026-10-11 (Course import, DECISIONS 121-122)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-11, Course import)
+
+- **Course import** (121, branch `course-import`, PR a main felé): a
+  Minicourse oldal "Course Content Structure" fájlja (vagy a kimásolt
+  szövege) leckénként egy előkészített ONE Video lesz. Settings, Import &
+  Export: fájl és beillesztés, előnézet, "Create N videos". Kitöltve: cím,
+  kulcsszó, hook, script seed (teach, do, review a percekkel), zárómondat,
+  YouTube cím és leírás, a kurzus és a playlist adatai.
+- **Videos, "Course" szűrő:** a leckék playlist-sorrendben az állapotukkal,
+  a playlist link, "Export Course Content Structure". Újraimport: csak a
+  kézzel át nem írt értékek frissülnek, duplikátum nincs.
+- **Video tab:** "Playlist: position N of M" a linkkel. Feltöltés nincs, az
+  kézi marad a YouTube Studio-ban, sorrendben.
+- **Video Publishing Card: opcionális `series` blokk** (122), a séma marad
+  `video-publishing-card/1`. A PDT ezt a leírást másolja.
+- Az import semmit nem indít el (nincs AI, HeyGen, render). Telepítő nem
+  készült.
+- Tesztek: Node 292 zöld (2 éles kihagyva), Rust 48, e2e 44/44, UI check 0
+  hiba; a felület a `scripts/ui-mock`-kal megnézve (`?course=1`).
+
+**Következő:** Zoltan kézi próbája egy valódi kurzusfájllal (a következő
+telepítővel); a PDT oldalon a `series` blokk olvasása; a `_courses` mappa
+felvétele a Backupba. A korábbi pontok állnak: a HeyGen éles próba, amikor
+van keret.
 
 ## Most (2026-10-08 este)
 

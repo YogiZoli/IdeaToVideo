@@ -22,6 +22,16 @@ kell írni.
 | **Brand kártya import** | Settings, Identity, Brand: Import | a kinézet átveszi a kártyát |
 | **Import pack** | Settings, Identity, Scenes: Import pack | a csomag blokkjai jelenettípusként elérhetők abban az Identityben |
 
+### Kurzus (2026-10-11, DECISIONS 121)
+
+| Mit | Hol | Mi történik |
+|---|---|---|
+| **Course Content Structure import** | Settings, Import & Export: Import, vagy "Paste Course Content Structure" | előnézet, utána leckénként egy előkészített ONE Video; újraimportnál csak a kézzel át nem írt értékek frissülnek |
+| **Course Content Structure export** | ugyanott: Export, és Videos, Course szűrő: "Export Course Content Structure" | a kapott fájl bájtra változatlanul, a publikáló appnak vagy vissza a Minicourse oldalra |
+
+A formátum a Minicourse repóé
+(`C:/Users/gdp/projects/minicourse-as-a-lead-magnet/schema/course-content-structure.md`).
+
 ## 3. Hogyan kapja meg Zoltan a 39 archetípust
 
 1. Claude a kánonból (`C:/Users/gdp/HyperFrames/_frames/blocks`, csak

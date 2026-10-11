@@ -1,5 +1,5 @@
 {
-  "$comment": "Video Publishing Card, schema video-publishing-card/1 (runner/gates/render/publish.mjs, DECISIONS 114), the successor of itv-publish/1. Written next to every rendered video as <video>.card.json, and the body of POST {url}/api/v1/cards (Send to Publishing). Facts the app knows exactly, plus the packaging chosen at gate 1. cardId is generated once per project and kept, so a card sent again updates the same one; videoId is the YouTube id, filled by the publishing app. Fields are only ever added; a breaking change gets video-publishing-card/2.",
+  "$comment": "Video Publishing Card, schema video-publishing-card/1 (runner/gates/render/publish.mjs, DECISIONS 114), the successor of itv-publish/1. Written next to every rendered video as <video>.card.json, and the body of POST {url}/api/v1/cards (Send to Publishing). Facts the app knows exactly, plus the packaging chosen at gate 1. cardId is generated once per project and kept, so a card sent again updates the same one; videoId is the YouTube id, filled by the publishing app. Fields are only ever added (series, DECISIONS 122, is one: optional, the version stays 1); a breaking change gets video-publishing-card/2.",
   "type": "object",
   "required": [
     "schema",
@@ -220,6 +220,44 @@
     "syntheticMedia": {
       "type": "boolean",
       "description": "A generated clip (AI B-roll) is in the video: answer YouTube Studio's altered or synthetic content question."
+    },
+    "series": {
+      "type": "object",
+      "description": "Optional. Only on a video that is one lesson of an imported course (DECISIONS 122). A receiver that does not know it ignores it.",
+      "required": [
+        "courseSlug",
+        "lessonId",
+        "playlistPosition",
+        "playlistId"
+      ],
+      "properties": {
+        "courseSlug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 60
+        },
+        "lessonId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 40
+        },
+        "playlistPosition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "playlistId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "playlistUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     },
     "packaging": {
       "type": [

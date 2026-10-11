@@ -23,6 +23,7 @@
   import { TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
   import { avatarLooks } from "./avatars";
   import { llmFor } from "./llm";
+  import type { Series } from "./course/course";
   import { notifyDone } from "./notify";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
@@ -34,7 +35,7 @@
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; cardFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate> };
+    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate>; series?: Series | null };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
@@ -263,7 +264,7 @@
 
     <div class="body" bind:this={body}>
       {#if active === "script"}
-        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}
@@ -273,7 +274,7 @@
       {:else if active === "preview"}
         <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} />
       {:else}
-        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} {renderError} {render} goto={show} {connections} />
+        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} series={data.project.series ?? null} {renderError} {render} goto={show} {connections} />
       {/if}
     </div>
   {/if}

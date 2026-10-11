@@ -22,6 +22,8 @@
   import { running } from "./work.svelte";
   import { log } from "./logger";
   import type { TabId } from "./tabs";
+  import type { Series } from "./course/course";
+  import { playlistLink } from "./course/course";
 
   type Youtube = { titles: string[]; title: string; summary: string; description: string; tags: string[] };
   type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; cardFile?: string | null; comments?: string | null; youtube?: Youtube | null; syntheticMedia?: boolean };
@@ -32,11 +34,12 @@
     title,
     reviewApproved,
     latest,
+    series = null,
     renderError = "",
     render,
     goto,
     connections,
-  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; connections?: () => void } = $props();
+  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; series?: Series | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; connections?: () => void } = $props();
 
   const rendering = $derived(!!running(dir, ["render-video"]));
   const video = $derived(latest);
@@ -88,6 +91,9 @@
     copied = what;
     setTimeout(() => (copied = ""), 2000);
   }
+  // One lesson of an imported course (DECISIONS 121): where it goes in the
+  // course's playlist. The upload itself stays manual, in YouTube Studio.
+  const playlist = $derived(playlistLink(series?.playlistUrl));
   function openYoutube() {
     if (!video) return;
     revealItemInDir(video.file);
@@ -173,6 +179,11 @@
           <button type="button" onclick={openYoutube}>Open YouTube Studio</button>
         </div>
         <p class="hint">YouTube Studio opens in your browser and the video is shown in its folder: drag it into the upload window. Copy the texts below into the upload form.</p>
+        {#if series}
+          <p class="playlist"><b>Playlist: position {series.playlistPosition}{series.playlistCount ? ` of ${series.playlistCount}` : ""}</b>{series.courseTitle ? ` in "${series.courseTitle}"` : ""}.
+            {#if playlist}<button type="button" class="link" onclick={() => openUrl(playlist)}>{playlist}</button>{:else}This course has no playlist link yet.{/if}
+            Upload the lessons in order, lesson 1 first, and add each one to the playlist at its position.</p>
+        {/if}
         {#if video.syntheticMedia}<p class="synthetic">This video has AI-made B-roll clips. In the upload form, under "Altered or synthetic content", answer <b>Yes</b> if a clip looks real (a real-looking person, place or event). It is also noted in the publishing card.</p>{/if}
         {#if !yt}
           <p class="hint">No packaging yet: make the title, summary and tags on the Script tab, then the texts appear here.</p>
@@ -280,6 +291,8 @@
   .note { color: var(--success); font-size: 13px; margin: 0; word-break: break-all; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 0; }
   .synthetic { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--warning-surface, var(--muted)); font-size: 13px; }
+  .playlist .link { font: inherit; }
+  .playlist { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--muted); font-size: 13px; word-break: break-word; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .err { color: var(--danger, #b42318); font-weight: 600; }
   .link { background: none; border: none; padding: 0; color: var(--primary, #2563eb); text-decoration: underline; cursor: pointer; }

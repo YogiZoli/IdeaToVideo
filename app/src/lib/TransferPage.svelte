@@ -3,7 +3,8 @@
   // or out, on one page. The Identity first, then one row each: what it
   // carries, Import, Export. The places these buttons used to be link here.
   // Brand Identity Card import and export come from Settings (they also
-  // write the Identity's light logo); the rest is done here.
+  // write the Identity's light logo); the rest is done here. The Course
+  // Content Structure rows are their own component (course/CourseImport).
   import { onMount } from "svelte";
   import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -16,6 +17,7 @@
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
   import HeygenImport from "./cta/HeygenImport.svelte";
+  import CourseImport from "./course/CourseImport.svelte";
 
   let {
     app,
@@ -198,6 +200,7 @@
       </div>
       <div class="acts"><button type="button" disabled={off} onclick={packIn}>Import</button><button type="button" disabled={off || !packId} onclick={packOut}>Export</button></div>
     </div>
+    <CourseImport {app} {off} />
     <div class="r wide">
       <div><b>HeyGen video for a CTA keyword</b><span>A video already in your HeyGen account becomes the clip of one comment keyword. Reading and downloading costs nothing.</span></div>
       <HeygenImport {app} />

@@ -88,6 +88,28 @@ const { dir } = createProject({ projectsDir: mine, title: "End to end", identity
   check("ONE Video knows its Identity", loadProject(dir).identity === "my-identity");
 }
 
+// Course import (DECISIONS 121): the example Course Content Structure, with
+// the runner commands the app calls. One prepared ONE Video per lesson,
+// nothing started; a second import makes no second video.
+{
+  const lessons = path.join(work, "Course Identity");
+  fs.mkdirSync(lessons, { recursive: true });
+  const file = path.join(ROOT, "runner", "fixtures", "example-course-content-structure.json");
+  const seen = runner("course-preview", { projectsDir: lessons, file });
+  check("course: the preview shows the course and creates nothing", seen.event === "result" && seen.data.lessons.length === 4 && seen.data.newCount === 4 && fs.readdirSync(lessons).length === 0, seen.event === "result" ? `${seen.data.course.title}, ${seen.data.lessons.length} lessons` : seen.message);
+  const made = runner("course-import", { projectsDir: lessons, file, identity: "course-identity", language: "en" });
+  const listed = () => runner("list-projects", { projectsDir: lessons }).data?.projects ?? [];
+  const first = listed();
+  check("course: one prepared ONE Video per lesson, every gate still to do", made.event === "result" && made.data.created === 4 && first.length === 4 && first.every((p) => p.status === "Idea" && p.series?.courseSlug === "test-sourdough-in-a-weekend" && Object.values(p.gates).every((g) => g.state === "todo")), made.event === "result" ? `${made.data.created} created` : made.message);
+  const again = runner("course-import", { projectsDir: lessons, text: fs.readFileSync(file, "utf8"), identity: "course-identity", language: "en" });
+  check("course: imported again as pasted text, no second video", again.event === "result" && again.data.created === 0 && again.data.unchanged === 4 && listed().length === 4, again.event === "result" ? `${again.data.unchanged} left as they were` : again.message);
+  const group = runner("course-list", { projectsDir: lessons });
+  const out = runner("course-export", { projectsDir: lessons, slug: "test-sourdough-in-a-weekend", file: path.join(work, "course-out.json") });
+  check("course: the group lists the lessons in order, the file goes out unchanged", group.event === "result" && group.data.courses[0]?.lessons.map((l) => l.position).join() === "1,2,3,4" && out.event === "result" && fs.readFileSync(out.data.file).equals(fs.readFileSync(file)), out.message ?? "");
+  const refused = runner("course-preview", { projectsDir: lessons, text: JSON.stringify({ type: "course-content-structure", schema_version: "2.0" }) });
+  check("course: another major version is refused in plain words", refused.event === "error" && /reads version 1 only/.test(refused.message), refused.message ?? "");
+}
+
 // An approved script and voice, as gates 1 and 2 would leave them.
 const sentences = [];
 const words = [];

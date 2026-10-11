@@ -2,9 +2,16 @@
   // The active Identity's ONE Videos + New ONE Video (topic, length,
   // language, optional Video Brief Card JSON, validated by the runner before
   // anything is created). A ONE Video goes in the Identity's own folder.
+  // A course (DECISIONS 121) is only a filter on this list: its lessons in
+  // playlist order, each with its ONE Video's status. The work is still on
+  // one video at a time.
   import { untrack } from "svelte";
   import type { AppState, ProjectSummary } from "./api";
   import { runner, errorText } from "./api";
+  import { save as saveDialog } from "@tauri-apps/plugin-dialog";
+  import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+  import type { Course } from "./course/course";
+  import { playlistLink } from "./course/course";
   import { LANGUAGES } from "./catalog";
   import { ONE_VIDEO } from "./edition";
   import { setScreen } from "./logger";
@@ -67,10 +74,30 @@
     error = "";
     try {
       projects = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects;
+      courses = (await runner<{ courses: Course[] }>("course-list", { projectsDir: app.projectsDir })).courses;
+      if (!courses.some((c) => c.slug === courseSlug)) courseSlug = "";
     } catch (e) {
       error = errorText(e);
     } finally {
       loading = false;
+    }
+  }
+
+  // The course filter: "" shows every ONE Video.
+  let courses = $state<Course[]>([]);
+  let courseSlug = $state("");
+  const course = $derived(courses.find((c) => c.slug === courseSlug) ?? null);
+  const coursePlaylist = $derived(playlistLink(course?.playlist?.url));
+  let exported = $state("");
+  async function exportCourse() {
+    if (!course) return;
+    const file = await saveDialog({ title: "Export Course Content Structure", defaultPath: `${course.slug}-course-content-structure.json`, filters: [{ name: "Course Content Structure", extensions: ["json"] }] });
+    if (typeof file !== "string") return;
+    error = "";
+    try {
+      exported = (await runner<{ file: string }>("course-export", { projectsDir: app.projectsDir, slug: course.slug, file })).file;
+    } catch (e) {
+      error = errorText(e);
     }
   }
   $effect(() => {
@@ -194,11 +221,44 @@
       <p class="hint">They are saved in {app.projectsDir}</p>
     </section>
   {:else}
+    {#if courses.length}
+      <div class="filter">
+        <label for="course">Course</label>
+        <select id="course" bind:value={courseSlug} onchange={() => (exported = "")}>
+          <option value="">All videos</option>
+          {#each courses as c (c.slug)}<option value={c.slug}>{c.title}</option>{/each}
+        </select>
+      </div>
+    {/if}
+  {/if}
+
+  {#if !loading && course}
+    <section class="card course">
+      <p class="hint plain">{course.lessons.length} {course.lessons.length === 1 ? "lesson" : "lessons"}, in playlist order. Work on one lesson at a time; upload them to YouTube in this order.
+        {#if coursePlaylist}Playlist: <button type="button" class="link" onclick={() => openUrl(coursePlaylist)}>{coursePlaylist}</button>{:else}No playlist link yet.{/if}
+      </p>
+      <span class="actions-top">
+        <button type="button" disabled={!course.hasFile} title={course.hasFile ? "The file as it came, unchanged: for the publishing app, or back to the Minicourse page" : "The file of this course is not on this computer any more"} onclick={exportCourse}>Export Course Content Structure</button>
+      </span>
+      {#if exported}<p class="good">Exported, unchanged. <button type="button" class="link" onclick={() => revealItemInDir(exported)}>Show in folder</button></p>{/if}
+    </section>
+    <ul class="list">
+      {#each course.lessons as l (l.id)}
+        <li>
+          <button type="button" class="item lesson" disabled={!l.dir} title={l.dir ? "" : "This lesson has no ONE Video. Import the course again on Settings, Import & Export to make it."} onclick={() => l.dir && openProject(l.dir)}>
+            <span class="pos">Lesson {l.position} of {course.lessons.length}</span>
+            <span class="title">{l.videoTitle ?? l.title}</span>
+            <span class="status">{l.status ?? "Not created"}</span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+  {:else if !loading && projects.length}
     <ul class="list">
       {#each projects as p}
         <li>
           <button type="button" class="item" onclick={() => openProject(p.dir)}>
-            <span class="title">{p.title}</span>
+            <span class="title">{p.title}{#if p.series}<span class="tag">Lesson {p.series.playlistPosition}{p.series.courseTitle ? `, ${p.series.courseTitle}` : ""}</span>{/if}</span>
             <span class="status">{p.status}</span>
             <span class="date">{when(p.createdAt)}</span>
           </button>
@@ -228,5 +288,13 @@
   .bad { color: var(--danger-text); margin: 0; font-size: 13px; }
   .empty p { margin: 4px 0; }
   .actions-top { display: flex; gap: 8px; }
+  .filter { display: flex; gap: 10px; align-items: center; }
+  .filter select { max-width: 420px; }
+  .course { display: grid; gap: 8px; }
+  .plain { word-break: break-word; margin: 0; }
+  .lesson { grid-template-columns: 130px 1fr 120px; }
+  .pos { color: var(--muted-foreground); font-size: 14px; }
+  .tag { display: block; font-weight: 400; font-size: 12px; color: var(--muted-foreground); }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
   .restore { display: grid; grid-template-columns: 1fr 160px auto; gap: 12px; align-items: center; padding: 6px 0; }
 </style>

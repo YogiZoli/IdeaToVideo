@@ -79,7 +79,7 @@ export function loadPackaging(projectDir) {
     return null;
   }
 }
-function writePackaging(projectDir, pack) {
+export function writePackaging(projectDir, pack) {
   const p = packagingFile(projectDir);
   fs.writeFileSync(`${p}.tmp`, JSON.stringify(pack, null, 2) + "\n");
   fs.renameSync(`${p}.tmp`, p);
@@ -88,7 +88,7 @@ function writePackaging(projectDir, pack) {
 
 // The chosen title is the script's title too: script.json and the heading
 // of script.md.
-function setScriptTitle(projectDir, title) {
+export function setScriptTitle(projectDir, title) {
   const sj = path.join(projectDir, "script.json");
   if (fs.existsSync(sj)) {
     const s = JSON.parse(fs.readFileSync(sj, "utf8"));
@@ -107,7 +107,10 @@ export function mergePackaging(old, answer) {
   const titles = answer.titles.map((t) => String(t).trim()).filter((t) => t && t.length <= TITLE_MAX).slice(0, 3);
   const fresh = { titles, title: titles[0], summary: answer.summary.trim().slice(0, SUMMARY_MAX), tags: cleanTags(answer.tags) };
   if (!old?.chosen) return { schema: PACKAGING_SCHEMA, ...fresh, chosen: false, at: new Date().toISOString() };
-  return { ...old, titles: [...new Set([old.title, ...titles])].slice(0, 4), at: new Date().toISOString() };
+  // A choice that came without a summary or tags (a course import brings
+  // the title and the description only) gets them from the AI once.
+  const missing = { ...(old.summary ? {} : { summary: fresh.summary }), ...(old.tags?.length ? {} : { tags: fresh.tags }) };
+  return { ...old, titles: [...new Set([old.title, ...titles])].slice(0, 4), ...missing, at: new Date().toISOString() };
 }
 
 // The user's choice: the title (one of the ideas or their own), the

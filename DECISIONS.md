@@ -1708,3 +1708,174 @@
       runnerben is megvan.
     - Tesztek: Node 281 zöld (2 éles kihagyva), Rust 48, e2e 39/39, UI check
       0 hiba; a Script tab a `scripts/ui-mock`-kal megnézve.
+
+## 2026-10-11 (Course import)
+
+121. **Course import: egy kurzus leckénként egy előkészített ONE Video**
+    (Zoltan, 2026-10-11; branch `course-import`; `runner/course/index.mjs`).
+    A bemenet a Minicourse repo "Course Content Structure" fájlja
+    (`schema/course-content-structure.md`, `schema_version 1.1`). A formátum
+    a Minicourse repóé és fagyasztott: az IdeaToVideo csak olvassa.
+    - **Két bejárat, egy olvasó:** Settings, Import & Export: "Course Content
+      Structure (.json)" fájlválasztóval, és "Paste Course Content
+      Structure" szövegmezővel (a Minicourse oldal "Copy for IdeaToVideo"
+      gombjához). Az olvasó a `type`-ot és a major verziót nézi, minden mást
+      érthető angol mondattal utasít el (más típus, a régi Video Course
+      Content Brief, 2.x verzió, hibás JSON, használhatatlan slug vagy
+      lecke-azonosító, két azonos azonosító). Az ismeretlen mezőket és az
+      `outline` blokkot nem olvassa. Az 1.x későbbi minor verzióit olvassa.
+    - **Előnézet, utána létrehozás:** kurzuscím, leckeszám, a leckék
+      playlist-sorrendben, a playlist link. Létrehozás csak a "Create N
+      videos" gombra.
+    - **Mit tölt ki egy lecke** (a meglévő utakon, új menet nélkül):
+      a projekt címe (`title`); `brief.json` (a meglévő Video Brief Card:
+      cím, `keyword`, közönség a kurzus `ideal_client` mezőjéből, playlist
+      név, pozíció, darabszám, a következő lecke címe, célhossz a három perc
+      összegéből, legfeljebb 30); `seed.json` (séma `lesson-seed/1`: `hook`,
+      `teach.points`, `do.exercise`, `review.check` ebben a sorrendben, a
+      perceikkel, és a `cta` zárómondatként); `packaging.json`
+      (`youtube.title` és `youtube.description`, választottként);
+      `project.json` új, opcionális `series` blokkja (courseSlug,
+      courseTitle, lessonId, playlistPosition, playlistCount, playlistId,
+      playlistUrl).
+    - **A script seed csak előkészül** (Zoltan döntése): az import nem hív
+      AI-t. A "Write script" kapja meg a seedet a prompt új "Lesson outline"
+      részében: a hook az első mondat, a TEACH szakaszok a pontok, utána a
+      gyakorlat, a végén az ellenőrzés, a zárómondat az utolsó mondat. A
+      kurzus ígérete csak háttér: a videó ígérete a leckéé, ezért a kurzus
+      `bold_promise` mezője nem megy a brief `promise` mezőjébe.
+    - **A lecke `cta` sora zárómondat, nem komment-hívás.** A
+      komment-kulcsszavak videónkénti választása (120) változatlan, az
+      import nem állít be semmit.
+    - **Tagek és nyelv:** a fájlban nincsenek. A nyelv az aktív Identity
+      tartalomnyelve. A tageket (és egy üres összefoglalót) az AI pótolja a
+      "Write script" csomagoló lépésében; az importált címet és leírást nem
+      írja felül (`mergePackaging`).
+    - **Hosszú szövegek:** a YouTube cím 100, az összefoglaló 1000 karakter
+      marad (a kártya sémája ennyit enged). Az előnézet figyelmeztet, ha a
+      fájlban hosszabb; a teljes szöveg a megőrzött fájlban megvan.
+    - **A kurzus csak csoport a videók fölött** (Zoltan döntése: szűrő, nem
+      új képernyő): a Videos oldalon "Course" választó. Kurzust választva a
+      leckék playlist-sorrendben, "Lesson N of M" jelzéssel és a videó
+      állapotával, fölöttük a playlist link és az "Export Course Content
+      Structure". Az "All videos" listában a kurzus videói alatt kis címke.
+      A munka továbbra is egy videón folyik.
+    - **A fájl megmarad, bájtra változatlanul:**
+      `<az Identity videómappája>/_courses/<slug>/<slug>-course-content-structure.json`,
+      mellette `course.json` (séma `course-group/1`: cím, playlist, leckék,
+      import ideje). Az export ezt a fájlt másolja ki, a Videos oldalról és
+      az Import & Export oldalról is.
+    - **Újraimport:** a kulcs a kurzus slug és a lecke id; a videót a
+      `project.json` `series` blokkja alapján találja meg, nem a mappanévből.
+      Minden videóban `course-import.json` őrzi, mit töltött ki az utolsó
+      import. Egy érték akkor frissül, ha még az, amit az import írt; amit a
+      user kézzel átírt, marad. Az app saját címcseréje (a "Write script" a
+      YouTube címet teszi a videó címévé) nem számít kézi átírásnak. A már
+      megírt scriptet az új seed soha nem írja át, és kapu nem áll vissza.
+      Második videó egy leckéhez soha nem készül; a törölt videó leckéje
+      újra létrejön. Ami már nincs a fájlban, annak a videója marad. A
+      végén leckénként: Created, Updated (mi), Left alone (mi), Nothing new.
+    - **Az import semmit nem indít el:** nincs AI, hang, HeyGen, AI B-roll,
+      render; az Autopilot a létrehozott videókon ki van kapcsolva; minden
+      kapu "todo". Nincs új hálózati hívás, port vagy URL-séma. Feltöltés
+      nincs, az YouTube Studio-ban kézi marad.
+    - **Video tab:** az "Upload on YouTube" blokkban "Playlist: position N
+      of M", a playlist linkkel és a mondattal, hogy a leckéket sorrendben
+      kell feltölteni.
+    - **Playlist link:** csak a
+      `https://www.youtube.com/playlist?list=<azonosító>` forma jelenik meg
+      linkként (a runner és a UI is ellenőrzi); az opener engedélylistájára
+      csak ez a forma került fel. Más címet az app nem mutat linkként.
+    - **Biztonság:** a slug mappanév lesz, ezért csak kisbetű, szám és
+      kötőjel lehet, legfeljebb 60 karakter; a fájl legfeljebb 2 MB és 200
+      lecke. A szöveg adat, soha nem utasítás (a script prompt DATA blokkja).
+    - **Nyitva:** a `_courses` mappa még nincs a Backupban (a videók igen,
+      a `series` blokkal; a kurzusfájl a Minicourse oldalról újra
+      letölthető, és egy újraimport visszaállítja a csoportot).
+    - Runner parancsok: `course-preview`, `course-import`, `course-list`,
+      `course-export` (a Rust mag engedélylistáján kulcs nélkül). Tesztek:
+      `runner/course.test.mjs` a példafájl másolatával
+      (`runner/fixtures/example-course-content-structure.json`), az e2e öt
+      új lépése, a `scripts/ui-mock` `?course=1` módja.
+
+122. **Video Publishing Card: series block** (Zoltan, 2026-10-11). Az
+    IdeaToVideo a blokk forrása: a PDT később ezt a leírást másolja.
+    - **Séma verzió: előtte `video-publishing-card/1`, utána
+      `video-publishing-card/1`.** Nincs emelés: a 77 és a 114 szerint a
+      séma csak bővül, és csak törő változás kap új számot. A blokk
+      opcionális, így nem törő. Egy `/2` jelzést a mai fogadók (a mock és a
+      PDT) elutasítanának, tehát az nem lenne ártalmatlan.
+    - **Hol van:** a kártya legfelső szintjén, `series` néven. Csak akkor
+      van jelen, ha a videó egy importált kurzus leckéje (121). Minden más
+      videó kártyájából a kulcs teljesen hiányzik (nem `null`).
+    - **Egy kártya a blokk nélkül pontosan úgy érvényes, mint eddig**; a
+      kötelező mezők listája nem változott (teszt rögzíti).
+    - **Mezők:**
+
+      | Mező | Típus | Kötelező a blokkon belül | Jelentés |
+      |---|---|---|---|
+      | `courseSlug` | string, `^[a-z0-9]+(-[a-z0-9]+)*$`, legfeljebb 60 | igen | a kurzus slugja (a Course Content Structure `course.slug` mezője) |
+      | `lessonId` | string, `^[a-z0-9]+(-[a-z0-9]+)*$`, legfeljebb 40 | igen | a lecke azonosítója, például `m1-l2` (`lessons[].id`) |
+      | `playlistPosition` | integer, legalább 1 | igen | a videó helye a playlistben, 1-től (`lessons[].playlist_position`) |
+      | `playlistId` | string vagy `null` | igen (a kulcs mindig ott van) | a YouTube playlist azonosítója; `null`, amíg nincs playlist |
+      | `playlistUrl` | string vagy `null` | nem | a playlist címe; az app eleve hordozza a `project.json`-ban, ezért került be. Csak `https://www.youtube.com/playlist?list=...` forma lehet, különben `null` |
+
+      A `courseSlug` és a `lessonId` együtt a lecke kulcsa. A fogadó az
+      ismeretlen mezőket hagyja figyelmen kívül; a blokk később is csak
+      bővülhet.
+    - **Teljes példa** (egy kártya a blokkal; a séma szerint érvényes):
+
+      ```json
+      {
+        "schema": "video-publishing-card/1",
+        "cardId": "0b5c3c1e-6f4e-4f7a-9d3a-2c1b0a9e8f7d",
+        "videoId": null,
+        "createdAt": "2026-10-11T16:20:00.000Z",
+        "app": { "name": "IdeaToVideo", "version": "0.1.0" },
+        "video": {
+          "file": "video-20261011-1620.mp4",
+          "seconds": 598.4,
+          "language": "en",
+          "title": "How to Mix Sourdough Dough Without Kneading",
+          "workingTitle": "How to Mix Sourdough Dough Without Kneading"
+        },
+        "searchKeyword": "how to mix sourdough dough",
+        "landingUrl": null,
+        "next": { "video": "Fold and shape: touch two", "playlist": "TEST Sourdough in a Weekend" },
+        "chapters": [
+          { "start": 0, "title": "Intro" },
+          { "start": 38.2, "title": "The four ingredients and their ratio" },
+          { "start": 221.5, "title": "Mix it now" },
+          { "start": 498.0, "title": "Check your dough" }
+        ],
+        "chaptersText": "0:00 Intro\n0:38 The four ingredients and their ratio\n3:41 Mix it now\n8:18 Check your dough",
+        "captions": { "file": "video-20261011-1620.srt", "language": "en", "srt": "1\n00:00:00,000 --> 00:00:04,100\nYou are about to do a third of all the work in four minutes.\n" },
+        "script": [
+          { "heading": "OPEN", "text": "You are about to do a third of all the work in four minutes." }
+        ],
+        "sentences": [
+          { "start": 0, "end": 4.1, "text": "You are about to do a third of all the work in four minutes." }
+        ],
+        "commentCalls": [
+          { "slot": "end", "keyword": "GUIDE", "temperature": "cold", "gets": "the ingredient card", "via": "narrator", "start": 560.2, "end": 566.9 }
+        ],
+        "endScreen": { "start": 578.4, "seconds": 20, "startSec": 578.4 },
+        "packaging": {
+          "titles": ["How to Mix Sourdough Dough Without Kneading"],
+          "title": "How to Mix Sourdough Dough Without Kneading",
+          "summary": "Four ingredients, one bowl, no kneading.\n\nLesson 2 of Sourdough in a Weekend.",
+          "tags": ["sourdough", "how to mix sourdough dough", "no knead bread"]
+        },
+        "syntheticMedia": false,
+        "series": {
+          "courseSlug": "test-sourdough-in-a-weekend",
+          "lessonId": "m1-l2",
+          "playlistPosition": 2,
+          "playlistId": "PLxxxxxxxxxxxxxxxx",
+          "playlistUrl": "https://www.youtube.com/playlist?list=PLxxxxxxxxxxxxxxxx"
+        }
+      }
+      ```
+    - Kód: `runner/gates/render/publish.mjs` (`buildCard`), séma:
+      `runner/schema/video-publishing-card.schema.json`, teszt:
+      `runner/course.test.mjs` ("card: the optional series block").

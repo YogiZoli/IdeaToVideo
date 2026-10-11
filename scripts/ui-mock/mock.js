@@ -131,6 +131,15 @@ function brollTable() {
   const done = (brollPlan?.items ?? []).filter((i) => i.use && i.state === "done");
   return { ...BROLL_TABLE, rows: BROLL_TABLE.rows.map((r) => ({ ...r, footage: done.find((i) => i.from === r.from)?.clip ?? null })) };
 }
+// Course import (DECISIONS 121): ?course=1 the test video is lesson 2 of an
+// imported course, and the course is on Videos; without it the first import
+// can be tried on Settings, Import & Export (the preview is the real one of
+// the example file, course-preview.json from prepare.mjs).
+const PLAYLIST = "https://www.youtube.com/playlist?list=PLxxxxxxxxxxxxxxxx";
+let courseHere = !!q.get("course");
+const SERIES = { courseSlug: "test-sourdough-in-a-weekend", courseTitle: "TEST Sourdough in a Weekend", lessonId: "m1-l2", playlistPosition: 2, playlistCount: 4, playlistId: "PLxxxxxxxxxxxxxxxx", playlistUrl: PLAYLIST };
+if (courseHere) project.series = SERIES;
+const coursePreview = async () => { const p = await (await fetch("/course-preview.json")).json(); return { ...p, lessons: p.lessons.map((l) => ({ ...l, exists: courseHere })), newCount: courseHere ? 0 : p.lessons.length, existingCount: courseHere ? p.lessons.length : 0 }; };
 const jobs = q.get("otherjob") ? [{ id: 1, command: "render-video", identity: "voxflow", identityName: "VoxFlow", project: "C:/P/VoxFlow/2026-10-01_first", state: "running" }] : [];
 const replies = {
   "load-project": { project, brief: null, scriptMarkdown: "# T\n", latestVideo: null, stills: [], voiceInfo: null },
@@ -226,7 +235,11 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "refill-scene" || args.command === "save-scenes") { setState("scenes", "pending", "custom"); project.gates.review = { state: "todo" }; }
         if (args.command === "build-video") { project.gates.review = { state: "pending" }; }
         if (args.command === "render-video") { video = { file: "/preview/motion.mp4", seconds: 128, renderSeconds: 417, chapters: "0:00 Intro", srt: "x.srt", publishFile: "x.publish.json", comments: "GUIDE", youtube: null }; return video; }
-        if (args.command === "list-projects") return { projects: [{ id: "p", title: `Test of ${active()?.name}`, status: "Scened", dir: `${args.request.projectsDir}/test`, createdAt: "2026", gates: project.gates }] };
+        if (args.command === "list-projects") return { projects: [{ id: "p", title: `Test of ${active()?.name}`, status: "Scened", dir: `${args.request.projectsDir}/test`, createdAt: "2026", gates: project.gates, series: courseHere ? SERIES : null }] };
+        if (args.command === "course-preview") { if (/"schema_version":\s*"2/.test(args.request.text ?? "")) throw "This Course Content Structure is version 2.0. This app reads version 1 only. Update IdeaToVideo, then import it again."; return coursePreview(); }
+        if (args.command === "course-list") { if (!courseHere) return { courses: [] }; const p = await coursePreview(); return { courses: [{ slug: p.course.slug, title: p.course.title, playlist: p.playlist, importedAt: "2026-10-11", hasFile: true, lessons: p.lessons.map((l, i) => ({ id: l.id, position: l.position, title: l.title, dir: i === 2 ? null : `${args.request.projectsDir}/test`, videoTitle: l.title, status: i === 2 ? null : ["Rendered", "Scened", null, "Idea"][i] })) }] }; }
+        if (args.command === "course-import") { const p = await coursePreview(); const again = courseHere; courseHere = true; return { course: p.course, playlist: p.playlist, again, created: again ? 0 : 4, updated: again ? 1 : 0, unchanged: again ? 3 : 0, gone: [], warnings: [], file: "C:/P/_courses/x.json", lessons: p.lessons.map((l, i) => ({ id: l.id, position: l.position, title: l.title, dir: "x", action: again ? (i === 0 ? "updated" : "unchanged") : "created", updated: again && i === 0 ? ["keyword", "CTA"] : [], kept: again && i === 0 ? ["YouTube title", "hook"] : [], scriptKept: again && i === 0 })) }; }
+        if (args.command === "course-export") return { file: args.request.file };
         if (args.command === "create-project") return { id: "n", dir: `${args.request.projectsDir}/2026-10-01_new` };
         if (args.command === "brand-state") return brandState();
         if (args.command === "brand-save") { brandCard = { ...args.request.card, updatedAt: new Date().toISOString() }; return { card: brandCard, own: true, contrast: [] }; }
