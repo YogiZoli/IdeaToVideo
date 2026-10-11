@@ -27,10 +27,14 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   `seed.json`, `course-import.json`, `packaging.json` a mentésben van, és
   visszatöltéskor visszajön. A `packaging.json` eddig hiányzott minden
   videó mentéséből, ez is javítva.
+- **Telepítő** (Windows, build `e047179`, a PR #16 és #17 merge után):
+  `C:/Users/gdp/ITV-sandbox/share/IdeaToVideo_0.1.0_e047179_x64-setup.exe`
+  (106 MB). Benne van minden a mainről; csak a `ci-test-order` branch
+  nincs (CI beállítás, szándékosan a 4. fázis végére vár).
 - Tesztek: Node 293 zöld (2 éles kihagyva), Rust 48, e2e 44/44, UI check 0
   hiba; a felület a `scripts/ui-mock`-kal megnézve (`?course=1`).
 
-**Következő:** Zoltan kézi próbája egy valódi kurzusfájllal (a következő
+**Következő:** Zoltan kézi próbája egy valódi kurzusfájllal (az `e047179`
 telepítővel); a PDT oldalon a `series` blokk olvasása. A korábbi pontok
 állnak: a HeyGen éles próba, amikor van keret.
 
