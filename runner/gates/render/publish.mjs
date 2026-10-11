@@ -80,6 +80,10 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
   calls.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
   const pub = script?.publishing ?? {};
   const pack = loadPackaging(projectDir);
+  // One lesson of an imported course (DECISIONS 122): where it sits in the
+  // course's playlist. Left out of every other video's card.
+  const s = loadProject(projectDir).series;
+  const series = s ? { series: { courseSlug: s.courseSlug, lessonId: s.lessonId, playlistPosition: s.playlistPosition, playlistId: s.playlistId ?? null, playlistUrl: s.playlistUrl ?? null } } : {};
   return {
     schema: CARD_SCHEMA,
     cardId: cardIdOf(projectDir),
@@ -105,6 +109,7 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
     // "altered or synthetic content" question is to be answered yes when a
     // clip looks real (a person, a place, an event).
     syntheticMedia: !!syntheticMedia,
+    ...series,
   };
 }
 

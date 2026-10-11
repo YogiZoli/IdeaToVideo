@@ -7,6 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { effectiveConfig } from "./identity";
 import { log } from "./logger";
+import type { Series } from "./course/course";
 
 // Every call into the core, timed, into the local log (logger.ts).
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -127,7 +128,7 @@ type RawState = Omit<AppState, "config">;
 const withConfig = (s: RawState): AppState => ({ ...s, config: s.app && s.identity ? effectiveConfig(s.app, s.identity) : null });
 
 export type Gate = { state: string; mode?: string; at?: string; error?: string; reason?: string };
-export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate> };
+export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate>; series?: Series | null };
 
 export type KeyScope = "app" | "identity";
 

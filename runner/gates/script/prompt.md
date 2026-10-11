@@ -91,6 +91,29 @@ the first person where it fits best (often the OPEN or the highest-value
 section), keep its facts exactly, and never add details it does not give.
 When the data has no ownAngle, ignore this.
 
+## Lesson outline
+
+When the data has "lessonOutline", this video is one lesson of a course, and
+the outline is the plan of the lesson. Follow it, in its order:
+
+- hook: the first sentence of the video. Say it as open.problem, in its own
+  words; change only the punctuation the spoken text rules do not allow.
+- teach.points: the first TEACH sections explain these points, in this order,
+  and nothing the outline does not ask for.
+- do.exercise: the next section is the exercise. Tell the viewer what to do
+  now, step by step.
+- review.check: the last section is the check. Tell the viewer how to see
+  that it worked, and what to do when it did not.
+- The minutes of teach, do and review say how the length is shared between
+  the three parts. The total in Length below is what counts.
+- closingLine: the last sentence of the video. Say it as own.nextVideo, in its
+  own words, with the same punctuation rule. It takes the place of the usual
+  next video sentence.
+- course: the course this lesson belongs to. It is background only: the
+  promise of this video is what this lesson gives, not the whole course.
+
+When the data has no lessonOutline, ignore this.
+
 ## Dictionary
 
 When the data has a "dictionary", follow it everywhere in the script:

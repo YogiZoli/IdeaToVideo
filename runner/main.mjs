@@ -59,6 +59,7 @@ import { friendlyMessage } from "./friendly.mjs";
 import { planBroll, estimateBroll, makeBroll, updateItem as updateBroll, againItem as againBroll, removeItem as removeBroll, attach as attachBroll, loadPlan as loadBrollPlan, usesGenerated } from "./broll/index.mjs";
 import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP } from "./broll/settings.mjs";
 import { choices as brollChoices } from "./generate/index.mjs";
+import { previewCourse, importCourse, listCourses, exportCourse, readSeed } from "./course/index.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -401,7 +402,7 @@ const commands = {
       const dir = path.join(projectsDir, name);
       try {
         const p = recovered(dir, liveProjects);
-        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates, render: p.render ?? null, autopilotRun: !!p.autopilotRun });
+        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates, render: p.render ?? null, autopilotRun: !!p.autopilotRun, series: p.series ?? null });
       } catch {
         // not a project folder, or a broken one: skip it
       }
@@ -409,6 +410,15 @@ const commands = {
     projects.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     return { projects };
   },
+
+  // ---- Course import (course/index.mjs, DECISIONS 121) ----------------------------
+  // A Course Content Structure, as a file or as pasted text: the preview
+  // first, then one prepared ONE Video per lesson. Nothing here calls a
+  // service or starts a step.
+  "course-preview": async ({ projectsDir, file, text }) => previewCourse({ projectsDir, file, text }),
+  "course-import": async ({ projectsDir, file, text, identity, language }) => importCourse({ projectsDir, file, text, identity, language }),
+  "course-list": async ({ projectsDir }) => listCourses(projectsDir),
+  "course-export": async ({ projectsDir, slug, file }) => exportCourse({ projectsDir, slug, file }),
 
   // ---- Brand wizard (docs/wizards/brand.md) ----------------------------------------
   // Everything the wizard shows: the Identity's card (own or from its preset),
@@ -704,7 +714,7 @@ const commands = {
       const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
         writeScript({
           llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-          input: { ...input, brief: readBrief(projectDir) ?? undefined, channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
+          input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );

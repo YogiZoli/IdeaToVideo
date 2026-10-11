@@ -28,6 +28,7 @@
     markdown,
     briefLength,
     hasBrief,
+    fromCourse = false,
     calls,
     changed,
     saved,
@@ -41,6 +42,7 @@
     markdown: string | null;
     briefLength?: number;
     hasBrief: boolean;
+    fromCourse?: boolean;
     calls: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
     changed: () => Promise<void>;
     saved: (s: AppState) => void;
@@ -245,7 +247,7 @@
       {#if markdown}<Packaging {app} {dir} version={markdown} disabled={locked} {changed} />{/if}
     </div>
   {:else}
-    <p class="hint">Click "Write script" and the AI writes it in about a minute{hasBrief ? ", from the Video Brief Card too" : ""}. Your landing page link goes into the YouTube description, never into the narration. No AI at hand? Write it yourself.</p>
+    <p class="hint">Click "Write script" and the AI writes it in about a minute{fromCourse ? ", from the course lesson (its hook, what to teach, the exercise, the check and the closing line)" : hasBrief ? ", from the Video Brief Card too" : ""}. Your landing page link goes into the YouTube description, never into the narration. No AI at hand? Write it yourself.</p>
   {/if}
 
   <div class="actionbar">

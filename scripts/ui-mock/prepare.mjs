@@ -24,6 +24,7 @@ import { defaultProfile as ctaDefault, catalogForUi } from "../../runner/cta/pro
 import { TEMPERATURES, SLOTS, PLACES_FOR_COUNT } from "../../runner/cta/catalog.mjs";
 import { callColor } from "../../runner/gates/build/assemble.mjs";
 import { cardTheme } from "../../runner/brand/card.mjs";
+import { previewCourse } from "../../runner/course/index.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = process.argv[2];
@@ -38,6 +39,8 @@ if (!fs.existsSync(path.join(build, "index.html"))) {
 }
 fs.rmSync(out, { recursive: true, force: true });
 fs.cpSync(build, out, { recursive: true });
+// Course import (DECISIONS 121): the real preview of the example file.
+fs.writeFileSync(path.join(out, "course-preview.json"), JSON.stringify(previewCourse({ projectsDir: out, file: path.join(here, "..", "..", "runner", "fixtures", "example-course-content-structure.json") })));
 fs.copyFileSync(path.join(here, "mock.js"), path.join(out, "mock.js"));
 const index = path.join(out, "index.html");
 fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("<head>", `<head><script src="/mock.js?v=${Date.now()}"></script>`));

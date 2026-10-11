@@ -20,7 +20,7 @@ const WORDS_PER_MINUTE = 150;
 // CTA K10), so `cta` is always null now; the field stays for old scripts.
 // angle: the creator's own story, opinion or example for this video (gate 1,
 // "Your own angle", optional; DECISIONS 88).
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null }) {
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null }) {
   const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
   const cta = null;
   const data = {
@@ -41,10 +41,26 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
   if (calls.length) data.commentCalls = calls;
   const own = String(angle ?? "").trim().slice(0, 1500);
   if (own) data.ownAngle = own;
+  // One lesson of an imported course: its plan (course/index.mjs, seed.json).
+  const outline = lessonOutline(seed);
+  if (outline) data.lessonOutline = outline;
   // The Identity's dictionary (dictionary.mjs dictionaryData), only when it has entries.
   if (dictionary) data.dictionary = dictionary;
   if (!data.topic) throw new Error("A topic or a brief title is needed to write a script.");
   return data;
+}
+
+// The script seed as the model sees it: only the parts that say something.
+export function lessonOutline(seed) {
+  if (!seed || typeof seed !== "object") return null;
+  const out = {};
+  if (seed.course?.title) out.course = seed.course;
+  if (seed.hook) out.hook = seed.hook;
+  if (seed.teach?.points?.length) out.teach = { minutes: seed.teach.minutes || null, points: seed.teach.points };
+  if (seed.do?.exercise) out.do = { minutes: seed.do.minutes || null, exercise: seed.do.exercise };
+  if (seed.review?.check) out.review = { minutes: seed.review.minutes || null, check: seed.review.check };
+  if (seed.closingLine) out.closingLine = seed.closingLine;
+  return out.hook || out.teach || out.do || out.review || out.closingLine ? out : null;
 }
 
 export function buildMessages(data) {
