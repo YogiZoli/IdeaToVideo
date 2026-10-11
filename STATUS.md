@@ -1,6 +1,6 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-11 (Course import, DECISIONS 121-122)
+Frissítve: 2026-10-11 (Course import, DECISIONS 121-123)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
@@ -23,13 +23,16 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   `video-publishing-card/1`. A PDT ezt a leírást másolja.
 - Az import semmit nem indít el (nincs AI, HeyGen, render). Telepítő nem
   készült.
-- Tesztek: Node 292 zöld (2 éles kihagyva), Rust 48, e2e 44/44, UI check 0
+- **Backup** (123): a kurzus-csoport (`_courses`) és videónként a
+  `seed.json`, `course-import.json`, `packaging.json` a mentésben van, és
+  visszatöltéskor visszajön. A `packaging.json` eddig hiányzott minden
+  videó mentéséből, ez is javítva.
+- Tesztek: Node 293 zöld (2 éles kihagyva), Rust 48, e2e 44/44, UI check 0
   hiba; a felület a `scripts/ui-mock`-kal megnézve (`?course=1`).
 
 **Következő:** Zoltan kézi próbája egy valódi kurzusfájllal (a következő
-telepítővel); a PDT oldalon a `series` blokk olvasása; a `_courses` mappa
-felvétele a Backupba. A korábbi pontok állnak: a HeyGen éles próba, amikor
-van keret.
+telepítővel); a PDT oldalon a `series` blokk olvasása. A korábbi pontok
+állnak: a HeyGen éles próba, amikor van keret.
 
 ## Most (2026-10-08 este)
 
