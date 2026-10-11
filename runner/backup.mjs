@@ -12,6 +12,12 @@
 // from a backup. The project folder gets backup.json (its backup folder,
 // the level override, the last backup); project.json is never written here,
 // so a backup can run next to a gate.
+//
+// Course groups (DECISIONS 123): the kept Course Content Structure file and
+// course.json of an imported course go to
+//   <backupRoot>/<Identity folder>/_courses/<slug>/
+// with every backup of one of its lessons and with "Back up now", and come
+// back with the first lesson restored. They ride with every level.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -31,6 +37,10 @@ export function backupFiles(projectDir, level = 4) {
   add("script.md", "_script.md", 1);
   add("script.json", "_script.json", 1);
   add("brief.json", "_brief.json", 1);
+  // the packaging chosen at gate 1, and what a course import prefilled
+  add("packaging.json", "_packaging.json", 1);
+  add("seed.json", "_seed.json", 1);
+  add("course-import.json", "_course_import.json", 1);
   add("log.txt", "_log.txt", 1);
   add("audio/vo.mp3", "_voice.mp3", 2);
   add("audio/vo_bgm.mp3", "_voice_music.mp3", 2);
@@ -57,6 +67,48 @@ function list(dir) {
   } catch {
     return [];
   }
+}
+
+const COURSES = "_courses";
+const COURSE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const changed = (src, dest) => {
+  const s = fs.statSync(src);
+  const d = fs.existsSync(dest) ? fs.statSync(dest) : null;
+  return !(d && d.size === s.size && d.mtimeMs >= s.mtimeMs);
+};
+
+/** Copies one course group between a videos folder and its backup, only the
+ * changed files. Returns how many files were copied. */
+function copyCourse(fromDir, toDir, slug) {
+  if (!COURSE_SLUG.test(String(slug ?? ""))) return 0;
+  const from = path.join(fromDir, COURSES, slug);
+  let copied = 0;
+  for (const f of list(from).filter((n) => n.endsWith(".json"))) {
+    const dest = path.join(toDir, COURSES, slug, f);
+    if (!changed(path.join(from, f), dest)) continue;
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(path.join(from, f), dest);
+    copied++;
+  }
+  return copied;
+}
+
+/** Every course group of one Identity's videos folder into the backup. */
+export function backupCourses({ projectsDir, backupRoot, identityFolder }) {
+  let slugs = [];
+  try {
+    slugs = fs.readdirSync(path.join(projectsDir, COURSES));
+  } catch {
+    return { courses: 0, copied: 0 };
+  }
+  let courses = 0;
+  let copied = 0;
+  for (const slug of slugs) {
+    if (!fs.existsSync(path.join(projectsDir, COURSES, slug, "course.json"))) continue;
+    courses++;
+    copied += copyCourse(projectsDir, path.join(backupRoot, identityFolder), slug);
+  }
+  return { courses, copied };
 }
 
 /** "Freelancer to Owner: 3 steps?" -> "Freelancer_to_Owner_3_steps" (DECISIONS 66). */
@@ -174,6 +226,13 @@ export function backupProject({ projectDir, backupRoot, identityFolder, level = 
     files: map,
   });
   writeRecord(projectDir, { path: rel, at, lastLevel: lvl });
+  // a course lesson takes its course group along (a problem there never
+  // fails the video's own backup)
+  try {
+    if (project.series) copyCourse(path.dirname(projectDir), path.join(backupRoot, identityFolder), project.series.courseSlug);
+  } catch {
+    // the next backup tries again
+  }
   return { path: rel, dir, level: lvl, copied, skipped, bytes, files: files.length, shortened, at };
 }
 
@@ -191,8 +250,18 @@ export function backupAll({ backupRoot, projectsRoot, folders, level = 4, onProg
       failed.push({ project: path.basename(dir), error: e.message });
     }
   });
+  // the course groups too, also one whose lessons have no video any more
+  let courses = 0;
+  for (const folder of folders) {
+    try {
+      courses += backupCourses({ projectsDir: path.join(projectsRoot, folder), backupRoot, identityFolder: folder }).courses;
+    } catch (e) {
+      failed.push({ project: `${folder}/${COURSES}`, error: e.message });
+    }
+  }
   return {
     projects: projects.length,
+    courses,
     copied: done.reduce((a, r) => a + r.copied, 0),
     bytes: done.reduce((a, r) => a + r.bytes, 0),
     failed,
@@ -286,5 +355,13 @@ export function restoreProject({ backupRoot, path: rel, projectsDir }) {
   project.status = statusFor(project);
   writeJson(pj, project);
   writeRecord(target, { path: rel, at: m.at, restoredAt: new Date().toISOString() });
-  return { dir: target, id: m.projectId, reset };
+  // a course lesson brings its course group back (never over a newer one here)
+  let course = false;
+  try {
+    const slug = project.series?.courseSlug;
+    if (slug && !fs.existsSync(path.join(projectsDir, COURSES, slug, "course.json"))) course = copyCourse(path.dirname(dir), projectsDir, slug) > 0;
+  } catch {
+    // the group comes back with an import of the course file
+  }
+  return { dir: target, id: m.projectId, reset, course };
 }

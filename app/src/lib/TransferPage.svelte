@@ -158,9 +158,9 @@
   const mb = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
   async function backupNow() {
     await run("Backing up...", async () => {
-      const r = await runner<{ projects: number; copied: number; bytes: number; failed: { project: string; error: string }[] }>("backup-all", {});
+      const r = await runner<{ projects: number; courses?: number; copied: number; bytes: number; failed: { project: string; error: string }[] }>("backup-all", {});
       const n = await backupSettingsNow();
-      message = `Backed up ${r.projects} ${r.projects === 1 ? "video" : "videos"} (${r.copied} files changed, ${mb(r.bytes)}) and the settings of ${n} ${n === 1 ? "Identity" : "Identities"}.`;
+      message = `Backed up ${r.projects} ${r.projects === 1 ? "video" : "videos"} (${r.copied} files changed, ${mb(r.bytes)}) and the settings of ${n} ${n === 1 ? "Identity" : "Identities"}.${r.courses ? ` ${r.courses} ${r.courses === 1 ? "course" : "courses"} with the course file.` : ""}`;
       if (r.failed.length) error = `Not backed up: ${r.failed.map((f) => `${f.project}: ${f.error}`).join("; ")}`;
     });
   }

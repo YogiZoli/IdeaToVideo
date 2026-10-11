@@ -8,12 +8,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseCourse, previewCourse, importCourse, listCourses, exportCourse, readSeed, PLAYLIST_URL } from "./course/index.mjs";
+import { parseCourse, previewCourse, importCourse, listCourses, exportCourse, readSeed, PLAYLIST_URL, COURSES_FOLDER } from "./course/index.mjs";
 import { loadProject, saveProject, GATES } from "./project.mjs";
 import { loadPackaging, savePackaging, mergePackaging } from "./gates/render/youtube.mjs";
 import { buildData, buildMessages } from "./gates/script/index.mjs";
 import { buildCard, checkCard } from "./gates/render/publish.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
+import { backupAll, backupProject, listBackups, restoreProject } from "./backup.mjs";
 
 const FIXTURE = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", "example-course-content-structure.json");
 const TEXT = fs.readFileSync(FIXTURE, "utf8");
@@ -255,4 +256,45 @@ test("card: the optional series block, only on a course lesson; a card without i
   assert.match(bad({ courseSlug: "a", lessonId: "m1-l1", playlistPosition: 0, playlistId: null }).join(" "), /below 1/);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.rmSync(none, { recursive: true, force: true });
+});
+
+test("backup: the course group and what the import prefilled go along, and come back with a lesson", () => {
+  const root = tmp();
+  const projectsRoot = path.join(root, "projects");
+  const backups = path.join(root, "b");
+  const dir = path.join(projectsRoot, "My Identity");
+  fs.mkdirSync(dir, { recursive: true });
+  const r = importCourse({ projectsDir: dir, file: FIXTURE });
+  const slug = "test-sourdough-in-a-weekend";
+  const kept = path.join(COURSES_FOLDER, slug, `${slug}-course-content-structure.json`);
+
+  const all = backupAll({ backupRoot: backups, projectsRoot, folders: ["My Identity"], level: 1 });
+  assert.deepEqual([all.projects, all.courses, all.failed.length], [4, 1, 0]);
+  assert.ok(fs.readFileSync(path.join(backups, "My Identity", kept)).equals(fs.readFileSync(FIXTURE)), "the course file is in the backup, unchanged");
+  assert.ok(fs.existsSync(path.join(backups, "My Identity", COURSES_FOLDER, slug, "course.json")));
+  const list = listBackups({ backupRoot: backups, identityFolder: "My Identity", projectsDir: dir });
+  assert.equal(list.length, 4, "the course folder is not offered as a video to restore");
+
+  // the computer is new: nothing is here
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir);
+  const first = list.find((b) => b.title === "What a ready starter looks like");
+  const back = restoreProject({ backupRoot: backups, path: first.path, projectsDir: dir });
+  assert.equal(back.course, true);
+  assert.equal(loadProject(back.dir).series.lessonId, "m1-l1");
+  assert.equal(readSeed(back.dir).hook, "Your loaf was flat for one reason, and it happened the day before you baked.");
+  assert.equal(loadPackaging(back.dir).title, "Is Your Sourdough Starter Ready? 3 Signs");
+  assert.ok(fs.existsSync(path.join(back.dir, "course-import.json")));
+  assert.ok(fs.readFileSync(path.join(dir, kept)).equals(fs.readFileSync(FIXTURE)));
+  const { courses } = listCourses(dir);
+  assert.deepEqual(courses[0].lessons.map((l) => l.status), ["Idea", null, null, null], "the group is back; the other lessons are restored or imported again");
+  const again = importCourse({ projectsDir: dir, file: FIXTURE });
+  assert.deepEqual([again.created, again.unchanged, again.updated], [3, 1, 0], "the restored lesson is known, not doubled, and nothing in it reads as changed by hand");
+
+  // one video's own backup (after an approval or a render) takes the group too
+  const solo = path.join(root, "solo");
+  backupProject({ projectDir: again.lessons[1].dir, backupRoot: solo, identityFolder: "My Identity", level: 1 });
+  assert.ok(fs.existsSync(path.join(solo, "My Identity", kept)));
+  assert.equal(r.lessons.length, 4);
+  fs.rmSync(root, { recursive: true, force: true });
 });

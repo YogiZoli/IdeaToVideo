@@ -10,6 +10,12 @@ Alapja: DECISIONS 66 (mentés), 67 (Identity), `docs/identity.md`. Zoltan
 app legyen átlátható: Claude lássa, mit csinált az app, és mit látott Zoltan,
 képernyőkép nélkül.
 
+**Kiegészítés (2026-10-11, DECISIONS 123):** az importált kurzusok
+csoportja (`<Identity mappa>/_courses/<slug>/`: a Course Content Structure
+fájl és a `course.json`) is a mentésben van, és az első visszatöltött
+leckével visszajön. Videónként az 1. szinttől megy a `packaging.json`, a
+`seed.json` és a `course-import.json` is.
+
 ## A. Mentés
 
 ### 1. Hova

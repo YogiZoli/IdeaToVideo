@@ -1789,9 +1789,8 @@
     - **Biztonság:** a slug mappanév lesz, ezért csak kisbetű, szám és
       kötőjel lehet, legfeljebb 60 karakter; a fájl legfeljebb 2 MB és 200
       lecke. A szöveg adat, soha nem utasítás (a script prompt DATA blokkja).
-    - **Nyitva:** a `_courses` mappa még nincs a Backupban (a videók igen,
-      a `series` blokkal; a kurzusfájl a Minicourse oldalról újra
-      letölthető, és egy újraimport visszaállítja a csoportot).
+    - **Backup:** a kurzus-csoport és az előtöltött fájlok a mentésben
+      vannak (123).
     - Runner parancsok: `course-preview`, `course-import`, `course-list`,
       `course-export` (a Rust mag engedélylistáján kulcs nélkül). Tesztek:
       `runner/course.test.mjs` a példafájl másolatával
@@ -1879,3 +1878,27 @@
     - Kód: `runner/gates/render/publish.mjs` (`buildCard`), séma:
       `runner/schema/video-publishing-card.schema.json`, teszt:
       `runner/course.test.mjs` ("card: the optional series block").
+
+123. **A kurzus-csoport a Backupban** (Zoltan, 2026-10-11, a 121 nyitott
+    pontja; `runner/backup.mjs`):
+    - **Hova:** `<mentési mappa>/<Identity mappa>/_courses/<slug>/`, benne a
+      megőrzött Course Content Structure fájl bájtra változatlanul és a
+      `course.json`. Csak a változott fájl másolódik, semmi nem törlődik.
+    - **Mikor:** a "Back up now" minden kurzus-csoportot ment (azt is,
+      amelyiknek már nincs videója), és egy lecke saját mentése (jóváhagyás
+      vagy render után) viszi a saját kurzusát. Minden mentési szinten megy:
+      két kis fájl. A csoport mentési hibája soha nem buktatja el a videó
+      mentését.
+    - **Vissza:** az első visszatöltött lecke hozza a kurzus-csoportot, ha
+      az a gépen nincs meg (egy itteni, újabb csoportot nem ír felül). A
+      többi lecke a "Restore from backup" listából jön, vagy a kurzusfájl
+      újraimportjával: a visszatöltött leckét a kulcsa alapján megismeri,
+      nem duplázza.
+    - **Videónként, az 1. szinttől:** `seed.json`, `course-import.json` és
+      `packaging.json` is a mentésben van. Így visszatöltés után egy
+      újraimport ugyanúgy tudja, mit írtál át kézzel. A `packaging.json`
+      eddig egyetlen videó mentésében sem volt benne (a választott cím,
+      összefoglaló és tagek visszatöltéskor elvesztek): ez most minden
+      videóra javítva.
+    - A "Restore from backup" lista a `_courses` mappát nem kínálja videóként.
+    - Teszt: `runner/course.test.mjs` ("backup: the course group...").
