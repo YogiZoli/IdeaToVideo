@@ -1,11 +1,24 @@
-# STATUS: IdeaToVideo
+﻿# STATUS: IdeaToVideo
 
-Frissítve: 2026-10-11 (Course import, DECISIONS 121-123)
+Frissítve: 2026-10-16 (CTA teljes szöveg, DECISIONS 124)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
+## Most (2026-10-16, CTA teljes szöveg)
+
+- **CTA wizard** (DECISIONS 124): a "What they get" mező 600 karakter, 4
+  soros; a kulcsszót tartalmazó teljes hívást a HeyGen klip szóról szóra
+  mondja, az előnézet is így mutatja. Branch `status-installer`, commitok
+  `196e1e9` és `ddaa76d`.
+- **Telepítő** helyben épült:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`.
+  GitHub Actions nem futott.
+- **Backlog:** "Generate now" gomb a CTA kártyán (egy klip azonnal, egyesével).
+
+**Következő:** Zoltan a három CTA klipet egyenként legyártja (GUIDE, COURSE,
+TRIGGER), és megnézi, hogy API-ról vízjel nélkül jön-e.
 ## Most (2026-10-11, Course import)
 
 - **Course import** (121, branch `course-import`, PR a main felé): a

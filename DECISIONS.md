@@ -1902,3 +1902,25 @@
       videóra javítva.
     - A "Restore from backup" lista a `_courses` mappát nem kínálja videóként.
     - Teszt: `runner/course.test.mjs` ("backup: the course group...").
+
+124. **CTA: a teljes hívás szóról szóra** (Zoltan, 2026-10-16):
+    - **Mi volt a baj:** a CTA wizard "What they get" mezője 80 karakternél
+      levágta a szöveget, a séma 200 karakternél nem engedte menteni, és a
+      HeyGen klip mindig így rakta össze a mondatot: "Comment GUIDE below and
+      I'll send you <a mező>." Egy saját, teljes CTA így félbevágva vagy
+      dupla mondattal jött volna ki.
+    - **Mostantól:** a mező 4 soros, legfeljebb 600 karakter
+      (`CtaWizard.svelte`, `OFFER_MAX` a `runner/cta/profile.mjs`-ben, és a
+      `runner/schema/cta-profile.schema.json`). Ha a szöveg maga tartalmazza
+      a kulcsszót (pl. GUIDE), az egy teljes hívás: a HeyGen klip és az
+      előnézet szóról szóra azt mondja (`callText` a
+      `app/src/lib/cta/clips.ts`-ben, `CallsPreview.svelte`). Rövid "mit
+      kap" szövegnél marad az alap mondat.
+    - Zoltan három klipje (ZG C2C Identity): GUIDE az elején, COURSE középen,
+      TRIGGER a végén, a szövegük a CTA profilban.
+    - **Későbbre (backlog):** "Generate now" gomb a CTA kártyán, ami a klipet
+      azonnal legyártja, nem csak a következő videó szkriptjénél. Addig: új
+      videó, gate 1-nél csak az az egy kulcsszó "Generate with HeyGen", a
+      többi Narrator.
+    - Telepítő helyben épült (Windows, NSIS), GitHub Actions nélkül: a
+      `build.yml` csak PR-re és kézi indításra fut, sima pushra nem.
