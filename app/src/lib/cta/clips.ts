@@ -55,7 +55,10 @@ export function available(seg: CtaSegment | null, heygen: boolean): Record<ClipS
 // HeyGen's public API prices per minute (avatarEngines.ts).
 const RATES: Record<AvatarEngine, [number, number]> = { avatar_iii: [0.6, 0.99], avatar_iv: [2.31, 4.83], avatar_v: [2.31, 4.83] };
 
-export const callText = (keyword: string, gets: string) => `Comment ${keyword} below and I'll send you ${gets}.`;
+// A full call written by the user (it names the keyword itself) is spoken word for word
+// (Zoltan, 2026-10-16); a short "what they get" still goes into the default sentence.
+export const callText = (keyword: string, gets: string) =>
+  new RegExp(`\\b${keyword}\\b`).test(gets) ? gets.trim() : `Comment ${keyword} below and I'll send you ${gets}.`;
 
 /** About what one clip of this sentence costs, as a sentence. */
 export function priceText(text: string, engine: AvatarEngine | undefined | null): string {
