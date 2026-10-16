@@ -1,4 +1,4 @@
-﻿# STATUS: IdeaToVideo
+# STATUS: IdeaToVideo
 
 Frissítve: 2026-10-16 (CTA teljes szöveg, DECISIONS 124)
 
