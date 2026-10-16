@@ -100,7 +100,8 @@ export async function pendingHeygen(app: AppState, own: Calls | null = null): Pr
     // never over an uploaded clip: one clip per keyword, and a new one replaces the old
     if (mode === "heygen-new" ? seg?.source === "upload" : effectiveSource(mode, seg, true) !== "heygen") continue;
     const info = st.options.keywords.find((x) => x.keyword === k);
-    out.push({ keyword: k, text: callText(k, p.offers?.[k] ?? info?.gets ?? "the details") });
+    // a video's own gate-1 choice carries no offers: the Identity's saved call text still applies (2026-10-16)
+    out.push({ keyword: k, text: callText(k, p.offers?.[k] ?? st.profile?.offers?.[k] ?? info?.gets ?? "the details") });
   }
   return out;
 }
