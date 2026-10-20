@@ -1940,3 +1940,27 @@
       4, TypeScript 7) és a HyperFrames 0.8.22 -> 0.8.181 szándékosan külön
       lépés, saját e2e próbával (DECISIONS 18 szerint a motor verzióváltása
       tudatos döntés).
+
+126. **HyperFrames 0.8.22 -> 0.8.181** (Zoltan, 2026-10-20, a 125 backlogjából):
+    - **Mi változott:** `engine/package.json`: `hyperframes` és
+      `@hyperframes/shader-transitions` 0.8.181, `gsap` 3.15.0, új
+      `engine/package-lock.json`. A lecsupaszított engine 103 MB.
+    - **CLI:** a runner hívásai változatlanul érvényesek. `snapshot -o --at
+      --no-end --describe false`, `render -o --quality`, `lint`, `check --json
+      --at` mind megvan. A shader lista (14 név) ugyanaz, a
+      `runner/motion/transitions.mjs` csak a megjegyzésben kapott új verziót.
+      Kódot igazítani nem kellett.
+    - **Új a renderben, ezt tudni kell:**
+      - A render indulás előtt lefuttatja a böngészőt `--version`-nel. A
+        letöltött chrome-headless-shell (most `win64-152.0.7977.30`) átmegy.
+        A gépen lévő Google Chrome Windowson nem: 60 mp után "Chrome cannot
+        start". A 25-ös pont tartaléka (rendszer Chrome) így Windowson a
+        rendernél nem működik; a lint, check és snapshot vele is fut.
+        Nyitott döntés: a render előtt mindig a letöltött shell legyen
+        (automatikus letöltés), vagy a tartalék kimarad.
+      - A render a kimeneti mappában (`out/`) egy ideiglenes
+        `.video-<stamp>.hf-transaction-XXXXXX` mappát nyit. Nagyon hosszú
+        projekt útvonalnál (kb. 230 karakter fölött) ez ENAMETOOLONG hiba.
+        Az app szokásos útvonalain ez nem jön elő.
+    - **Próba helyben:** Node 293 zöld (2 éles kihagyva), e2e 44/44 (három
+      render a letöltött shell-lel), UI check 0 hiba. Telepítő nem készült.

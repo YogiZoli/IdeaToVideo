@@ -24,7 +24,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// @hyperframes/shader-transitions 0.8.22 SHADER_NAMES (checked against the
+// @hyperframes/shader-transitions 0.8.181 SHADER_NAMES (checked against the
 // bundled package by the tests).
 export const SHADERS = [
   "domain-warp", "ridged-burn", "whip-pan", "sdf-iris", "ripple-waves", "gravitational-lens", "cinematic-zoom",

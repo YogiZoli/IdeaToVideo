@@ -1,10 +1,20 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-20 (tech stack átnézés, DECISIONS 125)
+Frissítve: 2026-10-20 (HyperFrames 0.8.181, DECISIONS 126)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-20, HyperFrames 0.8.181)
+
+- **Motor:** `hyperframes` és `@hyperframes/shader-transitions` 0.8.181,
+  `gsap` 3.15.0, új engine lockfile (DECISIONS 126). Runner kód nem változott.
+- Tesztek helyben: Node 293 zöld, e2e 44/44 (renderrel), UI check 0 hiba.
+  Telepítő nem készült, a branch nincs pusholva.
+- **Nyitott döntés:** a 0.8.181 render Windowson a gépen lévő Google
+  Chrome-mal nem indul (`--version` próba), csak a letöltött shell-lel.
+  Kell-e a render előtt automatikusan letölteni a shellt.
 
 ## Most (2026-10-20, tech stack átnézés)
 
@@ -14,8 +24,8 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   még `music_v1`; a `music_v2_5` fülpróbára vár.
 - **Függőségek**: app patch/minor frissítés és `cargo update`; svelte-check 0
   hiba, Rust 48, Node 293 zöld.
-- **Backlog:** HyperFrames 0.8.22 -> 0.8.181 külön lépésben, e2e-vel;
-  SvelteKit 3 / TypeScript 7 később.
+- **Backlog:** SvelteKit 3 / TypeScript 7 később (a HyperFrames 0.8.181
+  kész, DECISIONS 126).
 
 ## Most (2026-10-16, CTA teljes szöveg)
 
