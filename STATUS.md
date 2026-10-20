@@ -1,10 +1,21 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-16 (CTA teljes szöveg, DECISIONS 124)
+Frissítve: 2026-10-20 (tech stack átnézés, DECISIONS 125)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Most (2026-10-20, tech stack átnézés)
+
+- **HeyGen v3** (határidő 2026-10-31): minden hívás már v3, a doksival újra
+  összevetve, kódcsere nem kellett (DECISIONS 116, 125).
+- **ElevenLabs**: `eleven_v4`, `/v2/voices`, nincs kivezetett modell. A Music
+  még `music_v1`; a `music_v2_5` fülpróbára vár.
+- **Függőségek**: app patch/minor frissítés és `cargo update`; svelte-check 0
+  hiba, Rust 48, Node 293 zöld.
+- **Backlog:** HyperFrames 0.8.22 -> 0.8.181 külön lépésben, e2e-vel;
+  SvelteKit 3 / TypeScript 7 később.
 
 ## Most (2026-10-16, CTA teljes szöveg)
 

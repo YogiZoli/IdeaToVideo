@@ -1924,3 +1924,19 @@
       többi Narrator.
     - Telepítő helyben épült (Windows, NSIS), GitHub Actions nélkül: a
       `build.yml` csak PR-re és kézi indításra fut, sima pushra nem.
+
+125. **Tech stack átnézés a HeyGen v3 emlékeztető után** (Zoltan, 2026-10-20):
+    - **HeyGen:** újra összevetve a developers.heygen.com/endpoint-version-comparison
+      táblázattal. Minden hívás v3 (lásd 116), a `POST /v3/videos` a v3
+      `type: "avatar"` formát és az `engine` mezőt küldi. Kódcsere nem kellett;
+      a `runner/heygen-v3.test.mjs` továbbra is őrzi.
+    - **ElevenLabs:** TTS `eleven_v4` a `/v1/text-to-speech/{id}/with-timestamps`
+      végponton, hanglista `/v2/voices`. Kivezetett modellt (`*_v1`, `scribe_v1`)
+      nem használunk. A Music `model_id` nélkül megy, így `music_v1`; a
+      `music_v2` és `music_v2_5` elérhető, de hangzásváltás, ezért Zoltan
+      fülpróbája után dönthető.
+    - **Függőségek:** az app semver-en belüli frissítései (Tauri 2.12.x,
+      Svelte, Vite) és `cargo update`. Major ugrás (SvelteKit 3, adapter-static
+      4, TypeScript 7) és a HyperFrames 0.8.22 -> 0.8.181 szándékosan külön
+      lépés, saját e2e próbával (DECISIONS 18 szerint a motor verzióváltása
+      tudatos döntés).
