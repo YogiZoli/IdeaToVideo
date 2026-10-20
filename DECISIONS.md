@@ -1949,18 +1949,27 @@
       --no-end --describe false`, `render -o --quality`, `lint`, `check --json
       --at` mind megvan. A shader lista (14 név) ugyanaz, a
       `runner/motion/transitions.mjs` csak a megjegyzésben kapott új verziót.
-      Kódot igazítani nem kellett.
-    - **Új a renderben, ezt tudni kell:**
-      - A render indulás előtt lefuttatja a böngészőt `--version`-nel. A
-        letöltött chrome-headless-shell (most `win64-152.0.7977.30`) átmegy.
-        A gépen lévő Google Chrome Windowson nem: 60 mp után "Chrome cannot
-        start". A 25-ös pont tartaléka (rendszer Chrome) így Windowson a
-        rendernél nem működik; a lint, check és snapshot vele is fut.
-        Nyitott döntés: a render előtt mindig a letöltött shell legyen
-        (automatikus letöltés), vagy a tartalék kimarad.
-      - A render a kimeneti mappában (`out/`) egy ideiglenes
-        `.video-<stamp>.hf-transaction-XXXXXX` mappát nyit. Nagyon hosszú
-        projekt útvonalnál (kb. 230 karakter fölött) ez ENAMETOOLONG hiba.
-        Az app szokásos útvonalain ez nem jön elő.
-    - **Próba helyben:** Node 293 zöld (2 éles kihagyva), e2e 44/44 (három
-      render a letöltött shell-lel), UI check 0 hiba. Telepítő nem készült.
+      A CLI hívásokon nem kellett igazítani.
+    - **Render böngésző (Zoltan döntése, 2026-10-20):** a render indulás
+      előtt `--version`-nel kipróbálja a böngészőt. A gépen lévő Google
+      Chrome Windowson erre nem válaszol (60 mp, "Chrome cannot start"), a
+      letöltött chrome-headless-shell (most `win64-152.0.7977.30`) igen.
+      Ezért a render mindig a shellt használja: ha még nincs meg, a runner
+      előbb letölti a HyperFrames saját letöltőjével (`hyperframes browser
+      ensure`), a sávon közben "Downloading the render browser" áll
+      (`renderBrowser` a `runner/tools.mjs`-ben). Renderre nincs rendszer
+      Chrome tartalék. A lint, a check és a snapshot alatt a 25-ös pont
+      tartaléka marad.
+    - **ENAMETOOLONG:** a render a kimeneti fájl mellé nyit egy ideiglenes
+      `.hf-transaction-XXXXXX` mappát, és hosszú projekt útvonalnál ez
+      túllépte a Windows korlátot. Flag vagy env változó erre nincs, ezért a
+      render egy rövid saját mappába ír (`<tmp>/itv-r/<8 hex>/video.mp4`,
+      felülírható: `ITV_RENDER_TMP`), a kész MP4 innen kerül az `out/`
+      mappába. A rövid mappa sikeres és sikertelen render után is törlődik.
+    - **Tesztek:** `runner/tools.test.mjs` (hiányzó shellnél letöltés,
+      meglévőnél nem, rendszer Chrome tartalék nincs) és
+      `runner/gates/render/index.test.mjs` (kb. 260 karakteres projekt
+      útvonal, takarítás hiba után is, a letöltés szövege).
+    - **Próba helyben:** Node 299 zöld (2 éles kihagyva), e2e 44/44 a
+      hosszú (kb. 200 karakteres) munkamappán is, UI check 0 hiba. Telepítő
+      nem készült.

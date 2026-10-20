@@ -9,12 +9,13 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 ## Most (2026-10-20, HyperFrames 0.8.181)
 
 - **Motor:** `hyperframes` és `@hyperframes/shader-transitions` 0.8.181,
-  `gsap` 3.15.0, új engine lockfile (DECISIONS 126). Runner kód nem változott.
-- Tesztek helyben: Node 293 zöld, e2e 44/44 (renderrel), UI check 0 hiba.
-  Telepítő nem készült, a branch nincs pusholva.
-- **Nyitott döntés:** a 0.8.181 render Windowson a gépen lévő Google
-  Chrome-mal nem indul (`--version` próba), csak a letöltött shell-lel.
-  Kell-e a render előtt automatikusan letölteni a shellt.
+  `gsap` 3.15.0, új engine lockfile (DECISIONS 126).
+- **Render:** mindig a letöltött chrome-headless-shell; ha nincs meg, a
+  render előtt letöltődik ("Downloading the render browser"). Rendszer
+  Chrome tartalék renderre nincs. A render rövid ideiglenes mappába ír
+  (`<tmp>/itv-r`), így hosszú útvonalon sincs ENAMETOOLONG.
+- Tesztek helyben: Node 299 zöld, e2e 44/44 hosszú útvonalon is, UI check
+  0 hiba. Telepítő nem készült, a branch nincs pusholva.
 
 ## Most (2026-10-20, tech stack átnézés)
 

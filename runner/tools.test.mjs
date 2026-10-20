@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { childEnv, hfHome, percentOf, managedBrowser, systemChromeCandidates, resolveBrowser, ensureBrowser, toolsStatus, runHyperframes, ENGINE_IDLE_MS } from "./tools.mjs";
+import { childEnv, hfHome, percentOf, managedBrowser, systemChromeCandidates, resolveBrowser, ensureBrowser, renderBrowser, toolsStatus, runHyperframes, ENGINE_IDLE_MS } from "./tools.mjs";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "itv-tools-"));
 const exe = process.platform === "win32" ? "chrome-headless-shell.exe" : "chrome-headless-shell";
@@ -98,4 +98,41 @@ test("a silent engine is stopped only when a caller asks for a limit", async () 
   assert.ok(Date.now() - t0 < 15000);
   assert.deepEqual(lines, ["starting"]);
   fs.rmSync(engine, { recursive: true, force: true });
+});
+
+// DECISIONS 126: the render always uses the pinned shell. A missing one is
+// downloaded with hyperframes' own downloader; an existing one is not.
+test("renderBrowser downloads the shell when it is missing", async () => {
+  const data = tmp();
+  const calls = [];
+  const steps = [];
+  const run = async (args) => {
+    calls.push(args.join(" "));
+    withShell(data);
+    return { code: 0, tail: "" };
+  };
+  const r = await renderBrowser({ env: { ITV_DATA_DIR: data, PROGRAMFILES: data, LOCALAPPDATA: data }, run, onProgress: (p) => steps.push(p.step) });
+  assert.deepEqual(calls, ["browser ensure"]);
+  assert.equal(r.source, "managed");
+  assert.equal(r.downloaded, true);
+  assert.ok(steps.includes("browser"));
+  fs.rmSync(data, { recursive: true, force: true });
+});
+
+test("renderBrowser does not download when the shell is there", async () => {
+  const data = tmp();
+  const p = withShell(data);
+  const r = await renderBrowser({ env: { ITV_DATA_DIR: data }, run: () => assert.fail("no download expected"), onProgress: () => assert.fail("no download expected") });
+  assert.deepEqual([r.source, r.path, r.downloaded], ["managed", p, false]);
+  fs.rmSync(data, { recursive: true, force: true });
+});
+
+test("renderBrowser never falls back to the system Chrome", async () => {
+  const data = tmp();
+  const chrome = path.join(data, "Google", "Chrome", "Application", "chrome.exe");
+  fs.mkdirSync(path.dirname(chrome), { recursive: true });
+  fs.writeFileSync(chrome, "");
+  const env = { ITV_DATA_DIR: data, PROGRAMFILES: data, LOCALAPPDATA: data };
+  await assert.rejects(renderBrowser({ env, run: async () => ({ code: 1, tail: "offline" }) }), /could not be downloaded/);
+  fs.rmSync(data, { recursive: true, force: true });
 });

@@ -22,7 +22,7 @@ export function phaseText(command: string, step: string | undefined): string | n
     snapshots: "Taking a still of every scene",
     sheet: "Making the overview sheet",
     render: "Recording the video frame by frame",
-    browser: "Getting the video engine's browser",
+    browser: "Downloading the render browser",
     heygen: "HeyGen is making the avatar clips",
     slept: "The computer was asleep",
     upload: "Sending the narration to HeyGen",
