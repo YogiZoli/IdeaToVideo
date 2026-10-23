@@ -44,7 +44,9 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PLAYLIST_ID = /^[A-Za-z0-9_-]{1,100}$/;
 // The only link the app shows as a link (and the opener scope lets through).
 export const PLAYLIST_URL = /^https:\/\/www\.youtube\.com\/playlist\?list=[A-Za-z0-9_-]{1,100}$/;
-const AGAIN = 'On the Minicourse page, under Course Content Structure, use "Copy for IdeaToVideo" or "Download the file", and try again.';
+// A course comes from the Minicourse page, a playlist from the Playlist
+// Planner (Wizards); both write the same Course Content Structure.
+const AGAIN = 'Make the file again: for a course, on the Minicourse page use "Copy for IdeaToVideo" or "Download the file"; for a playlist, run Wizards, Playlist Planner again. Then try again.';
 
 const str = (v, max = 5000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const int = (v) => (Number.isInteger(v) && v > 0 ? v : 0);
@@ -388,9 +390,9 @@ export function listCourses(projectsDir) {
 // "Export Course Content Structure": the kept file, unchanged, to where the
 // user chose.
 export function exportCourse({ projectsDir, slug, file }) {
-  if (!SLUG.test(String(slug ?? ""))) throw new Error("Choose a course first.");
+  if (!SLUG.test(String(slug ?? ""))) throw new Error("Choose a course or playlist first.");
   const kept = path.join(groupDir(projectsDir, slug), keptName(slug));
-  if (!fs.existsSync(kept)) throw new Error("The file of this course is not on this computer any more. Download it again from the Minicourse page.");
+  if (!fs.existsSync(kept)) throw new Error("The file of this course is not on this computer any more. Make it again on the Minicourse page or with the Playlist Planner.");
   if (!file) throw new Error("Choose where to save the file.");
   const out = /\.json$/i.test(file) ? file : `${file}.json`;
   fs.copyFileSync(kept, out);

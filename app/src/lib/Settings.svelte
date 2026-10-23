@@ -36,6 +36,8 @@
   import ScenesWizard from "./scenes/ScenesWizard.svelte";
   import { ensureFonts } from "./brand/fontsDom";
   import { runner, exportBrand, importBrand } from "./api";
+  import TrafficCard from "./planner/TrafficCard.svelte";
+  import PlaylistPlanner from "./planner/PlaylistPlanner.svelte";
   import type { BrandState, BrandCard } from "./api";
   import { log, setScreen, changedPaths } from "./logger";
 
@@ -267,7 +269,7 @@
         <p class="for">{page.scope === "app" ? "For the whole app, every Identity" : `For: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      {#if !["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan"].includes(pageId)}
+      {#if !["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner"].includes(pageId)}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
@@ -379,6 +381,10 @@
       <FootagePage {app} goto={(id) => openPage(id)} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
+    {:else if pageId === "planner"}
+      <PlaylistPlanner {app} goto={(id) => openPage(id)} />
+    {:else if pageId === "channel"}
+      <TrafficCard bind:config />
     {/if}
 
     {#each STEPS.filter((s) => page.scope === "identity" && page.steps.includes(s.id) && s.id !== "brand") as s (s.id)}

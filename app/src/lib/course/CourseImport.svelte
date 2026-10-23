@@ -98,14 +98,14 @@
 </script>
 
 <div class="r">
-  <div><b>Course Content Structure (.json)</b><span>A course planned on the Minicourse page becomes one prepared ONE Video per lesson, for {app.identity?.name}. The import only prepares: no AI, no voice, no HeyGen and no render starts by itself.</span>
-    {#if courses.length}<select bind:value={slug} aria-label="Course to export">{#each courses as c (c.slug)}<option value={c.slug}>{c.title}</option>{/each}</select>{/if}
+  <div><b>Course or playlist (Course Content Structure, .json)</b><span>A course from the Minicourse page or a playlist from the Playlist Planner becomes one prepared ONE Video per entry, for {app.identity?.name}. The import only prepares: no AI, no voice, no HeyGen and no render starts by itself.</span>
+    {#if courses.length}<select bind:value={slug} aria-label="Course or playlist to export">{#each courses as c (c.slug)}<option value={c.slug}>{c.title}</option>{/each}</select>{/if}
   </div>
-  <div class="acts"><button type="button" disabled={off || busy} onclick={pickFile}>Import</button><button type="button" disabled={off || busy || !slug} title={slug ? "The file as it came, unchanged: for the publishing app, or back to the Minicourse page" : "No course imported yet"} onclick={exportFile}>Export</button></div>
+  <div class="acts"><button type="button" disabled={off || busy} onclick={pickFile}>Import</button><button type="button" disabled={off || busy || !slug} title={slug ? "The file as it came, unchanged: for the publishing app, or back to the Minicourse page" : "No course or playlist imported yet"} onclick={exportFile}>Export</button></div>
 </div>
 <div class="r paste">
-  <div><b>Paste Course Content Structure</b><span>On the Minicourse page click "Copy for IdeaToVideo", then paste here.</span>
-    <textarea rows="3" bind:value={pasted} placeholder="Paste the copied text here" aria-label="Paste Course Content Structure" spellcheck="false"></textarea>
+  <div><b>Paste a course or playlist</b><span>On the Minicourse page click "Copy for IdeaToVideo", or copy the JSON from the Playlist Planner, then paste here.</span>
+    <textarea rows="3" bind:value={pasted} placeholder="Paste the copied text here" aria-label="Paste a course or playlist" spellcheck="false"></textarea>
   </div>
   <div class="acts"><button type="button" disabled={off || busy || !pasted.trim()} onclick={() => look({ text: pasted })}>Preview</button></div>
 </div>

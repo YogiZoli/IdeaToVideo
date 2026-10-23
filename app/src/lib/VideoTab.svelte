@@ -24,6 +24,7 @@
   import type { TabId } from "./tabs";
   import type { Series } from "./course/course";
   import { playlistLink } from "./course/course";
+  import UploadTick from "./course/UploadTick.svelte";
 
   type Youtube = { titles: string[]; title: string; summary: string; description: string; tags: string[] };
   type Video = { file: string; seconds?: number; renderSeconds?: number; srt?: string | null; chapters?: string | null; chaptersNote?: string | null; extrasError?: string; cardFile?: string | null; comments?: string | null; youtube?: Youtube | null; syntheticMedia?: boolean };
@@ -255,6 +256,7 @@
           <button type="button" disabled={!reviewApproved} onclick={() => render(quality)}>Render again</button>
         </Advanced>
         <button type="button" class="primary" disabled={!pubReady || sending || !video.cardFile} title={!video.cardFile ? "This video has no publishing card: render it again." : pubReady ? "" : "Set the address and the token on Settings, Connections"} onclick={sendCard}>{sending ? "Sending..." : "Send to Publishing"}</button>
+        {#if reviewApproved}<UploadTick {dir} />{/if}
       {:else}
         <label class="q">Quality
           <select bind:value={quality} disabled={rendering}>

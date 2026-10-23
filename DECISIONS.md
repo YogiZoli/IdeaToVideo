@@ -1973,3 +1973,57 @@
     - **Próba helyben:** Node 299 zöld (2 éles kihagyva), e2e 44/44 a
       hosszú (kb. 200 karakteres) munkamappán is, UI check 0 hiba. Telepítő
       nem készült.
+
+## 2026-10-23 (daily use for many channels)
+
+127. **Channels board, Playlist Planner, Traffic Card, Uploaded tick** (Zoltan,
+    2026-10-23; docs 27 and 26 section 7). Up to a dozen channels in daily use.
+    - **Changes 69 in part.** 69 said strategy is not the app's job. Now the
+      app has a thin Playlist Planner for its own user (Wizards, Playlist
+      Planner). The boundary stays a file: the planner writes a Course
+      Content Structure 1.0, the same format the course import reads (121),
+      and hands it to that import. A later standalone Flywheel app can write
+      the same file and replace the wizard; nothing else changes. No schema
+      change to the file.
+    - **Planner steps:** seeds (from the Traffic Card, or the typed topic;
+      free), vidIQ keyword research with the user's vidIQ key, one call per
+      seed (the app shows the credits left and asks first, then shows the
+      credits used), the AI's plan (one video per strong keyword, 8 to 16,
+      with "why this number"; volume and competition come from vidIQ, never
+      from the AI; asks first), the editable table (title, keyword, order,
+      add, remove), the AI outline (hook, teach, do, review, 10 to 20
+      minutes each; asks first), then the import preview and "Create N
+      videos". The file is built in code (`runner/planner/index.mjs`), not
+      by the AI. The closing line of each video points to the next one; the
+      3 comment CTAs stay the Identity's (GUIDE, COURSE, TRIGGER by default).
+    - **Evergreen Traffic Card:** the .md of the Brand Channel Wizard
+      (front matter `card: youtube-evergreen-organic-traffic-card`,
+      version 1). Kept as it came in the Identity folder
+      (`traffic-card.md`), so Identity export and backup carry it with no
+      new code. On Identity, YouTube Channel & Audience it offers only fields
+      that exist: channel name (the Identity name), audience, topic and
+      promise (channel profile), content language. Filled fields are shown
+      but not ticked. Save settings keeps them, as with any edit.
+    - **Channels board on Home**, at the top: one row per Identity and
+      playlist (or course): done "X of N", the next video and its step (the
+      tab it opens on), Sent to Publishing, Uploaded "X of N". Open switches
+      to that Identity and opens the video on its step. It reads `_courses`
+      and project.json; no second store.
+    - **project.json, two optional fields:** `publishing {sentAt, cardId}`
+      (set when Send to Publishing worked; older sends show "No") and
+      `upload {at, url, videoId}` (the user's Uploaded tick with the YouTube
+      link). Upload stays manual in YouTube Studio; the app never uploads.
+    - **vidrev handoff:** after the tick the video shows its 3 comment
+      keywords (from script.json), "Open vidrev.app" and "Copy the video
+      link". vidrev (read only, nothing changed there) already has a way:
+      `POST /api/v1/cards`, then `POST /api/v1/cards/{cardId}/published`
+      with `{"videoId"}` arms the campaigns, with a PDT style connect token.
+      Not used yet: it needs a vidrev token in Connections and a check that
+      PDT and IdeaToVideo do not send two cards for one video. Backlog.
+    - **Labels:** the import says "Course or playlist"; its error help names
+      the Minicourse page and the Playlist Planner.
+    - **Tests:** `runner/board.test.mjs`, `runner/traffic-card.test.mjs`,
+      `runner/planner.test.mjs` (a fake vidIQ MCP server; the planner's file
+      is read and imported by the course import). Node 313 green, Rust 48,
+      e2e 44/44, UI check 0 errors, the screens checked in `scripts/ui-mock`.
+      No installer built.

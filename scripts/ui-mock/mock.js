@@ -240,6 +240,35 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "course-list") { if (!courseHere) return { courses: [] }; const p = await coursePreview(); return { courses: [{ slug: p.course.slug, title: p.course.title, playlist: p.playlist, importedAt: "2026-10-11", hasFile: true, lessons: p.lessons.map((l, i) => ({ id: l.id, position: l.position, title: l.title, dir: i === 2 ? null : `${args.request.projectsDir}/test`, videoTitle: l.title, status: i === 2 ? null : ["Rendered", "Scened", null, "Idea"][i] })) }] }; }
         if (args.command === "course-import") { const p = await coursePreview(); const again = courseHere; courseHere = true; return { course: p.course, playlist: p.playlist, again, created: again ? 0 : 4, updated: again ? 1 : 0, unchanged: again ? 3 : 0, gone: [], warnings: [], file: "C:/P/_courses/x.json", lessons: p.lessons.map((l, i) => ({ id: l.id, position: l.position, title: l.title, dir: "x", action: again ? (i === 0 ? "updated" : "unchanged") : "created", updated: again && i === 0 ? ["keyword", "CTA"] : [], kept: again && i === 0 ? ["YouTube title", "hook"] : [], scriptKept: again && i === 0 })) }; }
         if (args.command === "course-export") return { file: args.request.file };
+        // Channels board, Uploaded tick, Traffic Card, Playlist Planner (DECISIONS 127)
+        if (args.command === "channel-board") {
+          if (!courseHere) return { playlists: [] };
+          const done = { script: { state: "approved" }, voice: { state: "approved" }, scenes: { state: "approved" }, review: { state: "approved" }, avatar: { state: "skipped" } };
+          const v = (id, position, title, gates, extra = {}) => ({ id, position, title, dir: `${args.request.projectsDir}/${id}`, gates, rendered: false, done: false, sentAt: null, upload: null, ...extra });
+          const videos = [
+            v("m1-l1", 1, "What a ready starter looks like", done, { rendered: true, done: true, sentAt: "2026-10-22T10:00:00Z", upload: { at: "2026-10-23T12:00:00Z", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ" } }),
+            v("m1-l2", 2, "Mix the dough: touch one", project.gates),
+            v("m2-l1", 3, "Shape the loaf", {}),
+            v("m2-l2", 4, "Bake and cool", {}),
+          ];
+          return { playlists: [{ slug: "test-sourdough-in-a-weekend", title: "TEST Sourdough in a Weekend", playlist: null, total: 4, done: 1, uploaded: 1, next: "m1-l2", videos }] };
+        }
+        if (args.command === "upload-info" || args.command === "set-upload") {
+          const calls = [{ slot: "start", keyword: "GUIDE" }, { slot: "middle", keyword: "COURSE" }, { slot: "end", keyword: "TRIGGER" }];
+          if (args.command === "set-upload" && args.request.clear) return { upload: null, calls };
+          if (args.command === "set-upload") return { upload: { at: `${args.request.at}T12:00:00Z`, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ" }, calls };
+          return { upload: /m1-l1$/.test(args.request.projectDir) ? { at: "2026-10-23T12:00:00Z", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ" } : null, calls };
+        }
+        const mockCard = { generated: "2026-10-20", audience: "TEST home bakers", result: "bake a loaf in a weekend", topic: "sourdough", frustration: "", proof: "", language: "en", nameOptions: ["TEST Sourdough Weekend"], keywords: [{ keyword: "sourdough starter", volume: 74000, competition: "Medium", score: 62 }], playlists: [], videos: [] };
+        if (args.command === "traffic-card-load") return { card: q.get("card") ? mockCard : null };
+        if (args.command === "traffic-card-preview") return { card: mockCard, fields: [{ field: "name", label: "Channel name", now: "My Identity", value: "TEST Sourdough Weekend" }, { field: "audience", label: "Audience", now: "", value: "TEST home bakers" }] };
+        if (args.command === "traffic-card-save") return { card: mockCard };
+        if (args.command === "planner-start") return { card: q.get("card") ? mockCard : null, seeds: ["sourdough starter", "sourdough for beginners"], context: { audience: "TEST home bakers" } };
+        if (args.command === "planner-balance") return { credits: 480 };
+        if (args.command === "planner-research") return { keywords: Array.from({ length: 12 }, (_, i) => ({ keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i, score: 70 - i })), failed: [], creditsBefore: 480, creditsAfter: 474, creditsUsed: 6 };
+        if (args.command === "planner-plan") return { title: "TEST Sourdough Basics", promise: "Bake a loaf in a weekend", why: "Ten keywords have real volume and low competition; two are near duplicates, so 10 videos.", rows: Array.from({ length: 10 }, (_, i) => ({ position: i + 1, title: `Sourdough video ${i + 1}`, keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i })) };
+        if (args.command === "planner-outline") return { outline: [] };
+        if (args.command === "planner-build") return { text: "{}" };
         if (args.command === "create-project") return { id: "n", dir: `${args.request.projectsDir}/2026-10-01_new` };
         if (args.command === "brand-state") return brandState();
         if (args.command === "brand-save") { brandCard = { ...args.request.card, updatedAt: new Date().toISOString() }; return { card: brandCard, own: true, contrast: [] }; }

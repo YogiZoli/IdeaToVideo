@@ -120,6 +120,21 @@
     projectDir = d;
   }
 
+  // The Channels board (DECISIONS 127): a video of any Identity, opened in
+  // its own Identity, on the step it is at.
+  async function openFor(id: string, d: string) {
+    try {
+      if (id !== app?.identity?.id) {
+        take(await setActiveIdentity(id));
+        settingsEpoch++;
+      }
+      view = "projects";
+      await openProject(d);
+    } catch (e) {
+      notice = errorText(e);
+    }
+  }
+
   async function choose(id: string) {
     if (id === app?.identity?.id) return show("projects");
     try {
@@ -214,7 +229,7 @@
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}
-        <Home {app} {goto} {openProject} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
+        <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
       {/key}
     {:else}
       {#key app.identity.id}

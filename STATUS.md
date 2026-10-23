@@ -1,10 +1,32 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-20 (HyperFrames 0.8.181, DECISIONS 126)
+Frissítve: 2026-10-23 (Channels board and Playlist Planner, DECISIONS 127)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-10-23, many channels, DECISIONS 127)
+
+- **Home, Channels board:** one row per Identity and playlist: done "X of
+  N", next video and its step, Sent to Publishing, Uploaded. Open goes to
+  that Identity and that video's step.
+- **Uploaded tick** (Your video tab and the board): the YouTube link and
+  the date; then the 3 comment keywords and "Open vidrev.app". Upload stays
+  manual.
+- **Wizards, Playlist Planner:** Traffic Card or typed answers, vidIQ
+  research, AI plan (8 to 16 videos, why), editable table, AI outline, then
+  "Create N videos" through the course import. Each paid step asks first.
+- **Identity, YouTube Channel & Audience:** "Import card (.md)" keeps the
+  Evergreen Traffic Card and fills name, audience, topic and promise,
+  language.
+- **Import labels:** "Course or playlist".
+- Tests: Node 313 green, Rust 48, e2e 44/44, UI check 0 errors. Not
+  committed yet, no installer built.
+
+**Next:** Zoltan tries the planner with a real Traffic Card and his vidIQ
+key (real credits and AI tokens), then one video through to Uploaded.
+Backlog: vidrev "Tell vidrev" through `/api/v1/cards/{id}/published`.
 
 ## Most (2026-10-20, HyperFrames 0.8.181)
 

@@ -28,6 +28,27 @@
         "playlistUrl": { "type": ["string", "null"], "maxLength": 300 }
       }
     },
+    "publishing": {
+      "type": "object",
+      "$comment": "the last Send to Publishing that the publishing app took (DECISIONS 127)",
+      "required": ["sentAt"],
+      "additionalProperties": false,
+      "properties": {
+        "sentAt": { "type": "string" },
+        "cardId": { "type": "string", "maxLength": 100 }
+      }
+    },
+    "upload": {
+      "type": "object",
+      "$comment": "the user ticked Uploaded: upload stays manual in YouTube Studio (DECISIONS 127)",
+      "required": ["at", "url", "videoId"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "type": "string" },
+        "url": { "type": "string", "maxLength": 300 },
+        "videoId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{11}$" }
+      }
+    },
     "autopilotRun": {
       "type": "object",
       "$comment": "Finish on Autopilot is under way (the UI goes on with it when the ONE Video is opened again)",

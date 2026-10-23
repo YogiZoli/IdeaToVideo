@@ -23,7 +23,9 @@
         { "url": "https://pixabay.com/*" },
         { "url": "https://unsplash.com/*" },
         { "url": "https://studio.youtube.com/*" },
-        { "url": "https://www.youtube.com/playlist?list=*" }
+        { "url": "https://www.youtube.com/playlist?list=*" },
+        { "url": "https://www.youtube.com/watch?v=*" },
+        { "url": "https://vidrev.app/*" }
       ]
     },
     "opener:allow-reveal-item-in-dir",

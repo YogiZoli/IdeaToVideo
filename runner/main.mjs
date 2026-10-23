@@ -60,6 +60,9 @@ import { planBroll, estimateBroll, makeBroll, updateItem as updateBroll, againIt
 import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP } from "./broll/settings.mjs";
 import { choices as brollChoices } from "./generate/index.mjs";
 import { previewCourse, importCourse, listCourses, exportCourse, readSeed } from "./course/index.mjs";
+import { channelBoard, setUpload, markSent } from "./course/board.mjs";
+import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
+import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -355,8 +358,43 @@ const commands = {
     if (!card.startsWith(path.resolve(projectDir)) || !/\.card\.json$/i.test(card)) throw new Error("That is not a card of this project.");
     const r = await sendCard({ url, token: key(), cardFile: card });
     appendLog(projectDir, r.ok ? `publishing: card ${r.updated ? "updated" : "sent"}` : `publishing: not sent (${r.status ?? "no answer"}), ${r.message}`);
+    if (r.ok) {
+      try {
+        markSent(projectDir, r.cardId);
+      } catch (e) {
+        appendLog(projectDir, `publishing: sent, but not noted in project.json (${e.message})`);
+      }
+    }
     return r;
   },
+
+  // The Channels board on Home (course/board.mjs, DECISIONS 127): one
+  // Identity's playlists, called once per Identity.
+  "channel-board": async ({ projectsDir }) => channelBoard(projectsDir),
+  // The Uploaded tick with the YouTube link. The upload itself stays manual.
+  "set-upload": async ({ projectDir, url, at = null, clear = false }) => {
+    const r = setUpload(projectDir, { url, at, clear });
+    return { ...r, calls: scriptCalls(projectDir) };
+  },
+  // The Evergreen Traffic Card of the Identity (planner/traffic-card.mjs).
+  "traffic-card-preview": async ({ file, text, channel = {}, name = "" }) => previewTrafficCard({ file, text, channel, name }),
+  "traffic-card-save": async ({ identityDir, file, text }) => saveTrafficCard(identityDir, { file, text }),
+  "traffic-card-load": async ({ identityDir }) => ({ card: loadTrafficCard(identityDir) }),
+  // The Playlist Planner (planner/index.mjs, DECISIONS 127). Each paid step
+  // is its own command, so the UI asks before each one.
+  "planner-start": async ({ identityDir, answers = {}, channel = {}, language = "en" }) => {
+    const card = loadTrafficCard(identityDir);
+    return { card, seeds: seedsFrom({ card, topic: answers.topic }), context: contextOf({ card, answers, channel, language }) };
+  },
+  "planner-balance": async () => vidiqBalance({ apiKey: key() }),
+  "planner-research": async ({ seeds, country = null }) => plannerResearch({ apiKey: key(), seeds, country, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "planner-plan": async ({ llm, context, keywords }) =>
+    planPlaylist({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, context, keywords, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "planner-outline": async ({ llm, context, rows }) =>
+    outlineVideos({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, context, rows, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  // The Course Content Structure as text, for the course import (free).
+  "planner-build": async ({ title, promise, audience, rows, outline }) => ({ text: JSON.stringify(buildStructure({ title, promise, audience, rows, outline }), null, 2) + "\n" }),
+  "upload-info": async ({ projectDir }) => ({ upload: loadProject(projectDir).upload ?? null, calls: scriptCalls(projectDir) }),
   providers: async () => ({ providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, model: p.model })) }),
 
   // The App settings (config.json) and/or one Identity (identity.json),
