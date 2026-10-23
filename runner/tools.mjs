@@ -188,15 +188,12 @@ export function percentOf(line) {
   return n >= 0 && n <= 100 ? n : null;
 }
 
-// First launch: download the pinned render browser into our home. If that fails
-// (no network, firewall, Windows on ARM has no pinned shell), fall back to the
-// installed Google Chrome, and say so.
-export async function ensureBrowser({ env = process.env, onProgress = () => {} } = {}) {
-  const have = managedBrowser(env);
-  if (have) return { source: "managed", path: have.path, version: have.version, downloaded: false };
+// Downloads the pinned shell into our home with hyperframes' own downloader
+// (`hyperframes browser ensure`). Resolves the run's { code, tail }.
+export function downloadShell({ env = process.env, onProgress = () => {}, run = runHyperframes } = {}) {
   onProgress({ step: "browser", message: "Downloading the render browser (about 280 MB)" });
   let last = -1;
-  const r = await runHyperframes(["browser", "ensure"], {
+  return run(["browser", "ensure"], {
     env,
     onLine: (line) => {
       const pct = percentOf(line);
@@ -206,11 +203,34 @@ export async function ensureBrowser({ env = process.env, onProgress = () => {} }
       }
     },
   });
+}
+
+// First launch: download the pinned render browser into our home. If that fails
+// (no network, firewall, Windows on ARM has no pinned shell), fall back to the
+// installed Google Chrome, and say so. The fallback serves lint, check and
+// stills only: the render needs the shell (renderBrowser, DECISIONS 126).
+export async function ensureBrowser({ env = process.env, onProgress = () => {}, run = runHyperframes } = {}) {
+  const have = managedBrowser(env);
+  if (have) return { source: "managed", path: have.path, version: have.version, downloaded: false };
+  const r = await downloadShell({ env, onProgress, run });
   const got = managedBrowser(env);
   if (r.code === 0 && got) return { source: "managed", path: got.path, version: got.version, downloaded: true };
   const sys = systemChrome(env);
   if (sys) return { source: "system", path: sys, downloaded: false, warning: "The render browser could not be downloaded, so the installed Google Chrome is used." };
   throw new Error(`The render browser could not be downloaded, and Google Chrome is not installed. Check the internet connection and try again, or install Google Chrome. Details: ${r.tail.split("\n").slice(-3).join(" ")}`);
+}
+
+// The browser a render uses: always the pinned shell (DECISIONS 126). Since
+// hyperframes 0.8.181 the render first runs the browser with --version, which
+// the installed Google Chrome on Windows never answers, so there is no system
+// fallback here. A missing shell is downloaded first.
+export async function renderBrowser({ env = process.env, onProgress = () => {}, run = runHyperframes } = {}) {
+  const have = managedBrowser(env);
+  if (have) return { source: "managed", path: have.path, version: have.version, downloaded: false };
+  const r = await downloadShell({ env, onProgress, run });
+  const got = managedBrowser(env);
+  if (r.code === 0 && got) return { source: "managed", path: got.path, version: got.version, downloaded: true };
+  throw new Error(`The render browser could not be downloaded. Check the internet connection and press the button again; nothing is lost. Details: ${r.tail.split("\n").slice(-3).join(" ")}`);
 }
 
 export function toolsStatus(env = process.env) {

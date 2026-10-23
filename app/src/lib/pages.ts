@@ -10,7 +10,7 @@ import type { StepId } from "./steps";
 export type MenuId = "home" | "videos" | "wizards" | "identity" | "settings";
 export type PageMenu = "wizards" | "identity" | "settings";
 export type PageId =
-  | "cta" | "look" | "motion" | "scenes"
+  | "cta" | "look" | "motion" | "scenes" | "planner"
   | "channel" | "voice" | "footage" | "dictionary" | "research" | "identity"
   | "general" | "connections" | "transfer" | "folders" | "backup" | "plan";
 export type Scope = "app" | "identity";
@@ -36,6 +36,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "motion", title: "Motion", menu: "wizards", scope: "identity", steps: [] },
   // block packs: scene types someone designed (DECISIONS 107)
   { id: "scenes", title: "Scenes", menu: "wizards", scope: "identity", steps: [] },
+  // one evergreen playlist from keyword research (DECISIONS 127)
+  { id: "planner", title: "Playlist Planner", menu: "wizards", scope: "identity", steps: [] },
   // the active Identity
   { id: "channel", title: "YouTube Channel & Audience", menu: "identity", scope: "identity", steps: ["audience", "brandVoice", "profile", "youtube", "landing", "language"] },
   { id: "voice", title: "Voice & Avatar", menu: "identity", scope: "identity", steps: ["narrator", "heygen"] },

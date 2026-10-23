@@ -27,7 +27,7 @@ import { loadSegments, segmentFor } from "./segments.mjs";
 export const CTA_SCHEMA = "cta-profile/1";
 export const CTA_FILE = "cta.json";
 export const LAST_FILE = "cta-last.json";
-export const OFFER_MAX = 80;
+export const OFFER_MAX = 600; // a full call sentence fits (Zoltan, 2026-10-16)
 export const END_SCREEN_DEFAULT = 20;
 
 export const ctaPath = (identityDir) => path.join(identityDir, CTA_FILE);

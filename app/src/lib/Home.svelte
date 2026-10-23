@@ -4,7 +4,8 @@
   // latest ONE Videos. The AI key, the voice key and the Identity are
   // needed; the three CTA keywords' clips and Publishing are not (without a
   // clip the narrator says the call; Publishing is marked Optional). When the
-  // needed rows are ready, one main button: "Make a video".
+  // needed rows are ready, one main button: "Make a video". Above it the
+  // Channels board (DECISIONS 127), when any Identity has a playlist.
   import { onMount } from "svelte";
   import type { AppState, CtaState, ProjectSummary } from "./api";
   import { runner } from "./api";
@@ -13,8 +14,9 @@
   import { setScreen } from "./logger";
   import type { PageId } from "./pages";
   import { effectiveSource, heygenReady, SOURCE_LABEL } from "./cta/clips";
+  import ChannelsBoard from "./course/ChannelsBoard.svelte";
 
-  let { app, goto, openProject, makeVideo, videos }: { app: AppState; goto: (page: PageId) => void; openProject: (dir: string) => void; makeVideo: () => void; videos: () => void } = $props();
+  let { app, goto, openProject, openFor, makeVideo, videos }: { app: AppState; goto: (page: PageId) => void; openProject: (dir: string) => void; openFor: (identityId: string, dir: string) => void; makeVideo: () => void; videos: () => void } = $props();
 
   setScreen("home");
 
@@ -74,6 +76,8 @@
 </script>
 
 <div class="home">
+  <ChannelsBoard {app} {openFor} />
+
   <section class="card ready">
     <div class="head">
       <h1>Ready to make videos?</h1>

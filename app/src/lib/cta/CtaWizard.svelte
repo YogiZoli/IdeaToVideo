@@ -118,7 +118,7 @@
           {#if bySegment(k)}
             <span class="segsays">Your segment says it: nothing to write here.</span>
           {:else}
-            <input type="text" maxlength="80" placeholder={info.gets} value={offers[k] ?? ""} oninput={(e) => (offers[k] = e.currentTarget.value)} />
+            <textarea rows="4" maxlength="600" placeholder={info.gets} value={offers[k] ?? ""} oninput={(e) => (offers[k] = e.currentTarget.value)}></textarea>
           {/if}
           <span class="hint">{t.label}</span>
         </label>

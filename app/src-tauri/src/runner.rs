@@ -118,6 +118,21 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("course-import", None),
     ("course-list", None),
     ("course-export", None),
+    // Channels board and the Uploaded tick (DECISIONS 127): files only
+    ("channel-board", None),
+    ("set-upload", None),
+    ("upload-info", None),
+    ("traffic-card-preview", None),
+    ("traffic-card-save", None),
+    ("traffic-card-load", None),
+    // Playlist Planner (DECISIONS 127): vidIQ steps need the vidIQ key, the
+    // plan and the outline the AI key, the rest is free
+    ("planner-start", None),
+    ("planner-balance", Some(&["service"])),
+    ("planner-research", Some(&["service"])),
+    ("planner-plan", Some(&["llm", "provider"])),
+    ("planner-outline", Some(&["llm", "provider"])),
+    ("planner-build", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

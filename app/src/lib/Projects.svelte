@@ -223,7 +223,7 @@
   {:else}
     {#if courses.length}
       <div class="filter">
-        <label for="course">Course</label>
+        <label for="course">Course or playlist</label>
         <select id="course" bind:value={courseSlug} onchange={() => (exported = "")}>
           <option value="">All videos</option>
           {#each courses as c (c.slug)}<option value={c.slug}>{c.title}</option>{/each}
@@ -238,7 +238,7 @@
         {#if coursePlaylist}Playlist: <button type="button" class="link" onclick={() => openUrl(coursePlaylist)}>{coursePlaylist}</button>{:else}No playlist link yet.{/if}
       </p>
       <span class="actions-top">
-        <button type="button" disabled={!course.hasFile} title={course.hasFile ? "The file as it came, unchanged: for the publishing app, or back to the Minicourse page" : "The file of this course is not on this computer any more"} onclick={exportCourse}>Export Course Content Structure</button>
+        <button type="button" disabled={!course.hasFile} title={course.hasFile ? "The file as it came, unchanged: for the publishing app, or back to the Minicourse page" : "The file of this course or playlist is not on this computer any more"} onclick={exportCourse}>Export Course Content Structure</button>
       </span>
       {#if exported}<p class="good">Exported, unchanged. <button type="button" class="link" onclick={() => revealItemInDir(exported)}>Show in folder</button></p>{/if}
     </section>

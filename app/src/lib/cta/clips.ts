@@ -55,7 +55,10 @@ export function available(seg: CtaSegment | null, heygen: boolean): Record<ClipS
 // HeyGen's public API prices per minute (avatarEngines.ts).
 const RATES: Record<AvatarEngine, [number, number]> = { avatar_iii: [0.6, 0.99], avatar_iv: [2.31, 4.83], avatar_v: [2.31, 4.83] };
 
-export const callText = (keyword: string, gets: string) => `Comment ${keyword} below and I'll send you ${gets}.`;
+// A full call written by the user (it names the keyword itself) is spoken word for word
+// (Zoltan, 2026-10-16); a short "what they get" still goes into the default sentence.
+export const callText = (keyword: string, gets: string) =>
+  new RegExp(`\\b${keyword}\\b`).test(gets) ? gets.trim() : `Comment ${keyword} below and I'll send you ${gets}.`;
 
 /** About what one clip of this sentence costs, as a sentence. */
 export function priceText(text: string, engine: AvatarEngine | undefined | null): string {
@@ -97,7 +100,8 @@ export async function pendingHeygen(app: AppState, own: Calls | null = null): Pr
     // never over an uploaded clip: one clip per keyword, and a new one replaces the old
     if (mode === "heygen-new" ? seg?.source === "upload" : effectiveSource(mode, seg, true) !== "heygen") continue;
     const info = st.options.keywords.find((x) => x.keyword === k);
-    out.push({ keyword: k, text: callText(k, p.offers?.[k] ?? info?.gets ?? "the details") });
+    // a video's own gate-1 choice carries no offers: the Identity's saved call text still applies (2026-10-16)
+    out.push({ keyword: k, text: callText(k, p.offers?.[k] ?? st.profile?.offers?.[k] ?? info?.gets ?? "the details") });
   }
   return out;
 }

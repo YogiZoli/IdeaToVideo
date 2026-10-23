@@ -1,11 +1,77 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-11 (Course import, DECISIONS 121-123)
+Frissítve: 2026-10-23 (playlist bridge lines, DECISIONS 128)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
+## Now (2026-10-23, playlist bridge lines, DECISIONS 128)
+
+- **Script gate:** a lesson of a course or playlist gets "watch the previous
+  one first" after the hook (from lesson 2) and "next, watch ..." (or "start
+  from lesson 1" on the last) at the end. Made from the current order when
+  the script is written, at most 12 seconds each, the comment calls as the
+  video has them.
+- Tests: Node 318 green, e2e 44/44.
+
+## Now (2026-10-23, many channels, DECISIONS 127)
+
+- **Home, Channels board:** one row per Identity and playlist: done "X of
+  N", next video and its step, Sent to Publishing, Uploaded. Open goes to
+  that Identity and that video's step.
+- **Uploaded tick** (Your video tab and the board): the YouTube link and
+  the date; then the 3 comment keywords and "Open vidrev.app". Upload stays
+  manual.
+- **Wizards, Playlist Planner:** Traffic Card or typed answers, vidIQ
+  research, AI plan (8 to 16 videos, why), editable table, AI outline, then
+  "Create N videos" through the course import. Each paid step asks first.
+- **Identity, YouTube Channel & Audience:** "Import card (.md)" keeps the
+  Evergreen Traffic Card and fills name, audience, topic and promise,
+  language.
+- **Import labels:** "Course or playlist".
+- Tests: Node 313 green, Rust 48, e2e 44/44, UI check 0 errors. Not
+  committed yet, no installer built.
+
+**Next:** Zoltan tries the planner with a real Traffic Card and his vidIQ
+key (real credits and AI tokens), then one video through to Uploaded.
+Backlog: vidrev "Tell vidrev" through `/api/v1/cards/{id}/published`.
+
+## Most (2026-10-20, HyperFrames 0.8.181)
+
+- **Motor:** `hyperframes` és `@hyperframes/shader-transitions` 0.8.181,
+  `gsap` 3.15.0, új engine lockfile (DECISIONS 126).
+- **Render:** mindig a letöltött chrome-headless-shell; ha nincs meg, a
+  render előtt letöltődik ("Downloading the render browser"). Rendszer
+  Chrome tartalék renderre nincs. A render rövid ideiglenes mappába ír
+  (`<tmp>/itv-r`), így hosszú útvonalon sincs ENAMETOOLONG.
+- Tesztek helyben: Node 299 zöld, e2e 44/44 hosszú útvonalon is, UI check
+  0 hiba. Telepítő nem készült, a branch nincs pusholva.
+
+## Most (2026-10-20, tech stack átnézés)
+
+- **HeyGen v3** (határidő 2026-10-31): minden hívás már v3, a doksival újra
+  összevetve, kódcsere nem kellett (DECISIONS 116, 125).
+- **ElevenLabs**: `eleven_v4`, `/v2/voices`, nincs kivezetett modell. A Music
+  még `music_v1`; a `music_v2_5` fülpróbára vár.
+- **Függőségek**: app patch/minor frissítés és `cargo update`; svelte-check 0
+  hiba, Rust 48, Node 293 zöld.
+- **Backlog:** SvelteKit 3 / TypeScript 7 később (a HyperFrames 0.8.181
+  kész, DECISIONS 126).
+
+## Most (2026-10-16, CTA teljes szöveg)
+
+- **CTA wizard** (DECISIONS 124): a "What they get" mező 600 karakter, 4
+  soros; a kulcsszót tartalmazó teljes hívást a HeyGen klip szóról szóra
+  mondja, az előnézet is így mutatja. Branch `status-installer`, commitok
+  `196e1e9` és `ddaa76d`.
+- **Telepítő** helyben épült:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`.
+  GitHub Actions nem futott.
+- **Backlog:** "Generate now" gomb a CTA kártyán (egy klip azonnal, egyesével).
+
+**Következő:** Zoltan a három CTA klipet egyenként legyártja (GUIDE, COURSE,
+TRIGGER), és megnézi, hogy API-ról vízjel nélkül jön-e.
 ## Most (2026-10-11, Course import)
 
 - **Course import** (121, branch `course-import`, PR a main felé): a

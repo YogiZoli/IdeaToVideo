@@ -22,7 +22,7 @@ export function phaseText(command: string, step: string | undefined): string | n
     snapshots: "Taking a still of every scene",
     sheet: "Making the overview sheet",
     render: "Recording the video frame by frame",
-    browser: "Getting the video engine's browser",
+    browser: "Downloading the render browser",
     heygen: "HeyGen is making the avatar clips",
     slept: "The computer was asleep",
     upload: "Sending the narration to HeyGen",
@@ -60,6 +60,11 @@ export function costText(command: string, provider?: string): string {
       return "Uses AI tokens from your AI key (a few cents at most). No HeyGen credits yet.";
     case "broll-make":
       return "Uses HeyGen credits (you approved the estimate). Clips from your library and test clips are free. No AI tokens.";
+    case "planner-research":
+      return "Uses vidIQ credits from your plan (you saw the count first). No AI tokens.";
+    case "planner-plan":
+    case "planner-outline":
+      return "Uses AI tokens from your AI key (a few cents at most). No vidIQ credits.";
     case "avatar-looks":
       return "Free: only reads your HeyGen avatar list. No credits.";
     default:
@@ -71,7 +76,7 @@ export function costText(command: string, provider?: string): string {
  * connection, or at a service that keeps working without the app. */
 export function workPlace(command: string): "local" | "online" | "service" {
   if (command === "make-avatar" || command === "segment-make" || command === "broll-make") return "service";
-  if (["broll-plan", "write-script", "make-scenes", "refill-scene", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks"].includes(command)) return "online";
+  if (["broll-plan", "write-script", "make-scenes", "refill-scene", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks", "planner-research", "planner-plan", "planner-outline"].includes(command)) return "online";
   return "local";
 }
 

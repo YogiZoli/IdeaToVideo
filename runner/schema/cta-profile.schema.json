@@ -29,7 +29,7 @@
     "modesV": { "$comment": "2: modes saved since the auto default (a saved narrator is a choice); missing: an older save, where narrator was only the default.", "const": 2 },
     "offers": {
       "type": "object",
-      "additionalProperties": { "type": "string", "maxLength": 200 }
+      "additionalProperties": { "type": "string", "maxLength": 600 }
     }
   },
   "definitions": {

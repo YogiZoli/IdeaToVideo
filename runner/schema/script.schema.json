@@ -13,7 +13,8 @@
         "problem": { "type": "string", "minLength": 1 },
         "promise": { "type": "string", "minLength": 1 },
         "cta": { "type": ["string", "null"] },
-        "credibility": { "type": ["string", "null"] }
+        "credibility": { "type": ["string", "null"] },
+        "bridge": { "type": ["string", "null"], "maxLength": 400, "$comment": "the playlist bridge after the hook, written by the app (course/bridge.mjs, DECISIONS 128)" }
       }
     },
     "sections": {
@@ -68,7 +69,8 @@
       "properties": {
         "recap": { "type": "string", "minLength": 1 },
         "cta": { "type": ["string", "null"] },
-        "nextVideo": { "type": ["string", "null"] }
+        "nextVideo": { "type": ["string", "null"] },
+        "bridge": { "type": ["string", "null"], "maxLength": 400, "$comment": "the playlist bridge before the end screen, written by the app (course/bridge.mjs, DECISIONS 128)" }
       }
     }
   }

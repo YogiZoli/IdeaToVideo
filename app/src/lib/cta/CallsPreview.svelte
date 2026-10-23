@@ -4,6 +4,7 @@
   // a still of each call scene in the Identity's colours (cta-close: the call
   // line, the keyword on a button in its temperature). No render, no key.
   import type { CtaMode, CtaSegment, CtaSlot, CtaState } from "../api";
+  import { callText } from "./clips";
 
   let {
     options,
@@ -54,7 +55,7 @@
       {#if c.segment}
         <li><b>{options.slots[c.slot].label}:</b> your segment plays ({c.segment.map((g) => g.name).join(" or ")}); the narrator says no call here.</li>
       {:else}
-        <li><b>{options.slots[c.slot].label}:</b> Comment {c.keyword} below and I'll send you {c.says}.</li>
+        <li><b>{options.slots[c.slot].label}:</b> {callText(c.keyword, c.says)}</li>
       {/if}
     {/each}
   </ul>

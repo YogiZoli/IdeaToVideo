@@ -1902,3 +1902,154 @@
       videóra javítva.
     - A "Restore from backup" lista a `_courses` mappát nem kínálja videóként.
     - Teszt: `runner/course.test.mjs` ("backup: the course group...").
+
+124. **CTA: a teljes hívás szóról szóra** (Zoltan, 2026-10-16):
+    - **Mi volt a baj:** a CTA wizard "What they get" mezője 80 karakternél
+      levágta a szöveget, a séma 200 karakternél nem engedte menteni, és a
+      HeyGen klip mindig így rakta össze a mondatot: "Comment GUIDE below and
+      I'll send you <a mező>." Egy saját, teljes CTA így félbevágva vagy
+      dupla mondattal jött volna ki.
+    - **Mostantól:** a mező 4 soros, legfeljebb 600 karakter
+      (`CtaWizard.svelte`, `OFFER_MAX` a `runner/cta/profile.mjs`-ben, és a
+      `runner/schema/cta-profile.schema.json`). Ha a szöveg maga tartalmazza
+      a kulcsszót (pl. GUIDE), az egy teljes hívás: a HeyGen klip és az
+      előnézet szóról szóra azt mondja (`callText` a
+      `app/src/lib/cta/clips.ts`-ben, `CallsPreview.svelte`). Rövid "mit
+      kap" szövegnél marad az alap mondat.
+    - Zoltan három klipje (ZG C2C Identity): GUIDE az elején, COURSE középen,
+      TRIGGER a végén, a szövegük a CTA profilban.
+    - **Későbbre (backlog):** "Generate now" gomb a CTA kártyán, ami a klipet
+      azonnal legyártja, nem csak a következő videó szkriptjénél. Addig: új
+      videó, gate 1-nél csak az az egy kulcsszó "Generate with HeyGen", a
+      többi Narrator.
+    - Telepítő helyben épült (Windows, NSIS), GitHub Actions nélkül: a
+      `build.yml` csak PR-re és kézi indításra fut, sima pushra nem.
+
+125. **Tech stack átnézés a HeyGen v3 emlékeztető után** (Zoltan, 2026-10-20):
+    - **HeyGen:** újra összevetve a developers.heygen.com/endpoint-version-comparison
+      táblázattal. Minden hívás v3 (lásd 116), a `POST /v3/videos` a v3
+      `type: "avatar"` formát és az `engine` mezőt küldi. Kódcsere nem kellett;
+      a `runner/heygen-v3.test.mjs` továbbra is őrzi.
+    - **ElevenLabs:** TTS `eleven_v4` a `/v1/text-to-speech/{id}/with-timestamps`
+      végponton, hanglista `/v2/voices`. Kivezetett modellt (`*_v1`, `scribe_v1`)
+      nem használunk. A Music `model_id` nélkül megy, így `music_v1`; a
+      `music_v2` és `music_v2_5` elérhető, de hangzásváltás, ezért Zoltan
+      fülpróbája után dönthető.
+    - **Függőségek:** az app semver-en belüli frissítései (Tauri 2.12.x,
+      Svelte, Vite) és `cargo update`. Major ugrás (SvelteKit 3, adapter-static
+      4, TypeScript 7) és a HyperFrames 0.8.22 -> 0.8.181 szándékosan külön
+      lépés, saját e2e próbával (DECISIONS 18 szerint a motor verzióváltása
+      tudatos döntés).
+
+126. **HyperFrames 0.8.22 -> 0.8.181** (Zoltan, 2026-10-20, a 125 backlogjából):
+    - **Mi változott:** `engine/package.json`: `hyperframes` és
+      `@hyperframes/shader-transitions` 0.8.181, `gsap` 3.15.0, új
+      `engine/package-lock.json`. A lecsupaszított engine 103 MB.
+    - **CLI:** a runner hívásai változatlanul érvényesek. `snapshot -o --at
+      --no-end --describe false`, `render -o --quality`, `lint`, `check --json
+      --at` mind megvan. A shader lista (14 név) ugyanaz, a
+      `runner/motion/transitions.mjs` csak a megjegyzésben kapott új verziót.
+      A CLI hívásokon nem kellett igazítani.
+    - **Render böngésző (Zoltan döntése, 2026-10-20):** a render indulás
+      előtt `--version`-nel kipróbálja a böngészőt. A gépen lévő Google
+      Chrome Windowson erre nem válaszol (60 mp, "Chrome cannot start"), a
+      letöltött chrome-headless-shell (most `win64-152.0.7977.30`) igen.
+      Ezért a render mindig a shellt használja: ha még nincs meg, a runner
+      előbb letölti a HyperFrames saját letöltőjével (`hyperframes browser
+      ensure`), a sávon közben "Downloading the render browser" áll
+      (`renderBrowser` a `runner/tools.mjs`-ben). Renderre nincs rendszer
+      Chrome tartalék. A lint, a check és a snapshot alatt a 25-ös pont
+      tartaléka marad.
+    - **ENAMETOOLONG:** a render a kimeneti fájl mellé nyit egy ideiglenes
+      `.hf-transaction-XXXXXX` mappát, és hosszú projekt útvonalnál ez
+      túllépte a Windows korlátot. Flag vagy env változó erre nincs, ezért a
+      render egy rövid saját mappába ír (`<tmp>/itv-r/<8 hex>/video.mp4`,
+      felülírható: `ITV_RENDER_TMP`), a kész MP4 innen kerül az `out/`
+      mappába. A rövid mappa sikeres és sikertelen render után is törlődik.
+    - **Tesztek:** `runner/tools.test.mjs` (hiányzó shellnél letöltés,
+      meglévőnél nem, rendszer Chrome tartalék nincs) és
+      `runner/gates/render/index.test.mjs` (kb. 260 karakteres projekt
+      útvonal, takarítás hiba után is, a letöltés szövege).
+    - **Próba helyben:** Node 299 zöld (2 éles kihagyva), e2e 44/44 a
+      hosszú (kb. 200 karakteres) munkamappán is, UI check 0 hiba. Telepítő
+      nem készült.
+
+## 2026-10-23 (daily use for many channels)
+
+127. **Channels board, Playlist Planner, Traffic Card, Uploaded tick** (Zoltan,
+    2026-10-23; docs 27 and 26 section 7). Up to a dozen channels in daily use.
+    - **Changes 69 in part.** 69 said strategy is not the app's job. Now the
+      app has a thin Playlist Planner for its own user (Wizards, Playlist
+      Planner). The boundary stays a file: the planner writes a Course
+      Content Structure 1.0, the same format the course import reads (121),
+      and hands it to that import. A later standalone Flywheel app can write
+      the same file and replace the wizard; nothing else changes. No schema
+      change to the file.
+    - **Planner steps:** seeds (from the Traffic Card, or the typed topic;
+      free), vidIQ keyword research with the user's vidIQ key, one call per
+      seed (the app shows the credits left and asks first, then shows the
+      credits used), the AI's plan (one video per strong keyword, 8 to 16,
+      with "why this number"; volume and competition come from vidIQ, never
+      from the AI; asks first), the editable table (title, keyword, order,
+      add, remove), the AI outline (hook, teach, do, review, 10 to 20
+      minutes each; asks first), then the import preview and "Create N
+      videos". The file is built in code (`runner/planner/index.mjs`), not
+      by the AI. The closing line of each video points to the next one; the
+      3 comment CTAs stay the Identity's (GUIDE, COURSE, TRIGGER by default).
+    - **Evergreen Traffic Card:** the .md of the Brand Channel Wizard
+      (front matter `card: youtube-evergreen-organic-traffic-card`,
+      version 1). Kept as it came in the Identity folder
+      (`traffic-card.md`), so Identity export and backup carry it with no
+      new code. On Identity, YouTube Channel & Audience it offers only fields
+      that exist: channel name (the Identity name), audience, topic and
+      promise (channel profile), content language. Filled fields are shown
+      but not ticked. Save settings keeps them, as with any edit.
+    - **Channels board on Home**, at the top: one row per Identity and
+      playlist (or course): done "X of N", the next video and its step (the
+      tab it opens on), Sent to Publishing, Uploaded "X of N". Open switches
+      to that Identity and opens the video on its step. It reads `_courses`
+      and project.json; no second store.
+    - **project.json, two optional fields:** `publishing {sentAt, cardId}`
+      (set when Send to Publishing worked; older sends show "No") and
+      `upload {at, url, videoId}` (the user's Uploaded tick with the YouTube
+      link). Upload stays manual in YouTube Studio; the app never uploads.
+    - **vidrev handoff:** after the tick the video shows its 3 comment
+      keywords (from script.json), "Open vidrev.app" and "Copy the video
+      link". vidrev (read only, nothing changed there) already has a way:
+      `POST /api/v1/cards`, then `POST /api/v1/cards/{cardId}/published`
+      with `{"videoId"}` arms the campaigns, with a PDT style connect token.
+      Not used yet: it needs a vidrev token in Connections and a check that
+      PDT and IdeaToVideo do not send two cards for one video. Backlog.
+    - **Labels:** the import says "Course or playlist"; its error help names
+      the Minicourse page and the Playlist Planner.
+    - **Tests:** `runner/board.test.mjs`, `runner/traffic-card.test.mjs`,
+      `runner/planner.test.mjs` (a fake vidIQ MCP server; the planner's file
+      is read and imported by the course import). Node 313 green, Rust 48,
+      e2e 44/44, UI check 0 errors, the screens checked in `scripts/ui-mock`.
+      No installer built.
+
+128. **Playlist bridge lines in the script** (Zoltan, 2026-10-23). A ONE Video
+    that is one lesson of an imported course or playlist gets two lines the
+    app writes itself, not the AI (`runner/course/bridge.mjs`):
+    - **After the hook** (lesson 2 on): "If you have not watched <previous
+      title> yet, watch it first. The link is on screen."
+    - **Before the end screen:** "Next, watch <next title>. It is the next
+      step in this playlist." The last lesson: "If you missed any part of this
+      playlist, start from lesson 1."
+    - **From the order at script time:** the titles come from
+      `_courses/<slug>/course.json` when the script is written, never from the
+      Course Content Structure, so a new order (imported again) needs no fix
+      by hand; the next "Write script" says it right. The file format is not
+      changed. The Playlist Planner no longer writes a "watch the next video"
+      closing line into the file.
+    - **Fields:** `open.bridge` and `own.bridge` in script.json (optional);
+      script.md has them right after the hook and as the very last line, so
+      the voice reads them. For these videos the AI is not told the next
+      video and gets no closing line, so it is never said twice.
+    - **At most 12 seconds each** (150 words a minute, so 30 words): a long
+      title is shortened. A title is made speakable: a colon, dash, quotes or
+      brackets become a comma or go (the script's style rules).
+    - **Comment calls untouched:** each video keeps its own CTA plan, 0 to 3
+      calls with whatever keywords that video uses (its gate 1 choice, else
+      the Identity's CTA profile). The bridge never names a keyword.
+    - **Tests:** `runner/bridge.test.mjs`.

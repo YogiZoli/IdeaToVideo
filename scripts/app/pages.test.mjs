@@ -28,7 +28,7 @@ test("the top menu (DECISIONS 119): five menus, at most six pages each, every ol
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 6, `${m}: ${n} pages`);
   }
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Brand", "Motion", "Scenes"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Brand", "Motion", "Scenes", "Playlist Planner"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Voice & Avatar", "Footage", "Dictionary", "Resources", "Manage Identity"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["General", "Connections", "Import & Export", "Folders", "Backup", "Plan"]);
   // the pages before: app-ai, identity-ai and publishing are now Connections
