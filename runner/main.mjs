@@ -61,6 +61,7 @@ import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, C
 import { choices as brollChoices } from "./generate/index.mjs";
 import { previewCourse, importCourse, listCourses, exportCourse, readSeed } from "./course/index.mjs";
 import { channelBoard, setUpload, markSent } from "./course/board.mjs";
+import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
 import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
@@ -752,7 +753,7 @@ const commands = {
       const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
         writeScript({
           llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-          input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
+          input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );

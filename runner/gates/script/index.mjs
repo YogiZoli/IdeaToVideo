@@ -20,7 +20,10 @@ const WORDS_PER_MINUTE = 150;
 // CTA K10), so `cta` is always null now; the field stays for old scripts.
 // angle: the creator's own story, opinion or example for this video (gate 1,
 // "Your own angle", optional; DECISIONS 88).
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null }) {
+// bridge: the playlist bridge lines of a lesson (course/bridge.mjs). The app
+// says them, so the model is not told the next video and writes no line
+// about it (DECISIONS 128).
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null }) {
   const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
   const cta = null;
   const data = {
@@ -32,8 +35,8 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     channelProfile: channel.profile || null,
     keyword: keyword || brief.keyword || null,
     searchIntent: brief.searchIntent || null,
-    playlist: brief.playlist || null,
-    nextVideo: brief.playlist?.nextTitle || null,
+    playlist: bridge && brief.playlist ? { ...brief.playlist, nextTitle: undefined } : brief.playlist || null,
+    nextVideo: bridge ? null : brief.playlist?.nextTitle || null,
     cta,
     contentLanguage: language || brief.language || channel.contentLanguage || "en",
     targetLengthMin: targetLengthMin || brief.targetLengthMin || 8,
@@ -42,7 +45,7 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
   const own = String(angle ?? "").trim().slice(0, 1500);
   if (own) data.ownAngle = own;
   // One lesson of an imported course: its plan (course/index.mjs, seed.json).
-  const outline = lessonOutline(seed);
+  const outline = lessonOutline(bridge && seed ? { ...seed, closingLine: undefined } : seed);
   if (outline) data.lessonOutline = outline;
   // The Identity's dictionary (dictionary.mjs dictionaryData), only when it has entries.
   if (dictionary) data.dictionary = dictionary;
@@ -84,10 +87,12 @@ export function spokenFields(script) {
     ["open.promise", script.open?.promise],
     ["open.cta", script.open?.cta],
     ["open.credibility", script.open?.credibility],
+    ["open.bridge", script.open?.bridge],
     ["ownershipCta", script.ownershipCta],
     ["own.recap", script.own?.recap],
     ["own.cta", script.own?.cta],
     ["own.nextVideo", script.own?.nextVideo],
+    ["own.bridge", script.own?.bridge],
   ];
   (script.sections ?? []).forEach((s, i) => out.push([`sections[${i}].narration`, s.narration]));
   return out.filter(([, v]) => typeof v === "string" && v !== "");
@@ -171,7 +176,9 @@ export function wordCount(script) {
 }
 
 export function renderMarkdown(script) {
-  const lines = [`# ${script.title}`, "", "## OPEN", "", script.open.problem, "", script.open.promise, ""];
+  const lines = [`# ${script.title}`, "", "## OPEN", "", script.open.problem, ""];
+  if (script.open.bridge) lines.push(script.open.bridge, "");
+  lines.push(script.open.promise, "");
   if (script.open.cta) lines.push(script.open.cta, "");
   if (script.open.credibility) lines.push(script.open.credibility, "");
   script.sections.forEach((s, i) => {
@@ -182,6 +189,7 @@ export function renderMarkdown(script) {
   lines.push("## OWN", "", script.own.recap, "");
   if (script.own.cta) lines.push(script.own.cta, "");
   if (script.own.nextVideo) lines.push(script.own.nextVideo, "");
+  if (script.own.bridge) lines.push(script.own.bridge, "");
   return lines.join("\n");
 }
 
@@ -240,6 +248,11 @@ export async function writeScript({ llm, input, onProgress = () => {} }) {
   const level = LEVELS.includes(input.humanize) ? input.humanize : LEVELS.includes(input.channel?.humanize) ? input.channel.humanize : "off";
   let humanizeNote = null;
   if (level !== "off") ({ script, note: humanizeNote } = await humanizeScript({ llm, script, data, level, ownAngle: data.ownAngle ?? null, onProgress }));
+  // The playlist bridge lines, the app's own words, after every AI step.
+  if (input.bridge) {
+    script.open = { ...script.open, bridge: input.bridge.open ?? null };
+    script.own = { ...script.own, bridge: input.bridge.close ?? null };
+  }
   if (data.commentCalls) script.commentCalls = data.commentCalls.map((c) => ({ slot: c.place, keyword: c.keyword, temperature: c.temperature, gets: c.gets ?? null, offer: c.offer ?? null }));
   // For the publishing data next to the video (gates/render/publish.mjs).
   script.publishing = { searchKeyword: data.keyword, landingUrl: input.brief?.cta?.landingUrl || input.channel?.landingUrl || null, nextVideo: data.nextVideo, playlist: data.playlist?.title ?? data.playlist?.name ?? null };

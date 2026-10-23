@@ -94,7 +94,7 @@ test("planner: the file it builds is a Course Content Structure the import reads
   assert.deepEqual(parsed.warnings, []);
   assert.equal(parsed.lessons[0].keyword, "kw 1");
   assert.equal(parsed.lessons[0].teach.minutes + parsed.lessons[0].do.minutes + parsed.lessons[0].review.minutes, 16);
-  assert.equal(parsed.lessons[0].cta, "Watch the next video: Video 2.");
+  assert.equal(parsed.lessons[0].cta, "", "no next-video line in the file: the script gate makes it (DECISIONS 128)");
   assert.equal(parsed.lessons[0].youtubeTitle, "YT 1");
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-planner-"));

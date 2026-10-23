@@ -1,10 +1,19 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-23 (Channels board and Playlist Planner, DECISIONS 127)
+Frissítve: 2026-10-23 (playlist bridge lines, DECISIONS 128)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-10-23, playlist bridge lines, DECISIONS 128)
+
+- **Script gate:** a lesson of a course or playlist gets "watch the previous
+  one first" after the hook (from lesson 2) and "next, watch ..." (or "start
+  from lesson 1" on the last) at the end. Made from the current order when
+  the script is written, at most 12 seconds each, the comment calls as the
+  video has them.
+- Tests: Node 318 green, e2e 44/44.
 
 ## Now (2026-10-23, many channels, DECISIONS 127)
 

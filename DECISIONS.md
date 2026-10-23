@@ -2027,3 +2027,29 @@
       is read and imported by the course import). Node 313 green, Rust 48,
       e2e 44/44, UI check 0 errors, the screens checked in `scripts/ui-mock`.
       No installer built.
+
+128. **Playlist bridge lines in the script** (Zoltan, 2026-10-23). A ONE Video
+    that is one lesson of an imported course or playlist gets two lines the
+    app writes itself, not the AI (`runner/course/bridge.mjs`):
+    - **After the hook** (lesson 2 on): "If you have not watched <previous
+      title> yet, watch it first. The link is on screen."
+    - **Before the end screen:** "Next, watch <next title>. It is the next
+      step in this playlist." The last lesson: "If you missed any part of this
+      playlist, start from lesson 1."
+    - **From the order at script time:** the titles come from
+      `_courses/<slug>/course.json` when the script is written, never from the
+      Course Content Structure, so a new order (imported again) needs no fix
+      by hand; the next "Write script" says it right. The file format is not
+      changed. The Playlist Planner no longer writes a "watch the next video"
+      closing line into the file.
+    - **Fields:** `open.bridge` and `own.bridge` in script.json (optional);
+      script.md has them right after the hook and as the very last line, so
+      the voice reads them. For these videos the AI is not told the next
+      video and gets no closing line, so it is never said twice.
+    - **At most 12 seconds each** (150 words a minute, so 30 words): a long
+      title is shortened. A title is made speakable: a colon, dash, quotes or
+      brackets become a comma or go (the script's style rules).
+    - **Comment calls untouched:** each video keeps its own CTA plan, 0 to 3
+      calls with whatever keywords that video uses (its gate 1 choice, else
+      the Identity's CTA profile). The bridge never names a keyword.
+    - **Tests:** `runner/bridge.test.mjs`.

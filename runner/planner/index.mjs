@@ -246,7 +246,6 @@ export function buildStructure({ title, promise, audience, rows, outline, now = 
     course: { title: name, slug: slugOf(name), bold_promise: str(promise, 1000), ideal_client: str(audience, 2000), lesson_count: list.length },
     lessons: list.map((r, i) => {
       const o = outline?.[i] ?? {};
-      const next = list[i + 1];
       return {
         id: `v${r.position}`,
         playlist_position: r.position,
@@ -256,7 +255,9 @@ export function buildStructure({ title, promise, audience, rows, outline, now = 
         teach: { minutes: pos(o.teach?.minutes), points: (Array.isArray(o.teach?.points) ? o.teach.points : []).map((p) => str(p)).filter(Boolean).slice(0, 6) },
         do: { minutes: pos(o.do?.minutes), exercise: str(o.do?.exercise, 2000) },
         review: { minutes: pos(o.review?.minutes), check: str(o.review?.check, 2000) },
-        cta: next ? `Watch the next video: ${next.title}.` : "That is the whole playlist. Start again with the first video when you need it.",
+        // no closing line in the file: the script gate says the previous and
+        // the next video from the order at script time (course/bridge.mjs)
+        cta: "",
         youtube: { title: str(o.youtube_title, 100) || r.title },
       };
     }),
