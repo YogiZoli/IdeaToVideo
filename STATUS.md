@@ -15,7 +15,10 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - Tests: Node 322 of 323 (the one red is `traffic-card.test.mjs`, red on
   main before this change too). A real check on the 2026-10-26 video with
   the installed engine: 0 errors.
-- The installed app still has the old runner until a new installer is built.
+- Installer built locally on branch `fix-check-report` (2026-10-27 17:44):
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`.
+  Not pushed, no PR yet. Next: install it over the old app and run a video
+  through the check again.
 
 ## Now (2026-10-23, playlist bridge lines, DECISIONS 128)
 
