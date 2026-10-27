@@ -75,6 +75,46 @@ export function sceneOf(finding) {
 
 const lastLines = (tail) => tail.split("\n").slice(-6).join(" ");
 
+// The report of `hyperframes check --json` from its standard output. Anything
+// the engine prints before it (a notice, a warning with a brace in it) is
+// skipped: the report is the first object, starting a line, that reads whole
+// to the end. Newer engines add a "_meta" block (version, update notice);
+// it is ignored. null when there is none.
+export function readCheckReport(stdout) {
+  const text = String(stdout).trim();
+  for (let i = text.indexOf("{"); i !== -1; i = text.indexOf("{", i + 1)) {
+    if (i > 0 && text[i - 1] !== "\n") continue;
+    try {
+      const report = JSON.parse(text.slice(i));
+      if (report && typeof report === "object" && !Array.isArray(report)) return report;
+    } catch {
+      // not this one
+    }
+  }
+  return null;
+}
+
+// The copy the engine saves of every check (build/.hyperframes/artifacts/
+// checks/<id>.json): the newest one written since `since`, else null.
+export function savedCheckReport(out, since = 0) {
+  const dir = path.join(out, ".hyperframes", "artifacts", "checks");
+  if (!fs.existsSync(dir)) return null;
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => ({ f: path.join(dir, f), t: fs.statSync(path.join(dir, f)).mtimeMs }))
+    .filter((x) => x.t >= since - 2000)
+    .sort((a, b) => b.t - a.t);
+  for (const { f } of files) {
+    try {
+      return JSON.parse(fs.readFileSync(f, "utf8"));
+    } catch {
+      // try the next one
+    }
+  }
+  return null;
+}
+
 export async function lintAndCheck(projectDir, { env = process.env, onProgress = () => {} } = {}) {
   const out = buildDir(projectDir);
   if (!fs.existsSync(path.join(out, "index.html"))) throw new Error("Nothing to check yet: build the video first.");
@@ -97,16 +137,13 @@ export async function lintAndCheck(projectDir, { env = process.env, onProgress =
   // the report is read as JSON so the change windows can be told apart.
   // The check looks at the page without the camera wrappers: inside them it
   // measures every scene as 0 px tall (withoutCameraPage).
-  const lines = [];
+  const started = Date.now();
   const r = await withoutCameraPage(out, (html) =>
-    runHyperframes(["check", "--json", "--at", landedTimes(mountsOf(html)).join(",")], { env, cwd: out, browser: browser.path, onLine: (l) => lines.push(l) }),
+    runHyperframes(["check", "--json", "--at", landedTimes(mountsOf(html)).join(",")], { env, cwd: out, browser: browser.path }),
   );
-  const text = lines.join("\n");
-  let report;
-  try {
-    report = JSON.parse(text.slice(text.indexOf("{")));
-  } catch {
-    fs.writeFileSync(path.join(out, "check.log"), r.tail + "\n");
+  const report = readCheckReport(r.stdout ?? "") ?? savedCheckReport(out, started);
+  if (!report) {
+    fs.writeFileSync(path.join(out, "check.log"), (r.stdout || r.tail) + "\n");
     throw new Error(`hyperframes check gave no readable report: ${lastLines(r.tail)}`);
   }
   const errors = countedErrors(report, windows, covered);

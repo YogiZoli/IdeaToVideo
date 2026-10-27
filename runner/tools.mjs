@@ -135,7 +135,8 @@ export function resolveBrowser(env = process.env) {
 export const ENGINE_IDLE_MS = 0;
 
 // Runs the engine's hyperframes CLI with our node. Streams every output line to
-// onLine. Resolves { code, tail } (the last lines, for error messages).
+// onLine. Resolves { code, tail, stdout } (tail: the last lines, for error
+// messages; stdout: the whole standard output as it came).
 export function runHyperframes(args, { env = process.env, cwd, browser, onLine = () => {}, signal, idleMs = ENGINE_IDLE_MS } = {}) {
   const bin = hyperframesBin(env);
   if (!fs.existsSync(bin)) return Promise.reject(new Error(`The video engine is missing (${bin}). Reinstall the app.`));
@@ -155,27 +156,53 @@ export function runHyperframes(args, { env = process.env, cwd, browser, onLine =
     };
     arm();
     const tail = [];
-    const take = (buf) => {
-      arm();
-      for (const raw of buf.toString("utf8").split(/\r?\n|\r/)) {
-        // eslint-disable-next-line no-control-regex
-        const line = raw.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").trim();
-        if (!line) continue;
-        tail.push(line);
-        if (tail.length > 40) tail.shift();
-        onLine(line);
-      }
+    const emit = (raw) => {
+      // eslint-disable-next-line no-control-regex
+      const line = raw.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").trim();
+      if (!line) return;
+      tail.push(line);
+      if (tail.length > 40) tail.shift();
+      onLine(line);
     };
-    child.stdout.on("data", take);
-    child.stderr.on("data", take);
+    // A pipe hands the output over in pieces (64 KB on Windows) that can end
+    // in the middle of a line, so each stream keeps its unfinished line until
+    // the rest arrives. Without this a long `check --json` report came back
+    // with a line broken in two and could not be read (2026-10-26).
+    // `stdout` is kept whole for callers that read a report from it.
+    let stdout = "";
+    const reader = (isOut) => {
+      let rest = "";
+      return {
+        take(buf) {
+          arm();
+          const text = buf.toString("utf8");
+          if (isOut) stdout += text;
+          const parts = (rest + text).split(/\r?\n|\r/);
+          rest = parts.pop();
+          for (const p of parts) emit(p);
+        },
+        end() {
+          if (rest) emit(rest);
+          rest = "";
+        },
+      };
+    };
+    const out = reader(true);
+    const err = reader(false);
+    child.stdout.setEncoding?.("utf8");
+    child.stderr.setEncoding?.("utf8");
+    child.stdout.on("data", out.take);
+    child.stderr.on("data", err.take);
     child.on("error", (e) => {
       clearTimeout(timer);
       reject(e);
     });
     child.on("close", (code) => {
       clearTimeout(timer);
+      out.end();
+      err.end();
       if (stuck) reject(new Error(`The video engine gave no sign of life for ${Math.round(idleMs / 60000)} minutes, so the app stopped it (hyperframes ${args[0]}). Press the button again; if it happens again, send the diagnostics (Settings, General).`));
-      else resolve({ code, tail: tail.join("\n") });
+      else resolve({ code, tail: tail.join("\n"), stdout });
     });
   });
 }

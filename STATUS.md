@@ -1,10 +1,21 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-23 (playlist bridge lines, DECISIONS 128)
+Frissítve: 2026-10-27 (check report read whole, DECISIONS 129)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-10-27, check report, DECISIONS 129)
+
+- **"hyperframes check gave no readable report"** fixed: the engine's
+  output was cut into lines piece by piece, so a long check report could
+  break in two. Not a version problem: the app keeps its pinned engine
+  0.8.181; the "update available" note in the report is only a notice.
+- Tests: Node 322 of 323 (the one red is `traffic-card.test.mjs`, red on
+  main before this change too). A real check on the 2026-10-26 video with
+  the installed engine: 0 errors.
+- The installed app still has the old runner until a new installer is built.
 
 ## Now (2026-10-23, playlist bridge lines, DECISIONS 128)
 
