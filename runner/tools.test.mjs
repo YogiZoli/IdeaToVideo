@@ -136,3 +136,26 @@ test("renderBrowser never falls back to the system Chrome", async () => {
   await assert.rejects(renderBrowser({ env, run: async () => ({ code: 1, tail: "offline" }) }), /could not be downloaded/);
   fs.rmSync(data, { recursive: true, force: true });
 });
+
+// 2026-10-26: a long `check --json` report arrives in pieces that can end in
+// the middle of a line (or of a letter like "é"). Lines and stdout come back whole.
+test("output split mid-line comes back whole", async () => {
+  const engine = tmp();
+  const bin = path.join(engine, "node_modules", "hyperframes", "bin");
+  fs.mkdirSync(bin, { recursive: true });
+  const script = [
+    "const b = Buffer.from(JSON.stringify({ ok: true, message: 'szép ' + 'x'.repeat(200000) }) + '\\n');",
+    "const cut = b.indexOf(Buffer.from('é')) + 1;",
+    "process.stdout.write(b.subarray(0, cut));",
+    "setTimeout(() => { process.stderr.write('progress line\\n'); process.stdout.write(b.subarray(cut)); }, 300);",
+  ].join("\n");
+  fs.writeFileSync(path.join(bin, "hyperframes.mjs"), script + "\n");
+  const env = { ...process.env, ITV_ENGINE_DIR: engine, ITV_DATA_DIR: tmp() };
+  const lines = [];
+  const r = await runHyperframes(["check", "--json"], { env, onLine: (l) => lines.push(l) });
+  assert.equal(r.code, 0, r.tail);
+  assert.equal(JSON.parse(r.stdout).message.length, 200005);
+  assert.deepEqual(lines.map((l) => l.slice(0, 13)), ["progress line", '{"ok":true,"m']);
+  assert.equal(JSON.parse(lines[1]).ok, true);
+  fs.rmSync(engine, { recursive: true, force: true });
+});

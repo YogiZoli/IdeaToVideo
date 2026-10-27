@@ -2053,3 +2053,31 @@
       calls with whatever keywords that video uses (its gate 1 choice, else
       the Identity's CTA profile). The bridge never names a keyword.
     - **Tests:** `runner/bridge.test.mjs`.
+
+129. **Engine output read whole; the check report is not a version issue**
+    (Zoltan, 2026-10-27). "Autopilot stopped: hyperframes check gave no
+    readable report" showed the report's last lines (`_meta`, "latestVersion
+    0.8.201, updateAvailable"), which looked like an outdated engine. It was
+    not: the app runs its own pinned engine (0.8.181, DECISIONS 126), never
+    a global `hyperframes`, so `npm install -g hyperframes@latest` changes
+    nothing for the app, and the engine never updates itself
+    (`HYPERFRAMES_NO_AUTO_INSTALL`, `HYPERFRAMES_NO_UPDATE_CHECK`).
+    - **Cause:** `runHyperframes` cut each piece of output (64 KB on
+      Windows) into lines on its own. A `check --json` report with scene
+      changes is over 100 KB, so a piece could end inside a line; that line
+      came back in two and the JSON did not read. It happened only now and
+      then, wherever the cut fell. A cut inside a multi-byte letter broke it
+      too.
+    - **Fix:** each stream keeps its unfinished line until the rest comes
+      (and is read as UTF-8 text); the run also returns the whole stdout.
+      The build gate reads the report from stdout (`readCheckReport`: the
+      first object starting a line that reads to the end, anything printed
+      before it skipped, `_meta` ignored), else from the copy the engine
+      saves in `build/.hyperframes/artifacts/checks/` (`savedCheckReport`).
+    - **Version policy unchanged:** a new HyperFrames (0.8.201 now) is taken
+      only as a deliberate step (new lockfile, e2e, new installer), never at
+      run time. The update notice in `_meta` is not an error.
+    - **Tests:** `runner/tools.test.mjs` (output cut mid-line and mid-letter;
+      fails on the old code), `runner/build.test.mjs` (notices before the
+      report, `_meta`, the saved copy). A real check on the 2026-10-26 video
+      with the installed engine: report read, 0 errors.
