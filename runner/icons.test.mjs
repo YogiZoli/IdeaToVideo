@@ -1,4 +1,5 @@
 // icons.test.mjs: the icon sets for the whiteboard scene (DECISIONS 105).
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

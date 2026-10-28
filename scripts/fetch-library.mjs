@@ -17,6 +17,8 @@
 // Every family must cover all 10 content languages (runner/brand/cmap.mjs),
 // or the build fails. And library/presets.map.json as presets/MAP.json.
 // So renders never fetch a font from the network (docs/wizards/brand.md 6).
+// Every component passes the licence check (checkLicense) and must be in
+// library/catalog.json, which goes in as CATALOG.json.
 // And for the Motion wizard (library/components.json "motion"): the background
 // components into components/, and HyperFrames' transition registry and
 // transition overview into motion/.
@@ -37,6 +39,7 @@ import { fetchIcons } from "./fetch-icons.mjs";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const LIST = path.join(ROOT, "library", "components.json");
 export const LOCK = path.join(ROOT, "library", "library.lock.json");
+export const CATALOG = path.join(ROOT, "library", "catalog.json");
 export const LIBRARY_DIR = path.join(ROOT, "app", "src-tauri", "library");
 export const FONT_LIST = path.join(ROOT, "library", "fonts.json");
 export const FONT_LOCK = path.join(ROOT, "library", "fonts.lock.json");
@@ -160,6 +163,19 @@ export async function fetchOpenDesign({ update = false, fetchImpl = fetch, log =
   return list.systems;
 }
 
+// The licence check (library/components.json "licenses"): an item with no
+// licence of its own is under the registry's Apache-2.0; one that names
+// another licence, and every font file an item carries, must be listed with
+// its licence (THIRD-PARTY-NOTICES.md names them), or the build fails.
+export const FONT_FILE = /\.(woff2?|ttf|otf)$/i;
+export function checkLicense(name, item, licenses = {}) {
+  if (item.license && item.license !== "Apache-2.0" && !licenses.items?.[name]) throw new Error(`${name} is under ${item.license}, not Apache-2.0: list it in library/components.json "licenses.items" with its licence, or leave it out.`);
+  for (const f of item.files ?? []) {
+    const base = path.posix.basename(f.path);
+    if (FONT_FILE.test(base) && !licenses.fonts?.[base]) throw new Error(`${name} carries the font ${base}: list it in library/components.json "licenses.fonts" with its licence, or leave the component out.`);
+  }
+}
+
 // The CDN GSAP inside a component becomes the local copy beside index.html.
 export function localizeGsap(html) {
   return html.replace(/<script\s+src="https:\/\/cdn\.jsdelivr\.net\/npm\/gsap@[\d.]+\/dist\/gsap\.min\.js"><\/script>/g, '<script src="gsap.min.js"></script>');
@@ -180,11 +196,13 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   // The Motion wizard's background components go in beside the scene
   // components (same mount contract); the scene table never sees them
   // (runner/gates/scenes/roles.mjs lists the scene components).
-  for (const name of [...list.components, ...(list.motion?.backgrounds ?? [])]) {
+  for (const name of new Set([...list.components, ...(list.motion?.backgrounds ?? [])])) {
     // registry-item.json first: it lists the component's files (the HTML, and
     // for some, assets such as fonts), every one of them pinned in the lock.
     const item = await get(rawUrl(list.commit, name, "registry-item.json"), fetchImpl);
-    const files = JSON.parse(item.toString("utf8")).files?.map((f) => f.path) ?? [];
+    const meta = JSON.parse(item.toString("utf8"));
+    checkLicense(name, meta, list.licenses);
+    const files = meta.files?.map((f) => f.path) ?? [];
     if (!files.includes(`${name}.html`)) throw new Error(`${name}: registry-item.json does not list ${name}.html`);
     for (const file of ["registry-item.json", ...files]) {
       const url = rawUrl(list.commit, name, file);
@@ -204,6 +222,7 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   for (const name of list.captions ?? []) {
     const item = await get(rawUrl(list.commit, name, "registry-item.json"), fetchImpl);
     const meta = JSON.parse(item.toString("utf8"));
+    checkLicense(name, meta, list.licenses);
     // every file the item lists (the HTML, and assets such as textures)
     const files = meta.files?.map((f) => f.path) ?? [`${name}.html`];
     if (!files.includes(`${name}.html`)) throw new Error(`${name}: registry-item.json does not list ${name}.html`);
@@ -247,7 +266,16 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   await fetchFonts({ update, fetchImpl, log, out: path.join(stage, "fonts") });
   await fetchOpenDesign({ update, fetchImpl, log, out: path.join(stage, "opendesign") });
   await fetchIcons({ fetchImpl, log, out: path.join(stage, "icons") });
-  fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], backgrounds: list.motion?.backgrounds ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); fonts OFL-1.1 (see fonts/<id>/LICENSE)" }, null, 2) + "\n");
+  // The scene catalog (library/catalog.json, DECISIONS 130): what each
+  // component is for, written from its files and its test renders; the
+  // planner reads it. It must name exactly the bundled components.
+  const catalog = JSON.parse(fs.readFileSync(CATALOG, "utf8"));
+  const named = Object.keys(catalog.components ?? {});
+  const missing = list.components.filter((c) => !named.includes(c));
+  const extra = named.filter((c) => !list.components.includes(c));
+  if (missing.length || extra.length) throw new Error(`library/catalog.json does not match the component list (missing: ${missing.join(", ") || "none"}; extra: ${extra.join(", ") || "none"}).`);
+  fs.copyFileSync(CATALOG, path.join(stage, "CATALOG.json"));
+  fs.writeFileSync(path.join(stage, "LIBRARY.json"), JSON.stringify({ source: list.source, commit: list.commit, components: list.components, presets: list.presets ?? [], backgrounds: list.motion?.backgrounds ?? [], license: "Apache-2.0 (HyperFrames by HeyGen); kinetic-center-build MIT (Remocn); fonts OFL-1.1 or Apache-2.0 (see fonts/<id>/LICENSE and THIRD-PARTY-NOTICES.md)" }, null, 2) + "\n");
   if (update) fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + "\n");
   fs.rmSync(out, { recursive: true, force: true });
   fs.renameSync(stage, out);

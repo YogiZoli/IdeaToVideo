@@ -16,6 +16,7 @@ import { ALL_MOODS, moodPair, loadRegistry, knownTransition, CUT, SHADERS, ENERG
 import { BACKGROUNDS, CAMERAS } from "./stage.mjs";
 import { CAPTION_STYLES, captionDir } from "../captions/index.mjs";
 import { COMPONENTS, ROLES, PACES, DEFAULT_PACE } from "../gates/scenes/roles.mjs";
+import { entryOf } from "../gates/scenes/catalog.mjs";
 import { loadComponent, checkVars, libraryDir } from "../gates/build/assemble.mjs";
 import { cssVars } from "../brand/tokens.mjs";
 
@@ -68,7 +69,8 @@ export function normalizeProfile(input, { dir = libraryDir() } = {}) {
     errors.push(...checkVars(item, b.vars));
   }
   const camera = { move: "push", ...(input.camera ?? {}) };
-  const off = [...new Set(input.scenes?.off ?? [])];
+  // a name the catalog has since turned off (DECISIONS 130) is dropped, not an error
+  const off = [...new Set(input.scenes?.off ?? [])].filter((name) => COMPONENTS[name] || !entryOf(name));
   for (const name of off) {
     if (!COMPONENTS[name]) errors.push(`Unknown scene component: ${name}.`);
     else if (!WIZARD_ROLES.includes(COMPONENTS[name].role)) errors.push(`${COMPONENTS[name].label} is not chosen here (its role belongs to the CTA wizard).`);

@@ -139,13 +139,25 @@ for (const g of ["script", "voice"]) p = setGate(p, g, { state: "approved", mode
 saveProject(dir, p);
 check("project with approved script and voice", true, `${sentences.length} sentences, ${TOTAL} s`);
 
-// Gate 3 with a stand-in LLM. The plan's first answer breaks two rules, so the
-// repair call is exercised too.
-const bad = { scenes: [{ from: "S1", to: "S6", component: "headline-slam", vars: { text: "Most videos lose people in seconds" } }] };
+// Gate 3 with a stand-in LLM, in two steps (DECISIONS 130): the shortlist's
+// first answer breaks the rules, so the repair call is exercised too, then
+// the picks from the candidates' code.
+const bad = { scenes: [{ from: "S1", to: "S6", candidates: ["headline-slam"] }] };
+const shortlist = {
+  scenes: [
+    { from: "S1", candidates: ["titlecard-calm", "titlecard-lockup", "per-word-rise"] },
+    { from: "S2", candidates: ["push-in", "per-word-rise", "marker-highlight"] },
+    { from: "S3", candidates: ["per-word-rise", "push-in", "marker-highlight"] },
+    { from: "S4", candidates: ["grid-card-assemble", "per-word-rise", "push-in"] },
+    { from: "S5", candidates: ["marker-highlight", "per-word-rise", "push-in"] },
+    { from: "S6", candidates: ["cta-close"] },
+  ],
+  gaps: [],
+};
 const good = {
   scenes: [
     { from: "S1", component: "titlecard-calm", vars: { kicker: "THE PROBLEM", headline: "Viewers leave early" } },
-    { from: "S2", component: "headline-slam", vars: { text: "Stay focused" } },
+    { from: "S2", component: "push-in", vars: { text: "Stay focused" } },
     { from: "S3", component: "per-word-rise", vars: { text: "Three steps" } },
     { from: "S4", component: "grid-card-assemble", vars: { items: "Write,Record,Publish" } },
     { from: "S5", component: "marker-highlight", vars: { text: "One idea at a time", emphasis_word: "One" } },
@@ -154,9 +166,10 @@ const good = {
   gaps: [],
 };
 let llmCalls = 0;
-const fetchImpl = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ choices: [{ message: { content: JSON.stringify(llmCalls++ === 0 ? bad : good) } }] }) });
+const answers = [bad, shortlist, good];
+const fetchImpl = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ choices: [{ message: { content: JSON.stringify(answers[Math.min(llmCalls++, 2)]) } }] }) });
 const planned = await makeScenes({ llm: { provider: "gemini", apiKey: "stand-in", fetchImpl, sleep: async () => {} }, projectDir: dir, env });
-check("gate 3: scene table planned, one repair", planned.scenes === 6 && llmCalls === 2, `${planned.scenes} scenes, ${llmCalls} LLM calls`);
+check("gate 3: scene table planned in two steps, one repair", planned.scenes === 6 && llmCalls === 3, `${planned.scenes} scenes, ${llmCalls} LLM calls`);
 {
   const last = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8")).scenes.at(-1);
   check("CTA: the comment call scene shows its keyword", last.call?.keyword === "START" && last.vars.button_label === "START", JSON.stringify(last.call));
@@ -294,7 +307,7 @@ check("the project remembers the video", runner("load-project", { projectDir: di
     transition: { mood: "premium", primary: "blur-crossfade", accent: "cross-warp-morph", energy: "calm", where: "every" },
     background: { type: "grain-field", vars: {} },
     camera: { move: "push" },
-    scenes: { off: ["headline-slam"], style: { "marker-highlight": { style: "underline" } } },
+    scenes: { off: ["push-in"], style: { "marker-highlight": { style: "underline" } } },
   };
   const saved = runner("motion-save", { identityDir, profile });
   check("motion: the profile is saved in the Identity's folder", saved.event === "result" && fs.existsSync(path.join(identityDir, "motion.json")), saved.message ?? "");
@@ -307,6 +320,6 @@ check("the project remembers the video", runner("load-project", { projectDir: di
   const r2 = runner("render-video", { projectDir: mdir, quality: "draft" });
   check("motion: render, the length still matches the voice", r2.event === "result" && Math.abs(r2.data.seconds - TOTAL) < 0.25, r2.event === "result" ? `${r2.data.seconds} s of video in ${r2.seconds} s` : r2.message);
   const table = runner("scene-table", { projectDir: mdir, identityDir });
-  check("motion: a turned-off scene type is not offered as a swap", table.event === "result" && table.data.rows.every((r) => r.alternatives.every((a) => a.component !== "headline-slam")));
+  check("motion: a turned-off scene type is not offered as a swap", table.event === "result" && table.data.rows.every((r) => r.alternatives.every((a) => a.component !== "push-in")));
 }
 finish();

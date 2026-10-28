@@ -97,15 +97,18 @@ export function loadComponent(name, { env = process.env } = {}) {
 //     its authored default and leave the scene early (measured: titlecard-calm
 //     exits at 3.5 s of a 7.3 s scene). root.dataset.duration becomes the
 //     scene length as a string literal, which every one of the reads accepts.
-// A component with timed parts of another length, or one that never reads
-// root.dataset.duration, cannot be stretched safely, so it is refused.
+// A component with timed parts of another length cannot be stretched safely,
+// so it is refused. One that never reads root.dataset.duration plays its
+// authored timeline and then holds its last frame (the registry's contract:
+// "extra duration becomes HOLD"); its authored root is the element with the
+// composition id when it has no #root (DECISIONS 130). The catalog's test
+// renders show which of them really hold.
 export function fitDuration(html, name, seconds) {
-  const m = /<div[^>]*\bid="root"[^>]*\bdata-duration="([\d.]+)"/.exec(html) ?? /data-composition-duration="([\d.]+)"/.exec(html);
+  const m = /<div[^>]*\bid="root"[^>]*\bdata-duration="([\d.]+)"/.exec(html) ?? /data-composition-duration="([\d.]+)"/.exec(html) ?? /<[a-z]+[^>]*\bdata-composition-id="[^"]+"[^>]*\bdata-duration="([\d.]+)"/.exec(html);
   if (!m) throw new Error(`${name}: no authored length, so it cannot be fitted to the scene.`);
   const authored = m[1];
   const others = [...html.matchAll(/data-duration="([\d.]+)"/g)].filter((x) => x[1] !== authored);
   if (others.length) throw new Error(`${name}: has timed parts of other lengths (${others.map((x) => x[1]).join(", ")}), so its length cannot be fitted.`);
-  if (!html.includes("root.dataset.duration")) throw new Error(`${name}: its script does not read root.dataset.duration, so its length cannot be fitted.`);
   const s = String(seconds);
   return html
     .replace(/data-composition-duration="[\d.]+"/, `data-composition-duration="${s}"`)
@@ -670,7 +673,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const fitted = scenes.map((sc, n) => {
     const comp = components.get(sc.component);
     if (comp.pack) {
-      // a pack block: its own font, the scene's length, the Brand when the pack follows it
+      // a pack block: the scene's length and the Brand
       const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
       // an icon variable may name any simple thing: the three icon sets have it
       const icons = {};
@@ -680,7 +683,10 @@ export async function assemble(projectDir, { env = process.env, total, language,
         const hit = findIcon(want, { env });
         if (hit) icons[want] = hit.d.map((d) => `<path d="${d}"/>`).join("");
       }
-      return fitPackBlock(comp.html, { fontface: comp.pack.fontface, seconds: r3(times[n].duration + ext(n)), drawn: comp.pack.seconds, theme: comp.pack.followBrand ? { ...baseTheme(look), ...(table.theme ?? {}) } : null, family: comp.pack.followBrand ? family : null, icons });
+      // the look always comes from the Identity's Brand (DECISIONS 130): a
+      // pack's own colours and font never reach the video, whatever the
+      // pack's setting says; packs are no longer planned, old tables still build
+      return fitPackBlock(comp.html, { fontface: comp.pack.fontface, seconds: r3(times[n].duration + ext(n)), drawn: comp.pack.seconds, theme: { ...baseTheme(look), ...(table.theme ?? {}) }, family, icons });
     }
     let html = trackingFit(widerFit(fitDuration(comp.html, sc.component, r3(times[n].duration + ext(n))), sc.component));
     if (icons[n]) html = withSketch(html, icons[n]);

@@ -66,7 +66,7 @@ export function tileFilter(count, columns = COLUMNS, width = TILE_WIDTH) {
 
 const byNumber = (a, b) => a.localeCompare(b, "en", { numeric: true });
 
-function ffmpeg(args, env) {
+export function ffmpeg(args, env) {
   const bin = ffmpegPaths(env)?.ffmpeg;
   if (!bin) return Promise.reject(new Error("The bundled ffmpeg is missing. Reinstall the app."));
   return new Promise((resolve, reject) => {

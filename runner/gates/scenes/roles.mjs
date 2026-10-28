@@ -1,7 +1,8 @@
 // roles.mjs: what each library component is for, in the words the user sees
-// (DECISIONS 55). The scene table groups components by role: the AI picks one
-// per scene, the user may swap a row for another one of the same role, and
-// nobody has to know what a "component" is.
+// (DECISIONS 55; since 130 from the catalog, catalog.mjs). The scene table
+// groups components by role: the AI picks one per scene, the user may swap a
+// row for another one of the same role, and nobody has to know what a
+// "component" is.
 //
 // mainVar: the on-screen text the user can edit in the table (Custom). null
 // when the component's content is not one line of text (numbers, lists).
@@ -9,15 +10,22 @@
 // the general limit (MAX_WORDS). headline-slam shrinks a longer line until
 // its fixed letter spacing crushes the letters (seen in the first real video).
 
+import { loadCatalog, plannable, entryOf } from "./catalog.mjs";
+
+// The catalog's roles (catalog.mjs CATALOG_ROLES), and the ones block packs
+// bring (packs/index.mjs ROLES), in the words the user sees.
 export const ROLES = {
   opening: { label: "Opening or chapter", hint: "The start of the video, or a new section." },
-  statement: { label: "Key line", hint: "The main claim of a sentence, big on screen." },
-  emphasis: { label: "Emphasis", hint: "One word is the point." },
-  proof: { label: "Number or chart", hint: "A number the narration says." },
-  list: { label: "List or steps", hint: "Three to six things." },
-  sketch: { label: "Sketch", hint: "A simple drawing for an idea." },
+  statement: { label: "Key sentence", hint: "The main claim of a sentence, big on screen." },
+  emphasis: { label: "Highlight", hint: "One word or phrase is the point." },
+  proof: { label: "Proof", hint: "A number, a chart or a result the narration says." },
+  list: { label: "List or steps", hint: "Two to six things." },
+  diagram: { label: "Diagram", hint: "A drawing, a flow or a relation for an idea." },
+  quote: { label: "Quote", hint: "Words someone said, a message." },
+  transition: { label: "Transition", hint: "A move between scenes (the Motion wizard does these)." },
   closing: { label: "Closing", hint: "The call to action, or your name at the end." },
   // the roles block packs bring (packs/index.mjs ROLES)
+  sketch: { label: "Sketch", hint: "A simple drawing for an idea." },
   relation: { label: "Relation", hint: "How two things connect: A leads to B, or one of two ways." },
   contrast: { label: "Contrast", hint: "Wrong and right, before and after." },
   process: { label: "Process", hint: "Steps in order, states, a cycle." },
@@ -26,29 +34,54 @@ export const ROLES = {
   cta: { label: "Comment call", hint: "Asks the viewer to comment a keyword." },
 };
 
-export const COMPONENTS = {
-  "titlecard-lockup": { role: "opening", label: "Title card", mainVar: "wordmark" },
-  "titlecard-calm": { role: "opening", label: "Quiet chapter title", mainVar: "headline" },
-  "per-word-rise": { role: "statement", label: "Words rise in", mainVar: "text" },
-  "kinetic-type-swap": { role: "statement", label: "One word changes", mainVar: null, words: { prefix: 3, suffix: 2 } },
-  "headline-slam": { role: "statement", label: "Headline lands hard", mainVar: "text", words: { text: 3 } },
-  "marker-highlight": { role: "emphasis", label: "Word marked", mainVar: "text" },
-  "count-up": { role: "proof", label: "Number counts up", mainVar: null },
-  "chart-story": { role: "proof", label: "Chart", mainVar: null },
-  "conic-progress-ring": { role: "proof", label: "Progress ring", mainVar: null },
-  "grid-card-assemble": { role: "list", label: "Cards in a grid", mainVar: "items" },
-  "constellation-hub": { role: "list", label: "Ideas around a center", mainVar: "nodes" },
-  "whiteboard-ink": { role: "sketch", label: "Whiteboard sketch", mainVar: "caption" },
-  "cta-close": { role: "closing", label: "Call to action", mainVar: "action_line", words: { button_label: 3 } },
-  // Retired (Zoltan, 2026-10-05, CTA K12): no longer planned or offered, old
-  // scene tables that use it still build.
-  "logo-brand-close": { role: "closing", label: "Name at the end", mainVar: "wordmark", retired: true },
+// What the scene table knows of the first library components, by hand
+// (DECISIONS 55): the UI label, the main text the user can edit (Custom),
+// and word limits where a component is made for fewer words than MAX_WORDS
+// (headline-slam crushes its letters past 3 words, seen in the first real
+// video). Every other component takes these from the catalog.
+const TUNED = {
+  "titlecard-lockup": { label: "Title card", mainVar: "wordmark" },
+  "titlecard-calm": { label: "Quiet chapter title", mainVar: "headline" },
+  "per-word-rise": { label: "Words rise in", mainVar: "text" },
+  "kinetic-type-swap": { label: "One word changes", mainVar: null, words: { prefix: 3, suffix: 2 } },
+  "headline-slam": { label: "Headline lands hard", mainVar: "text", words: { text: 3 } },
+  "marker-highlight": { label: "Word marked", mainVar: "text" },
+  "count-up": { label: "Number counts up", mainVar: null },
+  "chart-story": { label: "Chart", mainVar: null },
+  "conic-progress-ring": { label: "Progress ring", mainVar: null },
+  "grid-card-assemble": { label: "Cards in a grid", mainVar: "items" },
+  "constellation-hub": { label: "Ideas around a center", mainVar: "nodes" },
+  "whiteboard-ink": { label: "Whiteboard sketch", mainVar: "caption" },
+  "cta-close": { label: "Call to action", mainVar: "action_line", words: { button_label: 3 } },
 };
+// Retired (Zoltan, 2026-10-05, CTA K12): no longer planned or offered, old
+// scene tables that use it still build.
+const RETIRED = { "logo-brand-close": { role: "closing", label: "Name at the end", mainVar: "wordmark", retired: true } };
+
+// Every component the planner may use (catalog.mjs plannable): status "on",
+// not a transition, nothing the app cannot give it. The rest of the 234 are
+// in the catalog with the reason they are off, never deleted.
+export const COMPONENTS = (() => {
+  const out = {};
+  for (const [name, e] of Object.entries(loadCatalog().components ?? {})) {
+    if (!plannable(e)) continue;
+    out[name] = { role: e.role, label: e.label ?? name, mainVar: e.mainVar ?? null, ...(e.maxWords ? { words: e.maxWords } : {}), ...(TUNED[name] ?? {}) };
+  }
+  for (const [name, meta] of Object.entries(RETIRED)) if (!out[name]) out[name] = meta;
+  return out;
+})();
 
 // Block packs (packs/, DECISIONS 107) add their blocks here per command,
 // "<pack>:<block>": { role, label, mainVar, words, pack: true, realOnly }.
 export const PACK_COMPONENTS = new Map();
-export const componentMeta = (name) => COMPONENTS[name] ?? PACK_COMPONENTS.get(name) ?? null;
+// A component the catalog has off is never planned or offered, but a scene
+// table that already uses it (made before DECISIONS 130) still checks and
+// builds: it is known, marked off.
+export const componentMeta = (name) => {
+  if (COMPONENTS[name] || PACK_COMPONENTS.has(name)) return COMPONENTS[name] ?? PACK_COMPONENTS.get(name);
+  const e = entryOf(name);
+  return e ? { role: e.role, label: e.label ?? name, mainVar: e.mainVar ?? null, ...(e.maxWords ? { words: e.maxWords } : {}), ...(TUNED[name] ?? {}), off: true } : null;
+};
 
 export const roleOf = (component) => componentMeta(component)?.role ?? null;
 

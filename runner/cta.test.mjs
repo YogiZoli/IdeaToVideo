@@ -2,6 +2,7 @@
 // keyword list, the Identity's cta.json, the script, the scene table, the
 // button colour and the voice.
 
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

@@ -2,6 +2,7 @@
 // library (cuts, stills, limits), the piece each video takes (from a cut,
 // least used first), the planner's check, the build plan.
 
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

@@ -2,6 +2,7 @@
 // library, the plan (narrator or segment, never both), the voice with the
 // segment's sound and the end-screen tail, and the build mounting the clip.
 
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

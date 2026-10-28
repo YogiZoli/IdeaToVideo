@@ -22,7 +22,8 @@
   import { work, running, track, measure, startWork, pilots } from "./work.svelte";
   import { TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
   import { avatarLooks } from "./avatars";
-  import { llmFor } from "./llm";
+  import { llmFor, describeLlm } from "./llm";
+  import { ask } from "@tauri-apps/plugin-dialog";
   import type { Series } from "./course/course";
   import { notifyDone } from "./notify";
 
@@ -189,6 +190,9 @@
       if (!approved("scenes")) {
         setPilot("Planning the scenes");
         show("scenes", "autopilot");
+        // its price first, like every paid AI call (DECISIONS 130)
+        const cost = (await runner<{ text: string }>("scenes-estimate", { projectDir: dir, llm: llmFor(app.config, "scenes"), look })).text;
+        if (!(await ask(`Autopilot plans the scenes next: the AI reads the whole scene catalog, then the code of the best scene types for every sentence. With ${describeLlm(llmFor(app.config, "scenes"))} this costs ${cost} from your AI key. Go on?`, { title: "Autopilot: plan the scenes", kind: "info" }))) throw new Error("you stopped it before the scene plan; nothing was spent on it");
         await runner("make-scenes", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
         await approveGate("scenes");
       }
@@ -197,6 +201,11 @@
         setPilot("Building the preview");
         show("preview", "autopilot");
         await runner("build-video", { projectDir: dir, look });
+        const vcost = (await runner<{ text: string }>("visual-estimate", { projectDir: dir, llm: llmFor(app.config, "scenes") })).text;
+        if (await ask(`The preview is built. Let the AI check every picture against what is said, and swap the scenes that do not fit? With ${describeLlm(llmFor(app.config, "scenes"))} this costs ${vcost} from your AI key. No: the video renders as it is.`, { title: "Autopilot: check the pictures", kind: "info" })) {
+          setPilot("Checking the pictures");
+          await runner("visual-check", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
+        }
         await approveGate("review");
       }
       if (!rendered()) {
