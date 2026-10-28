@@ -1,10 +1,37 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-27 (check report read whole, DECISIONS 129)
+Frissítve: 2026-10-28 (full scene catalog, DECISIONS 130)
 
-End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és Zoltan blokk-könyvtárával.
+End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-10-28, full scene catalog, DECISIONS 130)
+
+- **All 234 registry components** are bundled at the pinned commit, with the
+  same lock and a new licence check. DECISIONS 56 is closed: "all 234".
+- **Catalog** `library/catalog.json`: what each component shows, when it
+  fits, role, needs, strong and weak points, an example, status. Written from
+  the component files and from test renders of two topics in two looks.
+  **25 on, 209 off** (72 paste-in recipes, 48 fail the check in their
+  finished state, 1 lint, 19 empty or identical pictures, 69 own fixed
+  content, placeholders or own colours). Never deleted, the reason is in the
+  catalog. Re-test: `scripts/catalog/test-components.mjs`, then
+  `build-catalog.mjs` (docs/scene-catalog.md).
+- **Planning in two steps:** the whole catalog gives 3 to 5 candidates per
+  scene, then the candidates' full code gives one pick with a reason. No
+  component twice in a row, a use limit per video, the channel's last
+  videos ranked lower (`<identity>/scene-history.json`).
+- **Picture check** after the build (Preview tab, Autopilot asks): the AI
+  judges two frames of every scene and swaps the ones that do not fit or do
+  not read well, then those are checked again.
+- **Price first:** planning, a swap, a change and the picture check show
+  their price before they run.
+- **Brand:** block packs (the ZG archetypes) are no longer planned; old
+  tables build in the Identity's Brand. The pack files are untouched.
+- **Build gate:** every scene is judged once it has landed.
+- Tests: Node 329 of 332 (the one red is `traffic-card.test.mjs`, red on
+  main before; 2 live tests skipped), e2e 44/44, Rust 48, UI check 0 errors.
 
 ## Now (2026-10-27, check report, DECISIONS 129)
 
