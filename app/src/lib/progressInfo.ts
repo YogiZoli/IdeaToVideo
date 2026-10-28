@@ -9,7 +9,10 @@ export function phaseText(command: string, step: string | undefined): string | n
   const table: Record<string, string> = {
     writing: "The AI is writing the script",
     humanizing: "Making it sound like a person talking",
-    planning: "The AI is planning the scenes",
+    planning: "The AI is reading the scene catalog",
+    choosing: "The AI is reading the code of the best scene types",
+    visual: "The AI is looking at the scenes",
+    "visual-swap": "Swapping a scene for a better fit",
     repairing: "Fixing what the AI returned",
     voice: "Reading the script aloud",
     joining: "Joining the voice parts",
@@ -45,9 +48,11 @@ export function costText(command: string, provider?: string): string {
   const local = "Runs on this computer only. No AI tokens and no credits from any service.";
   switch (command) {
     case "write-script":
+      return "Uses AI tokens from your AI key (a few cents at most). No other credits.";
     case "make-scenes":
     case "refill-scene":
-      return "Uses AI tokens from your AI key (a few cents at most). No other credits.";
+    case "visual-check":
+      return "Uses AI tokens from your AI key (you saw the price first). No other credits.";
     case "make-voice":
       return provider === "elevenlabs"
         ? "Uses ElevenLabs characters from your plan. No AI tokens for the script."
@@ -76,7 +81,7 @@ export function costText(command: string, provider?: string): string {
  * connection, or at a service that keeps working without the app. */
 export function workPlace(command: string): "local" | "online" | "service" {
   if (command === "make-avatar" || command === "segment-make" || command === "broll-make") return "service";
-  if (["broll-plan", "write-script", "make-scenes", "refill-scene", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks", "planner-research", "planner-plan", "planner-outline"].includes(command)) return "online";
+  if (["broll-plan", "write-script", "make-scenes", "refill-scene", "visual-check", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks", "planner-research", "planner-plan", "planner-outline"].includes(command)) return "online";
   return "local";
 }
 

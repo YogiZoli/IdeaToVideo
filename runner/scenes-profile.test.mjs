@@ -1,11 +1,12 @@
 // scenes-profile.test.mjs: the Scenes wizard's profile (DECISIONS 110).
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { normalizeScenes, defaultScenes, loadScenes, saveScenes, mixRule, MIX_PRESETS } from "./scenes-profile.mjs";
-import { buildMessages } from "./gates/scenes/index.mjs";
+import { shortlistMessages as buildMessages } from "./gates/scenes/index.mjs";
 
 test("the mix adds up to 100, a preset is named only when it matches", () => {
   const p = normalizeScenes({ ...defaultScenes(), mix: { text: 2, icon: 1, image: 1, video: 0 } });

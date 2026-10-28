@@ -1,5 +1,6 @@
 // The runner side of DECISIONS 85-86: the scene plan without AI, the render
 // percent from the frames, and the YouTube texts' parts made by code.
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import test from "node:test";
 import assert from "node:assert/strict";
 import { simplePlan } from "./gates/scenes/simple.mjs";

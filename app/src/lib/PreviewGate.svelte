@@ -18,12 +18,18 @@
   import { running } from "./work.svelte";
   import { onDestroy } from "svelte";
   import type { TabId } from "./tabs";
-  import { llmFor } from "./llm";
+  import { llmFor, describeLlm } from "./llm";
+  import { ask } from "@tauri-apps/plugin-dialog";
 
   type Row = {
     index: number; start: number | null; duration: number | null; said: string; component: string; label: string; roleLabel: string;
     mainVar: string | null; mainText: string | null; shows: string; alternatives: { component: string; label: string }[];
     call: { keyword: string } | null;
+  };
+  type Visual = {
+    checked: number; passed: number; passedFirst: number; model: string;
+    swaps: { scene: number; from: string; to: string; problem: string; nowFits: boolean }[];
+    stillFailing: { scene: number; component: string; problem: string; note: string | null }[];
   };
   type Table = { rows: Row[]; scenes?: { component: string; from: string; to?: string; vars: Record<string, unknown> }[] };
 
@@ -47,7 +53,7 @@
     render: () => void;
   } = $props();
 
-  const COMMANDS = ["build-video", "refill-scene", "save-scenes"];
+  const COMMANDS = ["build-video", "visual-check", "refill-scene", "save-scenes"];
   const job = $derived(running(dir, COMMANDS));
   const rendering = $derived(!!running(dir, ["render-video"]));
   let busy = $state(false);
@@ -82,10 +88,51 @@
     if (scenesApproved || edited) loadTable();
   });
 
+  // The visual check (DECISIONS 130): after the build the AI looks at every
+  // scene, swaps the ones that do not fit what is said or do not read well
+  // for the planner's next candidate, and builds those again. Its price is
+  // shown first, as for every paid AI call.
+  let visual = $state<Visual | null>(null);
+  async function loadVisual() {
+    try {
+      visual = (await runner<{ report: Visual | null }>("visual-report", { projectDir: dir })).report;
+    } catch {
+      visual = null;
+    }
+  }
+  $effect(() => {
+    if (built) loadVisual();
+  });
+  async function visualCheck() {
+    const llm = llmFor(app.config, "scenes");
+    let cost: string;
+    try {
+      cost = (await runner<{ text: string }>("visual-estimate", { projectDir: dir, llm })).text;
+    } catch (e) {
+      error = errorText(e);
+      return;
+    }
+    if (!(await ask(`The AI looks at two frames of every scene and checks that the picture fits what is said and reads well. A scene that does not is swapped for the next best scene type and checked again. With ${describeLlm(llm)} this costs ${cost} from your AI key. Check the pictures?`, { title: "Check the pictures", kind: "info" }))) return;
+    busy = true;
+    error = "";
+    step = "The AI is looking at the scenes...";
+    try {
+      visual = (await runner<{ report: Visual }>("visual-check", { projectDir: dir, llm, look })).report;
+      stamp = Date.now();
+      await changed();
+      await loadTable();
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      busy = false;
+      step = "";
+    }
+  }
+
   const unlisten = onProgress((p) => {
     const s = p.progress;
-    if (p.command === "build-video") {
-      step = ({ build: "Putting the scenes together...", lint: "Checking the video for errors...", check: "Checking layout, motion and contrast...", snapshots: `Taking ${s.frames ?? ""} stills...`, sheet: "Making the overview sheet..." } as Record<string, string>)[String(s.step)] ?? step;
+    if (p.command === "build-video" || p.command === "visual-check") {
+      step = ({ visual: `The AI is looking at scenes ${s.scenes ?? ""}...`, "visual-swap": `Swapping scene ${s.scene ?? ""} for a better fit...`, build: "Putting the scenes together...", lint: "Checking the video for errors...", check: "Checking layout, motion and contrast...", snapshots: `Taking ${s.frames ?? ""} stills...`, sheet: "Making the overview sheet..." } as Record<string, string>)[String(s.step)] ?? step;
     }
   });
   onDestroy(() => unlisten.then((f) => f()));
@@ -112,6 +159,9 @@
       await changed();
       await loadTable();
       setTimeout(() => grid?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+      visual = null;
+      busy = false;
+      await visualCheck();
     } catch (e) {
       error = errorText(e);
       await changed();
@@ -168,8 +218,23 @@
     const scenes = (table.scenes ?? []).map((s, i) => (i === row.index && row.mainVar ? { ...s, vars: { ...s.vars, [row.mainVar]: text } } : s));
     return edit("save-scenes", { scenes, look }, "Saved. Update the preview to see it.");
   }
-  const swap = (component: string) => edit("refill-scene", { llm: llmFor(app.config, "scenes"), index: openRow!.index, component, look }, "Swapped. Update the preview to see it.");
-  const askChange = () => edit("refill-scene", { llm: llmFor(app.config, "scenes"), index: openRow!.index, request: wish.trim(), look }, "Changed as you asked. Update the preview to see it.");
+  // a swap or a change asked for is a paid AI call: its price first
+  async function priced(component: string | null): Promise<boolean> {
+    const llm = llmFor(app.config, "scenes");
+    try {
+      const cost = (await runner<{ text: string }>("refill-estimate", { llm, component })).text;
+      return await ask(`${component ? "The AI reads this scene type's code and fills it in from the sentence." : "The AI picks the best scene types for your wish from the catalog, reads their code and fills one in."} With ${describeLlm(llm)} this costs ${cost} from your AI key. Go ahead?`, { title: "Change the scene", kind: "info" });
+    } catch (e) {
+      error = errorText(e);
+      return false;
+    }
+  }
+  const swap = async (component: string) => {
+    if (await priced(component)) await edit("refill-scene", { llm: llmFor(app.config, "scenes"), index: openRow!.index, component, look }, "Swapped. Update the preview to see it.");
+  };
+  const askChange = async () => {
+    if (await priced(null)) await edit("refill-scene", { llm: llmFor(app.config, "scenes"), index: openRow!.index, request: wish.trim(), look }, "Changed as you asked. Update the preview to see it.");
+  };
 
   function onKey(e: KeyboardEvent) {
     const i = open;
@@ -202,6 +267,23 @@
     {#if job === "build-video"}<Progress command="build-video" project={dir} label={step || "Building the preview"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "review" }} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={{ step: "review" }} />{/if}
     {#if changes > 0}<p class="changes">You changed {changes} scene{changes > 1 ? "s" : ""}. Click "Update the preview" to see {changes > 1 ? "them" : "it"}.</p>{/if}
+
+    {#if job === "visual-check"}<Progress command="visual-check" project={dir} label={step || "The AI is looking at the scenes"} />{/if}
+    {#if visual && built}
+      <div class="visual">
+        <p><b>Picture check:</b> {visual.passed} of {visual.checked} scenes fit what is said and read well{visual.passedFirst !== visual.passed ? ` (${visual.passedFirst} at the first look)` : ""}.</p>
+        {#if visual.swaps.length}
+          <ul>
+            {#each visual.swaps as w (w.scene)}<li>Scene {w.scene}: swapped from {w.from} to {w.to}, because {w.problem}{w.nowFits ? "" : " (still not ideal)"}.</li>{/each}
+          </ul>
+        {/if}
+        {#if visual.stillFailing.length}
+          <p class="hint">Look at these yourself: {visual.stillFailing.map((x) => `scene ${x.scene} (${x.problem}${x.note ? `; ${x.note}` : ""})`).join(", ")}.</p>
+        {/if}
+      </div>
+    {:else if built && !locked}
+      <p class="hint"><button type="button" class="link" onclick={visualCheck}>Let the AI check every picture</button> against what is said (you see the price first).</p>
+    {/if}
 
     {#if stills.length}
       <div class="stills" bind:this={grid}>
@@ -294,6 +376,8 @@
   .guide summary { cursor: pointer; font-weight: 600; }
   .guide ol { margin: 8px 0 4px; padding-left: 20px; display: grid; gap: 4px; }
   .changes { margin: 10px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
+  .visual { margin: 10px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--surface-2, #f4f4f4); font-size: 14px; }
+  .visual ul { margin: 6px 0 0 18px; padding: 0; }
   .stills { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 12px; scroll-margin-top: 10px; }
   .still { display: grid; gap: 4px; padding: 4px; min-height: 0; border-radius: 8px; background: var(--muted); cursor: pointer; text-align: left; font-size: 12px; font-weight: 400; border: 2px solid transparent; }
   .still.on { border-color: var(--primary); }

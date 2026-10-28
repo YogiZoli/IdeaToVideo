@@ -1,3 +1,4 @@
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -84,7 +85,10 @@ const COMPONENT = '<html data-composition-duration="3"><template><div id="root" 
 test("a component is fitted to its scene's length", () => {
   const html = fitDuration(COMPONENT, "count-up", 4.25);
   assert.equal(html, '<html data-composition-duration="4.25"><template><div id="root" data-duration="4.25"><div class="clip" data-start="0" data-duration="4.25"></div><script>var d = parseFloat("4.25" || "3");</script></div></template></html>');
-  assert.throws(() => fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div></html>', "x", 4), /does not read root.dataset.duration/);
+  // a component that never reads its length plays its timeline and holds the end (DECISIONS 130)
+  assert.equal(fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div></html>', "x", 4), '<html data-composition-duration="4"><div id="root" data-duration="4"></div></html>');
+  // no #root: the element with the composition id carries the length
+  assert.equal(fitDuration('<div data-composition-id="hw" data-duration="4"><i data-duration="4"></i></div>', "hw", 6), '<div data-composition-id="hw" data-duration="6"><i data-duration="6"></i></div>');
   assert.equal(fitDuration('<template><div id="root" data-duration="4"><i class="clip" data-duration="4"></i><script>Number(root.dataset.duration)</script></div></template>', "x", 5), '<template><div id="root" data-duration="5"><i class="clip" data-duration="5"></i><script>Number("5")</script></div></template>', "no data-composition-duration: the root's length counts");
   assert.throws(() => fitDuration('<div class="clip">', "x", 4), /no authored length/);
   assert.throws(() => fitDuration('<html data-composition-duration="3"><div id="root" data-duration="3"></div><div data-duration="1.5"></div>root.dataset.duration', "x", 4), /other lengths \(1.5\)/);

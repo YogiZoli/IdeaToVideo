@@ -1,9 +1,12 @@
 // gates/scenes: gate 3, the scene table. The approved narration is already cut
 // into sentences (timing/sentences.mjs); the LLM plans one scene per sentence
-// or group of sentences: a library component and its variables. The answer is
-// checked (coverage, lengths, variables, on-screen text) and one repair call is
-// allowed before the gate fails (SPEC 5). The result is scenes.json, which the
-// assembler turns into build/.
+// or group of sentences: a library component and its variables. Two steps
+// (DECISIONS 130): the AI reads the whole catalog (catalog.mjs) and gives
+// every scene its 3 to 5 best candidates; then it reads the full code of
+// those candidates and picks the one that fits the sentence best, with one
+// line on why. Every answer is checked (coverage, lengths, variables,
+// on-screen text, variety) and repaired before the gate fails (SPEC 5). The
+// result is scenes.json, which the assembler turns into build/.
 //
 // The user sees the table in plain words (roles.mjs), can swap a row for
 // another component of the same role (one small LLM call fills it in), or edit
@@ -17,6 +20,9 @@ import { loadComponent, checkVars, sceneTimes, mountTheme } from "../build/assem
 import { narrationFromMarkdown } from "../voice/narration.mjs";
 import { duration } from "../../audio.mjs";
 import { ROLES, COMPONENTS, roleOf, paceOf, componentMeta, PACK_COMPONENTS } from "./roles.mjs";
+import { catalogForPlanner as catalogEntries, plannableNames, codeForPlanner, entryOf, CATALOG_ROLES } from "./catalog.mjs";
+import { recentUses, recordHistory, maxUses } from "./history.mjs";
+import { estimateUsd, tokensOf } from "../../providers/prices.mjs";
 import { CALL_FIELDS } from "../script/index.mjs";
 import { catalogForPlanner } from "../../footage/library.mjs";
 import { simplePlan } from "./simple.mjs";
@@ -124,34 +130,33 @@ function readScript(projectDir) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
-export function buildMessages(data, catalog, { pace, mix } = {}) {
-  // mix: the Scenes profile's instruction (scenes-profile.mjs mixRule)
-  const system = fs.readFileSync(path.join(here, "prompt.md"), "utf8").replace("{{PACE}}", paceOf(pace).rule).replace("{{MIX}}", mix || mixRule(MIX_PRESETS[DEFAULT_PRESET].mix));
-  const library = catalog.map((c) => ({ component: c.name, role: c.role, what: c.description, ...(c.maxWords ? { maxWords: c.maxWords } : {}), variables: c.variables }));
-  const roles = Object.fromEntries(Object.entries(ROLES).map(([id, r]) => [id, r.hint]));
-  const user = `LIBRARY\n${JSON.stringify({ roles, components: library }, null, 1)}\nEND LIBRARY\n\nDATA\n${JSON.stringify(data, null, 1)}\nEND DATA\n\nPlan the scenes now. Answer with the JSON object only.`;
-  return [
-    { role: "system", content: system },
-    { role: "user", content: user },
-  ];
-}
-
 const words = (s) => String(s).trim().split(/\s+/).filter(Boolean).length;
 
 // The strings a viewer reads, per component: one line of text, or list items.
-function onScreen(component, vars = {}) {
+// A list is a variable the component reads as comma (or bar) separated items:
+// the first library's names, or any whose registry description says so.
+const LIST_IDS = ["items", "nodes", "options", "labels"];
+const NOT_SHOWN = ["type", "split", "style", "rule", "sketch", "pen", "orientation", "data", "unit", "prefix", "suffix", "url"];
+export function listIds(item) {
+  return new Set([...LIST_IDS, ...(item?.variables ?? []).filter((v) => v.type === "string" && /comma|separated|one per|pipe/i.test(String(v.description ?? ""))).map((v) => v.id)]);
+}
+function onScreen(component, vars = {}, lists = new Set(LIST_IDS)) {
   const lines = [];
   for (const [id, v] of Object.entries(vars)) {
     if (typeof v !== "string" || !v.trim()) continue;
-    if (["items", "nodes", "options", "labels"].includes(id)) lines.push(...v.split(",").map((x) => ({ id, text: x.trim(), item: true })));
-    else if (!["type", "split", "style", "rule", "sketch", "pen", "orientation", "data", "unit", "prefix", "suffix", "url"].includes(id)) lines.push({ id, text: v });
+    if (lists.has(id)) lines.push(...v.split(v.includes("|") ? "|" : ",").map((x) => ({ id, text: x.trim(), item: true })));
+    else if (!NOT_SHOWN.includes(id)) lines.push({ id, text: v });
   }
   return lines;
 }
 
 // Every problem with a planned table, as sentences the repair call can act on.
 // `warnings` do not fail the gate; the UI shows them.
-export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map(), gaps = [], pace } = {}) {
+// `timing: false` skips the coverage and length checks (step two checks a
+// part of the video; step one checked them). `limit`: how often one
+// component may appear (history.mjs maxUses), `before`: the component of
+// the scene before the first one checked.
+export function checkScenes(answer, { sentences, total, env = process.env, off = [], calls = new Map(), gaps = [], pace, timing = true, limit = null, before = null } = {}) {
   const maxJoined = paceOf(pace).joined;
   const issues = [];
   const warnings = [];
@@ -187,18 +192,23 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
       issues.push(`${at}: ${e.message}`);
     }
     for (const id of HIDDEN_VARS) if (id in vars) issues.push(`${at}: do not set ${id}`);
-    for (const l of onScreen(sc.component, vars)) {
+    for (const l of onScreen(sc.component, vars, listIds(item))) {
       if (l.item ? words(l.text) > 3 : words(l.text) > MAX_WORDS) issues.push(`${at}: ${l.id} "${l.text}" is too long (at most ${l.item ? 3 : MAX_WORDS} words)`);
     }
     if (componentMeta(sc.component).realOnly) warnings.push(`Scene ${i + 1}: ${componentMeta(sc.component).label} shows a real person, record or quote. Check that it is real.`);
     for (const [id, max] of Object.entries(componentMeta(sc.component).words ?? {})) {
       if (typeof vars[id] === "string" && words(vars[id]) > max) issues.push(`${at}: ${sc.component} ${id} "${vars[id]}" is too long for this component (at most ${max} words)`);
     }
-    if (i > 0 && scenes[i - 1]?.component === sc.component) issues.push(`${at}: same component as the scene before (${sc.component})`);
+    if ((i > 0 ? scenes[i - 1]?.component : before) === sc.component) issues.push(`${at}: same component as the scene before (${sc.component}); pick another of its candidates`);
     if (sc.component === "whiteboard-ink" && (typeof sc.icon !== "string" || !sc.icon.trim())) issues.push(`${at}: a whiteboard sketch needs "icon": one to three words for the concrete thing to draw`);
     else if (sc.component === "whiteboard-ink" && sc.icon.trim().split(/\s+/).length > 4) issues.push(`${at}: "icon" "${sc.icon}" is too long (one to three words)`);
   });
-  if (issues.length) return { issues, warnings };
+  if (limit) {
+    const count = {};
+    for (const sc of scenes) count[sc.component] = (count[sc.component] ?? 0) + 1;
+    for (const [c, n] of Object.entries(count)) if (n > limit && c !== "cta-close") issues.push(`${c} is used ${n} times, at most ${limit}: give some of those scenes another of their candidates`);
+  }
+  if (issues.length || !timing) return { issues, warnings };
 
   let times;
   try {
@@ -326,11 +336,12 @@ async function audioLength(projectDir, sentences, env) {
   }
 }
 
-// Issues about taste, not about a working video: the same scene type twice in
-// a row, a scene a little over the longest length. After the repairs they
-// become warnings the table shows, so the step never fails on them (Zoltan's
-// test, 2026-10-05: "same component as the scene before" failed the table).
-const SOFT = [/same component as the scene before/, /over \d+ s: split it/];
+// Issues about taste, not about a working video. After the repairs they
+// become warnings the table shows, so the step never fails on them.
+// "No component twice in a row" is a hard rule since DECISIONS 130 (Zoltan,
+// 2026-10-28: every video looked like the same slide deck); a scene a
+// little over the longest length stays a taste issue.
+const SOFT = [/over \d+ s: split it/];
 export const isSoft = (issue) => SOFT.some((rx) => rx.test(issue));
 export const REPAIRS = 2;
 
@@ -363,7 +374,18 @@ async function ask(llm, messages, check) {
   return { answer, result };
 }
 
-const clean = (sc) => ({ component: sc.component, from: sc.from, ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}), ...(sc.component === "whiteboard-ink" && typeof sc.icon === "string" && sc.icon.trim() ? { icon: sc.icon.trim().slice(0, 60) } : {}), vars: sc.vars ?? {}, ...(sc.call ? { call: sc.call } : {}) });
+const clean = (sc) => ({
+  component: sc.component,
+  from: sc.from,
+  ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}),
+  ...(sc.component === "whiteboard-ink" && typeof sc.icon === "string" && sc.icon.trim() ? { icon: sc.icon.trim().slice(0, 60) } : {}),
+  vars: sc.vars ?? {},
+  ...(sc.call ? { call: sc.call } : {}),
+  // the planner's ranked candidates (the visual check swaps to the next one)
+  // and its one line on why this one fits (DECISIONS 130)
+  ...(Array.isArray(sc.candidates) && sc.candidates.length ? { candidates: sc.candidates.filter((c) => typeof c === "string").slice(0, 5) } : {}),
+  ...(typeof sc.why === "string" && sc.why.trim() ? { why: sc.why.trim().slice(0, 200) } : {}),
+});
 // The comment call a scene shows (assemble colours its button by temperature).
 const withCalls = (scenes, calls) =>
   scenes.map((sc) => {
@@ -376,25 +398,285 @@ export function writeTable(projectDir, table) {
   fs.writeFileSync(path.join(projectDir, "scenes.json"), JSON.stringify(table, null, 2) + "\n");
 }
 
+// ---- step one: the whole catalog, 3 to 5 candidates per scene ----------------
+
+export const CANDIDATES = { min: 3, max: 5 };
+
+export function shortlistMessages(data, entries, { pace, mix } = {}) {
+  const system = fs.readFileSync(path.join(here, "prompt-shortlist.md"), "utf8").replace("{{PACE}}", paceOf(pace).rule).replace("{{MIX}}", mix || mixRule(MIX_PRESETS[DEFAULT_PRESET].mix));
+  const user = `CATALOG\n${JSON.stringify({ roles: CATALOG_ROLES, components: entries }, null, 1)}\nEND CATALOG\n\nDATA\n${JSON.stringify(data, null, 1)}\nEND DATA\n\nPlan the scenes and their candidates now. Answer with the JSON object only.`;
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+}
+
+// A comment call's only candidate is cta-close, whatever the answer said.
+export function forceCalls(answer, calls) {
+  for (const sc of Array.isArray(answer?.scenes) ? answer.scenes : []) {
+    if (sc && calls.has(sc.from) && (sc.to ?? sc.from) === sc.from) sc.candidates = ["cta-close"];
+  }
+  return answer;
+}
+
+export function checkShortlist(answer, { sentences, total, allowed, calls = new Map(), gaps = [], pace }) {
+  const scenes = answer?.scenes;
+  if (!Array.isArray(scenes) || !scenes.length) return { issues: ["scenes must be a non-empty array"], warnings: [] };
+  const issues = [];
+  const known = new Set(allowed);
+  scenes.forEach((sc, i) => {
+    const at = `scene ${i + 1}`;
+    if (!sc || typeof sc !== "object") return issues.push(`${at}: not an object`);
+    const list = sc.candidates;
+    if (!Array.isArray(list) || !list.length) return issues.push(`${at}: candidates must be a list of ${CANDIDATES.min} to ${CANDIDATES.max} components`);
+    const call = calls.has(sc.from) && (sc.to ?? sc.from) === sc.from;
+    if (!call && (list.length < CANDIDATES.min || list.length > CANDIDATES.max)) issues.push(`${at}: give ${CANDIDATES.min} to ${CANDIDATES.max} candidates, not ${list.length}`);
+    if (new Set(list).size !== list.length) issues.push(`${at}: the candidates repeat a component`);
+    for (const c of list) {
+      if (!known.has(c)) issues.push(`${at}: ${c} is not in the CATALOG`);
+      else if (c === "cta-close" && calls.size && !call) issues.push(`${at}: cta-close is only for the comment calls`);
+    }
+  });
+  for (const [id, call] of calls) {
+    const sc = scenes.find((x) => x?.from === id);
+    if (!sc || (sc.to ?? sc.from) !== id) issues.push(`${id} is a comment call (${call.keyword}): give it a scene of its own, from ${id} to ${id}`);
+  }
+  if (issues.length) return { issues, warnings: [] };
+  // coverage and lengths, with the first candidate standing in
+  return timingIssues(scenes.map((sc) => ({ from: sc.from, to: sc.to, component: sc.candidates[0] })), { sentences, total, calls, gaps, pace });
+}
+
+// Coverage and scene lengths (the timing half of checkScenes).
+function timingIssues(scenes, { sentences, total, calls = new Map(), gaps = [], pace }) {
+  const maxJoined = paceOf(pace).joined;
+  const issues = [];
+  let times;
+  try {
+    times = sceneTimes(scenes, sentences, total);
+  } catch (e) {
+    return { issues: [e.message], warnings: [] };
+  }
+  const index = new Map(sentences.map((s, i) => [s.id, i]));
+  scenes.forEach((sc, i) => {
+    const from = index.get(sc.from);
+    const to = index.get(sc.to ?? sc.from);
+    const d = r3(times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0));
+    if (d < MIN_SECONDS && scenes.length > 1 && !calls.has(sc.from)) issues.push(`scene ${i + 1} (${sc.from}) lasts ${d} s, under ${MIN_SECONDS} s: join it with a neighbour`);
+    if (d > maxJoined && to > from) issues.push(`scene ${i + 1} (${sc.from} to ${sc.to}) lasts ${d} s, over ${maxJoined} s: split it`);
+  });
+  return { issues, warnings: [], times };
+}
+
+// ---- step two: the full code of the candidates, one pick per scene ----------
+
+// Step two goes in parts, so that one part's candidate code stays readable
+// in one call: consecutive scenes until their candidates' code would pass
+// CHUNK_CHARS (about 60 000 tokens), at most CHUNK_SCENES scenes.
+export const CHUNK_CHARS = 240000;
+export const CHUNK_SCENES = 10;
+export function chooseChunks(scenes, codeLength) {
+  const chunks = [];
+  let part = [];
+  let names = new Set();
+  let size = 0;
+  for (const sc of scenes) {
+    const extra = sc.candidates.filter((c) => !names.has(c)).reduce((t, c) => t + codeLength(c), 0);
+    if (part.length && (size + extra > CHUNK_CHARS || part.length >= CHUNK_SCENES)) {
+      chunks.push(part);
+      part = [];
+      names = new Set();
+      size = 0;
+    }
+    part.push(sc);
+    for (const c of sc.candidates) {
+      if (names.has(c)) continue;
+      names.add(c);
+      size += codeLength(c);
+    }
+  }
+  if (part.length) chunks.push(part);
+  return chunks;
+}
+
+const sceneSentences = (sc, sentences) => {
+  const ids = sentences.map((s) => s.id);
+  return sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1);
+};
+
+export function chooseMessages({ scenes, sentences, codes, data, previous = null, usedInVideo = {}, limit, env = process.env }) {
+  const system = fs.readFileSync(path.join(here, "prompt-choose.md"), "utf8").replace("{{REPEAT}}", `A component appears at most ${limit} times in this video.`);
+  const names = [...new Set(scenes.flatMap((sc) => sc.candidates))];
+  const blocks = names.map((n) => {
+    const e = entryOf(n, env) ?? {};
+    const meta = componentMeta(n);
+    const head = { component: n, role: e.role ?? meta?.role, shows: e.shows, weak: e.weak, ...(meta?.words ? { maxWords: meta.words } : {}) };
+    return `### ${n}\n${JSON.stringify(head)}\n\`\`\`html\n${codes(n)}\n\`\`\``;
+  });
+  const said = new Map(data.sentences.map((s) => [s.id, s]));
+  const dataBlock = {
+    language: data.language,
+    theme: data.theme,
+    name: data.name,
+    previous,
+    usedInVideo,
+    scenes: scenes.map((sc) => ({ from: sc.from, ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}), candidates: sc.candidates, sentences: sceneSentences(sc, sentences).map((s) => said.get(s.id)) })),
+  };
+  const user = `CANDIDATES\n${blocks.join("\n\n")}\nEND CANDIDATES\n\nDATA\n${JSON.stringify(dataBlock, null, 1)}\nEND DATA\n\nPick one component per scene now. Answer with the JSON object only.`;
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+}
+
+// The code of a component as step two reads it.
+function codeReader(env) {
+  const memo = new Map();
+  return (name) => {
+    if (!memo.has(name)) memo.set(name, codeForPlanner(loadComponent(name, { env }).html));
+    return memo.get(name);
+  };
+}
+
+// Step two for one part: the picks, checked against that part's candidates,
+// the scene before it, the use limit and every rule of checkScenes.
+async function choosePart(llm, { part, sentences, codes, data, previous, usedInVideo, limit, env, off, calls }) {
+  const messages = chooseMessages({ scenes: part, sentences, codes, data, previous, usedInVideo, limit, env });
+  const covered = part.flatMap((sc) => sceneSentences(sc, sentences));
+  const { answer } = await ask(llm, messages, (raw) => {
+    const got = Array.isArray(raw?.scenes) ? raw.scenes : null;
+    if (!got || got.length !== part.length) return { issues: [`answer with exactly ${part.length} scenes, one per scene of DATA, in order`], warnings: [] };
+    const issues = [];
+    got.forEach((sc, i) => {
+      if (sc?.from !== part[i].from || (sc.to ?? sc.from) !== (part[i].to ?? part[i].from)) issues.push(`scene ${i + 1} must be from ${part[i].from}${part[i].to ? ` to ${part[i].to}` : ""}, as in DATA`);
+      else if (!part[i].candidates.includes(sc.component)) issues.push(`scene ${i + 1}: ${sc.component} is not one of its candidates (${part[i].candidates.join(", ")})`);
+    });
+    if (issues.length) return { issues, warnings: [] };
+    const counts = { ...usedInVideo };
+    for (const sc of got) counts[sc.component] = (counts[sc.component] ?? 0) + 1;
+    for (const [c, n] of Object.entries(counts)) {
+      if (n > limit && c !== "cta-close" && got.some((sc) => sc.component === c)) issues.push(`${c} would be used ${n} times in this video, at most ${limit}: give some of these scenes another of their candidates`);
+    }
+    const r = checkScenes({ scenes: got }, { sentences: covered, env, off, calls, timing: false, before: previous });
+    return { ...r, issues: [...issues, ...r.issues] };
+  });
+  return answer.scenes.map((sc, i) => ({ ...sc, from: part[i].from, to: part[i].to, candidates: part[i].candidates }));
+}
+
 // Gate 3, Recommended. llm = { provider, apiKey, model, fetchImpl?, sleep? }.
-export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, pace, mix = null, onProgress = () => {} }) {
+// identityDir and videoId: the channel's history (history.mjs), read for
+// variety and written with this video's picks.
+export async function makeScenes({ llm, projectDir, env = process.env, language = "en", name = null, themeIsLight = false, off = [], footage = null, pace, mix = null, identityDir = null, videoId = null, onProgress = () => {} }) {
   const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
-  const catalog = libraryCatalog({ env, off });
   const calls = callSentences(readScript(projectDir), sentences);
   const data = buildData({ sentences, sections: sentenceSections(md, sentences), name, themeIsLight, language, calls });
   const clips = footage ? catalogForPlanner(footage) : [];
   if (clips.length) data.footage = clips;
-  onProgress({ step: "planning", provider: llm.provider });
-  const { answer, result } = await ask({ ...llm, onProgress }, buildMessages(data, catalog, { pace, mix: mix ? mixRule(mix, { pictures: clips.length > 0, video: clips.length > 0 }) : null }), (a) => {
-    const r = checkScenes(joinShort(a, { sentences, total, calls, gaps: gapsOf(projectDir) }), { sentences, total, env, off, calls, gaps: gapsOf(projectDir), pace });
+  const gaps = gapsOf(projectDir);
+  const video = videoId ?? path.basename(projectDir);
+  const allowed = plannableNames({ env, off });
+  const entries = catalogEntries({ env, off, uses: recentUses(identityDir, video) });
+
+  // step one: the whole catalog, the candidates
+  onProgress({ step: "planning", provider: llm.provider, part: "shortlist", components: entries.length });
+  const first = await ask({ ...llm, onProgress }, shortlistMessages(data, entries, { pace, mix: mix ? mixRule(mix, { pictures: clips.length > 0, video: clips.length > 0 }) : null }), (a) => {
+    const joined = forceCalls(joinShort(a, { sentences, total, calls, gaps }), calls);
+    const r = checkShortlist(joined, { sentences, total, allowed, calls, gaps, pace });
     return { ...r, issues: [...r.issues, ...footageIssues(a?.footage, { sentences, calls, clips })] };
   });
-  const gaps = Array.isArray(answer.gaps) ? answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
-  const previous = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
-  writeTable(projectDir, { ...(previous.theme ? { theme: previous.theme } : {}), scenes: withCalls(joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.map(clean), calls), ...(clips.length && answer.footage?.length ? { footage: answer.footage.map((f) => ({ from: f.from, ...(f.to && f.to !== f.from ? { to: f.to } : {}), clip: f.clip })) } : {}), gaps, warnings: result.warnings });
-  return { scenes: joinShort(answer, { sentences, total, calls, gaps: gapsOf(projectDir) }).scenes.length, gaps, warnings: result.warnings };
+  const shortlist = forceCalls(joinShort(first.answer, { sentences, total, calls, gaps }), calls).scenes;
+  const limit = maxUses(shortlist.length);
+
+  // step two: the candidates' code, one pick per scene
+  const codes = codeReader(env);
+  const chunks = chooseChunks(shortlist, (c) => codes(c).length);
+  const picked = [];
+  const usedInVideo = {};
+  for (const [k, part] of chunks.entries()) {
+    onProgress({ step: "choosing", part: k + 1, of: chunks.length, provider: llm.provider });
+    const got = await choosePart({ ...llm, onProgress }, { part, sentences, codes, data, previous: picked.at(-1)?.component ?? null, usedInVideo: { ...usedInVideo }, limit, env, off, calls });
+    for (const sc of got) {
+      picked.push(sc);
+      usedInVideo[sc.component] = (usedInVideo[sc.component] ?? 0) + 1;
+    }
+  }
+
+  const final = checkScenes({ scenes: picked }, { sentences, total, env, off, calls, gaps, pace, limit });
+  const hard = final.issues.filter((i) => !isSoft(i));
+  if (hard.length) {
+    const err = new Error(`The scene table did not pass the checks: ${hard.slice(0, 5).join("; ")}. Press Plan again, or use the Simple plan (no AI).`);
+    err.issues = hard;
+    throw err;
+  }
+  const warnings = [...first.result.warnings, ...final.warnings, ...final.issues.filter(isSoft).map((i) => `${i[0].toUpperCase()}${i.slice(1)} (left as it is).`)];
+  const gapList = Array.isArray(first.answer.gaps) ? first.answer.gaps.filter((g) => g && typeof g.need === "string").map((g) => ({ at: String(g.at ?? ""), need: g.need.slice(0, 200) })) : [];
+  const previousTable = fs.existsSync(path.join(projectDir, "scenes.json")) ? readJson(projectDir, "scenes.json", "") : {};
+  const footageList = clips.length && first.answer.footage?.length ? { footage: first.answer.footage.map((f) => ({ from: f.from, ...(f.to && f.to !== f.from ? { to: f.to } : {}), clip: f.clip })) } : {};
+  const scenes = withCalls(picked.map(clean), calls);
+  writeTable(projectDir, { ...(previousTable.theme ? { theme: previousTable.theme } : {}), scenes, ...footageList, gaps: gapList, warnings, planner: { steps: 2, parts: chunks.length, catalog: entries.length } });
+  recordHistory(identityDir, video, scenes);
+  return { scenes: scenes.length, gaps: gapList, warnings, parts: chunks.length };
+}
+
+// The price of planning, shown before it runs. The parts of step two depend
+// on the candidates the AI picks, so they are estimated from the catalog:
+// about 4 candidates a scene, about half of them shared with a neighbour.
+const avgCodeCache = new Map();
+function averageCode(env, names) {
+  const key = names.join(",");
+  if (!avgCodeCache.has(key)) {
+    const codes = codeReader(env);
+    const sizes = names
+      .map((n) => {
+        try {
+          return codes(n).length;
+        } catch {
+          return 0;
+        }
+      })
+      .filter(Boolean);
+    avgCodeCache.set(key, sizes.length ? sizes.reduce((a, b) => a + b, 0) / sizes.length : 20000);
+  }
+  return avgCodeCache.get(key);
+}
+
+export function estimateScenes({ projectDir, llm, env = process.env, off = [] }) {
+  const sentences = readJson(projectDir, "sentences.json", "sentence table (make the voice first)");
+  const entries = catalogEntries({ env, off });
+  const scenes = Math.max(1, Math.ceil(sentences.length * 0.8));
+  const prompts = fs.readFileSync(path.join(here, "prompt-shortlist.md"), "utf8").length + fs.readFileSync(path.join(here, "prompt-choose.md"), "utf8").length;
+  const sentenceChars = sentences.reduce((t, s) => t + String(s.text).length + 60, 0);
+  const firstIn = tokensOf(prompts + JSON.stringify(entries).length + sentenceChars);
+  const secondIn = tokensOf(scenes * 4 * 0.55 * averageCode(env, plannableNames({ env, off })) + sentenceChars * 1.3);
+  // a repair round now and then
+  const tokensIn = Math.round((firstIn + secondIn) * 1.25);
+  const tokensOut = Math.round(scenes * (40 + 110) * 1.25);
+  return { ...estimateUsd({ provider: llm.provider, model: llm.model, effort: llm.effort, tokensIn, tokensOut }), scenes, catalog: entries.length };
+}
+
+// One scene filled with one given component: step two with that single
+// candidate (a swap in the table, a change asked for, the visual check).
+export async function fillScene({ llm, sc, component, sentences, env = process.env, language = "en", name = null, themeIsLight = false, previous = null, next = null, wish = "" }) {
+  const covered = sceneSentences(sc, sentences);
+  const data = buildData({ sentences: covered, name, themeIsLight, language });
+  const part = [{ from: sc.from, to: sc.to, candidates: [component] }];
+  const messages = chooseMessages({ scenes: part, sentences: covered, codes: codeReader(env), data, previous, limit: 99, env });
+  if (wish) messages[1].content += `\n\nThe current scene is ${sc.component} with ${JSON.stringify(sc.vars ?? {})}. The video's owner asks for this change to it (their own words; follow them within the rules above, the on-screen text still comes from the sentences):\n${wish}`;
+  const { answer } = await ask(llm, messages, (raw) => {
+    const a = raw && Array.isArray(raw.scenes) ? { ...raw, scenes: raw.scenes.slice(0, 1).map((x) => ({ ...x, from: sc.from, to: sc.to, component })) } : raw;
+    const r = checkScenes(a, { sentences: covered, env, timing: false, before: previous });
+    if (!r.issues.length && next && a.scenes[0].component === next) r.issues.push("the scene after uses the same component");
+    return r;
+  });
+  return { ...answer.scenes[0], from: sc.from, to: sc.to, component };
+}
+
+// One scene's price with one component: its code and its sentences.
+export function estimateFill({ llm, component, env = process.env, scenes = 1 }) {
+  const code = codeReader(env)(component).length;
+  const prompt = fs.readFileSync(path.join(here, "prompt-choose.md"), "utf8").length;
+  return estimateUsd({ provider: llm.provider, model: llm.model, effort: llm.effort, tokensIn: tokensOf((code + prompt + 800) * scenes * 1.25), tokensOut: 150 * scenes });
 }
 
 // Default: the plan without AI (simple.mjs), checked like the AI's plan.
@@ -424,8 +706,11 @@ export async function saveScenes({ projectDir, scenes, env = process.env, pace }
   return { scenes: scenes.length, warnings };
 }
 
-// Swap one row for another component (same role): the LLM fills in only that
-// scene's variables, from that scene's sentences.
+// Swap one row for another component (same role), or change it as the user
+// asks in their own words. With a component, step two fills that one from
+// its code; with only the user's words, step one first picks 3 to 5
+// candidates for this scene from the catalog (never the neighbours' and
+// never the comment-call scene), then step two picks one of them.
 export async function refillScene({ llm, projectDir, index, component, request = "", env = process.env, language = "en", name = null, themeIsLight = false, off = [] }) {
   const table = readJson(projectDir, "scenes.json", "scene table");
   const sentences = readJson(projectDir, "sentences.json", "sentence table");
@@ -434,38 +719,38 @@ export async function refillScene({ llm, projectDir, index, component, request =
   const wish = String(request ?? "").trim().slice(0, 500);
   if (!component && !wish) throw new Error("Pick a scene type or say what to change.");
   if (component && !componentMeta(component)) throw new Error(`Unknown component: ${component}`);
-  if (component && !wish && roleOf(component) !== roleOf(sc.component)) throw new Error("Swap only within the same role.");
+  if (component && !wish && roleOf(component) !== roleOf(sc.component) && !(sc.candidates ?? []).includes(component)) throw new Error("Swap only within the same role, or to one of the planner's candidates.");
   if (sc.call) throw new Error(`This scene is the comment call ${sc.call.keyword}: it always shows the keyword.`);
   if (component && off.includes(component)) throw new Error("That scene type is turned off in the Motion profile.");
-  const ids = sentences.map((s) => s.id);
-  const covered = sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1);
-  // With the user's words and no type: any type except the neighbours' (never
-  // the same twice in a row) and the comment-call scene.
-  const neighbours = [table.scenes[index - 1]?.component, table.scenes[index + 1]?.component];
-  const catalog = component
-    ? libraryCatalog({ env }).filter((c) => c.name === component)
-    : libraryCatalog({ env, off }).filter((c) => c.name !== "cta-close" && !neighbours.includes(c.name));
-  const data = buildData({ sentences: covered, name, themeIsLight, language });
-  const messages = buildMessages(data, catalog);
-  messages[1].content += `\n\nThis is ONE scene of a longer video: answer with exactly one scene, from ${sc.from}${sc.to ? ` to ${sc.to}` : ""}${component ? `, component ${component}` : ", with the component from the LIBRARY that best fits the request below"}. Ignore the rules about the first and the last scene.`;
-  if (wish) {
-    messages[1].content += `\n\nThe current scene is ${sc.component} with ${JSON.stringify(sc.vars ?? {})}. The video's owner asks for this change to it (their own words; follow them within the rules above, the on-screen text still comes from the sentences):\n${wish}`;
+  const previous = table.scenes[index - 1]?.component ?? null;
+  const next = table.scenes[index + 1]?.component ?? null;
+  let pick = component;
+  let candidates = sc.candidates;
+  if (!pick) {
+    const ids = sentences.map((s) => s.id);
+    const covered = sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1);
+    const allowed = plannableNames({ env, off }).filter((c) => c !== "cta-close" && c !== previous && c !== next);
+    const entries = catalogEntries({ env, off }).filter((e) => allowed.includes(e.component));
+    const messages = shortlistMessages(buildData({ sentences: covered, name, themeIsLight, language }), entries);
+    messages[1].content += `\n\nThis is ONE scene of a longer video: answer with exactly one scene, from ${sc.from}${sc.to ? ` to ${sc.to}` : ""}, and its 3 to 5 candidates. Ignore the rules about the first and the last scene. The current scene is ${sc.component} with ${JSON.stringify(sc.vars ?? {})}. The video's owner asks for this change (their own words; follow them within the rules above, the on-screen text still comes from the sentences):\n${wish}`;
+    const { answer } = await ask(llm, messages, (raw) => {
+      const one = raw && Array.isArray(raw.scenes) ? { scenes: raw.scenes.slice(0, 1).map((x) => ({ ...x, from: sc.from, to: sc.to })) } : raw;
+      return checkShortlist(one, { sentences: covered, total: r3(covered[covered.length - 1].end + 0.3), allowed });
+    });
+    candidates = answer.scenes[0].candidates;
+    const codes = codeReader(env);
+    const data = buildData({ sentences: covered, name, themeIsLight, language });
+    const chosen = await choosePart(llm, { part: [{ from: sc.from, to: sc.to, candidates }], sentences: covered, codes, data, previous, usedInVideo: {}, limit: 99, env, off, calls: new Map() });
+    pick = chosen[0].component;
+    if (pick === next) throw new Error("The scene after uses the same component. Ask again.");
+    const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...chosen[0], from: sc.from, to: sc.to }) : s));
+    writeTable(projectDir, { ...table, scenes });
+    return { scene: scenes[index] };
   }
-  const total = r3(covered[covered.length - 1].end + 0.3);
-  const check = (raw) => {
-    // one scene is asked for; a second one in the answer is not this scene's problem
-    const a = raw && Array.isArray(raw.scenes) ? { ...raw, scenes: raw.scenes.slice(0, 1) } : raw;
-    const r = checkScenes(a, { sentences: covered, total, env, gaps: gapsOf(projectDir) });
-    if (!r.issues.length && a.scenes.length !== 1) r.issues.push("answer with exactly one scene");
-    else if (!r.issues.length && component && a.scenes[0].component !== component) r.issues.push(`answer with exactly one scene using ${component}`);
-    else if (!r.issues.length && !catalog.some((c) => c.name === a.scenes[0].component)) r.issues.push(`use one of: ${catalog.map((c) => c.name).join(", ")}`);
-    return r;
-  };
-  const { answer } = await ask(llm, messages, check);
-  const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...answer.scenes[0], from: sc.from, to: sc.to, call: sc.call }) : s));
-  const chosen = scenes[index].component;
-  if (index > 0 && scenes[index - 1].component === chosen) throw new Error("The scene before uses the same component. Pick another one.");
-  if (scenes[index + 1]?.component === chosen) throw new Error("The scene after uses the same component. Pick another one.");
+  if (pick === previous) throw new Error("The scene before uses the same component. Pick another one.");
+  if (pick === next) throw new Error("The scene after uses the same component. Pick another one.");
+  const filled = await fillScene({ llm, sc, component: pick, sentences, env, language, name, themeIsLight, previous, next, wish });
+  const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...filled, candidates: candidates ?? [pick] }) : s));
   writeTable(projectDir, { ...table, scenes });
   return { scene: scenes[index] };
 }
@@ -504,9 +789,16 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
       shows: onScreen(sc.component, sc.vars).map((l) => l.text).join(" / "),
       call: sc.call ?? null,
       footage: (table.footage ?? []).find((f) => ids.indexOf(f.from) <= ids.indexOf(sc.to ?? sc.from) && ids.indexOf(f.to ?? f.from) >= ids.indexOf(sc.from))?.clip ?? null,
-      alternatives: [...Object.entries(COMPONENTS), ...PACK_COMPONENTS]
-        .filter(([c, m]) => !sc.call && m.role === meta.role && c !== sc.component && !off.includes(c) && !m.retired)
-        .map(([c, m]) => ({ component: c, label: m.label })),
+      why: sc.why ?? null,
+      swappedFrom: sc.swappedFrom ?? [],
+      // the planner's other candidates first, then the rest of the role
+      // (block packs are never offered: DECISIONS 130, registry only)
+      alternatives: [
+        ...(sc.candidates ?? []).filter((c) => !sc.call && c !== sc.component && COMPONENTS[c] && !COMPONENTS[c].retired && !off.includes(c)).map((c) => ({ component: c, label: COMPONENTS[c].label, candidate: true })),
+        ...Object.entries(COMPONENTS)
+          .filter(([c, m]) => !sc.call && m.role === meta.role && c !== sc.component && !(sc.candidates ?? []).includes(c) && !off.includes(c) && !m.retired)
+          .map(([c, m]) => ({ component: c, label: m.label })),
+      ],
     };
   });
   return { rows, gaps: table.gaps ?? [], warnings: table.warnings ?? [], scenes: table.scenes, inserts: insertRows(projectDir, times) };

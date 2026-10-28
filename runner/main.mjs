@@ -26,8 +26,11 @@ import * as heygen from "./providers/avatar/heygen.mjs";
 import { keywordIdeas } from "./providers/research/vidiq.mjs";
 import { avatarPlan, makeAvatar, removeAvatar, setLayout } from "./gates/avatar/index.mjs";
 import { costEstimateUsd, DEFAULT_PROMPT as MUSIC_PROMPT } from "./providers/music/elevenlabs.mjs";
-import { makeScenes, saveScenes, refillScene, sceneRows, simpleScenes } from "./gates/scenes/index.mjs";
-import { buildAndReview, stillsOf } from "./gates/review/index.mjs";
+import { makeScenes, saveScenes, refillScene, sceneRows, simpleScenes, estimateScenes, estimateFill } from "./gates/scenes/index.mjs";
+import { estimateUsd, usdText } from "./providers/prices.mjs";
+import { buildAndReview, stillsOf, contactSheet } from "./gates/review/index.mjs";
+import { visualCheck, estimateVisual, readReport as visualReport } from "./gates/review/visual.mjs";
+import { assemble } from "./gates/build/assemble.mjs";
 import { writeExtras } from "./gates/render/export.mjs";
 import { sendCard } from "./publishing.mjs";
 import { youtubeTexts, makePackaging, savePackaging, loadPackaging } from "./gates/render/youtube.mjs";
@@ -886,7 +889,18 @@ const commands = {
 
   // Gate 3: the scene table. The AI plans it from the sentence table and the
   // library; the user swaps rows (refill-scene) or edits text (save-scenes).
-  "make-scenes": async ({ projectDir, llm, look }) => {
+  // What planning costs, before it runs (DECISIONS 130): both steps, from
+  // the catalog and the sentence table. And one scene's swap.
+  "scenes-estimate": async ({ projectDir, llm, look }) => {
+    const e = estimateScenes({ projectDir, llm, off: offOf(look) });
+    return { estimate: e, text: usdText(e) };
+  },
+  "refill-estimate": async ({ llm, component, scenes = 1 }) => {
+    const e = component ? estimateFill({ llm, component, scenes }) : estimateUsd({ provider: llm.provider, model: llm.model, effort: llm.effort, tokensIn: 60000, tokensOut: 600 });
+    return { estimate: e, text: usdText(e) };
+  },
+
+  "make-scenes": async ({ projectDir, identityDir, llm, look }) => {
     const name = typeof look === "object" ? look?.name ?? null : null;
     let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
@@ -903,13 +917,15 @@ const commands = {
           pace: paceOfLook(look),
           mix: typeof look === "object" ? look?.scenes?.mix ?? null : null,
           footage: typeof look === "object" ? look?.footage ?? null : null,
+          identityDir: identityDir ?? null,
+          videoId: path.basename(projectDir),
           onProgress: (p) => emit({ event: "progress", ...p }),
         }),
       );
       brollBack(projectDir);
       project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
-      appendLog(projectDir, `scenes: done, ${r.scenes} scenes${r.gaps.length ? `, gaps: ${r.gaps.map((g) => `${g.at} ${g.need}`).join("; ")}` : ""}`);
+      appendLog(projectDir, `scenes: done, ${r.scenes} scenes in two steps (catalog, then ${r.parts} part${r.parts === 1 ? "" : "s"} with the candidates' code)${r.gaps.length ? `, gaps: ${r.gaps.map((g) => `${g.at} ${g.need}`).join("; ")}` : ""}`);
       return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: project.gates.scenes, status: project.status };
     } catch (e) {
       saveProject(projectDir, setGate(loadProject(projectDir), "scenes", { state: "failed", error: String(e.message).slice(0, 2000) }));
@@ -1070,6 +1086,40 @@ const commands = {
 
   // Gate 4: build the video from the approved scene table, lint + check, and
   // the contact sheet (review/contact.png) to approve before the render.
+  // The visual check's price, before it runs (DECISIONS 130).
+  "visual-estimate": async ({ projectDir, llm }) => {
+    const e = estimateVisual({ projectDir, llm });
+    return { estimate: e, text: usdText(e) };
+  },
+  "visual-report": async ({ projectDir }) => ({ report: visualReport(projectDir) }),
+
+  // The visual check (gates/review/visual.mjs), right after build-video when
+  // the user said yes to it and its price: the AI looks at every scene and
+  // swaps the ones that do not fit or do not read well, rebuilds, checks
+  // those again, and the contact sheet is made again.
+  "visual-check": async ({ projectDir, llm, look }) => {
+    const project = loadProject(projectDir);
+    if (!fs.existsSync(path.join(projectDir, "build", "index.html"))) throw new Error("Build the preview first.");
+    const onProgress = (p) => emit({ event: "progress", ...p });
+    const ai = { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() };
+    appendLog(projectDir, `review: visual check with ${ai.provider}/${ai.model || "default model"}`);
+    const report = await visualCheck({
+      projectDir,
+      llm: ai,
+      language: project.language,
+      name: typeof look === "object" ? look?.name ?? null : null,
+      themeIsLight: isLightLook(look),
+      rebuild: async () => {
+        await assemble(projectDir, { language: project.language, title: project.title, look });
+        await lintAndCheck(projectDir, { onProgress });
+      },
+      onProgress,
+    });
+    const sheet = report.swaps.length ? await contactSheet(projectDir, { onProgress }) : { stills: stillsOf(projectDir) };
+    appendLog(projectDir, `review: visual check, ${report.passed} of ${report.checked} scenes fit and read well (${report.passedFirst} at first look), ${report.swaps.length} swapped${report.stillFailing.length ? `, still weak: ${report.stillFailing.map((x) => `scene ${x.scene} (${x.problem})`).join("; ")}` : ""}`);
+    return { report, ...sheet };
+  },
+
   "build-video": async ({ projectDir, identityDir, look }) => {
     let project = loadProject(projectDir);
     if (identityDir && typeof look === "object") look = { ...look, iconsRecent: recentIcons(identityDir, path.basename(projectDir)) };
@@ -1185,7 +1235,7 @@ const commands = {
 
 // The commands that theme something or plan scenes: they get the Identity's
 // card as `look`, with its Motion profile (`look.motion`).
-const LOOK_COMMANDS = new Set(["make-scenes", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
+const LOOK_COMMANDS = new Set(["make-scenes", "scenes-estimate", "visual-check", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
 
 async function readStdin() {
   if (process.stdin.isTTY) return "";

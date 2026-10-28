@@ -56,7 +56,7 @@ test("a repaired or retried AI call makes the estimate longer", () => {
   apply(t, { step: "retry" });
   assert.equal(t.expect, 188);
   apply(t, { step: "planning" });
-  assert.equal(t.phase, "The AI is planning the scenes");
+  assert.equal(t.phase, "The AI is reading the scene catalog");
   apply(t, { step: "waiting", message: "Waits for the render" });
   assert.equal(t.waiting, "Waits for the render");
 });

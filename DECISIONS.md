@@ -167,7 +167,7 @@
     (a v1 SRT-t ad), átmenetek (Mozgás varázsló), zajos effektek, vélemény- és
     logó-kártyák (az AI kitalált véleményt vagy cégnevet írna). A bővítés a 3.
     kapu naplójából jön: ahol nem talált illő szerepet.
-56. **NYITOTT, Zoltan később átnézi: a teljes registry, 234 komponens.** Ennyi van
+56. **LEZÁRVA 2026-10-28 (130): "all 234".** Eredetileg: NYITOTT, Zoltan később átnézi: a teljes registry, 234 komponens. Ennyi van
     a rögzített commiton (`9a27b9f`). Érvek, ha mind bekerülne:
     - PRO: a legnagyobb változatosság; nincs előzetes válogatás; mind ugyanaz a
       licenc (Apache-2.0) és ugyanaz a beillesztési szerződés; a méret nem gond
@@ -2081,3 +2081,104 @@
       fails on the old code), `runner/build.test.mjs` (notices before the
       report, `_meta`, the saved copy). A real check on the 2026-10-26 video
       with the installed engine: report read, 0 errors.
+
+## 2026-10-28 (the full scene catalog)
+
+130. **All 234 registry components, a catalog, two-step planning, a picture
+    check** (Zoltan, 2026-10-28: "every video looks like the same slide deck,
+    and the scenes often do not match what is said"). The cause was DECISIONS
+    55: the planner picked from 14 components. Building can be big; running
+    must be smart, never cheap at the cost of quality.
+    - **Closes 56 with "all 234".** `library/components.json` lists every
+      component at the pinned commit `9a27b9f`; the same lock (SHA256 per
+      file, 515 new files, the 96 old hashes unchanged) and a licence check
+      (`checkLicense`): an item with another licence (`kinetic-center-build`,
+      MIT, Remocn) and every font file in an item (Caveat, Permanent Marker,
+      Courier Prime) must be listed, or the build stops. 11 MB in the
+      installer. Nothing is deleted: a component that fails is "off".
+    - **The catalog** (`library/catalog.json`, shipped as `CATALOG.json`):
+      per component what it shows, when it fits, its role (opening, key
+      sentence, highlight, proof, list, diagram, quote, transition, close),
+      what it needs (text, number, image, recording), strong and weak
+      points, an example sentence, status and the reason when off. Written
+      from each component's own file and its test renders
+      (`scripts/catalog/notes.json`, `build-catalog.mjs`), not from guesses.
+      The build stops when the catalog and the component list differ.
+    - **Every component tested** (`scripts/catalog/test-components.mjs`):
+      a one-scene video per component and topic, built by the app's own
+      assembler, two topics with two looks (groceries in coral, light; sleep
+      in broadside, dark), then lint, check, three stills, a draft render,
+      contact sheets. Off when any test fails in either topic, when the
+      finished frame is empty, when both topics draw the same picture, or
+      when the stills show the component's own fixed content or colours
+      instead of the topic and the Brand. Result: **25 of 234 on, 209
+      off**: 72 are paste-in recipes, not mountable scenes (no authored
+      length, no composition); 48 fail `hyperframes check` in their
+      finished state (clipped text, text under an element, contrast); 1
+      fails lint; 19 end on an empty frame or draw the same picture for
+      both topics; 69 show their own fixed content, placeholders, mock
+      screens or their own colours and fonts (the review of the stills,
+      reason per component in the catalog). The 25 on: opening
+      (titlecard-calm, titlecard-lockup, logo-sting, scan-band), key
+      sentence (per-word-rise, line-swap, push-in, typed-prompt), highlight
+      (marker-highlight, vox-annotate, text-shimmer, ticker-takeover,
+      particle-text-dissolve, camera-scan-gate), proof (count-up,
+      chart-story, conic-progress-ring, star-rating-fill), list
+      (grid-card-assemble, notification-stack, pan-stations), diagram
+      (whiteboard-ink, a different icon per sketch), quote
+      (testimonial-proof-card, only for a real quote), close (cta-close,
+      cta-lockup). Three of the old library now fail the check
+      (headline-slam: contrast in the light look; constellation-hub:
+      clipped labels; kinetic-type-swap: contrast): never planned again,
+      but older scene tables that use them still check and build.
+    - **Two-step planning** (`gates/scenes`): step one reads the whole
+      catalog and gives every scene 3 to 5 candidates, best first; step two
+      reads the full code of those candidates (base64 left out), picks one
+      per scene, fills it from the sentence's words and says in one line
+      why. Long videos go in parts of at most 10 scenes and about 60 000
+      tokens of code. The table keeps the ranked candidates and the reason;
+      swaps offer the candidates first and read the component's code too.
+    - **Variety:** never the same component twice in a row (now a hard
+      rule, repaired, no longer a warning); at most max(2, scenes / 12) uses
+      in one video; `<identity>/scene-history.json` keeps the last videos'
+      components, and the catalog tells the planner how often each was used
+      lately (rank the less used one first when two fit equally).
+    - **Picture check** (`gates/review/visual.mjs`, runner `visual-check`):
+      after the build and the engine's checks, the AI looks at two frames of
+      every scene (past the middle, just before the end) and judges "fits
+      what is said" and "reads well". A failing scene goes to its next
+      candidate, is filled from that code, rebuilt, and only that part is
+      drawn and judged again; at most two rounds, then one render. Done
+      before the full render on purpose: the frames are the engine's own
+      pixels, and a swap costs one scene's frames instead of a new render.
+      The report shows on the Preview tab (`review/visual-check.json`).
+    - **Price first** (`providers/prices.mjs`): planning, a swap, a change
+      asked for and the picture check each show their price before they
+      run (USD per million tokens; Claude from Anthropic's list, Gemini from
+      third-party price pages, marked as a guess). Autopilot asks before the
+      plan and before the picture check.
+    - **No hand-made scenes, the look from the Brand:** block packs (the
+      ZG archetypes in C2C blue and Open Sans) are no longer planned or
+      offered as swaps. A table that already uses them still builds, always
+      with the Identity's Brand colours and font (the pack's own look never
+      reaches the video). The pack files stay in the Identity folder,
+      untouched. The name example in Settings and the UI mock's channel
+      link no longer name Zoltan.
+    - **The build gate judges every scene once it has landed**
+      (`gates/build lintAndCheck`): before, a build without scene changes
+      was checked over its whole timeline (mid-entrance states counted as
+      errors), a build with them only at the landed moments, so the same
+      scene passed in one Identity and failed in another. Now always the
+      landed moments, with the change windows told apart. The component
+      tests use the same moment; checked over the whole timeline first, 56
+      failed, at the landed moment 48 (the 8 that recovered were then
+      judged by their stills).
+    - **Length fitting:** a component that does not read its length now
+      plays its timeline and holds its end state (the registry's contract)
+      instead of being refused; its root is the element with the
+      composition id when it has no `#root`. The test renders show which
+      really hold (an empty end frame is off).
+    - **Tests:** `runner/scenes.test.mjs` (two steps, repairs, variety,
+      history, price, swaps), `runner/visual.test.mjs`, a fixed test
+      catalog (`runner/fixtures/catalog.json`) so unit tests do not depend
+      on the render results.

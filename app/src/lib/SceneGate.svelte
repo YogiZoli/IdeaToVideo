@@ -19,14 +19,15 @@
   import StepModel from "./StepModel.svelte";
   import BrollPanel from "./BrollPanel.svelte";
   import StockPanel from "./StockPanel.svelte";
-  import { llmFor } from "./llm";
+  import { llmFor, describeLlm } from "./llm";
 
   let { app, dir, gate, voiceApproved, changed, goto, next, saved }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId; saved: (s: AppState) => void } = $props();
 
   type Row = {
     index: number; from: string; to: string; start: number | null; duration: number | null; said: string;
     component: string; label: string; roleLabel: string; mainVar: string | null; mainText: string | null; shows: string;
-    alternatives: { component: string; label: string }[];
+    alternatives: { component: string; label: string; candidate?: boolean }[];
+    why: string | null;
     call: { slot: string; keyword: string; temperature: string } | null;
     footage: string | null;
   };
@@ -73,7 +74,7 @@
   });
 
   const unlisten = onProgress((p) => {
-    if (p.command === "make-scenes") step = p.progress.step === "repairing" ? "Fixing a few problems in the plan..." : "Planning the scenes...";
+    if (p.command === "make-scenes") step = p.progress.step === "repairing" ? "Fixing a few problems in the plan..." : p.progress.step === "choosing" ? `Reading the code of the best scene types, part ${p.progress.part} of ${p.progress.of}...` : "Reading the scene catalog...";
     if (p.command === "refill-scene") step = "Filling in the new scene...";
   });
   onDestroy(() => unlisten.then((f) => f()));
@@ -100,15 +101,33 @@
   }
 
   const look = $derived(app.config?.brand?.preset ?? "blue-professional");
+  // Every paid AI call shows its price first (DECISIONS 130). The planner
+  // reads the whole scene catalog, then the code of the best candidates.
+  async function price(command: string, request: Record<string, unknown>): Promise<string | null> {
+    try {
+      return (await runner<{ text: string }>(command, { projectDir: dir, ...request })).text;
+    } catch (e) {
+      error = errorText(e);
+      return null;
+    }
+  }
   async function plan() {
-    if (table.rows.length && !stale && !(await ask("Plan all the scenes again? The scenes in this table are replaced. This uses AI tokens.", { title: "Plan again", kind: "warning" }))) return;
+    const cost = await price("scenes-estimate", { llm: stepLlm, look });
+    if (cost === null) return;
+    const again = table.rows.length && !stale ? " The scenes in this table are replaced." : "";
+    if (!(await ask(`The AI reads the whole scene catalog, picks the best 3 to 5 scene types for every sentence, then reads their code and picks the one that fits best. With ${describeLlm(stepLlm)} this costs ${cost} from your AI key.${again} Plan the scenes?`, { title: "Plan the scenes", kind: "info" }))) return;
     await run("make-scenes", { llm: stepLlm, look }, "Starting...");
   }
   async function simple() {
     if (table.rows.length && !stale && !(await ask("Make a simple plan without AI? The scenes in this table are replaced.", { title: "Simple plan", kind: "warning" }))) return;
     await run("simple-scenes", { look }, "Planning without AI...");
   }
-  const swap = (row: Row, component: string) => run("refill-scene", { llm: stepLlm, index: row.index, component, look }, "Filling in the new scene...");
+  async function swap(row: Row, component: string) {
+    const cost = await price("refill-estimate", { llm: stepLlm, component });
+    if (cost === null) return;
+    if (!(await ask(`The AI reads this scene type's code and fills it in from the sentence. With ${describeLlm(stepLlm)} this costs ${cost} from your AI key. Swap the scene?`, { title: "Swap the scene", kind: "info" }))) return;
+    await run("refill-scene", { llm: stepLlm, index: row.index, component, look }, "Filling in the new scene...");
+  }
 
   function save() {
     const scenes = (table.scenes ?? []).map((s, i) => {
@@ -181,7 +200,7 @@
     {:else if table.rows.length}
       {#if gate?.mode === "default"}<p class="hint">This is the simple plan, made without AI. Plan again with the AI for livelier scenes.</p>{/if}
       <table>
-        <caption class="help">What is said: the narration, sentence by sentence. Scene: how it is shown, its kind in grey; open the list to pick another of the same kind. On screen: the text in the picture, you can change it.</caption>
+        <caption class="help">What is said: the narration, sentence by sentence. Scene: how it is shown, its kind in grey; under it, why it fits; open the list to pick another (the AI's other good fits come first). On screen: the text in the picture, you can change it.</caption>
         <thead><tr><th>#</th><th>Time</th><th>What is said</th><th>Scene</th><th>On screen</th></tr></thead>
         <tbody>
           {#each table.rows as row (row.index)}
@@ -193,11 +212,12 @@
                 {#if row.alternatives.length}
                   <select value={row.component} disabled={locked} onchange={(e) => swap(row, (e.currentTarget as HTMLSelectElement).value)} aria-label="Scene {row.index + 1}">
                     <option value={row.component}>{row.label}</option>
-                    {#each row.alternatives as a}<option value={a.component}>{a.label}</option>{/each}
+                    {#each row.alternatives as a}<option value={a.component}>{a.candidate ? `${a.label} (also a good fit)` : a.label}</option>{/each}
                   </select>
                 {:else}
                   {row.label} <span class="hint" title="There is no other scene of this kind to swap to.">(the only one of its kind)</span>
                 {/if}
+                {#if row.why}<div class="why">{row.why}</div>{/if}
                 {#if row.footage}<div class="footage">A clip plays here</div>{/if}
                 {#if row.call}
                   <div class="call {row.call.temperature}">Comment call: {row.call.keyword} ({row.call.temperature})</div>
@@ -294,6 +314,7 @@
   .hint { color: var(--muted-foreground); font-size: 13px; }
   .call { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
   .footage { display: inline-block; margin: 4px 4px 0 0; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #1a1a1a; color: #fff; }
+  .why { margin-top: 4px; font-size: 12px; color: var(--muted, #666); font-style: italic; }
   .call.cold { background: #2E6FE0; }
   .call.warm { background: #E5A400; color: #1a1a1a; }
   .call.hot { background: #D92D20; }

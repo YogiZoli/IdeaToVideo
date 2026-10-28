@@ -1,4 +1,5 @@
 // spoken.test.mjs: the spoken word highlighted in a scene's own text (DECISIONS 106).
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spokenTimes, withSpoken } from "./gates/build/spoken.mjs";

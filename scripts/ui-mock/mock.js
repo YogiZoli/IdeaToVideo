@@ -58,7 +58,7 @@ const fields = (over = {}) => ({ llm: null, channel: { contentLanguage: "en", au
 const core = {
   app: q.get("fresh") ? null : { schema: 2, onboarded: true, llm: { provider: "gemini", model: "gemini-3.5-flash" }, projectsDir: null, activeIdentity: "my-identity", defaults: { autopilot: false }, backup: q.get("nobackup") ? {} : { dir: "G:/My Drive", level: 4, auto: true } },
   identities: q.get("fresh") ? [] : [
-    { schema: 1, id: "my-identity", name: "My Identity", folder: "My Identity", ...fields({ channel: { contentLanguage: "en", audience: "founders", youtubeUrl: "https://www.youtube.com/@zoltangero" } }) },
+    { schema: 1, id: "my-identity", name: "My Identity", folder: "My Identity", ...fields({ channel: { contentLanguage: "en", audience: "founders", youtubeUrl: "https://www.youtube.com/@yourchannel" } }) },
     ...(q.get("one") ? [] : [{ schema: 1, id: "voxflow", name: "VoxFlow", folder: "VoxFlow", ...fields({ llm: { provider: "claude", model: "claude-sonnet-5" }, channel: { contentLanguage: "hu", audience: "coaches", youtubeUrl: null } }) }]),
   ],
   // "<name>@app" or "<name>@<identity id>"

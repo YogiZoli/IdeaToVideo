@@ -2,6 +2,7 @@
 // (feedback/2026-10-05/NOTES.md): empty stills, the CTA line running off the
 // frame, list items all at once, the script too short, unused segments.
 
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { speechCues, widerFit, trackingFit, CTA_ADVANCE, loadComponent } from "./gates/build/assemble.mjs";

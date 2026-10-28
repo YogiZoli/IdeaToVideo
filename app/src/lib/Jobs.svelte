@@ -34,6 +34,7 @@
     "make-avatar": "Avatar clips",
     "avatar-layout": "Avatar placement",
     "build-video": "Video check",
+    "visual-check": "Picture check",
     "check-video": "Video check",
     "render-video": "Render",
     "backup-project": "Backup",

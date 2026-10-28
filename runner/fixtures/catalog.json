@@ -1,0 +1,218 @@
+{
+ "schema": "itv-catalog/1",
+ "$comment": "The unit tests' catalog (runner/fixtures/test-catalog.mjs): the first library components on, so the tests do not depend on the real test renders.",
+ "components": {
+  "titlecard-lockup": {
+   "status": "on",
+   "role": "opening",
+   "label": "Title card",
+   "shows": "A title.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "titlecard-calm": {
+   "status": "on",
+   "role": "opening",
+   "label": "Quiet chapter title",
+   "shows": "A chapter title.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "per-word-rise": {
+   "status": "on",
+   "role": "statement",
+   "label": "Words rise in",
+   "shows": "Words rise.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "kinetic-type-swap": {
+   "status": "on",
+   "role": "statement",
+   "label": "One word changes",
+   "shows": "A word rolls.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "headline-slam": {
+   "status": "on",
+   "role": "emphasis",
+   "label": "Headline lands hard",
+   "shows": "A headline slams.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "marker-highlight": {
+   "status": "on",
+   "role": "emphasis",
+   "label": "Word marked",
+   "shows": "A word is marked.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "count-up": {
+   "status": "on",
+   "role": "proof",
+   "label": "Number counts up",
+   "shows": "A number.",
+   "fitsWhen": "test",
+   "needs": [
+    "number"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "chart-story": {
+   "status": "on",
+   "role": "proof",
+   "label": "Chart",
+   "shows": "A chart.",
+   "fitsWhen": "test",
+   "needs": [
+    "text",
+    "number"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "conic-progress-ring": {
+   "status": "on",
+   "role": "proof",
+   "label": "Progress ring",
+   "shows": "A ring.",
+   "fitsWhen": "test",
+   "needs": [
+    "number"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "grid-card-assemble": {
+   "status": "on",
+   "role": "list",
+   "label": "Cards in a grid",
+   "shows": "Cards.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "constellation-hub": {
+   "status": "on",
+   "role": "list",
+   "label": "Ideas around a center",
+   "shows": "Nodes.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "whiteboard-ink": {
+   "status": "on",
+   "role": "diagram",
+   "label": "Whiteboard sketch",
+   "shows": "A sketch.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "cta-close": {
+   "status": "on",
+   "role": "closing",
+   "label": "Call to action",
+   "shows": "A call.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "logo-brand-close": {
+   "status": "off",
+   "role": "closing",
+   "label": "Name at the end",
+   "shows": "A name.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test",
+   "off": "retired"
+  },
+  "browser-device-stage": {
+   "status": "on",
+   "role": "diagram",
+   "label": "Browser frame",
+   "shows": "A browser.",
+   "fitsWhen": "test",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test"
+  },
+  "caption-highlight": {
+   "status": "off",
+   "role": "transition",
+   "label": "Caption",
+   "shows": "A caption.",
+   "fitsWhen": "test",
+   "needs": [
+    "text"
+   ],
+   "strong": "test",
+   "weak": "test",
+   "example": "test",
+   "off": "a caption style"
+  }
+ }
+}

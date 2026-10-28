@@ -19,7 +19,7 @@ use serde_json::{json, Value};
 /// (docs/identity.md 9).
 pub const LOCAL_HEAVY_LIMIT: usize = 1;
 
-const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "render-video", "avatar-layout", "brand-preview", "motion-preview"];
+const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "visual-check", "render-video", "avatar-layout", "brand-preview", "motion-preview"];
 
 /// Commands that spend a key on real work. Quick lookups (test a key, list
 /// voices or avatars, a cost estimate, a voice sample) are not jobs.
@@ -31,6 +31,7 @@ const KEY_JOBS: &[&str] = &[
     "make-music",
     "make-scenes",
     "refill-scene",
+    "visual-check",
     "make-avatar",
     "segment-voice",
     "segment-make",
@@ -223,7 +224,7 @@ impl Jobs {
 fn waiting_text(j: &Job) -> String {
     let what = match j.info.command.as_str() {
         "render-video" => "the render",
-        "build-video" | "check-video" => "the video check",
+        "build-video" | "check-video" | "visual-check" => "the video check",
         "avatar-layout" => "the avatar placement",
         "write-script" => "the script",
         "make-voice" => "the narration",

@@ -1,3 +1,4 @@
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -144,7 +145,7 @@ test("the wizard offers no closing scenes and no exit or accent settings", () =>
   assert.deepEqual(o.scenes.map((r) => r.role), WIZARD_ROLES);
   assert.ok(!WIZARD_ROLES.includes("closing"));
   for (const r of o.scenes) for (const c of r.components) for (const v of c.style) assert.ok(!["exit", "accent"].includes(v.id), `${c.name}.${v.id}`);
-  assert.ok(o.scenes.find((r) => r.role === "emphasis").components[0].style.some((v) => v.id === "style"), "the marker's look is offered");
+  assert.ok(o.scenes.find((r) => r.role === "emphasis").components.find((c) => c.name === "marker-highlight").style.some((v) => v.id === "style"), "the marker's look is offered");
 });
 
 test("turned-off scene types never reach the AI and are refused in its answer", () => {

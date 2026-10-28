@@ -99,7 +99,7 @@ fn label(command: &str) -> &'static str {
         "make-music" => "The music is",
         "make-avatar" | "segment-make" => "An avatar clip is",
         "broll-make" => "A B-roll clip is",
-        "build-video" => "The preview is",
+        "build-video" | "visual-check" => "The preview is",
         "write-script" => "A script is",
         "make-scenes" | "refill-scene" => "A scene plan is",
         "backup-project" | "backup-all" => "A backup is",

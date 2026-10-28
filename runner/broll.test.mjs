@@ -4,6 +4,7 @@
 // failure (never paid twice), the library, the scene table, the publishing
 // flag. No real HeyGen call: every service here is a fake.
 
+import "./fixtures/test-catalog.mjs"; // the scene catalog fixture, before any scene module
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

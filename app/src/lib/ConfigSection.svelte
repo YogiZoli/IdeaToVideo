@@ -50,7 +50,7 @@
 {:else if id === "name"}
   <div class="field">
     <label for="iname">Name</label>
-    <input id="iname" bind:value={config.name} maxlength="80" placeholder="Example: Zoltan Gero, VoxFlow, or a client's brand" />
+    <input id="iname" bind:value={config.name} maxlength="80" placeholder="Example: your name, your channel, or a client's brand" />
     <p class="hint">Only you see this name. It is also the name of the folder with this Identity's videos.</p>
   </div>
 {:else if id === "brand"}

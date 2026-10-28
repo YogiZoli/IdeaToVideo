@@ -1,0 +1,4686 @@
+{
+ "schema": "itv-catalog/1",
+ "$comment": "The app's scene catalog (DECISIONS 130): every HyperFrames registry component at the pinned commit, what it shows and when it fits, written from its files and its test renders (scripts/catalog). status off: failed a test or the review, with the reason; never deleted. The planner (runner/gates/scenes) reads it.",
+ "commit": "9a27b9f9349b43b9fd194a95ace830d7cbe38b42",
+ "tested": {
+  "topics": {
+   "groceries": "saving money on groceries, the coral look (light)",
+   "sleep": "sleeping better, the broadside look (dark)"
+  },
+  "steps": [
+   "build",
+   "hyperframes lint",
+   "hyperframes check",
+   "three stills",
+   "draft render"
+  ]
+ },
+ "counts": {
+  "all": 234,
+  "on": 25,
+  "off": 209
+ },
+ "components": {
+  "agent-cursor": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Agent Cursor",
+   "label": "AI cursor at work",
+   "role": "diagram",
+   "shows": "A small cursor with a name tag clicks through a few steps on an empty screen and ends on a check.",
+   "fitsWhen": "The voice describes an AI agent or a tool doing steps on a computer by itself.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "The steps follow the words; it reads as automation.",
+   "weak": "Tiny cursor and label on an empty frame; without a real screen under it there is nothing to look at.",
+   "example": "The agent opens the file, checks the prices and sends the list.",
+   "seconds": 4.8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "animated-bar-chart": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Animated Bar Chart",
+   "label": "Bar chart card",
+   "role": "proof",
+   "shows": "A small data card whose bars grow to fixed sample values with callouts.",
+   "fitsWhen": "Never for a sentence: it has no setting for its own numbers or labels.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Calm, readable bar growth.",
+   "weak": "The values and labels are fixed samples, so it would show numbers the voice never said.",
+   "example": "Sales grew every quarter this year.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "arc-motion-path": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Arc Motion Path",
+   "label": "Callout on an arc",
+   "role": "transition",
+   "shows": "A callout flies along a curved path and turns with it.",
+   "fitsWhen": "A motion recipe for moving one element; not a scene for a sentence.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Smooth curved motion.",
+   "weak": "No words of its own to set; a paste-in recipe, not a mountable scene.",
+   "example": "From here, the idea travels to the next step.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "ascii-render-pass": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "ASCII Render Pass",
+   "label": "ASCII render",
+   "role": "transition",
+   "shows": "Whatever is put in its slot redrawn as live ASCII characters.",
+   "fitsWhen": "Only over a picture or scene placed in its slot, for a technical look.",
+   "needs": [
+    "image"
+   ],
+   "strong": "A striking code-art look.",
+   "weak": "Empty without a slotted picture; the app cannot fill the slot.",
+   "example": "Under the hood, every frame is just data.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "ascii-trail-reveal": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "ASCII Trail Reveal",
+   "label": "ASCII reveal panel",
+   "role": "opening",
+   "shows": "A curve sweeps through a grid of ASCII characters and flips them away to reveal a labeled panel.",
+   "fitsWhen": "A technical topic opens a new part with a short label.",
+   "needs": [
+    "text"
+   ],
+   "strong": "A distinctive technical reveal.",
+   "weak": "In the tests the label stayed hidden under the panel and the finished frame was an empty dark box.",
+   "example": "Part two: the data behind it.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "aurora-drift": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Aurora Drift",
+   "label": "Aurora background",
+   "role": "transition",
+   "shows": "Soft accent-coloured light fields drift slowly over a dark base.",
+   "fitsWhen": "Under other scenes as a background (the Motion wizard uses it); never alone for a sentence.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Calm, premium atmosphere in the Brand's colours.",
+   "weak": "Has no content at all: on its own it is an empty picture.",
+   "example": "Take a breath; the next part is calmer.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "avatar-cloud": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Avatar Cloud",
+   "label": "Community cloud",
+   "role": "proof",
+   "shows": "Round initial badges gather around a center label and thin lines connect them to it.",
+   "fitsWhen": "The voice talks about many people, a community, a network or social proof, and a short label names it.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Reads instantly as 'many people around one idea'; follows the Brand.",
+   "weak": "The initials are fixed samples; failed the contrast and clipping check in both test topics.",
+   "example": "Over two thousand parents already plan their week this way.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "avatar-group-hover": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Avatar Group Hover",
+   "label": "Avatar group lift",
+   "role": "transition",
+   "shows": "A row of avatars lifts one by one and settles back.",
+   "fitsWhen": "A UI detail for product demos; not a scene for a sentence.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Lively interface motion.",
+   "weak": "No words of its own; a paste-in recipe, not a mountable scene.",
+   "example": "Your whole team sees the change at once.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "badge-pop": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Badge Pop",
+   "label": "Notification badge",
+   "role": "emphasis",
+   "shows": "A bell button gets a red notification badge that pops in with a count.",
+   "fitsWhen": "The voice talks about notifications or alerts piling up.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Familiar, playful signal.",
+   "weak": "At most four characters; a paste-in recipe, not a mountable scene.",
+   "example": "Three new messages are waiting every morning.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "beat-accent": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Beat Accent",
+   "label": "One word hits",
+   "role": "emphasis",
+   "shows": "One word lands with a flash and a small pulse, then calms.",
+   "fitsWhen": "One word of the sentence is the whole point and should hit like a beat.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Strong, simple, in the Brand's font and colours.",
+   "weak": "The word fades at the end; failed the clipping check in both test topics.",
+   "example": "The secret is one word: routine.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "beat-pulse-background": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a background with no content: it shows nothing that is said.",
+   "title": "Beat Pulse Background",
+   "label": "Pulsing background",
+   "role": "transition",
+   "shows": "An accent-coloured backdrop pulses its glow on a beat grid.",
+   "fitsWhen": "Under music-driven scenes; never alone for a sentence.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Rhythm in the Brand's colours.",
+   "weak": "No content: alone it is an empty glowing frame.",
+   "example": "Feel the rhythm of a good week.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "beat-timeline": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Beat Timeline",
+   "label": "Beat rows",
+   "role": "list",
+   "shows": "Numbered rows with titles enter one by one on a timeline.",
+   "fitsWhen": "The voice lists steps in order.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clear numbered order.",
+   "weak": "Prints technical cue timings under every row and fills missing rows with 'Beat 5', 'Beat 6'; failed the clipping check.",
+   "example": "Plan, write the list, compare, then buy.",
+   "seconds": 5.5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "before-after-wipe": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the two panels show grey placeholder bars: it needs two pictures the app cannot give.",
+   "title": "Before After Wipe",
+   "label": "Before and after wipe",
+   "role": "diagram",
+   "shows": "Two panels, before and after, with a divider that wipes the after over the before and rests in the middle; a chip names each side.",
+   "fitsWhen": "The voice compares a before and an after state.",
+   "needs": [
+    "text",
+    "image"
+   ],
+   "strong": "The comparison idea is instantly clear and the chips take the sentence's words.",
+   "weak": "The panels need two pictures; without them they show grey placeholder bars.",
+   "example": "Before, impulse buys. After, planned meals.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "blur-in": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Blur In",
+   "label": "Words resolve from blur",
+   "role": "statement",
+   "shows": "Words resolve one by one out of a soft blur.",
+   "fitsWhen": "A calm key line.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Elegant, quiet reveal.",
+   "weak": "Its words are fixed in the file with no setting; a paste-in recipe, not a mountable scene.",
+   "example": "Calm habits beat big plans.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "blur-out-up": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Blur Out Up",
+   "label": "Words blur away up",
+   "role": "transition",
+   "shows": "Words arrive clean, then rise and blur away.",
+   "fitsWhen": "An airy exit between thoughts.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Soft exit motion.",
+   "weak": "Fixed words, no setting; a paste-in recipe, not a mountable scene.",
+   "example": "Let that idea go for a moment.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "bottom-up-letters": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Bottom Up Letters",
+   "label": "Letters rise",
+   "role": "statement",
+   "shows": "A line splits into letters that rise from below one after another.",
+   "fitsWhen": "A short title or word that should build letter by letter.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Classic, clean typography motion.",
+   "weak": "Its text is fixed in the file; a paste-in recipe, not a mountable scene.",
+   "example": "Budget.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "browser-device-stage": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a screenshot or recording its screen is an empty placeholder layout.",
+   "title": "Browser Device Stage",
+   "label": "Browser or phone frame",
+   "role": "diagram",
+   "shows": "A browser, window or phone frame whose screen holds a picture, a video or a placeholder layout.",
+   "fitsWhen": "Showing an app or a website on a screen.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Clean device chrome in the Brand's style.",
+   "weak": "Without a screenshot or recording it shows an empty placeholder layout.",
+   "example": "Open the app and tap the list tab.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "camera-rig-depth-stack": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Camera Rig Depth Stack",
+   "label": "3D card stack",
+   "role": "transition",
+   "shows": "Cards stacked in depth with parallax and a focus shift.",
+   "fitsWhen": "A product tour; not a scene for a sentence.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Depth and parallax.",
+   "weak": "No words of its own; a paste-in recipe, not a mountable scene.",
+   "example": "Layer by layer, the plan comes together.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "camera-scan-gate": {
+   "status": "on",
+   "title": "Camera Scan Gate",
+   "label": "Scan and confirm",
+   "role": "emphasis",
+   "shows": "A viewfinder sweeps, brackets lock, a check mark pulses and a short label confirms.",
+   "fitsWhen": "The voice says something is checked, verified, approved or recognised.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clear 'verified' moment in the Brand's colours.",
+   "weak": "Only a short label; the scan look suggests technology even for plain topics.",
+   "example": "Once the list is checked, you are ready to shop.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "camera-shake": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Camera Shake",
+   "label": "Camera shake",
+   "role": "transition",
+   "shows": "A handheld camera shake over its own sample city scene with the words CAMERA SHAKE.",
+   "fitsWhen": "A wrapper effect for footage; not a scene for a sentence.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Realistic shake profiles.",
+   "weak": "Shows its own sample city and title in its own colours, not the topic.",
+   "example": "Everything shook when the news came.",
+   "seconds": 6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-blend-difference": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Blend Difference",
+   "label": "Caption: blend difference",
+   "role": "transition",
+   "shows": "A caption style whose words invert against the background.",
+   "fitsWhen": "Burned-in captions (the Motion wizard's caption styles), not a scene.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Readable on any background.",
+   "weak": "Shows its own demo transcript; as a scene it would not show what is said.",
+   "example": "Every word stays readable.",
+   "seconds": 30,
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "caption-camera-follow": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 2.02:1; WCAG AA requires 3:1..",
+   "title": "Camera Follow Captions",
+   "label": "Caption: camera follow",
+   "role": "transition",
+   "shows": "One sentence written across a huge canvas while the camera follows the words.",
+   "fitsWhen": "A caption style, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Spectacular reading motion.",
+   "weak": "Shows its own demo sentence; failed the contrast check.",
+   "example": "Write the code and the video renders itself.",
+   "seconds": 9,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.02:1; WCAG AA requires 3:1.",
+    "sleep": "passed"
+   }
+  },
+  "caption-clip-wipe": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Clip Wipe",
+   "label": "Caption: clip wipe",
+   "role": "transition",
+   "shows": "A caption style where each word wipes in from the left.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Crisp word reveals.",
+   "weak": "Shows its own demo transcript in its own font from the web.",
+   "example": "Every great video starts here.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-editorial-emphasis": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Editorial Emphasis",
+   "label": "Caption: editorial emphasis",
+   "role": "transition",
+   "shows": "A caption style that mixes a small sans serif with a large italic serif for key words.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Magazine-like emphasis.",
+   "weak": "Shows its own demo transcript in its own web fonts.",
+   "example": "That becomes cinema.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-emoji-pop": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Emoji Pop",
+   "label": "Caption: emoji pop",
+   "role": "transition",
+   "shows": "A caption style with outlined words and emoji that squeeze in.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Playful social look.",
+   "weak": "Shows its own demo transcript and emoji in its own colours.",
+   "example": "Every great video.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-glitch-rgb": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Glitch RGB",
+   "label": "Caption: glitch",
+   "role": "transition",
+   "shows": "A caption style with RGB split and scanlines.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Strong retro look.",
+   "weak": "Shows its own demo transcript.",
+   "example": "Every great video starts.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-gradient-fill": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Gradient Fill",
+   "label": "Caption: gradient fill",
+   "role": "transition",
+   "shows": "A caption style with gradient-filled words that bounce in.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Colourful and lively.",
+   "weak": "Shows its own demo transcript in its own colours.",
+   "example": "Professional video.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-highlight": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Highlight",
+   "label": "Caption: highlight",
+   "role": "transition",
+   "shows": "A caption style where a red block sweeps behind each spoken word.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Easy to follow while listening.",
+   "weak": "Shows its own demo transcript in its own red.",
+   "example": "That becomes cinema.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-kinetic-slam": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Kinetic Slam",
+   "label": "Caption: kinetic slam",
+   "role": "transition",
+   "shows": "A caption style that slams one word at a time full screen.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "High energy.",
+   "weak": "Shows its own demo transcript in its own yellow.",
+   "example": "Cinema.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-matrix-decode": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Matrix Decode",
+   "label": "Caption: matrix decode",
+   "role": "transition",
+   "shows": "A caption style whose words scramble before they resolve.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Technical flavour.",
+   "weak": "Shows its own demo transcript in its own green.",
+   "example": "And render professional video.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-neon-accent": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Neon Accent",
+   "label": "Caption: neon accent",
+   "role": "transition",
+   "shows": "A caption style with multi-colour neon glow on key words.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Bold nightlife look.",
+   "weak": "Shows its own demo transcript in its own colours.",
+   "example": "Every great video starts.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-neon-glow": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Neon Glow",
+   "label": "Caption: neon glow",
+   "role": "transition",
+   "shows": "A caption style with cyan and magenta neon glow.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Strong glow look.",
+   "weak": "Shows its own demo transcript in its own colours.",
+   "example": "And render professional.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-parallax-layers": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Parallax Layers",
+   "label": "Caption: parallax layers",
+   "role": "transition",
+   "shows": "A caption style with large stretched serif words layered in depth.",
+   "fitsWhen": "Burned-in captions over footage, not a scene.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Cinematic depth.",
+   "weak": "Shows its own demo transcript in its own red serif.",
+   "example": "Professional cinema.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-particle-burst": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Particle Burst",
+   "label": "Caption: particle burst",
+   "role": "transition",
+   "shows": "A caption style where key words set off coloured particles.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Celebratory.",
+   "weak": "Shows its own demo transcript.",
+   "example": "Professional.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-pill-karaoke": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Pill Karaoke",
+   "label": "Caption: pill karaoke",
+   "role": "transition",
+   "shows": "A caption style in a pill box with the spoken word highlighted.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Very readable.",
+   "weak": "Shows its own demo transcript.",
+   "example": "Every great video starts.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "caption-texture": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found runtime http_error: 404 loading compositions/components/Budget.png.",
+   "title": "Texture",
+   "label": "Caption: texture",
+   "role": "transition",
+   "shows": "A caption style with a flowing texture inside large capitals.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Rich material look.",
+   "weak": "Shows its own demo transcript.",
+   "example": "Cinema.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "hyperframes check found runtime http_error: 404 loading compositions/components/Budget.png",
+    "sleep": "hyperframes check found runtime http_error: 404 loading compositions/components/Routine.png"
+   }
+  },
+  "caption-weight-shift": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a caption style: it shows its own demo transcript, not what is said.",
+   "title": "Weight Shift",
+   "label": "Caption: weight shift",
+   "role": "transition",
+   "shows": "A caption style whose lines shift from thin to bold.",
+   "fitsWhen": "Burned-in captions, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Elegant and calm.",
+   "weak": "Shows its own demo transcript in faint grey.",
+   "example": "Every great video starts.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "card-resize": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Card Resize",
+   "label": "Card expands",
+   "role": "transition",
+   "shows": "A small card grows into a detail panel.",
+   "fitsWhen": "A UI transition in product demos.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Smooth interface motion.",
+   "weak": "Fixed sample content; a paste-in recipe, not a mountable scene.",
+   "example": "Tap the card to see the details.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "char-slam-explode": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 1.76:1; WCAG AA requires 3:1..",
+   "title": "Char Slam Explode",
+   "label": "Letters slam together",
+   "role": "emphasis",
+   "shows": "The letters of one word hang scattered, then slam together with a short shake.",
+   "fitsWhen": "One strong word lands with force.",
+   "needs": [
+    "text"
+   ],
+   "strong": "High impact, in the Brand's font and colour.",
+   "weak": "Loud for calm topics; failed the contrast check while the letters fly.",
+   "example": "Then the bill arrives: budget.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 1.76:1; WCAG AA requires 3:1.",
+    "sleep": "passed"
+   }
+  },
+  "chart-story": {
+   "status": "on",
+   "title": "Chart Story",
+   "label": "Chart",
+   "role": "proof",
+   "shows": "One chart builds from the narration's numbers: bars, a line, a donut or progress bars, with labels and one value in the accent.",
+   "fitsWhen": "The voice says two or more numbers that compare or change.",
+   "needs": [
+    "text",
+    "number"
+   ],
+   "strong": "Exact values, labels and one highlighted datum; follows the Brand.",
+   "weak": "Needs real numbers from the narration; long labels crowd each other.",
+   "example": "Twelve percent plan meals, but sixty-four percent wish they did.",
+   "mainVar": null,
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "chat-message": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Chat Message",
+   "label": "Phone message",
+   "role": "quote",
+   "shows": "One chat bubble arrives on a black phone screen, with a Delivered receipt.",
+   "fitsWhen": "The voice quotes a text message someone sends.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Instantly reads as a message.",
+   "weak": "Its black phone screen ignores the Brand's colours.",
+   "example": "She texted me: plan your meals.",
+   "seconds": 3,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "chat-thread": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Chat Thread",
+   "label": "Phone chat thread",
+   "role": "quote",
+   "shows": "A whole phone chat thread on a black screen, bubbles arriving one by one.",
+   "fitsWhen": "The voice tells a short text conversation.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Very recognisable.",
+   "weak": "Fixed black phone look; failed the text-hidden check.",
+   "example": "He asked, I answered, and the plan was made.",
+   "seconds": 12,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "chromatic-aberration-wipe": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Chromatic Aberration Wipe",
+   "label": "RGB split wipe",
+   "role": "transition",
+   "shows": "A fast slide wipe with a colour split at its peak.",
+   "fitsWhen": "A scene change, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Energetic.",
+   "weak": "No content; a paste-in recipe, not a mountable scene.",
+   "example": "Now, fast forward.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "code-terminal-run": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the command and its output are fixed samples the app cannot set.",
+   "title": "Code Terminal Run",
+   "label": "Terminal command",
+   "role": "diagram",
+   "shows": "A terminal panel types its own sample build command and prints its output lines.",
+   "fitsWhen": "A coding topic where a command runs.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Clean, readable terminal in the Brand's colours.",
+   "weak": "The command and output are fixed samples in a slot; the app cannot set them.",
+   "example": "Run the build and it finishes in a second.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "colorama-wipe": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Colorama Wipe",
+   "label": "Colour-mapped wipe",
+   "role": "statement",
+   "shows": "A headline revealed through a blurred, colour-mapped wipe.",
+   "fitsWhen": "A bold title moment.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Rich film look.",
+   "weak": "Fixed text, no setting; a paste-in recipe, not a mountable scene.",
+   "example": "A new way to shop.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "comparison-split": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its panels are a mock window and the finished frame fades out.",
+   "title": "Comparison Split",
+   "label": "Comparison split",
+   "role": "diagram",
+   "shows": "Two panels, a muted before and a vivid after, with a divider and a caption on each.",
+   "fitsWhen": "Before and after.",
+   "needs": [
+    "text",
+    "image"
+   ],
+   "strong": "The idea of comparison is clear.",
+   "weak": "The panels are a mock window and a blob; the finished frame fades out (seen in the tests and in DECISIONS 55).",
+   "example": "Before: chaos. After: a plan.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "confetti": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Confetti",
+   "label": "Confetti",
+   "role": "transition",
+   "shows": "A burst of confetti falls with gravity.",
+   "fitsWhen": "Celebrating a result, on top of another scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Joyful.",
+   "weak": "No content; a paste-in recipe, not a mountable scene.",
+   "example": "And that is your first full week done.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "conic-progress-ring": {
+   "status": "on",
+   "title": "Conic Progress Ring",
+   "label": "Progress ring",
+   "role": "proof",
+   "shows": "A ring fills to a percentage while the number in its center counts up.",
+   "fitsWhen": "The voice says one share or progress as a percentage.",
+   "needs": [
+    "number"
+   ],
+   "strong": "One number, very clear, in the Brand's colours.",
+   "weak": "Only one value; the center label is for a number, not for words.",
+   "example": "Seventy percent of the list is already done.",
+   "mainVar": null,
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "constellation-hub": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Constellation Hub",
+   "label": "Ideas around a center",
+   "role": "list",
+   "shows": "Feature nodes appear around a central hub as the voice names them, and lines draw out to them.",
+   "fitsWhen": "Several things belong to one idea or topic.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Items arrive with the voice; shows a hub-and-spoke relation.",
+   "weak": "Items over two words get tight; failed the clipping check in one test topic.",
+   "example": "Planning has four parts: meals, a list, prices and the season.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "passed"
+   }
+  },
+  "count-up": {
+   "status": "on",
+   "title": "Count Up",
+   "label": "Number counts up",
+   "role": "proof",
+   "shows": "A big number counts up to the value the voice says and lands with a small pulse.",
+   "fitsWhen": "The sentence says one number, share or amount.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Simple, bold, exact; follows the Brand.",
+   "weak": "One number only; needs the number in the narration.",
+   "example": "Families who plan spend thirty percent less.",
+   "mainVar": null,
+   "seconds": 3,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "cta-close": {
+   "status": "on",
+   "title": "CTA Close",
+   "label": "Call to action",
+   "role": "closing",
+   "shows": "A large action line lands word by word and one button capsule pops in under it.",
+   "fitsWhen": "The sentence asks the viewer to do something, or a comment call with its keyword.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clear, strong close; the button shows the keyword.",
+   "weak": "Only for a real call to action.",
+   "example": "Comment LIST below and I will send it.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "cta-lockup": {
+   "status": "on",
+   "title": "CTA Lockup",
+   "label": "Call to action with detail",
+   "role": "closing",
+   "shows": "An action line, a button capsule and a small line of supporting text under it.",
+   "fitsWhen": "The closing asks for an action and adds one short detail.",
+   "needs": [
+    "text"
+   ],
+   "strong": "A complete closing card with a supporting line.",
+   "weak": "Three texts to fill; only for a real call to action.",
+   "example": "Subscribe for the weekly plan; it is free.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "cursor-annotate": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it has no words of its own and circles an empty frame.",
+   "title": "Annotate Cursor",
+   "label": "Pen circles a spot",
+   "role": "emphasis",
+   "shows": "A marker pen draws a loop, an underline or an arrow around a region and lifts away.",
+   "fitsWhen": "Over a screen or picture, to point at one spot.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Natural hand-drawn pointing.",
+   "weak": "No words of its own: on an empty frame it circles nothing.",
+   "example": "Look right here.",
+   "seconds": 2.95,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "cursor-context-menu": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 3.61:1; WCAG AA requires 4.5:1..",
+   "title": "Context Menu Cursor",
+   "label": "Right-click menu",
+   "role": "diagram",
+   "shows": "A cursor right-clicks a file in a mock file window and picks an action from the menu.",
+   "fitsWhen": "A software tutorial about file actions.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Precise interface motion.",
+   "weak": "The files and window are fixed samples (roadmap, launch film); it is a product-demo prop.",
+   "example": "Right-click the file and choose duplicate.",
+   "seconds": 3.9,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.61:1; WCAG AA requires 4.5:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.61:1; WCAG AA requires 4.5:1."
+   }
+  },
+  "cursor-drag-drop": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 3.54:1; WCAG AA requires 4.5:1..",
+   "title": "Drag and Drop Cursor",
+   "label": "Drag a card",
+   "role": "diagram",
+   "shows": "A cursor drags a task card from To do to In progress on a mock board.",
+   "fitsWhen": "A software tutorial about moving tasks.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Readable drag-and-drop.",
+   "weak": "The board and its other cards are fixed samples (onboarding email, pricing FAQ).",
+   "example": "Drag the task into In progress.",
+   "seconds": 3.6,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.54:1; WCAG AA requires 4.5:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.54:1; WCAG AA requires 4.5:1."
+   }
+  },
+  "cursor-glyph-trail": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 3.41:1; WCAG AA requires 4.5:1..",
+   "title": "Cursor Glyph Trail",
+   "label": "Click path tutorial",
+   "role": "diagram",
+   "shows": "A cursor clicks through three steps of a mock settings screen, leaving a dotted trail and numbered markers.",
+   "fitsWhen": "A software tutorial with clicks in order.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Clear click order.",
+   "weak": "The settings screen is a fixed sample; tiny text.",
+   "example": "Open settings, turn on the digest, save.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.41:1; WCAG AA requires 4.5:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.49:1; WCAG AA requires 4.5:1."
+   }
+  },
+  "cursor-marquee-select": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_box_overflow: Text extends outside its nearest visual/container box..",
+   "title": "Marquee Select Cursor",
+   "label": "Select photos",
+   "role": "diagram",
+   "shows": "A cursor drags a selection box over a grid of sample photos and a pill counts them.",
+   "fitsWhen": "A software tutorial about selecting many items.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Satisfying selection motion.",
+   "weak": "The photos and album are fixed samples.",
+   "example": "Select all the photos from the trip at once.",
+   "seconds": 3.4,
+   "tests": {
+    "groceries": "hyperframes check found layout text_box_overflow: Text extends outside its nearest visual/container box.",
+    "sleep": "hyperframes check found layout text_box_overflow: Text extends outside its nearest visual/container box."
+   }
+  },
+  "cursor-text-select": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Text Select Cursor",
+   "label": "Select a phrase",
+   "role": "emphasis",
+   "shows": "A document card; the cursor selects a phrase, a format bar appears and the phrase turns bold.",
+   "fitsWhen": "The voice points at one phrase in a written text.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Takes the sentence's own title and text.",
+   "weak": "The document text is small on a 1080p frame and reads as an interface demo.",
+   "example": "Underline the one line that matters: plan your meals.",
+   "seconds": 4.2,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "cursor-zoom-follow": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 3.65:1; WCAG AA requires 4.5:1..",
+   "title": "Zoom Follow Cursor",
+   "label": "Screen zoom follow",
+   "role": "diagram",
+   "shows": "The camera zooms toward each click on a screen capture and follows the cursor.",
+   "fitsWhen": "Over your own screen recording or screenshot.",
+   "needs": [
+    "image",
+    "recording"
+   ],
+   "strong": "Professional screencast zoom.",
+   "weak": "Without a screen capture it shows a sample dashboard with sample numbers.",
+   "example": "Click Export and the report downloads.",
+   "seconds": 5.8,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.65:1; WCAG AA requires 4.5:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.65:1; WCAG AA requires 4.5:1."
+   }
+  },
+  "curtain-reveal": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Curtain Reveal",
+   "label": "Stage curtains",
+   "role": "opening",
+   "shows": "Red stage curtains open on a stage that holds a slotted picture.",
+   "fitsWhen": "A grand reveal of a picture or a product.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Theatrical.",
+   "weak": "Empty without a picture: shows the word STAGE; its red velvet ignores the Brand.",
+   "example": "And now, the result.",
+   "seconds": 2.4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "cut-the-curve": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a cut between scenes: on its own it shows a shape on an empty frame.",
+   "title": "Cut the Curve",
+   "label": "Speed-matched cut",
+   "role": "transition",
+   "shows": "A shape speeds out of frame and the next one continues at the same speed.",
+   "fitsWhen": "A cut between two scenes, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Energetic continuity.",
+   "weak": "No words: on its own it is a cursor-like shape on an empty frame.",
+   "example": "Next.",
+   "seconds": 1,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "dart-cursor": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a small arrow on an empty frame: it shows nothing that is said.",
+   "title": "Dart Cursor",
+   "label": "Dart cursor",
+   "role": "transition",
+   "shows": "A bold arrow cursor dives in, clicks twice and whips out.",
+   "fitsWhen": "A pointer moment in a product demo.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Fun motion.",
+   "weak": "No words; on its own a small arrow on an empty frame.",
+   "example": "Click here.",
+   "seconds": 3.6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "decline-chart": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Decline Chart",
+   "label": "Falling line",
+   "role": "proof",
+   "shows": "A line draws downward as a value counts down and the background darkens.",
+   "fitsWhen": "A number that falls: a loss, a drop, a problem getting worse.",
+   "needs": [
+    "text",
+    "number"
+   ],
+   "strong": "Strong feeling of decline.",
+   "weak": "Its own dark teal background ignores the Brand; dropped in DECISIONS 55 for not following the topic.",
+   "example": "Your savings fall from five hundred to fifty.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "device-frame-stage": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: has timed parts of other lengths (...), so its length cannot be fitted..",
+   "title": "Device Frame Stage",
+   "label": "Phone on a stage",
+   "role": "diagram",
+   "shows": "A phone or tablet mockup rises onto a stage with a screen slot.",
+   "fitsWhen": "Showing an app screen as an object.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Premium device staging.",
+   "weak": "Empty screen without a slotted interface.",
+   "example": "Here is the app on your phone.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "it is not a mountable scene: has timed parts of other lengths (...), so its length cannot be fitted.",
+    "sleep": "it is not a mountable scene: has timed parts of other lengths (...), so its length cannot be fitted."
+   }
+  },
+  "directional-wipe": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Directional Wipe",
+   "label": "Directional wipe",
+   "role": "transition",
+   "shows": "One panel slides over another.",
+   "fitsWhen": "A scene change.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Simple push.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Next topic.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "drift-hold": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Drift Hold",
+   "label": "Line on a floating card",
+   "role": "statement",
+   "shows": "One line on a centered card that breathes slightly while a soft light passes over it.",
+   "fitsWhen": "A calm key sentence that should stay on screen for a while.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Quiet, readable, alive without distraction; follows the Brand.",
+   "weak": "Little motion: a long run of it would feel static.",
+   "example": "The rule is simple: plan your meals first.",
+   "mainVar": "text",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "dynamic-grid": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Dynamic Grid",
+   "label": "Animated grid",
+   "role": "transition",
+   "shows": "A moving grid background.",
+   "fitsWhen": "Under data or code scenes.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Technical atmosphere.",
+   "weak": "No content; a paste-in recipe, not a mountable scene.",
+   "example": "The numbers tell the story.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "echo-trail": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a small sample card crossing an empty frame: it shows nothing that is said.",
+   "title": "Echo Trail",
+   "label": "Echo trail",
+   "role": "transition",
+   "shows": "A moving element leaves ghost copies that collapse when it stops.",
+   "fitsWhen": "Motion emphasis on one element.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Smooth sense of speed.",
+   "weak": "On its own a small sample card crossing an empty frame.",
+   "example": "Fast, then still.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "extended-keyframe": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Extended Keyframe",
+   "label": "Slow landing",
+   "role": "transition",
+   "shows": "An element moves fast at first and creeps into place.",
+   "fitsWhen": "A motion recipe.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Cinematic easing.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Almost there.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "facet-morph": {
+   "status": "off",
+   "off": "Off after the review of its test stills: an abstract morphing shape: it shows nothing that is said.",
+   "title": "Facet Morph",
+   "label": "Low-poly shape",
+   "role": "transition",
+   "shows": "A faceted low-poly shape morphs between three silhouettes.",
+   "fitsWhen": "Decoration for an abstract idea.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Striking 3D look.",
+   "weak": "An abstract shape that says nothing the voice says.",
+   "example": "Ideas change shape.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "fade-through": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Fade Through",
+   "label": "Fade through",
+   "role": "transition",
+   "shows": "One layer fades out through a wash into the next.",
+   "fitsWhen": "A calm scene change.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Gentle.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Later that week.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "focus-blur-resolve": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Focus Blur Resolve",
+   "label": "Focus pull text",
+   "role": "statement",
+   "shows": "Text pulls from heavy blur into focus and blurs out.",
+   "fitsWhen": "A premium key line.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Elegant.",
+   "weak": "Fixed text; a paste-in recipe, not a mountable scene.",
+   "example": "Clarity first.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "focus-rack": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Focus Rack",
+   "label": "Focus moves to the second card",
+   "role": "diagram",
+   "shows": "Two labeled cards at different depths; the focus shifts from the first to the second.",
+   "fitsWhen": "The voice moves from one option or idea to another.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Shows a shift of attention between two named things; follows the Brand.",
+   "weak": "The cards are mostly grey placeholder lines with a tiny fixed 'WORKSPACE' label.",
+   "example": "Stop thinking about the price, start thinking about the plan.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "focus-swap": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its card texts are fixed samples with no setting.",
+   "title": "Focus Swap",
+   "label": "Focus swap cards",
+   "role": "diagram",
+   "shows": "Two side-by-side cards; one recedes and the other comes into focus.",
+   "fitsWhen": "Moving attention from one step to the next.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean focus change.",
+   "weak": "Its card texts are fixed samples ('Shape the idea', 'Ship the result') with no setting.",
+   "example": "First shape the idea, then ship it.",
+   "seconds": 1.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "gesture-tap": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Gesture Tap",
+   "label": "Tap a button",
+   "role": "emphasis",
+   "shows": "A finger tap presses a pill button on a mock profile card and the button changes its label.",
+   "fitsWhen": "The voice says to tap or press something.",
+   "needs": [
+    "text"
+   ],
+   "strong": "The two button labels take the sentence's words.",
+   "weak": "A fixed sample profile (Maya Chen) on its own dark navy background that ignores the Brand.",
+   "example": "Tap follow, and it says following.",
+   "seconds": 3,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "gloss-sweep": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Gloss Sweep",
+   "label": "Glossy card",
+   "role": "emphasis",
+   "shows": "A card with one word lands and catches a single diagonal gloss.",
+   "fitsWhen": "A short word or result should feel polished and finished.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Premium finish moment.",
+   "weak": "The card is a fixed dark green that ignores the Brand's colours.",
+   "example": "The result: a budget that works.",
+   "seconds": 2.5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "grade-split-reveal": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a picture it shows its own sample sunset.",
+   "title": "Grade Split Reveal",
+   "label": "Before and after grade",
+   "role": "diagram",
+   "shows": "The same picture twice, flat and graded, with an edge sweeping between them.",
+   "fitsWhen": "Showing a picture before and after an edit.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Clear before and after for visuals.",
+   "weak": "Without your picture it shows its own sample sunset.",
+   "example": "Before the edit, after the edit.",
+   "seconds": 6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "grain-field": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a background with no content (the Motion wizard puts it under scenes).",
+   "title": "Grain Field",
+   "label": "Dot field background",
+   "role": "transition",
+   "shows": "An accent-tinted dot field drifts over a soft gradient.",
+   "fitsWhen": "Under scenes as a background (the Motion wizard uses it).",
+   "needs": [
+    "text"
+   ],
+   "strong": "Subtle texture in the Brand's colour.",
+   "weak": "No content: alone it is an empty pattern.",
+   "example": "Let the idea settle.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "grain-overlay": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Grain Overlay",
+   "label": "Film grain",
+   "role": "transition",
+   "shows": "An animated film grain overlay.",
+   "fitsWhen": "Over other scenes for warmth.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Analog feel.",
+   "weak": "No content; a paste-in recipe, not a mountable scene.",
+   "example": "Back in the day.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "grid-card-assemble": {
+   "status": "on",
+   "title": "Grid Card Assemble",
+   "label": "Cards in a grid",
+   "role": "list",
+   "shows": "Three to twelve cards, each with a line icon and a short label, assemble into a grid as the voice names them.",
+   "fitsWhen": "The sentence names three to six things, features or steps.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Items arrive with the voice; icons make the list visual; follows the Brand.",
+   "weak": "The labels are small capitals; more than six cards crowd the frame.",
+   "example": "You need four things: a plan, a list, prices and the season.",
+   "mainVar": "items",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "grid-pixelate-wipe": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Grid Pixelate Wipe",
+   "label": "Pixel wipe",
+   "role": "transition",
+   "shows": "The screen dissolves into fading squares.",
+   "fitsWhen": "A scene change.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Digital feel.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Switching gears.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "halftone-dissolve": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Halftone Dissolve",
+   "label": "Halftone dissolve",
+   "role": "transition",
+   "shows": "Scene A dissolves into scene B through growing halftone dots.",
+   "fitsWhen": "A change between two slotted scenes.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Print-like texture.",
+   "weak": "Without slotted scenes it shows the letters A and B.",
+   "example": "From one idea to the next.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "headline-slam": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 2.12:1; WCAG AA requires 3:1..",
+   "title": "Headline Slam",
+   "label": "Headline lands hard",
+   "role": "emphasis",
+   "shows": "A heavy headline of up to three words drops into frame with a short shake; one word can take the accent colour.",
+   "fitsWhen": "A short, strong claim that should hit.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Bold and direct; the accent word carries the point; follows the Brand.",
+   "weak": "At most three words; too loud for gentle topics if used often.",
+   "example": "Stop buying hungry.",
+   "mainVar": "text",
+   "maxWords": {
+    "text": 3
+   },
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.12:1; WCAG AA requires 3:1.",
+    "sleep": "passed"
+   }
+  },
+  "hw-arrow": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Hand-Drawn Arrow",
+   "label": "Hand-drawn arrow",
+   "role": "emphasis",
+   "shows": "A wobbly hand-drawn arrow draws on next to a handwritten note.",
+   "fitsWhen": "Pointing at something on screen.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Friendly hand-made feel.",
+   "weak": "Its own navy background and sample note ('point at things'); the finished frame is empty.",
+   "example": "Look at this.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "hw-boil": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Hand-Drawn Boil",
+   "label": "Hand-drawn jitter",
+   "role": "transition",
+   "shows": "Helpers that make drawn lines jitter like hand animation, shown on a dark sample sheet.",
+   "fitsWhen": "A helper for other drawings, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Lively hand-drawn texture.",
+   "weak": "Shows its own technical sample sheet; the finished frame is empty.",
+   "example": "Hand-made.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "hw-box-label": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Hand-Drawn Box Label",
+   "label": "Hand-drawn box",
+   "role": "emphasis",
+   "shows": "A wobbly box draws on with a handwritten label.",
+   "fitsWhen": "Framing one thing on screen.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Hand-made emphasis.",
+   "weak": "Its own purple background and sample label ('Europe'); the finished frame is empty.",
+   "example": "This box is the part to remember.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "hw-callout-circle": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Scribble Callout Circle",
+   "label": "Hand-drawn circle callout",
+   "role": "emphasis",
+   "shows": "A wobbly ellipse circles a target with a handwritten 'look here' note.",
+   "fitsWhen": "Calling out one spot.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Natural pointing.",
+   "weak": "Its own green background and sample text; the finished frame is empty.",
+   "example": "Look here.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "hw-underline": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Squiggle Marks",
+   "label": "Hand-drawn marks",
+   "role": "emphasis",
+   "shows": "A squiggle underline, a strike-through and a bracket draw on under sample lines.",
+   "fitsWhen": "Marking up words by hand.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Three classic hand marks.",
+   "weak": "Its own dark background and sample lines ('underline the point'); the finished frame is empty.",
+   "example": "Underline the point, cross this out.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "icon-morph-beat": {
+   "status": "off",
+   "off": "Off after the review of its test stills: no words to show, and its fixed green check ignores the Brand's accent.",
+   "title": "Icon Morph Beat",
+   "label": "Icon turns into a check",
+   "role": "emphasis",
+   "shows": "An icon in a tile morphs into another state and pulses once.",
+   "fitsWhen": "Something is done or switched on.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean status change.",
+   "weak": "No words; its green check ignores the Brand's accent.",
+   "example": "Done.",
+   "seconds": 2.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "icon-swap": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Icon Swap",
+   "label": "Icon swap",
+   "role": "transition",
+   "shows": "A toolbar icon swaps with scale and blur.",
+   "fitsWhen": "A UI state change.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Snappy.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Saved.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "ink-bleed-reveal": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Ink Bleed Reveal",
+   "label": "Ink bleed reveal",
+   "role": "opening",
+   "shows": "Ink blooms through paper and resolves into a slotted mark.",
+   "fitsWhen": "Revealing a logo or a mark.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Organic, artful.",
+   "weak": "Without a slotted mark it shows the letter H on its own grey paper.",
+   "example": "Here is our mark.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "inline-highlight": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Inline Highlight",
+   "label": "Inline highlight",
+   "role": "emphasis",
+   "shows": "A marker highlight grows behind a word in a line.",
+   "fitsWhen": "One word in a line.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "The key word is plan.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "input-feedback": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Input Feedback",
+   "label": "Input feedback",
+   "role": "transition",
+   "shows": "A text field shakes, clears and shows success.",
+   "fitsWhen": "A form in a product demo.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Familiar UI moment.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Wrong password, try again.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "iris-reveal": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without slotted scenes it shows placeholder panels.",
+   "title": "Iris Reveal",
+   "label": "Iris reveal",
+   "role": "transition",
+   "shows": "A circle opens to reveal a second slotted state over the first.",
+   "fitsWhen": "A change between two slotted scenes.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Classic film reveal.",
+   "weak": "Without slotted scenes it shows two placeholder panels.",
+   "example": "And then everything changed.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "keyframe-scrub-stack": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Keyframe Scrub Stack",
+   "label": "Card stack sequence",
+   "role": "transition",
+   "shows": "A stack of cards with offset timing.",
+   "fitsWhen": "A motion recipe.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Layered timing.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "One after another.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "kinetic-center-build": {
+   "status": "off",
+   "off": "Failed the test (sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 1.05:1; WCAG AA requires 3:1..",
+   "title": "Kinetic Center Build",
+   "label": "Phrase builds to center",
+   "role": "statement",
+   "shows": "Words enter from the right and push the phrase left until it locks centered.",
+   "fitsWhen": "A short key phrase built word by word.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Rhythmic word-by-word build.",
+   "weak": "Small type at 1080p; loads its font from the internet during the render (MIT licence, Remocn).",
+   "example": "Plan your meals.",
+   "seconds": 2,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 1.05:1; WCAG AA requires 3:1."
+   }
+  },
+  "kinetic-type-swap": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 2.78:1; WCAG AA requires 3:1..",
+   "title": "Kinetic Type Swap",
+   "label": "One word changes",
+   "role": "statement",
+   "shows": "A sentence holds still while one word in it rolls through options and settles on the last one.",
+   "fitsWhen": "The sentence names options for one slot: it works for meals, for snacks, for lunch.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Keeps the line readable while the changing word carries the list; the options arrive with the voice.",
+   "weak": "Needs a short fixed frame around one changing word; failed the contrast check in the light test look while the words roll.",
+   "example": "It works for breakfast, for lunch, for dinner.",
+   "mainVar": null,
+   "maxWords": {
+    "prefix": 3,
+    "suffix": 2
+   },
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.78:1; WCAG AA requires 3:1.",
+    "sleep": "passed"
+   }
+  },
+  "light-sweep-pass": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a slotted scene it shows grey placeholder cards.",
+   "title": "Light Sweep Pass",
+   "label": "Light sweep",
+   "role": "transition",
+   "shows": "A soft key light crosses a slotted scene once and re-shades it.",
+   "fitsWhen": "A finishing touch over a slotted scene.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Subtle premium light.",
+   "weak": "Without a slotted scene it shows grey placeholder cards.",
+   "example": "And it all comes together.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "line-by-line-slide": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Line-by-Line Slide",
+   "label": "Lines slide in",
+   "role": "list",
+   "shows": "Each line enters from the left and exits right.",
+   "fitsWhen": "A few short lines in order.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Simple rhythm.",
+   "weak": "Fixed lines; a paste-in recipe, not a mountable scene.",
+   "example": "Plan. Shop. Cook.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "line-swap": {
+   "status": "on",
+   "title": "Line Swap",
+   "label": "One line replaces another",
+   "role": "statement",
+   "shows": "A line holds in the center, slides up out of a mask as a second line rises in; one word can be underlined.",
+   "fitsWhen": "The voice replaces one idea with another, or says a key line in two beats.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Large, clean type in the Brand; good for 'not this, but this'.",
+   "weak": "Two lines of text to fill; with the same line twice it looks static.",
+   "example": "Not a bigger budget. A better list.",
+   "mainVar": "line_b",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "locked-nucleus-orbit": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Locked Nucleus Orbit",
+   "label": "Orbit around a center",
+   "role": "list",
+   "shows": "Small satellite labels orbit a center label and settle.",
+   "fitsWhen": "Parts around one core idea.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Neat orbital lockup.",
+   "weak": "The satellite labels are fixed samples (motion, signal, frames, output) and very small.",
+   "example": "Everything turns around one plan.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "logo-brand-close": {
+   "status": "off",
+   "off": "Off after the review of its test stills: retired since the CTA wizard (2026-10-05, K12), and it prints a sample web address by default.",
+   "title": "Logo Brand Close",
+   "label": "Name at the end",
+   "role": "closing",
+   "shows": "A wordmark cascades in letter by letter with a tagline and a web address under it.",
+   "fitsWhen": "The channel name at the end of a video.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean brand close in the Brand's font.",
+   "weak": "Retired by the CTA wizard (K12); shows a sample web address unless one is set.",
+   "example": "Kitchen Budget. See you next week.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "logo-sting": {
+   "status": "on",
+   "title": "Logo Sting",
+   "label": "Name slams in",
+   "role": "opening",
+   "shows": "A name or short title slams into its final size, fires one accent ring, and holds still.",
+   "fitsWhen": "The video or a section opens with a name, a product or a two-word title.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Big, confident title in the Brand's font and accent.",
+   "weak": "One to three words only; the slam is loud for a calm chapter.",
+   "example": "Kitchen Budget.",
+   "mainVar": "wordmark",
+   "maxWords": {
+    "wordmark": 3
+   },
+   "seconds": 2.2,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "logo-wall": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it shows placeholder lettermark logos and claims customers nobody named.",
+   "title": "Logo Wall",
+   "label": "Logo wall",
+   "role": "proof",
+   "shows": "A 'trusted by teams' wall of placeholder lettermark logos.",
+   "fitsWhen": "Social proof with real customer logos.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Orderly grid.",
+   "weak": "Only placeholder initials; it would claim customers nobody named.",
+   "example": "Teams everywhere use it.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "magnetic-cursor": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a small fixed editor toolbar on an empty frame.",
+   "title": "Magnetic Cursor",
+   "label": "Magnetic cursor toolbar",
+   "role": "diagram",
+   "shows": "A dot cursor glides over an editor toolbar and is pulled into each button.",
+   "fitsWhen": "A software tutorial about a toolbar.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Polished hover motion.",
+   "weak": "A small fixed toolbar on an empty frame.",
+   "example": "Bold, italic, then add a link.",
+   "seconds": 3.6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "marker-checklist-card": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its own marker fonts and maroon ink ignore the Brand, and the many small fields crowd the card.",
+   "title": "Marker Checklist Card",
+   "label": "Hand-lettered checklist card",
+   "role": "list",
+   "shows": "A paper card with a marker headline, a circled word and three checklist rows that tick themselves.",
+   "fitsWhen": "A short checklist with values.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Warm, hand-made.",
+   "weak": "Its own marker fonts and maroon ink ignore the Brand; many small fields crowd the card (dropped in DECISIONS 55 too).",
+   "example": "Check: list done, budget set, meals planned.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "marker-highlight": {
+   "status": "on",
+   "title": "Marker Highlight",
+   "label": "Word marked",
+   "role": "emphasis",
+   "shows": "A line settles in, then one hand-drawn marker stroke (highlight, circle, underline or scribble) draws over the key word.",
+   "fitsWhen": "One word of the sentence is the point and must be marked.",
+   "needs": [
+    "text"
+   ],
+   "strong": "The key word is unmistakable; large readable line in the Brand.",
+   "weak": "The emphasis word must appear in the line exactly, or no mark is drawn.",
+   "example": "The cheapest tool in your kitchen is a list.",
+   "mainVar": "text",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "match-cut": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Match Cut",
+   "label": "Match cut circle",
+   "role": "transition",
+   "shows": "A circle button speeds into a cut and the matching circle continues as a result with a label.",
+   "fitsWhen": "From an action to its result.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Satisfying cause and effect.",
+   "weak": "Its own navy background and green circle ignore the Brand.",
+   "example": "One tap, and it is done.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "matrix-decode": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Matrix Decode",
+   "label": "Scrambled word resolves",
+   "role": "emphasis",
+   "shows": "Random characters resolve left to right into a word.",
+   "fitsWhen": "A technical word or a reveal.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Code feel.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Decoded: budget.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "menu-morph": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Menu Morph",
+   "label": "Menu morph",
+   "role": "transition",
+   "shows": "A menu icon morphs and action pills open.",
+   "fitsWhen": "A UI menu demo.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Compact UI motion.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Open the menu.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "mesh-gradient-bg": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Mesh Gradient Background",
+   "label": "Mesh gradient",
+   "role": "transition",
+   "shows": "A moving mesh gradient background.",
+   "fitsWhen": "Under other scenes.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Soft colour.",
+   "weak": "No content; a paste-in recipe, not a mountable scene.",
+   "example": "A calm moment.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "micro-transitions": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Micro Transitions",
+   "label": "Micro UI transitions",
+   "role": "transition",
+   "shows": "Badge, dropdown, modal, tabs, tooltip and success micro transitions.",
+   "fitsWhen": "UI demos.",
+   "needs": [
+    "text"
+   ],
+   "strong": "A full kit.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Hover for a tip.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "mk-emphasis-type": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Background Emphasis Type",
+   "label": "Background word",
+   "role": "transition",
+   "shows": "A huge pale word drifts behind the subject as texture.",
+   "fitsWhen": "Behind a person or footage.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Editorial texture.",
+   "weak": "Shows its own word 'EMPHASIS' and is gone by the end.",
+   "example": "Focus.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "mk-usage-arc": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Hairline Arc Gauge",
+   "label": "Small usage gauge",
+   "role": "proof",
+   "shows": "A thin circular gauge draws while a percentage counts up.",
+   "fitsWhen": "A share or usage number.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Neat gauge.",
+   "weak": "Tiny, with its own sample value; the finished frame is empty.",
+   "example": "Seventy-six percent used.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "modal-morph": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 3.41:1; WCAG AA requires 4.5:1..",
+   "title": "Modal Morph",
+   "label": "Card to panel",
+   "role": "transition",
+   "shows": "A small card expands into a full panel.",
+   "fitsWhen": "Opening a detail in an app.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Shared-element motion.",
+   "weak": "Only grey placeholder skeleton content.",
+   "example": "Open the recipe.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 3.41:1; WCAG AA requires 4.5:1.",
+    "sleep": "passed"
+   }
+  },
+  "morph-swap": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without slotted content it shows placeholder cards.",
+   "title": "Morph Swap",
+   "label": "Shape morph swap",
+   "role": "transition",
+   "shows": "One slotted element reshapes into another at a shared center.",
+   "fitsWhen": "Between two slotted states.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Smooth morph.",
+   "weak": "Without slotted content it shows placeholder cards.",
+   "example": "From draft to final.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "morph-text": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it shows its own fixed slogans and loads its font from the internet during the render.",
+   "title": "Morph Text",
+   "label": "Gooey word morph",
+   "role": "statement",
+   "shows": "Words melt into each other through a gooey blur.",
+   "fitsWhen": "A short list of slogans.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Fluid, playful.",
+   "weak": "Shows its own fixed slogans and loads its font from the internet.",
+   "example": "Fast. Focused. Powerful.",
+   "seconds": 15,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "motion-blur": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes lint failed: missing_or_empty_sub_composition: data-composition-src references \"compositions/components/scene-1-motion-blur.html\", but the file's resolved content has no element with a data-composition-id attribute..",
+   "title": "Motion Blur",
+   "label": "Motion blur",
+   "role": "transition",
+   "shows": "After Effects style motion blur for moving elements.",
+   "fitsWhen": "A helper for other motion, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Real shutter blur.",
+   "weak": "On its own an empty frame.",
+   "example": "Fast.",
+   "seconds": 6,
+   "tests": {
+    "groceries": "hyperframes lint failed: missing_or_empty_sub_composition: data-composition-src references \"compositions/components/scene-1-motion-blur.html\", but the file's resolved content has no element with a data-composition-id attribute.",
+    "sleep": "hyperframes lint failed: missing_or_empty_sub_composition: data-composition-src references \"compositions/components/scene-1-motion-blur.html\", but the file's resolved content has no element with a data-composition-id attribute."
+   }
+  },
+  "multi-device-splay": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the device screens are grey placeholders.",
+   "title": "Multi Device Splay",
+   "label": "Phone, tablet, desktop",
+   "role": "diagram",
+   "shows": "Phone, tablet and desktop mockups fan out from a stack.",
+   "fitsWhen": "An app that works on every device, with real screens.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Premium product shot.",
+   "weak": "The screens are grey placeholders.",
+   "example": "It works on your phone, tablet and laptop.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "multiplayer-cursors": {
+   "status": "off",
+   "off": "Failed the test (sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Multiplayer Cursors",
+   "label": "Named cursors meet",
+   "role": "diagram",
+   "shows": "Labeled cursors drift in from around the frame and gather in a shared center.",
+   "fitsWhen": "The voice says several people or things come together or work on one thing.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Lively picture of collaboration; the names come from the sentence; follows the Brand.",
+   "weak": "Fills missing names with 'Guest 5', 'Guest 6': the count must match the names; busy for a calm line.",
+   "example": "Your partner, your kids and you all add to the same list.",
+   "seconds": 6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "native-notification-pop": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the banner is small and the scene under it is a grey placeholder.",
+   "title": "Native Notification Pop",
+   "label": "Phone notification",
+   "role": "quote",
+   "shows": "A system notification banner drops in over a slotted scene.",
+   "fitsWhen": "A message or reminder arrives.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Faithful iOS banner with the sentence's title and line.",
+   "weak": "The banner is small at the top and the scene under it is a grey placeholder.",
+   "example": "A reminder pops up: plan your meals.",
+   "seconds": 3,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "notes-typing": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a fixed white notes page with a yellow check that ignores the Brand's colours.",
+   "title": "Notes Typing",
+   "label": "Notes being typed",
+   "role": "list",
+   "shows": "A notes app page: a bold title, then lines typed one by one.",
+   "fitsWhen": "Writing a list or a note.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Very readable; the lines come from the sentence.",
+   "weak": "A fixed white page with a yellow check, also in a dark Brand: it ignores the Brand's colours.",
+   "example": "Write it down: plan meals, write a list, compare prices.",
+   "seconds": 10,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "notification-pileup": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 2.22:1; WCAG AA requires 3:1..",
+   "title": "Notification Pileup",
+   "label": "Notifications pile up",
+   "role": "diagram",
+   "shows": "Notification cards arrive faster and faster into an anxious tower.",
+   "fitsWhen": "Overload and distraction.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Strong feeling of overload.",
+   "weak": "The notification texts are fixed samples (reminders, security, drive).",
+   "example": "Your phone never stops buzzing.",
+   "seconds": 8,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.22:1; WCAG AA requires 3:1.",
+    "sleep": "passed"
+   }
+  },
+  "notification-stack": {
+   "status": "on",
+   "title": "Notification Stack",
+   "label": "Stacked cards",
+   "role": "list",
+   "shows": "One to five cards with a title and a line slide into a stack, newest on top, one card in focus.",
+   "fitsWhen": "A few items arrive one after another: reminders, tasks, steps.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Items arrive in order and stay readable; follows the Brand.",
+   "weak": "Small text; the second line repeats unless it is given.",
+   "example": "Three reminders: plan meals, write a list, compare prices.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "number-pop-in": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Number Pop In",
+   "label": "Number pops in",
+   "role": "proof",
+   "shows": "Digits pop in with blur and lift, with a small unit after them.",
+   "fitsWhen": "One number the voice says.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Crisp number reveal.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "It takes 12 minutes.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "number-wheel": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Number Wheel",
+   "label": "Rolling digits",
+   "role": "proof",
+   "shows": "Digits roll like a counter to a value.",
+   "fitsWhen": "A price, a count or a score.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Scoreboard feel.",
+   "weak": "Fixed value with no setting; a paste-in recipe, not a mountable scene.",
+   "example": "The total rolls up to 240.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "offset-path-traveler": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Offset Path Traveler",
+   "label": "Tag on a path",
+   "role": "transition",
+   "shows": "A small tag travels along a dashed curve.",
+   "fitsWhen": "A journey from one point to another.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Smooth path motion.",
+   "weak": "The tag is tiny on a mostly empty frame.",
+   "example": "The journey starts here.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "onboarding-stepper-flow": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Onboarding Stepper Flow",
+   "label": "Onboarding steps",
+   "role": "list",
+   "shows": "A milestone rail, an active step card and a next button.",
+   "fitsWhen": "A product onboarding walkthrough.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Clear progress through steps.",
+   "weak": "Fixed sample UI; a paste-in recipe, not a mountable scene.",
+   "example": "Step two of four: connect your account.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "ordered-dither-pass": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a picture it shows the placeholder letter H.",
+   "title": "Ordered Dither Pass",
+   "label": "Dither reveal",
+   "role": "transition",
+   "shows": "A slotted picture emerges from two-tone dither noise.",
+   "fitsWhen": "Revealing a picture with a retro look.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Retro computer look.",
+   "weak": "Without a picture it shows the placeholder letter H.",
+   "example": "Here it is.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "outline-draw": {
+   "status": "off",
+   "off": "Off after the review of its test stills: an empty outline with nothing inside it.",
+   "title": "Outline Draw",
+   "label": "Outline draws",
+   "role": "emphasis",
+   "shows": "A rounded outline draws clockwise around a region.",
+   "fitsWhen": "Framing something already on screen.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Clean callout.",
+   "weak": "No content: an empty rectangle that fades.",
+   "example": "This part.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "oversized-cursor": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the clicked control and its label are tiny on an empty frame.",
+   "title": "Oversized Cursor",
+   "label": "Big cursor click",
+   "role": "emphasis",
+   "shows": "A large arrow cursor lands on a small control and clicks it.",
+   "fitsWhen": "Pointing at one button in a screen recording.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Unmissable pointer.",
+   "weak": "The control and its label are tiny on an empty frame.",
+   "example": "Click this button.",
+   "seconds": 2.6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "overwhelm-surround": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Overwhelm Surround",
+   "label": "Overload around a center",
+   "role": "diagram",
+   "shows": "Task, inbox and notification bubbles rush in around one calm center label.",
+   "fitsWhen": "The voice talks about too much at once: stress, overload, distraction around one thing.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Turns overload into a picture; the center label comes from the sentence; follows the Brand.",
+   "weak": "The surrounding bubbles are generic fixed words (inbox, due, asap).",
+   "example": "Every week the same chaos lands on your plate.",
+   "mainVar": "centerLabel",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "passed"
+   }
+  },
+  "page-slide": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Page Slide",
+   "label": "Page slide",
+   "role": "transition",
+   "shows": "One labeled page slides out as another slides in.",
+   "fitsWhen": "Moving between two pages.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Simple navigation motion.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "From the list to the recipe.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "pan-stations": {
+   "status": "on",
+   "title": "Pan Stations",
+   "label": "Camera pans across stations",
+   "role": "list",
+   "shows": "The camera pans across a row of labeled cards, stopping at each.",
+   "fitsWhen": "The voice walks through a few features or steps one by one.",
+   "needs": [
+    "text"
+   ],
+   "strong": "A guided tour where each item gets its own moment; follows the Brand.",
+   "weak": "Each card carries a fixed 'Feature station' label and a placeholder bar.",
+   "example": "First plan meals, then compare prices, then buy seasonal.",
+   "mainVar": "labels",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "panel-reveal": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Panel Reveal",
+   "label": "Panel reveal",
+   "role": "transition",
+   "shows": "A panel expands in height and its content fades in.",
+   "fitsWhen": "A UI detail.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Smooth expansion.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Open the details.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "paper-collage-reveal": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 1.13:1; WCAG AA requires 3:1..",
+   "title": "Paper Collage Reveal",
+   "label": "Paper collage reveal",
+   "role": "opening",
+   "shows": "Torn paper scraps flutter away to reveal a slotted scene.",
+   "fitsWhen": "A handmade reveal of a picture.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Tactile and warm.",
+   "weak": "Without a slotted scene it reveals the placeholder word REVEALED.",
+   "example": "And underneath it all...",
+   "seconds": 2.6,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 1.13:1; WCAG AA requires 3:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 1.08:1; WCAG AA requires 3:1."
+   }
+  },
+  "parallax-device-dive": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_box_overflow: Text extends outside its nearest visual/container box..",
+   "title": "Parallax Device Dive",
+   "label": "Dive into a phone",
+   "role": "transition",
+   "shows": "A phone rises and the camera pushes into its sample app screen.",
+   "fitsWhen": "Entering an app.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Dramatic entry.",
+   "weak": "Its black stage and sample dashboard (made-up numbers) ignore the topic and the Brand.",
+   "example": "Let's open the app.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "hyperframes check found layout text_box_overflow: Text extends outside its nearest visual/container box.",
+    "sleep": "hyperframes check found layout text_box_overflow: Text extends outside its nearest visual/container box."
+   }
+  },
+  "parallax-unzoom": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Parallax Unzoom",
+   "label": "Parallax unzoom",
+   "role": "transition",
+   "shows": "A full-frame card shrinks into a grid as others slide in.",
+   "fitsWhen": "A scene change into an overview.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Elegant overview reveal.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Now step back and see the whole week.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "parallax-zoom": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Parallax Zoom",
+   "label": "Parallax zoom",
+   "role": "transition",
+   "shows": "A center card grows to fill the frame while others slide away.",
+   "fitsWhen": "A scene change into one detail.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Hero zoom.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Let's zoom into Monday.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "particle-image-reveal": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a picture it shows the placeholder letter H.",
+   "title": "Particle Image Reveal",
+   "label": "Particle reveal",
+   "role": "transition",
+   "shows": "Particles converge while a slotted picture appears.",
+   "fitsWhen": "Revealing a picture.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Magical reveal.",
+   "weak": "Without a picture it shows the placeholder letter H.",
+   "example": "And here it is.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "particle-text-dissolve": {
+   "status": "on",
+   "title": "Particle Text Dissolve",
+   "label": "Word from particles",
+   "role": "emphasis",
+   "shows": "A word assembles from a cloud of particles in the accent colour.",
+   "fitsWhen": "One word or short phrase that 'comes together' or appears out of nothing.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Striking assembly; big word in the Brand's font and accent.",
+   "weak": "Short text only; the particles feel playful, less for serious topics.",
+   "example": "And suddenly it clicks: budget.",
+   "mainVar": "text",
+   "maxWords": {
+    "text": 3
+   },
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "per-word-crossfade": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Per-Word Crossfade",
+   "label": "Words fade in",
+   "role": "statement",
+   "shows": "Words fade in one by one with a short drift.",
+   "fitsWhen": "A calm key line.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Keynote calm.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Small steps, every week.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "per-word-rise": {
+   "status": "on",
+   "title": "Per Word Rise",
+   "label": "Words rise in",
+   "role": "statement",
+   "shows": "The words of a line rise into place one by one from a soft blur and hold.",
+   "fitsWhen": "A key sentence that should land word by word with the voice.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Calm, readable, works for almost any key line; follows the Brand.",
+   "weak": "Plain if used often; one line only.",
+   "example": "Plan your meals before you shop.",
+   "mainVar": "text",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "perspective-marquee": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Perspective Marquee",
+   "label": "3D marquee",
+   "role": "list",
+   "shows": "Tilted pills roll toward the horizon.",
+   "fitsWhen": "A stream of many items.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Depth and flow.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Rice, beans, oats, apples and more.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "physical-exit": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Physical Exit",
+   "label": "Card thrown out",
+   "role": "transition",
+   "shows": "A card with one word is tossed, dropped or slid out of frame with momentum.",
+   "fitsWhen": "An idea is thrown away, between scenes.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Physical, fun exit.",
+   "weak": "The word leaves the frame: it is an exit, not a picture to hold under a sentence.",
+   "example": "Throw the old habit away.",
+   "seconds": 3,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "press-ripple": {
+   "status": "off",
+   "off": "Off after the review of its test stills: a tiny pill button on an empty frame.",
+   "title": "Press Ripple",
+   "label": "Press with ripple",
+   "role": "emphasis",
+   "shows": "A cursor presses a small pill button and a check appears.",
+   "fitsWhen": "A click in a product demo.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Satisfying press.",
+   "weak": "The pill and its label are tiny on an empty frame.",
+   "example": "Press done.",
+   "seconds": 2.4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "pull-back-reveal": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its stat cards are fixed samples (94%, 48 teams) that show numbers nobody said.",
+   "title": "Pull Back Reveal",
+   "label": "Pull back to the dashboard",
+   "role": "proof",
+   "shows": "A detail chip holds, then the camera pulls back to show a headline and stat cards around it.",
+   "fitsWhen": "One detail placed in a bigger picture.",
+   "needs": [
+    "text",
+    "number"
+   ],
+   "strong": "Recontextualising camera move.",
+   "weak": "The stat cards around it are fixed samples (retention 94%, teams 48): it would show numbers nobody said.",
+   "example": "This one habit sits inside a bigger plan.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "pull-to-refresh": {
+   "status": "off",
+   "off": "Failed the test (groceries): hyperframes check found contrast contrast_aa_failure: Contrast is 2.71:1; WCAG AA requires 3:1..",
+   "title": "Pull to Refresh",
+   "label": "Pull to refresh",
+   "role": "transition",
+   "shows": "A mobile activity list pulls down, loads and snaps back.",
+   "fitsWhen": "A mobile app demo.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Real rubber-band physics.",
+   "weak": "The activity entries are fixed samples.",
+   "example": "Pull down to get the latest.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.71:1; WCAG AA requires 3:1.",
+    "sleep": "passed"
+   }
+  },
+  "push-in": {
+   "status": "on",
+   "title": "Push In",
+   "label": "Slow push on a word",
+   "role": "statement",
+   "shows": "One centered word or short headline while the camera pushes in slowly, then a gentle fade.",
+   "fitsWhen": "A quiet, weighty word or phrase that should sink in.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Calm focus; big type in the Brand's font.",
+   "weak": "Little happens: one line, short scenes only.",
+   "example": "Budget. That is the whole idea.",
+   "mainVar": "text",
+   "maxWords": {
+    "text": 4
+   },
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "radial-surround": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Radial Surround",
+   "label": "Chips around a center",
+   "role": "list",
+   "shows": "Labeled chips assemble on a ring around a center label.",
+   "fitsWhen": "Several things surround or belong to one idea.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Shows many parts of one thing; follows the Brand.",
+   "weak": "The chips are small mono capitals; six is the most that reads.",
+   "example": "A good week has six parts around one plan.",
+   "mainVar": "chips",
+   "seconds": 5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "rgb-glitch-text": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "RGB Glitch Text",
+   "label": "Glitch word",
+   "role": "emphasis",
+   "shows": "A word jitters with RGB offsets for a moment.",
+   "fitsWhen": "A word that should feel broken or digital.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Edgy.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Error.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "rubber-band-bumper": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its own navy panels and fixed texts ignore the topic and the Brand.",
+   "title": "Rubber Band Bumper",
+   "label": "Rubber band snap",
+   "role": "transition",
+   "shows": "A panel pulls against resistance and snaps away to the next panel.",
+   "fitsWhen": "A change between two parts.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Physical tension.",
+   "weak": "Its own navy panels and fixed texts ('Hold the tension') ignore the topic and the Brand.",
+   "example": "Hold on... and release.",
+   "seconds": 2.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "scan-band": {
+   "status": "on",
+   "title": "Scan Band",
+   "label": "Scan band title",
+   "role": "opening",
+   "shows": "A distortion band sweeps once across a name or title, showing red and cyan offsets inside the band.",
+   "fitsWhen": "A title or name with a digital, techy feel.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Short, striking title moment in the Brand's font.",
+   "weak": "The cyan and red offsets are fixed colours; techy for soft topics.",
+   "example": "Kitchen Budget.",
+   "mainVar": "wordmark",
+   "maxWords": {
+    "wordmark": 3
+   },
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "scramble-reveal": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Scramble Reveal",
+   "label": "Terminal word reveal",
+   "role": "emphasis",
+   "shows": "A terminal-style prompt where scrambled glyphs lock into the target word from left to right.",
+   "fitsWhen": "A technical word, a product name or a claim with an engineering flavour.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clear, big, in the Brand's accent and mono font.",
+   "weak": "Noisy for calm or premium topics.",
+   "example": "The tool you need is a list.",
+   "mainVar": "text",
+   "maxWords": {
+    "text": 3
+   },
+   "seconds": 3,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "screen-flow-carousel": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its screens are placeholder layouts.",
+   "title": "Screen Flow Carousel",
+   "label": "App screens carousel",
+   "role": "diagram",
+   "shows": "Two to five app screens ride a rail with captions.",
+   "fitsWhen": "A feature tour with real screens.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Captions take the sentence's words.",
+   "weak": "The screens are placeholder layouts.",
+   "example": "Plan, list, compare: three screens.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "scroll-camera-story": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its sections are placeholder cards.",
+   "title": "Scroll Camera Story",
+   "label": "Scroll story",
+   "role": "diagram",
+   "shows": "A tall page of slotted sections scrolls past the camera.",
+   "fitsWhen": "A long page or a website tour.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Cinematic scroll.",
+   "weak": "The sections are placeholder cards.",
+   "example": "Scroll down the page.",
+   "seconds": 5.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "scroll-feed": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it only shows grey skeleton posts.",
+   "title": "Scroll Feed",
+   "label": "Scrolling feed",
+   "role": "diagram",
+   "shows": "Skeleton post cards scroll up like a social feed.",
+   "fitsWhen": "Endless scrolling.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Evokes doom scrolling.",
+   "weak": "Only grey skeleton posts.",
+   "example": "You scroll and scroll.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "segmentation-flood": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a picture it masks grey placeholder shapes on a white page.",
+   "title": "Segmentation Flood",
+   "label": "Vision segmentation",
+   "role": "diagram",
+   "shows": "Translucent masks flood over regions of a slotted subject, each with a label.",
+   "fitsWhen": "Machine vision analysing a picture.",
+   "needs": [
+    "text",
+    "image"
+   ],
+   "strong": "Technical analysis look; labels from the sentence.",
+   "weak": "Without a picture it masks grey placeholder shapes on a white page.",
+   "example": "The camera spots the fruit, the bread and the milk.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "separator": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Separator",
+   "label": "Separator line",
+   "role": "transition",
+   "shows": "A one-pixel line that reveals itself.",
+   "fitsWhen": "Layout detail, not a scene.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Precise.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Part one ends here.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "settings-toggle-flow": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Settings Toggle Flow",
+   "label": "Settings toggles",
+   "role": "diagram",
+   "shows": "A settings panel where toggles switch on.",
+   "fitsWhen": "A software tutorial about settings.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Familiar UI.",
+   "weak": "Fixed sample UI; a paste-in recipe, not a mountable scene.",
+   "example": "Turn on the weekly reminder.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "shared-axis-y": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Shared Axis Y",
+   "label": "Vertical word swap",
+   "role": "transition",
+   "shows": "Words swap vertically one by one.",
+   "fitsWhen": "An editorial text swap.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Sharp swap.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Not cheaper. Smarter.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "shared-axis-z": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Shared Axis Z",
+   "label": "Depth swap",
+   "role": "transition",
+   "shows": "Content swaps with a scale change in depth.",
+   "fitsWhen": "A focus shift.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Depth.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Closer look.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "sheet-spring-up": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Sheet Spring-Up",
+   "label": "Bottom sheet",
+   "role": "transition",
+   "shows": "A phone bottom sheet springs up from below.",
+   "fitsWhen": "A mobile UI moment.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Real spring motion.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Swipe up to see more.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "shimmer-sweep": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Shimmer Sweep",
+   "label": "Shimmer sweep",
+   "role": "emphasis",
+   "shows": "A light sweep passes across text.",
+   "fitsWhen": "A premium word.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Shiny accent.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "New.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "shutter-slam": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its word is fixed with no setting, and it ends mid-spin.",
+   "title": "Shutter Slam",
+   "label": "Shutter slam word",
+   "role": "emphasis",
+   "shows": "One word is thrown through slams, a punch and a spin under shutter blur.",
+   "fitsWhen": "A high-energy word.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Very energetic.",
+   "weak": "Its word is fixed ('MOTION') with no setting, and it ends tilted mid-spin.",
+   "example": "Motion.",
+   "seconds": 6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "signup-flow": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Signup Flow",
+   "label": "Sign-up form",
+   "role": "diagram",
+   "shows": "A sign-up form with social button, email, password and submit.",
+   "fitsWhen": "A product sign-up demo.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Familiar form.",
+   "weak": "Fixed sample UI; a paste-in recipe, not a mountable scene.",
+   "example": "Sign up with your email.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "skeleton-reveal": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Skeleton Reveal",
+   "label": "Skeleton loader",
+   "role": "transition",
+   "shows": "A loading skeleton pulses and turns into a name and detail.",
+   "fitsWhen": "Content loading in an app.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Modern UI feel.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Your plan is ready.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "slit-scan-reveal": {
+   "status": "off",
+   "off": "Off after the review of its test stills: an abstract circle that says nothing that is said.",
+   "title": "Slit Scan Reveal",
+   "label": "Slit-scan",
+   "role": "transition",
+   "shows": "Rows of the frame sample a moving subject at offset times.",
+   "fitsWhen": "An experimental visual effect.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Unusual look.",
+   "weak": "On its own an abstract eye-like circle that says nothing.",
+   "example": "Time bends.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "slot-machine-roll": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Slot Machine Roll",
+   "label": "Slot machine reel",
+   "role": "proof",
+   "shows": "Reels scroll characters to land on a result.",
+   "fitsWhen": "A result that lands like a jackpot.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Playful suspense.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "And the winner is: Sunday.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "social-proof-card": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: Variable brand would overwrite the theme's --brand..",
+   "title": "Social Proof Card",
+   "label": "App store proof card",
+   "role": "closing",
+   "shows": "A card with a wordmark, five stars, a proof line, three feature icons and a button.",
+   "fitsWhen": "An app store style close for a real product.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Complete proof close.",
+   "weak": "Many small fields; it implies a five-star product.",
+   "example": "Rated five stars by parents.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "it is not a mountable scene: Variable brand would overwrite the theme's --brand.",
+    "sleep": "it is not a mountable scene: Variable brand would overwrite the theme's --brand."
+   }
+  },
+  "soft-blob-touch": {
+   "status": "off",
+   "off": "Off after the review of its test stills: an abstract blob with no words.",
+   "title": "Soft Blob Touch",
+   "label": "Soft blob",
+   "role": "transition",
+   "shows": "A grainy blob deforms toward a touch dot.",
+   "fitsWhen": "A tactile UI moment.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Organic.",
+   "weak": "An abstract blob with no words.",
+   "example": "Touch it.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "soft-blur-in": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Soft Blur In",
+   "label": "Soft blur in",
+   "role": "statement",
+   "shows": "A headline fades, unblurs and lifts.",
+   "fitsWhen": "A calm headline.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Soft and premium.",
+   "weak": "Fixed text; a paste-in recipe, not a mountable scene.",
+   "example": "Calm money.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "split-tilt-cards": {
+   "status": "off",
+   "off": "Failed the test (sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Split Tilt Cards",
+   "label": "Two tilted cards",
+   "role": "diagram",
+   "shows": "Two cards arrive from both sides with headers and badges.",
+   "fitsWhen": "Comparing two options.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Balanced comparison layout.",
+   "weak": "The card bodies are grey placeholder lines; the headers are tiny.",
+   "example": "Option A or option B.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "spotlight-card": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Spotlight Card",
+   "label": "Spotlight card",
+   "role": "transition",
+   "shows": "A card with a cursor spotlight and lit border.",
+   "fitsWhen": "A UI highlight.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Glowy.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "This one.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "spring-pop": {
+   "status": "off",
+   "off": "Off after the review of its test stills: small text on a white box in a large empty frame.",
+   "title": "Spring Pop",
+   "label": "Badge pops",
+   "role": "emphasis",
+   "shows": "A small badge with a dot and a word pops in and settles.",
+   "fitsWhen": "A small status or tag.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean pop.",
+   "weak": "Small text on a white box in a large empty frame.",
+   "example": "New.",
+   "seconds": 2,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "spring-stack-shuffle": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Spring Stack Shuffle",
+   "label": "Card stack shuffle",
+   "role": "transition",
+   "shows": "Slotted cards reshuffle with weight.",
+   "fitsWhen": "Flipping through options.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Real mass.",
+   "weak": "Only numbered placeholder cards.",
+   "example": "Next option.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "stagger-cascade": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its tiles show only fixed numbers, no words.",
+   "title": "Stagger Cascade",
+   "label": "Tile cascade",
+   "role": "list",
+   "shows": "Numbered tiles cascade into a grid.",
+   "fitsWhen": "Many items at once.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Orderly stagger.",
+   "weak": "The tiles show only fixed numbers 01 to 06, no words.",
+   "example": "Six steps in all.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "stagger-lattice": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Stagger Lattice",
+   "label": "Stagger lattice",
+   "role": "transition",
+   "shows": "A grid of dots reveals with a staggered wave.",
+   "fitsWhen": "Decoration.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Rhythmic.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Everything connects.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "staggered-fade-up": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Staggered Fade Up",
+   "label": "Words fade up",
+   "role": "statement",
+   "shows": "Words fade in and slide up one after another.",
+   "fitsWhen": "A key line.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Simple.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Plan, shop, cook.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "star-rating-fill": {
+   "status": "on",
+   "title": "Star Rating Fill",
+   "label": "Star rating",
+   "role": "proof",
+   "shows": "A row of stars fills to a rating, with the value counting next to it.",
+   "fitsWhen": "The voice says a rating out of five stars.",
+   "needs": [
+    "number"
+   ],
+   "strong": "Instantly read as a rating; exact fractional stars; follows the Brand.",
+   "weak": "Only for ratings the narration really says.",
+   "example": "Parents rate this plan four point eight stars.",
+   "mainVar": null,
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "state-chip-rail": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its chips are tiny on a nearly empty frame.",
+   "title": "State Chip Rail",
+   "label": "Status chips",
+   "role": "list",
+   "shows": "A rail of small status chips advances from state to state.",
+   "fitsWhen": "A process moving through states.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Shows progress through states.",
+   "weak": "The chips are tiny on a nearly empty frame.",
+   "example": "Planned, shopped, cooked.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "sticky-mock-swap": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the app mock is a grey placeholder window.",
+   "title": "Sticky Mock Swap",
+   "label": "Product mock with captions",
+   "role": "diagram",
+   "shows": "A pinned app mock cross-fades through states while captions rise beside it.",
+   "fitsWhen": "A feature tour of an app.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "The captions take the sentence's words.",
+   "weak": "The mock is a grey placeholder app window.",
+   "example": "Plan meals, write a list, compare prices.",
+   "seconds": 6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "stitched-text-draw": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its stitch alphabet drew letters wrongly in the test (BUDGET read as BHDGET).",
+   "title": "Stitched Text Draw",
+   "label": "Stitched word",
+   "role": "emphasis",
+   "shows": "A word is drawn as thread stitches, letter by letter.",
+   "fitsWhen": "A crafty, handmade word.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Unique handmade look in the accent colour.",
+   "weak": "Its stitch alphabet drew some letters wrongly in the test ('BUDGET' read as 'BHDGET').",
+   "example": "Handmade.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "stop-motion-cadence": {
+   "status": "off",
+   "off": "Off after the review of its test stills: abstract shapes with no words.",
+   "title": "Stop Motion Cadence",
+   "label": "Stop motion shapes",
+   "role": "transition",
+   "shows": "Simple shapes move in stepped stop-motion time.",
+   "fitsWhen": "A demo of stop motion.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Charming steps.",
+   "weak": "Abstract shapes with no words.",
+   "example": "Step by step.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "store-badge-lockup": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it shows App Store and Google Play badges, a claim that is wrong for videos without a real app.",
+   "title": "Store Badge Lockup",
+   "label": "App store badges",
+   "role": "closing",
+   "shows": "A short headline above App Store and Google Play badges.",
+   "fitsWhen": "Closing a video about a real mobile app.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clear mobile call to action.",
+   "weak": "It claims an app in both stores; wrong for any video without one.",
+   "example": "Get the app today.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "streaming-text": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Streaming Text",
+   "label": "AI answer streaming",
+   "role": "quote",
+   "shows": "Words arrive in uneven bursts like an AI answer.",
+   "fitsWhen": "Showing an AI reply.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Recognisable AI feel.",
+   "weak": "Fixed text; a paste-in recipe, not a mountable scene.",
+   "example": "The AI writes your shopping list.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "strikethrough-replace": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Strikethrough Replace",
+   "label": "Strike and replace",
+   "role": "emphasis",
+   "shows": "A line strikes through old text and new text appears.",
+   "fitsWhen": "Correcting an idea: not this, but that.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clear correction.",
+   "weak": "Fixed text; a paste-in recipe, not a mountable scene.",
+   "example": "Not expensive, just unplanned.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "success-check": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Success Check",
+   "label": "Success check",
+   "role": "emphasis",
+   "shows": "A ring pops and a check mark draws.",
+   "fitsWhen": "Something is done.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Satisfying.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Done.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "svg-line-draw-loader": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "SVG Line Draw Loader",
+   "label": "Line draw loader",
+   "role": "transition",
+   "shows": "A path draws like a loader.",
+   "fitsWhen": "Waiting or loading.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Loading.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "svg-mask-reveal": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its finished frame fills only the first letters of the word.",
+   "title": "SVG Mask Reveal",
+   "label": "Word mask reveal",
+   "role": "opening",
+   "shows": "A colour sweep fills a big outlined word as a mask.",
+   "fitsWhen": "A bold title word.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Big, graphic word.",
+   "weak": "In the test it stopped at two letters filled: the finished frame reads 'BU' and an outline.",
+   "example": "Budget.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "svg-stroke-trace": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without an authored path it draws a meaningless sample wave.",
+   "title": "SVG Stroke Trace",
+   "label": "Path draws",
+   "role": "transition",
+   "shows": "A drawn path traces itself and may fill.",
+   "fitsWhen": "Drawing a mark or a logo from a path.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean line draw.",
+   "weak": "Without an authored path it draws a sample wave with no meaning.",
+   "example": "One line.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "swipe-rail": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Swipe Rail",
+   "label": "Swipe rail",
+   "role": "transition",
+   "shows": "A finger drags a rail of 'Feature' cards and it snaps to the next.",
+   "fitsWhen": "A mobile carousel demo.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Real momentum.",
+   "weak": "Its own navy background and 'Feature 3, 4, 5' sample cards.",
+   "example": "Swipe to the next one.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "tabs-slide-indicator": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Tabs Slide Indicator",
+   "label": "Tab indicator",
+   "role": "transition",
+   "shows": "A pill slides between tabs.",
+   "fitsWhen": "A UI detail.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Smooth.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Switch to the list tab.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "telemetry-hud": {
+   "status": "off",
+   "off": "Off after the review of its test stills: the framed subject is a grey placeholder card.",
+   "title": "Telemetry HUD",
+   "label": "Telemetry frame",
+   "role": "diagram",
+   "shows": "Mono readouts and corner brackets frame a slotted subject.",
+   "fitsWhen": "A technical readout around a picture.",
+   "needs": [
+    "text",
+    "image"
+   ],
+   "strong": "Precise HUD look.",
+   "weak": "The framed subject is a grey placeholder card.",
+   "example": "Signal strong, battery full.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "terminal-simulator": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Terminal Simulator",
+   "label": "Terminal window",
+   "role": "diagram",
+   "shows": "A terminal types commands and streams logs.",
+   "fitsWhen": "A coding demo.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Authentic terminal.",
+   "weak": "Fixed commands; a paste-in recipe, not a mountable scene.",
+   "example": "Install it with one command.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "testimonial-card": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Testimonial Card",
+   "label": "Testimonial",
+   "role": "quote",
+   "shows": "A quote revealed at reading pace, with a star rating, then the author's name and role.",
+   "fitsWhen": "The voice quotes a real person by name.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Reads as genuine proof; follows the Brand.",
+   "weak": "Only for a real quote and a real name the narration says; the text is modest in size.",
+   "example": "Maria told us: a list is the cheapest tool in your kitchen.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "testimonial-proof-card": {
+   "status": "on",
+   "title": "Testimonial Proof Card",
+   "label": "Quote card",
+   "role": "quote",
+   "shows": "A quote card whose line reveals through a soft mask, with initials, name, role and a company mark.",
+   "fitsWhen": "The voice quotes a real person.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean, credible quote layout in the Brand's font.",
+   "weak": "Only for a real quote; name, role and company must be real or left empty.",
+   "example": "As Dr. Reed says: sleep is the first habit to fix.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "text-match-cut": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Text Match Cut",
+   "label": "Line becomes another line",
+   "role": "statement",
+   "shows": "One line turns into another mid-move on a dark stage with a blue glow.",
+   "fitsWhen": "Turning one phrase into the next.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Smooth phrase-to-phrase move.",
+   "weak": "Its black stage, blue glow and system font ignore the Brand.",
+   "example": "From plan your meals to save your money.",
+   "seconds": 3,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "text-shimmer": {
+   "status": "on",
+   "title": "Text Shimmer",
+   "label": "Word shimmers",
+   "role": "emphasis",
+   "shows": "One headline gets a single light sweep through its letters, then rests.",
+   "fitsWhen": "A word or short phrase that should shine once: a result, a benefit.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Subtle, premium accent; large type in the Brand's font and colours.",
+   "weak": "Very quiet motion; on a light Brand it sits on a plain white card ground.",
+   "example": "The result is simple: more money left.",
+   "mainVar": "text",
+   "maxWords": {
+    "text": 4
+   },
+   "seconds": 3,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "text-stagger": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Text Stagger",
+   "label": "Text stagger",
+   "role": "statement",
+   "shows": "A headline's words enter one by one with a shimmer.",
+   "fitsWhen": "A key line.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Lively.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "A week of good meals.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "text-state-swap": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Text State Swap",
+   "label": "Label swap",
+   "role": "emphasis",
+   "shows": "A label blurs out and a new one lifts in.",
+   "fitsWhen": "From one state to another.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean before and after words.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "From chaos to calm.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "texture-mask-text": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Texture Mask Text",
+   "label": "Textured letters",
+   "role": "statement",
+   "shows": "Letters cut through with a material texture.",
+   "fitsWhen": "A title with a material feel.",
+   "needs": [
+    "text"
+   ],
+   "strong": "66 textures.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Stone cold facts.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "three-orbiting-cards": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Three Orbiting Cards",
+   "label": "3D orbiting cards",
+   "role": "transition",
+   "shows": "Cards orbit in a 3D scene.",
+   "fitsWhen": "A product showcase.",
+   "needs": [
+    "image"
+   ],
+   "strong": "3D depth.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Three plans, one goal.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "ticker-takeover": {
+   "status": "on",
+   "title": "Ticker Takeover",
+   "label": "Ticker locks on a word",
+   "role": "emphasis",
+   "shows": "A small ticker rolls through options, locks on the final word with a flash and promotes it to a big headline.",
+   "fitsWhen": "Out of several options, one is the answer.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Builds suspense, then lands the answer big in the Brand's accent.",
+   "weak": "A small fixed 'SIGNAL' label on the ticker.",
+   "example": "Rice, pasta, beans... the cheapest is beans.",
+   "mainVar": "final_word",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "tilt-card": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Tilt Card",
+   "label": "Tilt card",
+   "role": "statement",
+   "shows": "A card with an eyebrow and a headline tilts with depth.",
+   "fitsWhen": "A headline on a card.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Depth.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "The weekly plan.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "titlecard-calm": {
+   "status": "on",
+   "title": "Titlecard Calm",
+   "label": "Quiet chapter title",
+   "role": "opening",
+   "shows": "A small kicker and a large headline fade upward and hold, left aligned.",
+   "fitsWhen": "A new section or chapter starts.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Calm, editorial, very readable; follows the Brand.",
+   "weak": "Static by design; not for a line that needs energy.",
+   "example": "Part one: plan your meals.",
+   "mainVar": "headline",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "titlecard-lockup": {
+   "status": "on",
+   "title": "Titlecard Lockup",
+   "label": "Title card",
+   "role": "opening",
+   "shows": "A centered name or title settles with a kicker above and a hairline and caption below.",
+   "fitsWhen": "The opening of the video, or the name of the topic.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Clean, centered lockup in the Brand's font.",
+   "weak": "Calm; three short texts at most.",
+   "example": "Kitchen Budget: week one.",
+   "mainVar": "wordmark",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "toggle-flip": {
+   "status": "off",
+   "off": "Off after the review of its test stills: its caption is tiny and the finished frame fades to a pale toggle.",
+   "title": "Toggle Flip",
+   "label": "Big toggle",
+   "role": "emphasis",
+   "shows": "An oversized switch flips on with a tiny caption.",
+   "fitsWhen": "Turning something on or off.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Physical, clear on and off.",
+   "weak": "The caption is tiny and the finished frame fades to a pale toggle.",
+   "example": "Switch on the habit.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "top-down-letters": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Top-Down Letters",
+   "label": "Letters fall in",
+   "role": "statement",
+   "shows": "Letters descend from above in a staircase.",
+   "fitsWhen": "One word title.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Crisp.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Budget.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "torn-paper-rip": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Torn Paper Rip",
+   "label": "Paper rip",
+   "role": "transition",
+   "shows": "A paper tear runs across the frame and lifts away to a slotted scene.",
+   "fitsWhen": "A rough change to a new part.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Tactile.",
+   "weak": "Without a slotted scene it shows a dark page with 'CHAPTER TWO'.",
+   "example": "Chapter two.",
+   "seconds": 2.4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "touch-indicator": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Touch Indicator",
+   "label": "Touch circle",
+   "role": "transition",
+   "shows": "A translucent finger contact circle taps or swipes on a mobile UI.",
+   "fitsWhen": "Over a phone screen recording.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Natural touch feedback.",
+   "weak": "No content of its own; it needs a phone screen under it.",
+   "example": "Tap here.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "tracing-beam": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Tracing Beam",
+   "label": "Beam through three steps",
+   "role": "list",
+   "shows": "A glowing dash travels a path through three small labeled cards, lighting each.",
+   "fitsWhen": "Three steps in order.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Shows a flow through steps.",
+   "weak": "Its cyan beam ignores the Brand and the cards are tiny.",
+   "example": "Plan, write, compare.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "tracking-in": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Tracking In",
+   "label": "Letter spacing reveal",
+   "role": "statement",
+   "shows": "A heading tightens its letter spacing as it appears.",
+   "fitsWhen": "A premium heading.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Refined.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Introducing the plan.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "trust-strip": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it presents words as brand logos (the app never names brands) and the marks are small.",
+   "title": "Trust Strip",
+   "label": "Trust strip",
+   "role": "proof",
+   "shows": "A row of wide-tracked wordmarks fades in as 'trusted by' logos.",
+   "fitsWhen": "Real customer or press names.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Quiet, credible strip.",
+   "weak": "It presents words as brand logos; the app never names brands, and the marks are small.",
+   "example": "Featured in three magazines.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "type-match-cut": {
+   "status": "off",
+   "off": "Off after the test renders: it drew the same picture for both test topics: it shows its own fixed content and colours, not the words and the Brand.",
+   "title": "Type Match Cut",
+   "label": "Headline splits for a panel",
+   "role": "transition",
+   "shows": "A headline splits around a panel that grows to fill the frame.",
+   "fitsWhen": "From a headline into a product view.",
+   "needs": [
+    "text",
+    "recording"
+   ],
+   "strong": "Bold editorial move.",
+   "weak": "The panel is a mock app with a green play screen that ignores the topic and the Brand.",
+   "example": "A list saves you money.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "typed-prompt": {
+   "status": "on",
+   "title": "Typed Prompt",
+   "label": "Typed line",
+   "role": "statement",
+   "shows": "A prompt line types itself in a mono font behind a blinking caret, with an optional typo that is corrected.",
+   "fitsWhen": "A line someone types: a search, an AI prompt, a note to self.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Readable, human typing rhythm in the Brand's mono font and accent.",
+   "weak": "The typo is a gimmick; leave it out unless the voice talks about a mistake.",
+   "example": "Type it in: a list saves you money.",
+   "mainVar": "text",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "typewriter": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Typewriter",
+   "label": "Typewriter",
+   "role": "statement",
+   "shows": "A line types itself with a blinking cursor.",
+   "fitsWhen": "A line being written.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Classic.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Dear diary, today I saved.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "typing-indicator": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Typing Indicator",
+   "label": "Typing dots",
+   "role": "transition",
+   "shows": "The three-dot bubble of someone writing.",
+   "fitsWhen": "Before a chat message.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Recognisable.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "She is typing...",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "ui-focus-zoom": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without a screen it zooms into a grey placeholder layout.",
+   "title": "UI Focus Zoom",
+   "label": "Zoom into an app",
+   "role": "diagram",
+   "shows": "An app surface settles and the camera zooms to one region.",
+   "fitsWhen": "Pointing at a part of a real app screen.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Smooth guided zoom.",
+   "weak": "Without a screen it zooms into a grey placeholder layout.",
+   "example": "Look at this corner.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "variable-axis-type": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it uses its own font loaded from the internet, not the Brand's.",
+   "title": "Variable Axis Type",
+   "label": "Variable weight word",
+   "role": "emphasis",
+   "shows": "A word's weight or width morphs into a decisive emphasis.",
+   "fitsWhen": "One word gets heavier as it matters more.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Typographic emphasis.",
+   "weak": "Uses its own font loaded from the internet, not the Brand's.",
+   "example": "Budget.",
+   "seconds": 1.6,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "variable-font-flex": {
+   "status": "off",
+   "off": "Off after the review of its test stills: it draws the word in its own variable font, not the Brand's.",
+   "title": "Variable Font Flex",
+   "label": "Variable font flex",
+   "role": "emphasis",
+   "shows": "A word flexes from thin and narrow to black and wide, letter by letter.",
+   "fitsWhen": "One word with energy.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Lively type motion.",
+   "weak": "Draws the word in its own variable font, not the Brand's.",
+   "example": "Budget.",
+   "seconds": 3.5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "vector-editor-rig": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 2.92:1; WCAG AA requires 4.5:1..",
+   "title": "Vector Editor Rig",
+   "label": "Design tool mock",
+   "role": "diagram",
+   "shows": "A design app window with a vector pen path, anchor points and a layers panel.",
+   "fitsWhen": "A design software tutorial.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Detailed, in the Brand's accent.",
+   "weak": "A fixed design-tool interface drawing a sample 'Logo' path; small text.",
+   "example": "Draw the curve with the pen tool.",
+   "seconds": 4.5,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.92:1; WCAG AA requires 4.5:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 4.49:1; WCAG AA requires 4.5:1."
+   }
+  },
+  "velocity-throw-snap": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Velocity Throw Snap",
+   "label": "Shot rail snap",
+   "role": "transition",
+   "shows": "A rail of five shots whips past and snaps one to the center.",
+   "fitsWhen": "Picking one shot out of many.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Energetic selection.",
+   "weak": "The shots are placeholder cards labeled 'Shot 3', 'Shot 4'.",
+   "example": "And this is the one.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  },
+  "vignette": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "Vignette",
+   "label": "Vignette",
+   "role": "transition",
+   "shows": "A dark radial edge over the frame.",
+   "fitsWhen": "Over footage.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Cinematic focus.",
+   "weak": "A paste-in recipe, not a mountable scene.",
+   "example": "Focus here.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "vox-annotate": {
+   "status": "on",
+   "title": "Vox Annotate",
+   "label": "Annotated keyword",
+   "role": "emphasis",
+   "shows": "A held sentence; a hand-drawn marker circles or underlines its keyword while a thin line draws to a small callout note.",
+   "fitsWhen": "One word of the line needs a mark and a short explanation.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Explains while it emphasises: the note adds one fact; large line in the Brand.",
+   "weak": "The keyword must appear in the line, or no mark is drawn; the note is small mono text.",
+   "example": "A list saves you money: about thirty percent a week.",
+   "mainVar": "text",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "whip-pan-cut": {
+   "status": "off",
+   "off": "Off after the review of its test stills: without slotted scenes it shows a placeholder card.",
+   "title": "Whip Pan Cut",
+   "label": "Whip pan",
+   "role": "transition",
+   "shows": "Scene A whips off with motion blur as scene B enters.",
+   "fitsWhen": "A fast change between two slotted scenes.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Energetic cut.",
+   "weak": "Without slotted scenes it shows a placeholder card.",
+   "example": "Meanwhile, in the kitchen...",
+   "seconds": 1.2,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "whiteboard-ink": {
+   "status": "on",
+   "title": "Whiteboard Ink",
+   "label": "Whiteboard sketch",
+   "role": "diagram",
+   "shows": "A simple line drawing of one thing draws stroke by stroke with a pen nib, then a short caption appears.",
+   "fitsWhen": "An idea that one concrete object can show: a cart, a calendar, a bed.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Turns an idea into a picture; the drawn icon is chosen from the sentence; follows the Brand.",
+   "weak": "One object only; abstract ideas need a concrete stand-in.",
+   "example": "Before you shop, fill the cart on paper first.",
+   "mainVar": "caption",
+   "seconds": 5,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "wordmark-tiles": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout text_occluded: Text is hidden beneath an opaque element..",
+   "title": "Wordmark Tiles",
+   "label": "Title from colour tiles",
+   "role": "opening",
+   "shows": "A name or word resolves from a wave of colour tiles into crisp letters on a card.",
+   "fitsWhen": "A title, a name or one key word at the start of a part.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Fresh reveal; big type in the Brand's font and tints.",
+   "weak": "One to three words only.",
+   "example": "Budget.",
+   "mainVar": "text",
+   "maxWords": {
+    "text": 3
+   },
+   "seconds": 6.5,
+   "tests": {
+    "groceries": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element.",
+    "sleep": "hyperframes check found layout text_occluded: Text is hidden beneath an opaque element."
+   }
+  },
+  "x-follow-card": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): it is not a mountable scene: no authored length, so it cannot be fitted to the scene..",
+   "title": "X Follow Card",
+   "label": "Social follow card",
+   "role": "quote",
+   "shows": "A social profile card with avatar, handle and follower count.",
+   "fitsWhen": "A social media profile.",
+   "needs": [
+    "image"
+   ],
+   "strong": "Familiar.",
+   "weak": "Fixed sample profile; a paste-in recipe, not a mountable scene.",
+   "example": "Follow us for weekly plans.",
+   "tests": {
+    "groceries": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene.",
+    "sleep": "it is not a mountable scene: no authored length, so it cannot be fitted to the scene."
+   }
+  },
+  "yt-camera-move": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "Camera Punch-In",
+   "label": "Camera move helpers",
+   "role": "transition",
+   "shows": "Zoom, slide and tilt helpers for a wrapper, shown on its own blue 'FOOTAGE' sample.",
+   "fitsWhen": "Moving the camera over footage.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Ready-made camera moves.",
+   "weak": "Its own blue gradient and the word FOOTAGE; the finished frame is empty.",
+   "example": "Zoom in.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "yt-circle-pointer": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 2.55:1; WCAG AA requires 3:1..",
+   "title": "Pointer Circle + Countdown",
+   "label": "Circle with countdown",
+   "role": "emphasis",
+   "shows": "An ellipse draws around a target with a pulsing countdown chip.",
+   "fitsWhen": "Pointing at something in footage.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "YouTube-style pointer.",
+   "weak": "Its own blue gradient and sample text 'the thing'.",
+   "example": "Look at this.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.55:1; WCAG AA requires 3:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.55:1; WCAG AA requires 3:1."
+   }
+  },
+  "yt-feather-highlight": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found contrast contrast_aa_failure: Contrast is 2.96:1; WCAG AA requires 3:1..",
+   "title": "Feathered Spotlight",
+   "label": "Spotlight on a spot",
+   "role": "emphasis",
+   "shows": "The frame dims except a soft ellipse that glides between targets.",
+   "fitsWhen": "Spotlighting parts of footage.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Smooth spotlight.",
+   "weak": "Its own blue gradient and sample boxes A and B.",
+   "example": "First this, then that.",
+   "seconds": 5,
+   "tests": {
+    "groceries": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.96:1; WCAG AA requires 3:1.",
+    "sleep": "hyperframes check found contrast contrast_aa_failure: Contrast is 2.96:1; WCAG AA requires 3:1."
+   }
+  },
+  "yt-screen-warp": {
+   "status": "off",
+   "off": "Off after the test renders: its finished frame is empty in both topics.",
+   "title": "On-Screen Display Effect",
+   "label": "Screen warp",
+   "role": "transition",
+   "shows": "A grid, scanlines and a 3D warp make footage look like it plays on a display.",
+   "fitsWhen": "Over footage.",
+   "needs": [
+    "recording"
+   ],
+   "strong": "Physical screen look.",
+   "weak": "No content of its own; failed the contrast check in the light test look.",
+   "example": "On screen.",
+   "seconds": 4,
+   "tests": {
+    "groceries": "passed",
+    "sleep": "passed"
+   }
+  },
+  "zoom-through-transition": {
+   "status": "off",
+   "off": "Failed the test (groceries and sleep): hyperframes check found layout clipped_text: Text content is clipped by its own box..",
+   "title": "Zoom Through Transition",
+   "label": "Zoom through",
+   "role": "transition",
+   "shows": "The camera zooms through a focal card into the next scene, with a caption on each side.",
+   "fitsWhen": "A change from one part to the next.",
+   "needs": [
+    "text"
+   ],
+   "strong": "Dramatic depth.",
+   "weak": "A transition, not a picture for a sentence; failed the clipping check in both topics.",
+   "example": "From impulse buys to planned meals.",
+   "seconds": 3,
+   "tests": {
+    "groceries": "hyperframes check found layout clipped_text: Text content is clipped by its own box.",
+    "sleep": "hyperframes check found layout clipped_text: Text content is clipped by its own box."
+   }
+  }
+ }
+}

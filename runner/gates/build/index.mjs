@@ -127,16 +127,14 @@ export async function lintAndCheck(projectDir, { env = process.env, onProgress =
   onProgress({ step: "check" });
   const windows = transitionWindows(out);
   const covered = coveredWindows(out);
-  if (!windows.length && !covered.length) {
-    const r = await withoutCameraPage(out, () => runHyperframes(["check"], { env, cwd: out, browser: browser.path }));
-    fs.writeFileSync(path.join(out, "check.log"), r.tail + "\n");
-    if (r.code !== 0) throw new Error(`hyperframes check found problems: ${lastLines(r.tail)}`);
-    return { ok: true };
-  }
-  // With scene changes: every scene is also checked once it has landed, and
-  // the report is read as JSON so the change windows can be told apart.
-  // The check looks at the page without the camera wrappers: inside them it
-  // measures every scene as 0 px tall (withoutCameraPage).
+  // Every scene is checked once it has landed, with or without scene
+  // changes (DECISIONS 130): mid-entrance states (letters still flying, a
+  // reveal still covering its text) are motion, not errors. Before, a
+  // build without scene changes was checked over its whole timeline, so
+  // the same scene passed in one Identity and failed in another. The
+  // report is read as JSON so change windows can be told apart. The check
+  // looks at the page without the camera wrappers: inside them it measures
+  // every scene as 0 px tall (withoutCameraPage).
   const started = Date.now();
   const r = await withoutCameraPage(out, (html) =>
     runHyperframes(["check", "--json", "--at", landedTimes(mountsOf(html)).join(",")], { env, cwd: out, browser: browser.path }),

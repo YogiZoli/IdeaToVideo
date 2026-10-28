@@ -72,7 +72,8 @@ export function simplePlan({ sentences, sections = [], title = "", calls = new M
   });
 
   // 2. one component per group, never the same twice in a row
-  const usable = ROTATION.filter((c) => !off.includes(c));
+  // only what the catalog has on (DECISIONS 130)
+  const usable = ROTATION.filter((c) => !off.includes(c) && COMPONENTS[c]);
   const rotation = usable.length ? usable : ["per-word-rise"];
   let turn = 0;
   const scenes = groups.map((g, i) => {
@@ -83,7 +84,7 @@ export function simplePlan({ sentences, sections = [], title = "", calls = new M
       const { keyword } = calls.get(from);
       return { from, ...span, component: "cta-close", vars: { action_line: callLine(g.items[0].text, keyword), button_label: keyword } };
     }
-    if (i === 0 && !off.includes("titlecard-calm")) {
+    if (i === 0 && !off.includes("titlecard-calm") && COMPONENTS["titlecard-calm"]) {
       const headline = wordsOf(title).slice(0, MAX_WORDS).join(" ") || phrase(g.items, MAX_WORDS);
       return { from, ...span, component: "titlecard-calm", vars: { headline, kicker: "" } };
     }
