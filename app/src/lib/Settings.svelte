@@ -32,6 +32,7 @@
   import CtaWizard from "./cta/CtaWizard.svelte";
   import CtaPage from "./cta/CtaPage.svelte";
   import FootagePage from "./footage/FootagePage.svelte";
+  import PhotosPanel from "./PhotosPanel.svelte";
   import ScenesPage from "./scenes/ScenesPage.svelte";
   import ScenesWizard from "./scenes/ScenesWizard.svelte";
   import { ensureFonts } from "./brand/fontsDom";
@@ -398,6 +399,13 @@
         <ConfigSection id={s.id} bind:config bind:keys keyScope="identity" />
       </section>
     {/each}
+
+    {#if pageId === "voice"}
+      <section class="card">
+        <h2>Thumbnail photos</h2>
+        <PhotosPanel />
+      </section>
+    {/if}
 
     {#if pageId === "identity"}
       <section class="card">

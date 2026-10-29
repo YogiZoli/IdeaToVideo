@@ -280,12 +280,36 @@ check("YouTube chapters next to the video", rendered.data.chapters?.startsWith("
 }
 check("the project remembers the video", runner("load-project", { projectDir: dir }).data?.latestVideo?.file === rendered.data.file);
 
+// The Thumbnail step (DECISIONS 131) with the free test pictures: 3
+// variants composed by the engine, new words for free, one picked into the
+// publishing card.
+{
+  const est = runner("thumbnail-estimate", { projectDir: dir, identityDir, model: "test" });
+  check("thumbnail: test pictures are free", est.data?.estimate?.usd === 0);
+  const made = runner("thumbnail-make", { projectDir: dir, identityDir, model: "test", withFace: false });
+  const vs = made.data?.variants ?? [];
+  check("thumbnail: 3 variants, 1280x720 JPEGs under 1 MB", made.event === "result" && vs.length === 3 && vs.every((v) => fs.existsSync(v.file) && v.bytes < 1024 * 1024), made.event === "result" ? `${vs.length} in ${made.seconds} s` : made.message);
+  check("thumbnail: the words read on the panel (7:1)", vs.every((v) => v.textRatio >= 7 && v.accentRatio >= 4.5));
+  const face = runner("thumbnail-make", { projectDir: dir, identityDir, model: "test", withFace: true });
+  check("thumbnail: with my face needs a photo first", face.event === "error" && /Add a profile photo/.test(face.message), face.message);
+  const words = runner("thumbnail-words", { projectDir: dir, identityDir, slot: 2, words: "Start today" });
+  check("thumbnail: new words on the same picture", words.data?.variants?.find((v) => v.slot === 2)?.words === "Start today");
+  const five = runner("thumbnail-words", { projectDir: dir, identityDir, slot: 2, words: "one two three four five" });
+  check("thumbnail: more than 4 words are refused", five.event === "error");
+  const picked = runner("thumbnail-pick", { projectDir: dir, identityDir, slot: 2 });
+  const card = JSON.parse(fs.readFileSync(rendered.data.cardFile, "utf8"));
+  check("thumbnail: the picked one is in the publishing card", picked.event === "result" && card.thumbnail?.words === "Start today" && card.thumbnail.data.length > 1000 && fs.existsSync(rendered.data.file.replace(/\.mp4$/, ".thumbnail.jpg")));
+  check("thumbnail: the card stays under 2 MB", fs.statSync(rendered.data.cardFile).size < 2 * 1024 * 1024, `${Math.round(fs.statSync(rendered.data.cardFile).size / 1024)} KB`);
+  check("thumbnail: the tab is Done", runner("load-project", { projectDir: dir }).data?.thumbnailChosen === true);
+}
+
 // Backup at level 4 and a restore after the ONE Video is gone (docs/backup.md).
 {
   const backupRoot = path.join(work, "My Drive", "IdeaToVideo_Backup");
   const b = runner("backup-project", { projectDir: dir, backupRoot, identityFolder: "My Identity", level: 4 });
   check("backup: every file at level 4", b.event === "result" && fs.readdirSync(b.data.dir).some((n) => n.endsWith("_video.mp4")), b.event === "result" ? `${b.data.copied} files in ${b.data.path}` : b.message);
   const again = runner("backup-project", { projectDir: dir, backupRoot, identityFolder: "My Identity", level: 4 });
+  check("backup: the picked thumbnail is in it", fs.readdirSync(b.data.dir).some((n) => n.endsWith("_thumbnail.jpg")));
   check("backup: a second run copies nothing", again.data?.copied === 0, `${again.data?.copied} files`);
   const original = fs.readFileSync(rendered.data.file);
   fs.renameSync(dir, `${dir}-gone`);

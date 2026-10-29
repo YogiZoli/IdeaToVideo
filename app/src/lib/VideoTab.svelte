@@ -40,7 +40,8 @@
     render,
     goto,
     connections,
-  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; series?: Series | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; connections?: () => void } = $props();
+    thumbnailChosen = false,
+  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; series?: Series | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; connections?: () => void; thumbnailChosen?: boolean } = $props();
 
   const rendering = $derived(!!running(dir, ["render-video"]));
   const video = $derived(latest);
@@ -220,6 +221,7 @@
         <div class="block">
           <div class="bhead"><span class="label">Publishing</span></div>
           <p class="hint">The video's publishing card: chapters with times, the script, the comment keywords with their times, your landing page, and the title, summary and tags from the Script tab.</p>
+          <p class="hint">{#if thumbnailChosen}The thumbnail you picked goes with it.{:else}No thumbnail in it yet.{/if} <button type="button" class="link" onclick={() => goto("thumbnail")}>{thumbnailChosen ? "Change the thumbnail" : "Make one on the Thumbnail tab"}</button></p>
           {#if !pubReady}<p class="hint">To send it, set the address and the token on {#if connections}<button type="button" class="link" onclick={connections}>Settings, Connections</button>{:else}Settings, Connections{/if}.</p>{/if}
           {#if sent?.ok}
             <p class="good">{sent.updated ? "Updated in Publishing." : "Sent to Publishing."} {#if sent.url}<button type="button" class="link" onclick={openSent}>{sent.url}</button>{/if}</p>

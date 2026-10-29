@@ -15,6 +15,7 @@
   import AvatarGate from "./AvatarGate.svelte";
   import PreviewGate from "./PreviewGate.svelte";
   import VideoTab from "./VideoTab.svelte";
+  import ThumbnailTab from "./ThumbnailTab.svelte";
   import type { AppState, Gate, CtaSlot } from "./api";
   import { runner, errorText } from "./api";
   import { narratorProvider } from "./catalog";
@@ -43,6 +44,7 @@
     latestVideo: Video | null;
     stills: { scene: number; at: number; file: string }[];
     voiceInfo: { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number } | null;
+    thumbnailChosen?: boolean;
   };
 
   let data = $state<Loaded | null>(null);
@@ -93,7 +95,7 @@
   }
   load();
 
-  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen) : null);
+  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, !!data.thumbnailChosen) : null);
   // the percent of the job running for a tab, for its label
   function tabJob(cmds: string[]) {
     const c = running(dir, cmds);
@@ -282,8 +284,10 @@
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}
         <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} />
+      {:else if active === "thumbnail"}
+        <ThumbnailTab {app} {dir} hasVideo={!!data.latestVideo} changed={load} goto={show} {openPage} />
       {:else}
-        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} series={data.project.series ?? null} {renderError} {render} goto={show} {connections} />
+        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} series={data.project.series ?? null} {renderError} {render} goto={show} {connections} thumbnailChosen={!!data.thumbnailChosen} />
       {/if}
     </div>
   {/if}
@@ -295,7 +299,7 @@
   /* D6: Autopilot where the eye goes, next to the title */
   .pilot { border-color: var(--primary); color: var(--primary); font-weight: 600; }
   h1 { flex: 1; margin: 0; font-size: 20px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-  .tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
   .tab { position: relative; overflow: hidden; display: grid; gap: 1px; justify-items: start; text-align: left; min-height: 0; padding: 7px 10px; border-radius: 10px; border: 2px solid transparent; background: var(--muted); font-size: 13px; }
   .tab .name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .tab .word { font-weight: 400; font-size: 12px; color: var(--muted-foreground); }

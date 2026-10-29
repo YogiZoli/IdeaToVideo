@@ -138,6 +138,14 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("planner-plan", Some(&["llm", "provider"])),
     ("planner-outline", Some(&["llm", "provider"])),
     ("planner-build", None),
+    // Thumbnail step (DECISIONS 131): the pictures need the Gemini key, the
+    // rest is files only
+    ("thumbnail-photos", None),
+    ("thumbnail-state", None),
+    ("thumbnail-estimate", None),
+    ("thumbnail-make", Some(&["service"])),
+    ("thumbnail-words", None),
+    ("thumbnail-pick", None),
 ];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {

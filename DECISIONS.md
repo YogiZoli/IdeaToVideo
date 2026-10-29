@@ -2182,3 +2182,60 @@
       history, price, swaps), `runner/visual.test.mjs`, a fixed test
       catalog (`runner/fixtures/catalog.json`) so unit tests do not depend
       on the render results.
+
+## 2026-10-29 (thumbnails)
+
+131. **Thumbnail step after Your video** (Zoltan, 2026-10-29: "minden
+    videóhoz kell, és most ez a legkellemetlenebb kézi lépés"; Phase 1 plan
+    approved with the recommended choices).
+    - **Profile photos per Identity:** `<identity>/photos/face-<n>.<ext>`,
+      JPG, PNG or WebP, at most 3, at most 10 MB each (lib.rs
+      `import_photo`, `remove_photo`; identity.rs). Remove asks first. Added
+      on Identity, Voice & Avatar ("Thumbnail photos") or right on the
+      Thumbnail tab. They ride in the Identity export like the logo (choice
+      3), and the window says they go to Google when the face is on.
+    - **Tab 7 "Thumbnail"** (`ThumbnailTab.svelte`): optional, never the
+      step at hand, Done once one is picked. Switch "With my face" / "No
+      face" (the face needs a photo). One button makes 3 variants; each
+      shows full size and at YouTube's phone-list size (168 px); "Use these
+      words" places new words for free; "Pick this one"; "Regenerate" one or
+      all. Nothing is deleted: replaced variants go to
+      `thumbnail/older/<stamp>/`.
+    - **How a variant is made** (`runner/thumbnail/`): one small Gemini text
+      call (`gemini-3.5-flash`, same key) writes the words (at most 4 words
+      and 28 characters, checked and repaired once) and a picture idea per
+      variant from the chosen YouTube title, the hook and the audience. One
+      Gemini image call per variant (Interactions endpoint, as the free
+      voice; JPEG, 16:9, 1K) draws the picture with no text and a calm left
+      side; with the face on, the photos go in as references (choice 1).
+      The app puts the words on a panel in the Identity's background colour
+      and display font, the accent word in its first colour, pushed to 7:1
+      and 4.5:1 contrast (`fixContrast`), as a one-frame HyperFrames
+      composition photographed by `hyperframes snapshot` (no renderer of our
+      own), then ffmpeg makes a 1280x720 JPEG under 1 MB. Why the app sets
+      the words and not the AI: AI image text is often misspelled, in the
+      wrong font, and breaks Hungarian accents.
+    - **Models and prices** (`thumbnail/models.mjs`, Google's price page
+      read 2026-10-29, standard tier, 1K): `gemini-nano-banana-2.1` $0.0336
+      a picture, the default (choice 2); `gemini-3-pro-image` $0.134 in the
+      picker; "Test pictures (free, placeholder)" like the B-roll test
+      clips. Three variants cost about $0.10 to $0.12 with the default. The
+      price is asked before every Make and Regenerate; the spend per video
+      is kept in `thumbnail/thumbnail.json`.
+    - **The card:** optional block `thumbnail {file, mime, width, height,
+      bytes, sha256, words, withFace, data}` (base64 JPEG), the version
+      stays `video-publishing-card/1` (as `series`, 122). Pick writes it
+      into the latest card (same cardId), and a render keeps it. A copy
+      sits next to the video as `<video>.thumbnail.jpg`. Send to Publishing
+      refuses a card over 2 MB with a sentence. PDT's side (validate with
+      its `thumbs.py`, show it, one-button thumbnails.set, no thumbnail
+      prompts, strip `data` before vidrev) runs in a separate PDT chat from
+      the prompt given on 2026-10-29.
+    - **Backup:** `thumbnail/thumbnail.json` and `thumbnail/chosen.jpg` at
+      level 1.
+    - **Tests:** `runner/thumbnail.test.mjs` (11: words rule, ideas and
+      their repair, the picture call against a stand-in, prompt, price,
+      photos, contrast in the presets, card block, pick, the 2 MB refusal),
+      `scripts/app/tabs.test.mjs`, Rust `photos_are_numbered_capped_and_
+      removed_by_name_only`, e2e 10 thumbnail steps with the real engine
+      (54/54). No paid call was made while building.

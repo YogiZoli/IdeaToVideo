@@ -1,10 +1,33 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-28 (full scene catalog, DECISIONS 130)
+Frissítve: 2026-10-29 (thumbnails, DECISIONS 131)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-10-29, thumbnails, DECISIONS 131)
+
+- **Tab 7 "Thumbnail"** after Your video: With my face / No face, 3
+  variants from the chosen YouTube title, the Brand colours and font, at
+  most 4 words, strong contrast, a phone-size preview, free word edits,
+  Regenerate one or all, Pick. The price is asked before every paid call.
+- **Pictures:** Gemini `gemini-nano-banana-2.1` with the existing Gemini key
+  ($0.0336 a picture, about $0.11 for 3), Pro in the picker, free test
+  pictures. The app sets the words itself (HyperFrames snapshot), never the
+  AI.
+- **Profile photos** once per Identity (up to 3): Identity, Voice & Avatar,
+  or right on the Thumbnail tab. In the Identity export like the logo.
+- **Card:** optional `thumbnail` block (base64 JPEG under 1 MB), still
+  `video-publishing-card/1`; Send to Publishing carries it. PDT side: its
+  own chat, started 2026-10-29 from the prompt.
+- Branch `thumbnails`, not committed yet, no installer built.
+- Tests: Node 341 of 344 (the one red is `traffic-card.test.mjs`, red on
+  main before; 2 live tests skipped), e2e 54/54 (10 new thumbnail steps
+  with the real engine), Rust 49, UI check 0 errors.
+
+**Next:** Zoltan tries one video with real pictures (about $0.11, his Gemini
+key needs billing on), with and without the face. Then commit, PR, installer.
 
 ## Now (2026-10-28, full scene catalog, DECISIONS 130)
 

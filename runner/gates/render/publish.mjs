@@ -24,6 +24,7 @@ import { TEMPERATURES } from "../../cta/catalog.mjs";
 import { validate, loadSchema } from "../../schema/validate.mjs";
 import { loadProject, saveProject } from "../../project.mjs";
 import { loadPackaging } from "./youtube.mjs";
+import { thumbnailBlock } from "../../thumbnail/card.mjs";
 
 export const CARD_SCHEMA = "video-publishing-card/1";
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -84,6 +85,10 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
   // course's playlist. Left out of every other video's card.
   const s = loadProject(projectDir).series;
   const series = s ? { series: { courseSlug: s.courseSlug, lessonId: s.lessonId, playlistPosition: s.playlistPosition, playlistId: s.playlistId ?? null, playlistUrl: s.playlistUrl ?? null } } : {};
+  // The thumbnail picked on the Thumbnail tab (DECISIONS 131), kept when the
+  // video is rendered again. Left out while none is picked.
+  const thumb = thumbnailBlock(projectDir, videoFile);
+  const thumbnail = thumb ? { thumbnail: thumb } : {};
   return {
     schema: CARD_SCHEMA,
     cardId: cardIdOf(projectDir),
@@ -110,6 +115,7 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
     // clip looks real (a person, a place, an event).
     syntheticMedia: !!syntheticMedia,
     ...series,
+    ...thumbnail,
   };
 }
 

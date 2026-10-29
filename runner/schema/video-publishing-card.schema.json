@@ -1,5 +1,5 @@
 {
-  "$comment": "Video Publishing Card, schema video-publishing-card/1 (runner/gates/render/publish.mjs, DECISIONS 114), the successor of itv-publish/1. Written next to every rendered video as <video>.card.json, and the body of POST {url}/api/v1/cards (Send to Publishing). Facts the app knows exactly, plus the packaging chosen at gate 1. cardId is generated once per project and kept, so a card sent again updates the same one; videoId is the YouTube id, filled by the publishing app. Fields are only ever added (series, DECISIONS 122, is one: optional, the version stays 1); a breaking change gets video-publishing-card/2.",
+  "$comment": "Video Publishing Card, schema video-publishing-card/1 (runner/gates/render/publish.mjs, DECISIONS 114), the successor of itv-publish/1. Written next to every rendered video as <video>.card.json, and the body of POST {url}/api/v1/cards (Send to Publishing). Facts the app knows exactly, plus the packaging chosen at gate 1. cardId is generated once per project and kept, so a card sent again updates the same one; videoId is the YouTube id, filled by the publishing app. Fields are only ever added (series, DECISIONS 122, and thumbnail, DECISIONS 131, are such: optional, the version stays 1); a breaking change gets video-publishing-card/2.",
   "type": "object",
   "required": [
     "schema",
@@ -292,6 +292,61 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "thumbnail": {
+      "type": "object",
+      "description": "Optional. The thumbnail chosen in IdeaToVideo's Thumbnail step (DECISIONS 131): a JPEG under 1 MB, inside the card as base64, so the card stays under the publishing app's 2 MB. A receiver that does not know it ignores it.",
+      "required": [
+        "file",
+        "mime",
+        "width",
+        "height",
+        "bytes",
+        "sha256",
+        "withFace",
+        "data"
+      ],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "mime": {
+          "enum": [
+            "image/jpeg",
+            "image/png"
+          ]
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 640
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2097152
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "words": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "withFace": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }
