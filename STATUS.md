@@ -21,13 +21,15 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **Card:** optional `thumbnail` block (base64 JPEG under 1 MB), still
   `video-publishing-card/1`; Send to Publishing carries it. PDT side: its
   own chat, started 2026-10-29 from the prompt.
-- Branch `thumbnails`, not committed yet, no installer built.
+- Merged into main (PR #20, `25a50de`). Local installer built 2026-10-29
+  15:13: `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`.
+  No public installer, no GitHub Actions.
 - Tests: Node 341 of 344 (the one red is `traffic-card.test.mjs`, red on
   main before; 2 live tests skipped), e2e 54/54 (10 new thumbnail steps
   with the real engine), Rust 49, UI check 0 errors.
 
 **Next:** Zoltan tries one video with real pictures (about $0.11, his Gemini
-key needs billing on), with and without the face. Then commit, PR, installer.
+key needs billing on), with and without the face, on the local installer.
 
 ## Now (2026-10-28, full scene catalog, DECISIONS 130)
 
