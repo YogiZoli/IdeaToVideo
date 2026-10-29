@@ -148,6 +148,9 @@ export const keyStatus = () => call<{ keys: Record<string, boolean>; keySources:
 export const deleteAllKeys = () => call<void>("delete_all_keys");
 /** forNew: the logo of an Identity that does not exist yet (setup, New Identity). */
 export const importLogo = (path: string, forNew = false, variant: "light" | "dark" = "light") => call<string>("import_logo", { path, forNew, variant });
+/** A profile photo for the Thumbnail step into the active Identity (DECISIONS 131). */
+export const importPhoto = (path: string) => call<string>("import_photo", { path });
+export const removePhoto = (name: string) => call<void>("remove_photo", { name });
 export const jobList = () => call<Job[]>("job_list");
 /** Stop: a waiting job leaves the queue, a running one ends with all it started. */
 export const stopJob = (id: number) => call<void>("stop_job", { id });

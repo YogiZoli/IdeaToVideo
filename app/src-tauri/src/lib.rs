@@ -53,7 +53,7 @@ fn note(app: &AppHandle, level: &str, event: &str, data: Value) {
 }
 
 /// Runner commands that finish a piece of work worth a backup right away.
-const AUTO_BACKUP_AFTER: &[&str] = &["approve-gate", "render-video", "make-avatar", "avatar-layout", "remove-avatar"];
+const AUTO_BACKUP_AFTER: &[&str] = &["approve-gate", "render-video", "make-avatar", "avatar-layout", "remove-avatar", "thumbnail-pick"];
 /// Runner commands that read or write backups: the core adds the backup
 /// folder, the projects folder and the Identity folders from the App settings.
 const BACKUP_COMMANDS: &[&str] = &["backup-project", "backup-all", "backup-estimate", "list-backups", "restore-project"];
@@ -829,6 +829,24 @@ fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<Stri
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// "Add photo" (Settings, Identity, Thumbnail photos, DECISIONS 131): copies a
+/// profile photo into the active Identity's photos folder, at most 3. Returns
+/// the stored path.
+#[tauri::command]
+fn import_photo(app: AppHandle, path: String) -> Result<String, String> {
+    let id = active_id(&app)?.ok_or("Save the Identity first.")?;
+    let dir = identity::dir_of(&config_dir(&app)?, &id)?.join("photos");
+    identity::add_photo(&dir, &PathBuf::from(path))
+}
+
+/// "Remove" a profile photo, after the user said yes in the window.
+#[tauri::command]
+fn remove_photo(app: AppHandle, name: String) -> Result<(), String> {
+    let id = active_id(&app)?.ok_or("Save the Identity first.")?;
+    let dir = identity::dir_of(&config_dir(&app)?, &id)?.join("photos");
+    identity::remove_photo(&dir, &name)
+}
+
 /// "Add footage" (Settings, Identity, Footage): copies the video the user
 /// picked into the active Identity's footage folder under a temporary name;
 /// the runner (footage-add) measures it, finds its cuts and keeps it.
@@ -1077,6 +1095,8 @@ pub fn run() {
             stop_job,
             run_runner,
             import_logo,
+            import_photo,
+            remove_photo,
             export_brand,
             import_brand,
             read_tokens_file,

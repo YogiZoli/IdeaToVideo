@@ -67,6 +67,7 @@ import { channelBoard, setUpload, markSent } from "./course/board.mjs";
 import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
 import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
+import * as thumbnail from "./thumbnail/index.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -741,7 +742,7 @@ const commands = {
   "load-project": async ({ projectDir, liveProjects = null }) => {
     const project = recovered(projectDir, liveProjects);
     const md = path.join(projectDir, "script.md");
-    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, calls: scriptCalls(projectDir), latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir) };
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, calls: scriptCalls(projectDir), latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir), thumbnailChosen: !!thumbnail.loadState(projectDir).chosen };
   },
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
@@ -1216,6 +1217,17 @@ const commands = {
     appendLog(projectDir, `packaging: chosen, "${packaging.title}"`);
     return { packaging };
   },
+
+  // The Thumbnail step after Your video (thumbnail/, DECISIONS 131): the
+  // price first, then 3 variants with the Gemini key; words edited for free;
+  // the one picked goes into the publishing card.
+  "thumbnail-photos": async ({ identityDir }) => ({ photos: thumbnail.photosOf(identityDir).map((p) => ({ name: p.name, file: p.file })), max: thumbnail.MAX_PHOTOS }),
+  "thumbnail-state": async ({ projectDir, identityDir }) => thumbnail.stateView({ projectDir, identityDir }),
+  "thumbnail-estimate": async ({ projectDir, identityDir, withFace = false, model, slots = null }) => ({ estimate: thumbnail.estimate({ projectDir, identityDir, withFace, model, slots }) }),
+  "thumbnail-make": async ({ projectDir, identityDir, withFace = false, model, slots = null }) =>
+    logged(projectDir, "thumbnail", () => thumbnail.make({ projectDir, identityDir, apiKey: key(), withFace, model, slots, onProgress: (p) => emit({ event: "progress", ...p }) })),
+  "thumbnail-words": async ({ projectDir, identityDir, slot, words, accent = null }) => logged(projectDir, "thumbnail words", () => thumbnail.setWords({ projectDir, identityDir, slot, words, accent })),
+  "thumbnail-pick": async ({ projectDir, identityDir, slot }) => thumbnail.pick({ projectDir, identityDir, slot }),
 
   "approve-gate": async ({ projectDir, gate }) => {
     const current = loadProject(projectDir);

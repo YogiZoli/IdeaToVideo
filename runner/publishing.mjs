@@ -16,6 +16,7 @@ import fs from "node:fs";
 
 const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 const TIMEOUT_MS = 30000;
+export const MAX_CARD_BYTES = 2 * 1024 * 1024;
 
 // The publishing app's address, checked: an origin with an optional path
 // prefix, no query, no password in it. Returns the clean base or throws.
@@ -53,6 +54,9 @@ export async function sendCard({ url, token, cardFile, fetchImpl = fetch, timeou
   if (!token) return { ok: false, retry: false, status: null, message: "Save the Publishing token in Settings, Connections first." };
   if (!/\.card\.json$/i.test(String(cardFile ?? "")) || !fs.existsSync(cardFile)) return { ok: false, retry: false, status: null, message: "This video has no publishing card. Render it again." };
   const card = fs.readFileSync(cardFile, "utf8");
+  // The publishing app takes a card of at most 2 MB; with a thumbnail inside
+  // (DECISIONS 131) a long video can come near it.
+  if (Buffer.byteLength(card) > MAX_CARD_BYTES) return { ok: false, retry: false, status: null, message: `The publishing card is ${Math.ceil(Buffer.byteLength(card) / 1024)} KB, more than the publishing app takes (2 MB), so it was not sent. Use Export card and send the diagnostics (Settings, General).` };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   let res;

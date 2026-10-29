@@ -42,6 +42,9 @@ export function backupFiles(projectDir, level = 4) {
   add("seed.json", "_seed.json", 1);
   add("course-import.json", "_course_import.json", 1);
   add("log.txt", "_log.txt", 1);
+  // the thumbnail picked on the Thumbnail tab (DECISIONS 131)
+  add("thumbnail/thumbnail.json", "_thumbnail.json", 1);
+  add("thumbnail/chosen.jpg", "_thumbnail.jpg", 1);
   add("audio/vo.mp3", "_voice.mp3", 2);
   add("audio/vo_bgm.mp3", "_voice_music.mp3", 2);
   for (const f of list(path.join(projectDir, "audio")).filter((f) => /^music\.\w+$/.test(f))) add(`audio/${f}`, `_${f}`, 2);

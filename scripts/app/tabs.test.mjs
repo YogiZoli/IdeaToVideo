@@ -8,7 +8,7 @@ const gates = (states) => Object.fromEntries(Object.entries(states).map(([k, v])
 
 test("a new video: Script is Now, the avatar is Optional, the rest Next", () => {
   const s = tabStates(gates({}), false, true);
-  assert.deepEqual(s, { script: "now", voice: "next", scenes: "next", avatar: "optional", preview: "next", video: "next" });
+  assert.deepEqual(s, { script: "now", voice: "next", scenes: "next", avatar: "optional", preview: "next", video: "next", thumbnail: "optional" });
   assert.equal(firstOpen(gates({}), false, true), "script");
 });
 
@@ -30,7 +30,15 @@ test("a failed step says Failed; a finished video opens on Your video", () => {
   assert.equal(tabStates(all, true, true).video, "done");
   assert.equal(nextAfter("preview", true), "video");
   assert.equal(nextAfter("video", true), "video");
-  assert.deepEqual(TABS.map((t) => t.n), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(TABS.map((t) => t.n), [1, 2, 3, 4, 5, 6, 7]);
+});
+
+test("the thumbnail (DECISIONS 131) is optional, never the step at hand, Done once one is picked", () => {
+  const all = gates({ script: "approved", voice: "approved", scenes: "approved", avatar: "approved", review: "approved" });
+  assert.equal(tabStates(all, true, true).thumbnail, "optional");
+  assert.equal(firstOpen(all, true, true), "video");
+  assert.equal(tabStates(all, true, true, true).thumbnail, "done");
+  assert.equal(nextAfter("thumbnail", true), "thumbnail");
 });
 
 test("the render bar follows the frames and does not promise the end after the setup", () => {

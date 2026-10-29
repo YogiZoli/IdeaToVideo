@@ -5,10 +5,11 @@
 //             video: rendered)
 //   now       the first step not done yet: where the work is
 //   next      a later step
-//   optional  the avatar, when it is not the step at hand
+//   optional  the avatar, when it is not the step at hand; the thumbnail
+//             (DECISIONS 131) until one is picked: it never blocks the video
 //   failed    the last attempt failed
 
-export type TabId = "script" | "voice" | "scenes" | "avatar" | "preview" | "video";
+export type TabId = "script" | "voice" | "scenes" | "avatar" | "preview" | "video" | "thumbnail";
 export type TabState = "done" | "now" | "next" | "optional" | "failed";
 type Gates = Record<string, { state: string } | undefined>;
 
@@ -19,11 +20,14 @@ export const TABS: { id: TabId; n: number; label: string; gate: string | null; c
   { id: "avatar", n: 4, label: "Avatar", gate: "avatar", commands: ["make-avatar", "avatar-layout", "remove-avatar"] },
   { id: "preview", n: 5, label: "Preview", gate: "review", commands: ["build-video"] },
   { id: "video", n: 6, label: "Your video", gate: null, commands: ["render-video"] },
+  { id: "thumbnail", n: 7, label: "Thumbnail", gate: null, commands: ["thumbnail-make", "thumbnail-words"] },
 ];
 
-function isDone(id: TabId, gates: Gates, hasVideo: boolean): boolean {
+function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false): boolean {
   const g = (k: string) => gates[k]?.state;
   switch (id) {
+    case "thumbnail":
+      return hasThumbnail;
     case "avatar":
       return g("avatar") === "approved" || g("avatar") === "skipped";
     case "video":
@@ -38,21 +42,21 @@ function isDone(id: TabId, gates: Gates, hasVideo: boolean): boolean {
 /** The tab where the work is. The avatar counts only with a HeyGen key. */
 function nowTab(gates: Gates, hasVideo: boolean, hasHeygen: boolean): TabId | null {
   for (const t of TABS) {
-    if (t.id === "avatar" && !hasHeygen) continue;
+    if ((t.id === "avatar" && !hasHeygen) || t.id === "thumbnail") continue;
     if (!isDone(t.id, gates, hasVideo)) return t.id;
   }
   return null;
 }
 
-export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean): Record<TabId, TabState> {
+export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, hasThumbnail = false): Record<TabId, TabState> {
   const now = nowTab(gates, hasVideo, hasHeygen);
   const out = {} as Record<TabId, TabState>;
   for (const t of TABS) {
     const gate = t.gate ? gates[t.gate]?.state : undefined;
-    if (isDone(t.id, gates, hasVideo)) out[t.id] = "done";
+    if (isDone(t.id, gates, hasVideo, hasThumbnail)) out[t.id] = "done";
     else if (gate === "failed") out[t.id] = "failed";
     else if (t.id === now) out[t.id] = "now";
-    else out[t.id] = t.id === "avatar" ? "optional" : "next";
+    else out[t.id] = t.id === "avatar" || t.id === "thumbnail" ? "optional" : "next";
   }
   return out;
 }
@@ -64,6 +68,8 @@ export function firstOpen(gates: Gates, hasVideo: boolean, hasHeygen: boolean): 
 
 /** The tab after an approved step. The avatar only with a HeyGen key. */
 export function nextAfter(id: TabId, hasHeygen: boolean): TabId {
+  // nothing is approved on Your video or Thumbnail: they stay where they are
+  if (id === "video" || id === "thumbnail") return id;
   const i = TABS.findIndex((t) => t.id === id);
   const next = TABS[Math.min(TABS.length - 1, i + 1)].id;
   return next === "avatar" && !hasHeygen ? "preview" : next;

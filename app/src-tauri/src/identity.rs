@@ -601,6 +601,63 @@ pub fn import(config_dir: &Path, mut ident: Value, files: Vec<(PathBuf, Vec<u8>)
     Ok(ident)
 }
 
+// ---- profile photos (Thumbnail step, DECISIONS 131) ------------------------------------------
+
+pub const MAX_PHOTOS: usize = 3;
+const PHOTO_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp"];
+const PHOTO_MAX_BYTES: u64 = 10 * 1024 * 1024;
+
+fn photo_names(dir: &Path) -> Vec<String> {
+    let mut out: Vec<String> = fs::read_dir(dir)
+        .map(|r| {
+            r.flatten()
+                .filter(|e| e.path().is_file())
+                .filter_map(|e| e.file_name().to_str().map(str::to_string))
+                .filter(|n| photo_name_ok(n))
+                .collect()
+        })
+        .unwrap_or_default();
+    out.sort();
+    out
+}
+
+/// "face-<n>.<ext>", the names add_photo gives.
+pub fn photo_name_ok(name: &str) -> bool {
+    let Some((stem, ext)) = name.rsplit_once('.') else { return false };
+    PHOTO_EXTS.contains(&ext) && stem.strip_prefix("face-").is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+}
+
+/// Copies a profile photo into `dir` as face-<n>.<ext>. At most MAX_PHOTOS.
+pub fn add_photo(dir: &Path, src: &Path) -> Result<String, String> {
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .filter(|e| PHOTO_EXTS.contains(&e.as_str()))
+        .ok_or("The photo must be a JPG, PNG or WebP file.")?;
+    let size = fs::metadata(src).map_err(|_| "Photo file not found.")?.len();
+    if size > PHOTO_MAX_BYTES {
+        return Err("The photo is larger than 10 MB.".into());
+    }
+    fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let have = photo_names(dir);
+    if have.len() >= MAX_PHOTOS {
+        return Err(format!("This Identity has {MAX_PHOTOS} photos already. Remove one first."));
+    }
+    let n = (1..).find(|n| !have.iter().any(|h| h.starts_with(&format!("face-{n}.")))).unwrap_or(1);
+    let dest = dir.join(format!("face-{n}.{ext}"));
+    fs::copy(src, &dest).map_err(|e| format!("Could not copy the photo: {e}"))?;
+    Ok(dest.to_string_lossy().to_string())
+}
+
+/// Removes one photo by its name (the window asked the user first).
+pub fn remove_photo(dir: &Path, name: &str) -> Result<(), String> {
+    if !photo_name_ok(name) {
+        return Err(format!("Not a profile photo: {name}"));
+    }
+    fs::remove_file(dir.join(name)).map_err(|e| format!("Could not remove the photo: {e}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -610,6 +667,25 @@ mod tests {
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(&d).unwrap();
         d
+    }
+
+    #[test]
+    fn photos_are_numbered_capped_and_removed_by_name_only() {
+        let d = tmpdir("photos");
+        let src = d.join("me.JPG");
+        fs::write(&src, b"jpeg").unwrap();
+        let photos = d.join("photos");
+        assert!(add_photo(&photos, &src).unwrap().ends_with("face-1.jpg"));
+        assert!(add_photo(&photos, &src).unwrap().ends_with("face-2.jpg"));
+        assert!(add_photo(&photos, &src).unwrap().ends_with("face-3.jpg"));
+        assert!(add_photo(&photos, &src).is_err(), "at most 3");
+        remove_photo(&photos, "face-2.jpg").unwrap();
+        assert!(add_photo(&photos, &src).unwrap().ends_with("face-2.jpg"), "the free number again");
+        fs::write(d.join("x.gif"), b"gif").unwrap();
+        assert!(add_photo(&photos, &d.join("x.gif")).is_err());
+        for bad in ["../identity.json", "logo.png", "face-1.gif", "face-.jpg", "face-1"] {
+            assert!(remove_photo(&photos, bad).is_err(), "{bad}");
+        }
     }
 
     #[test]
