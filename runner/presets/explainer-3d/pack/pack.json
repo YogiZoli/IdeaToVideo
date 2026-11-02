@@ -1,0 +1,493 @@
+{
+  "schema": "itv-pack/1",
+  "id": "explainer-3d",
+  "name": "3D Explainer",
+  "look": "own",
+  "runtime": [
+    "three"
+  ],
+  "script": "shared/world3d.js",
+  "blocks": [
+    {
+      "id": "title",
+      "role": "opening",
+      "label": "Question over one object",
+      "what": "The first scene: the video's one strange question, with the thing it is about.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "kicker",
+          "type": "string",
+          "label": "Kicker",
+          "default": "",
+          "optional": true,
+          "maxWords": 4
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "chapter",
+      "role": "opening",
+      "label": "Chapter on a turntable",
+      "what": "The start of a new section.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "statement",
+      "role": "statement",
+      "label": "Object and two lines",
+      "what": "A claim: the first line sets it up, the second lands it.",
+      "variables": [
+        {
+          "id": "line1",
+          "type": "string",
+          "label": "Line 1",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "line2",
+          "type": "string",
+          "label": "Line 2",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "word",
+      "role": "emphasis",
+      "label": "One huge word",
+      "what": "One word is the whole point.",
+      "variables": [
+        {
+          "id": "word",
+          "type": "string",
+          "label": "Word",
+          "default": "",
+          "maxWords": 2
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "highlight",
+      "role": "emphasis",
+      "label": "Marked line",
+      "what": "A short line with one key word to mark.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "mark",
+          "type": "string",
+          "label": "Mark",
+          "default": "",
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "question",
+      "role": "statement",
+      "label": "Question mark",
+      "what": "The narration asks the viewer something.",
+      "variables": [
+        {
+          "id": "question",
+          "type": "string",
+          "label": "Question",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "number",
+      "role": "proof",
+      "label": "Number and a pile",
+      "what": "The narration says a number and it matters; the object is what is counted.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "before",
+          "type": "string",
+          "label": "Before",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "after",
+          "type": "string",
+          "label": "After",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "percent",
+      "role": "proof",
+      "label": "Tank fills up",
+      "what": "The narration says a percentage.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "scale",
+      "role": "contrast",
+      "label": "Scale comparison",
+      "what": "How big one thing is next to another: the camera pulls back from the small one.",
+      "variables": [
+        {
+          "id": "small",
+          "type": "string",
+          "label": "Small",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "big",
+          "type": "string",
+          "label": "Big",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "smallObject",
+          "type": "string",
+          "label": "Small Object",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "bigObject",
+          "type": "string",
+          "label": "Big Object",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "ratio",
+          "type": "string",
+          "label": "Ratio",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "cutaway",
+      "role": "detail",
+      "label": "Cutaway view",
+      "what": "What is inside something: a ball cut open, up to three named layers.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "outer",
+          "type": "string",
+          "label": "Outer",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "middle",
+          "type": "string",
+          "label": "Middle",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "inner",
+          "type": "string",
+          "label": "Inner",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "versus",
+      "role": "contrast",
+      "label": "Two sides on plinths",
+      "what": "This or that, before and after, wrong and right.",
+      "variables": [
+        {
+          "id": "left",
+          "type": "string",
+          "label": "Left",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "right",
+          "type": "string",
+          "label": "Right",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "leftObject",
+          "type": "string",
+          "label": "Left Object",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "rightObject",
+          "type": "string",
+          "label": "Right Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "cause",
+      "role": "relation",
+      "label": "A leads to B",
+      "what": "One thing causes or leads to another.",
+      "variables": [
+        {
+          "id": "from",
+          "type": "string",
+          "label": "From",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "to",
+          "type": "string",
+          "label": "To",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "fromObject",
+          "type": "string",
+          "label": "From Object",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "toObject",
+          "type": "string",
+          "label": "To Object",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "stairs",
+      "role": "process",
+      "label": "Four steps",
+      "what": "Exactly four steps in order.",
+      "variables": [
+        {
+          "id": "step1",
+          "type": "string",
+          "label": "Step 1",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step2",
+          "type": "string",
+          "label": "Step 2",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step3",
+          "type": "string",
+          "label": "Step 3",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step4",
+          "type": "string",
+          "label": "Step 4",
+          "default": "",
+          "maxWords": 3
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "shelf",
+      "role": "list",
+      "label": "Four things",
+      "what": "Exactly four things that belong together.",
+      "variables": [
+        {
+          "id": "item1",
+          "type": "string",
+          "label": "Item 1",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item2",
+          "type": "string",
+          "label": "Item 2",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item3",
+          "type": "string",
+          "label": "Item 3",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item4",
+          "type": "string",
+          "label": "Item 4",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "object1",
+          "type": "string",
+          "label": "Object 1",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "object2",
+          "type": "string",
+          "label": "Object 2",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "object3",
+          "type": "string",
+          "label": "Object 3",
+          "default": "orb",
+          "optional": true
+        },
+        {
+          "id": "object4",
+          "type": "string",
+          "label": "Object 4",
+          "default": "orb",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    }
+  ]
+}

@@ -1,14 +1,45 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-02 (Direction, Research and Shot map, DECISIONS 142 to 147)
+Frissítve: 2026-11-03 (3D Explainer preset, DECISIONS 148 to 151)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-02, Direction, Research and Shot map, DECISIONS 142 to 147)
+## Now (2026-11-03, 3D Explainer, DECISIONS 148 to 151)
 
-**Phase 3 of `docs/BUILD_PLAN.md` is done. Phase 4, 3D Explainer, is next.**
+**Phase 4 of `docs/BUILD_PLAN.md` is done. Phase 5, Stick World, is next.**
+
+- **Where to find it:** a channel's recipe, Style: 3D Explainer. Choosing it turns B-roll off; the switch stays.
+- **What it makes:** one strange question per video. 14 scene templates, 38 objects drawn by code: cutaway view,
+  scale comparison, tank that fills, stairs, two sides on plinths, A leads to B, and more. One slow camera move per
+  scene, plain cuts, its own colors and the OFL fonts Outfit and DM Sans. Nothing is downloaded and nothing is paid.
+- **The AI only fills templates and names objects.** A dead AI still gets a varied video: rules pick scale, cutaway,
+  versus, cause or question when the sentence really says that. A ratio the voice says is the ratio on screen.
+- **Speed:** a 43 s video renders in about 86 s, the same pace as Motion Frames, so 8 minutes is about 16 minutes.
+- **Your Motion wizard does not apply to this preset,** because the camera belongs to the scene. Your captions do.
+- **three.js 0.180.0 (MIT)** is in the pinned engine, reduced to the one file a build reads.
+- Tests: Node 547 of 550 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check
+  0 errors, new `scripts/phase2/explainer3d-e2e.mjs` 42/42 with the real free voice and real renders, Motion Frames'
+  channel e2e 56/56. Rust not touched, not run again.
+- Merged into `main` from branch `preset-3d-explainer`. No PR, no GitHub Actions run.
+- Local installer built 2026-11-03 01:03 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (109 MiB). The installed copy's own
+  node, runner and engine rendered a real 3D video (43 s of video in 82 s). The style list and the B-roll switch were
+  checked in `scripts/ui-mock`, not by clicks in the installed window (screen access was declined this session).
+- Samples: `C:/Users/gdp/Videos/IdeaToVideo-mintak/2026-11-03_3d-explainer_minden-sablon.mp4` (every template once) and
+  `2026-11-03_3d-explainer_szabaly-alapjan.mp4` (planned by rule, no AI). Draft quality.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch.
+
+**Not tried yet:** a real AI on the plan and on the script's strange question (rule and stand-ins only); a video over
+a minute; Hungarian on this preset (a rule-made video finds fewer objects there, and shows the neutral one).
+
+**Next:** Zoltan tries one strange question on the installer, on a channel set to 3D Explainer, up to the render. Phase 3's
+own try is still open too (one topic with research, one set of notes, one recording). Then Phase 5.
+
+## Earlier (2026-11-02, Direction, Research and Shot map, DECISIONS 142 to 147)
+
+**Phase 3 of `docs/BUILD_PLAN.md` is done.**
 
 - **Start screen:** Script to video or Edit a recording (either one from any channel); a topic, or
   pasted text marked Finished or Notes; research on or off. The recipe holds the defaults.

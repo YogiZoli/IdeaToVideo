@@ -66,7 +66,7 @@ export function wordFor(text, said) {
 }
 
 // Not text on screen: icon names and what only marks a word already shown.
-const NOT_ELEMENT = /^(l|r)?ico\d*$|^layout$|^emphasis_word$|^underline_word$|^mark$|^cues$/;
+const NOT_ELEMENT = /^(l|r)?ico\d*$|^layout$|^emphasis_word$|^underline_word$|^mark$|^cues$|^object\d*$|^(small|big|left|right|from|to)Object$/;
 
 /** What a row puts on screen, in order: text and numbers. */
 export function elementsOf(sc, { env = process.env } = {}) {
@@ -304,8 +304,8 @@ export async function shotMapView({ projectDir, env = process.env, warning = nul
       block: meta?.label ?? sc.component,
       override: !sc.template || !!sc.override,
       call: !!sc.call,
-      camera: live ? (item.source === "still" || item.aiTier === "image" ? `2.5D ${item.move ?? "move"}` : "As filmed") : sc.camera === "off" ? "Still" : "The channel's move",
-      transition: sc.cut ? "Cut, inside a sentence" : n === 0 ? "None, the first shot" : "The channel's change",
+      camera: live ? (item.source === "still" || item.aiTier === "image" ? `2.5D ${item.move ?? "move"}` : "As filmed") : meta?.camera ?? (sc.camera === "off" ? "Still" : "The channel's move"),
+      transition: sc.cut ? "Cut, inside a sentence" : n === 0 ? "None, the first shot" : meta?.presetOnly ? "Cut" : "The channel's change",
       hero: !!item?.hero,
       source: live ? SOURCE[item.source] ?? item.source : null,
       license: live ? item.license ?? null : null,

@@ -56,7 +56,7 @@ export type Shot = {
   flow: { on: boolean; prompt: string; seconds: number; clip: string | null; name: string | null; short: boolean } | null;
 };
 export type ShotMap = { shots: Shot[]; warning: string | null; summary: { shots: number; broll: number; hero: number; overrides: number; elements: number; onTheirWord: number; withBlock: number } | null };
-export type PresetCard = { id: string; label: string; description: string; engine: string; templates: { id: string; label: string }[]; shotRules: Record<string, string>; recorded?: { slots: { id: string; label: string; hint?: string; optional?: boolean }[]; broll?: boolean; cutout?: boolean; zoom?: boolean } };
+export type PresetCard = { id: string; label: string; description: string; engine: string; templates: { id: string; label: string }[]; shotRules: Record<string, string>; recorded?: { slots: { id: string; label: string; hint?: string; optional?: boolean }[]; broll?: boolean; cutout?: boolean; zoom?: boolean }; defaults?: { broll?: boolean } };
 export type QueueItem = { dir: string; id: string; title: string; status: string; script: string; error: string | null; running: boolean; batch: string; position: number; of: number; angle?: string; research?: string | null };
 export type FreeVoice = { id: string; name: string; gender: string | null };
 export type ChannelState = {

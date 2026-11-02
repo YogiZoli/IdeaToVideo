@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id":"left","type":"string","label":"Left","default":""},{"id":"right","type":"string","label":"Right","default":""},{"id":"leftObject","type":"string","label":"Left Object","default":"orb"},{"id":"rightObject","type":"string","label":"Right Object","default":"orb"}]'>
+<head><meta charset="UTF-8"/></head>
+<body>
+<template>
+<div id="root" data-composition-id="x3d-versus" data-width="1920" data-height="1080" data-start="0" data-duration="600">
+<div class="x3d-root">
+<canvas class="x3d-view" width="1" height="1"></canvas>
+<section class="clip x3d-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+window.__timelines["x3d-versus"] = ITV3D.block(document.getElementById("root"), "versus", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
+</script>
+</div>
+</template>
+</body>
+</html>

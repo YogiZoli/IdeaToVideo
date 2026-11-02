@@ -1,0 +1,893 @@
+{
+  "schema": "style-preset/1",
+  "id": "explainer-3d",
+  "label": "3D Explainer",
+  "description": "One strange question per video. Simple 3D scenes drawn on this computer: soft-shaded objects, cutaway views, scale comparisons, bright clean materials, smooth camera moves.",
+  "engine": "script",
+  "scriptNote": "The whole video answers one strange, concrete question. Ask it in the first sentence and answer it at the end. Prefer things the viewer can picture: real sizes, side by side comparisons, what is inside something.",
+  "ideaNote": "Each video is one strange, concrete question, the kind that starts with what if, how big or why does.",
+  "defaults": {
+    "broll": false
+  },
+  "tokens": {
+    "appearance": "light",
+    "colors": {
+      "background": "#eaf2f9",
+      "surface": "#d7e4f1",
+      "border": "#bccde0",
+      "text": "#16233b",
+      "muted": "#566780",
+      "primary": "#f2542d",
+      "secondary": "#129a8d",
+      "tertiary": "#ffbe3d"
+    },
+    "fonts": {
+      "display": "Outfit",
+      "body": "DM Sans"
+    },
+    "shape": {
+      "corners": "large",
+      "cards": "flat"
+    },
+    "texture": "none"
+  },
+  "shotRules": {
+    "pacing": "balanced",
+    "cutFrequency": "A new 3D scene every 3 to 5 seconds, each on a sentence or on the word its main text says.",
+    "camera": "One slow, smooth move per scene: a push in, a small orbit, or a pull back that reveals scale. The scene owns it, not the channel's Motion profile.",
+    "characters": "No real people. A person is a faceless figure drawn by code. Objects stand on a clean floor with a soft shadow.",
+    "sound": "No transition sounds. The narration carries the video, the music sits under it."
+  },
+  "objects": [
+    {
+      "id": "orb",
+      "size": 3,
+      "words": []
+    },
+    {
+      "id": "planet",
+      "size": 90,
+      "words": [
+        "earth",
+        "planet",
+        "world",
+        "globe",
+        "föld",
+        "bolygó"
+      ]
+    },
+    {
+      "id": "moon",
+      "size": 85,
+      "words": [
+        "moon",
+        "asteroid"
+      ]
+    },
+    {
+      "id": "sun",
+      "size": 95,
+      "words": [
+        "sun",
+        "star",
+        "csillag"
+      ]
+    },
+    {
+      "id": "cube",
+      "size": 4,
+      "words": [
+        "block",
+        "cube",
+        "brick",
+        "kocka"
+      ]
+    },
+    {
+      "id": "crate",
+      "size": 6,
+      "words": [
+        "box",
+        "crate",
+        "container",
+        "doboz"
+      ]
+    },
+    {
+      "id": "tower",
+      "size": 40,
+      "words": [
+        "tower",
+        "skyscraper",
+        "building",
+        "city",
+        "torony",
+        "város"
+      ]
+    },
+    {
+      "id": "house",
+      "size": 30,
+      "words": [
+        "house",
+        "home",
+        "ház",
+        "otthon"
+      ]
+    },
+    {
+      "id": "tree",
+      "size": 28,
+      "words": [
+        "tree",
+        "forest",
+        "wood",
+        "erdő"
+      ]
+    },
+    {
+      "id": "mountain",
+      "size": 60,
+      "words": [
+        "mountain",
+        "everest",
+        "volcano",
+        "hill",
+        "hegy",
+        "rock",
+        "stone"
+      ]
+    },
+    {
+      "id": "drop",
+      "size": 2,
+      "words": [
+        "water",
+        "drop",
+        "ocean",
+        "sea",
+        "rain",
+        "víz",
+        "csepp",
+        "tenger"
+      ]
+    },
+    {
+      "id": "cloud",
+      "size": 50,
+      "words": [
+        "cloud",
+        "sky",
+        "weather",
+        "air",
+        "felhő",
+        "levegő"
+      ]
+    },
+    {
+      "id": "person",
+      "size": 20,
+      "words": [
+        "person",
+        "people",
+        "human",
+        "man",
+        "woman",
+        "ember"
+      ]
+    },
+    {
+      "id": "car",
+      "size": 25,
+      "words": [
+        "car",
+        "truck",
+        "traffic",
+        "drive",
+        "autó"
+      ]
+    },
+    {
+      "id": "rocket",
+      "size": 38,
+      "words": [
+        "rocket",
+        "launch",
+        "spacecraft",
+        "space",
+        "rakéta"
+      ]
+    },
+    {
+      "id": "plane",
+      "size": 35,
+      "words": [
+        "plane",
+        "airplane",
+        "flight",
+        "fly",
+        "repülő"
+      ]
+    },
+    {
+      "id": "ship",
+      "size": 37,
+      "words": [
+        "ship",
+        "boat",
+        "cruise",
+        "hajó"
+      ]
+    },
+    {
+      "id": "coin",
+      "size": 2,
+      "words": [
+        "coin",
+        "money",
+        "dollar",
+        "cost",
+        "price",
+        "pénz",
+        "érme"
+      ]
+    },
+    {
+      "id": "gear",
+      "size": 5,
+      "words": [
+        "machine",
+        "engine",
+        "gear",
+        "motor",
+        "gép"
+      ]
+    },
+    {
+      "id": "bottle",
+      "size": 4,
+      "words": [
+        "bottle",
+        "drink",
+        "palack"
+      ]
+    },
+    {
+      "id": "cup",
+      "size": 3,
+      "words": [
+        "cup",
+        "coffee",
+        "tea",
+        "kávé",
+        "bögre"
+      ]
+    },
+    {
+      "id": "clock",
+      "size": 4,
+      "words": [
+        "clock",
+        "time",
+        "hour",
+        "minute",
+        "second",
+        "year",
+        "idő"
+      ]
+    },
+    {
+      "id": "bulb",
+      "size": 3,
+      "words": [
+        "light",
+        "bulb",
+        "idea",
+        "electricity",
+        "fény",
+        "ötlet"
+      ]
+    },
+    {
+      "id": "battery",
+      "size": 3,
+      "words": [
+        "battery",
+        "energy",
+        "power",
+        "akkumulátor",
+        "energia"
+      ]
+    },
+    {
+      "id": "book",
+      "size": 4,
+      "words": [
+        "book",
+        "story",
+        "read",
+        "könyv"
+      ]
+    },
+    {
+      "id": "phone",
+      "size": 3,
+      "words": [
+        "phone",
+        "screen",
+        "app",
+        "telefon"
+      ]
+    },
+    {
+      "id": "key",
+      "size": 2,
+      "words": [
+        "lock",
+        "kulcs"
+      ]
+    },
+    {
+      "id": "bug",
+      "size": 1,
+      "words": [
+        "ant",
+        "bug",
+        "insect",
+        "bee",
+        "hangya",
+        "rovar"
+      ]
+    },
+    {
+      "id": "fish",
+      "size": 7,
+      "words": [
+        "fish",
+        "whale",
+        "shark",
+        "bálna"
+      ]
+    },
+    {
+      "id": "bone",
+      "size": 5,
+      "words": [
+        "bone",
+        "skeleton",
+        "dinosaur",
+        "csont"
+      ]
+    },
+    {
+      "id": "tooth",
+      "size": 1,
+      "words": [
+        "tooth",
+        "teeth"
+      ]
+    },
+    {
+      "id": "egg",
+      "size": 2,
+      "words": [
+        "egg",
+        "tojás"
+      ]
+    },
+    {
+      "id": "apple",
+      "size": 3,
+      "words": [
+        "apple",
+        "fruit",
+        "food",
+        "alma",
+        "gyümölcs"
+      ]
+    },
+    {
+      "id": "cell",
+      "size": 1,
+      "words": [
+        "cell",
+        "bacteria",
+        "virus",
+        "sejt"
+      ]
+    },
+    {
+      "id": "atom",
+      "size": 0,
+      "words": [
+        "atom",
+        "electron",
+        "molecule",
+        "nucleus"
+      ]
+    },
+    {
+      "id": "brain",
+      "size": 3,
+      "words": [
+        "brain",
+        "mind",
+        "memory",
+        "agy"
+      ]
+    },
+    {
+      "id": "heart",
+      "size": 3,
+      "words": [
+        "heart",
+        "blood",
+        "love",
+        "szív"
+      ]
+    },
+    {
+      "id": "cheese",
+      "size": 3,
+      "words": [
+        "cheese",
+        "sajt"
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "id": "title",
+      "label": "Question over one object",
+      "when": "The first scene: the video's one strange question, with the thing it is about.",
+      "params": {
+        "headline": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "kicker": {
+          "maxWords": 4,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:title",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object",
+            "kicker": "$kicker"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter",
+      "label": "Chapter on a turntable",
+      "when": "The start of a new section.",
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:chapter",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "statement",
+      "label": "Object and two lines",
+      "when": "A claim: the first line sets it up, the second lands it.",
+      "params": {
+        "line1": {
+          "maxWords": 5,
+          "required": true
+        },
+        "line2": {
+          "maxWords": 4,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:statement",
+          "vars": {
+            "line1": "$line1",
+            "line2": "$line2",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "word",
+      "label": "One huge word",
+      "when": "One word is the whole point.",
+      "params": {
+        "word": {
+          "maxWords": 2,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:word",
+          "vars": {
+            "word": "$word",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "highlight",
+      "label": "Marked line",
+      "when": "A short line with one key word to mark.",
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "mark": {
+          "maxWords": 1,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:highlight",
+          "vars": {
+            "line": "$line",
+            "mark": "$mark",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "Question mark",
+      "when": "The narration asks the viewer something.",
+      "ruleFirst": true,
+      "params": {
+        "question": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:question",
+          "vars": {
+            "question": "$question",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "number",
+      "label": "Number and a pile",
+      "when": "The narration says a number and it matters; the object is what is counted.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "before": {
+          "maxWords": 1,
+          "required": false
+        },
+        "after": {
+          "maxWords": 1,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:number",
+          "vars": {
+            "value": "$value",
+            "before": "$before",
+            "after": "$after",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "percent",
+      "label": "Tank fills up",
+      "when": "The narration says a percentage.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:percent",
+          "vars": {
+            "value": "$value"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scale",
+      "label": "Scale comparison",
+      "when": "How big one thing is next to another: the camera pulls back from the small one.",
+      "ruleFirst": true,
+      "params": {
+        "small": {
+          "maxWords": 3,
+          "required": true
+        },
+        "big": {
+          "maxWords": 3,
+          "required": true
+        },
+        "smallObject": {
+          "type": "object",
+          "required": true
+        },
+        "bigObject": {
+          "type": "object",
+          "required": true
+        },
+        "ratio": {
+          "maxWords": 3,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:scale",
+          "vars": {
+            "small": "$small",
+            "big": "$big",
+            "smallObject": "$smallObject",
+            "bigObject": "$bigObject",
+            "ratio": "$ratio"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cutaway",
+      "label": "Cutaway view",
+      "when": "What is inside something: a ball cut open, up to three named layers.",
+      "ruleFirst": true,
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "outer": {
+          "maxWords": 3,
+          "required": false
+        },
+        "middle": {
+          "maxWords": 3,
+          "required": false
+        },
+        "inner": {
+          "maxWords": 3,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:cutaway",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object",
+            "outer": "$outer",
+            "middle": "$middle",
+            "inner": "$inner"
+          }
+        }
+      ]
+    },
+    {
+      "id": "versus",
+      "label": "Two sides on plinths",
+      "when": "This or that, before and after, wrong and right.",
+      "ruleFirst": true,
+      "params": {
+        "left": {
+          "maxWords": 4,
+          "required": true
+        },
+        "right": {
+          "maxWords": 4,
+          "required": true
+        },
+        "leftObject": {
+          "type": "object",
+          "required": true
+        },
+        "rightObject": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:versus",
+          "vars": {
+            "left": "$left",
+            "right": "$right",
+            "leftObject": "$leftObject",
+            "rightObject": "$rightObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cause",
+      "label": "A leads to B",
+      "when": "One thing causes or leads to another.",
+      "ruleFirst": true,
+      "params": {
+        "from": {
+          "maxWords": 3,
+          "required": true
+        },
+        "to": {
+          "maxWords": 3,
+          "required": true
+        },
+        "fromObject": {
+          "type": "object",
+          "required": true
+        },
+        "toObject": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:cause",
+          "vars": {
+            "from": "$from",
+            "to": "$to",
+            "fromObject": "$fromObject",
+            "toObject": "$toObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stairs",
+      "label": "Four steps",
+      "when": "Exactly four steps in order.",
+      "params": {
+        "step1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step4": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:stairs",
+          "vars": {
+            "step1": "$step1",
+            "step2": "$step2",
+            "step3": "$step3",
+            "step4": "$step4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shelf",
+      "label": "Four things",
+      "when": "Exactly four things that belong together.",
+      "params": {
+        "item1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item4": {
+          "maxWords": 3,
+          "required": true
+        },
+        "object1": {
+          "type": "object",
+          "required": true
+        },
+        "object2": {
+          "type": "object",
+          "required": true
+        },
+        "object3": {
+          "type": "object",
+          "required": true
+        },
+        "object4": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "explainer-3d:shelf",
+          "vars": {
+            "item1": "$item1",
+            "item2": "$item2",
+            "item3": "$item3",
+            "item4": "$item4",
+            "object1": "$object1",
+            "object2": "$object2",
+            "object3": "$object3",
+            "object4": "$object4"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -64,7 +64,7 @@ export function libraryCatalog({ env = process.env, off = [] } = {}) {
     };
   }).concat(
     // the blocks of the Identity's packs (packs/registerPacks)
-    [...PACK_COMPONENTS].filter(([name]) => !off.includes(name)).map(([name, meta]) => ({
+    [...PACK_COMPONENTS].filter(([name, meta]) => !off.includes(name) && !meta.presetOnly).map(([name, meta]) => ({
       name,
       role: meta.role,
       label: meta.label,

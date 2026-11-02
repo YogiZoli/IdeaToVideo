@@ -104,6 +104,12 @@ of them talking, and this video is theirs. Turn them into the script:
 
 When the data has no notes, ignore this.
 
+## Style note
+
+When the data has "styleNote", the channel's videos all have this shape: follow it.
+It never adds a fact: with notes or research, their rules above still hold. When the
+data has no styleNote, ignore this.
+
 ## Research
 
 When the data has "research", it is a brief checked by the creator. Every factual

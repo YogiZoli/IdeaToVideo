@@ -26,14 +26,22 @@ const ASK_AGAIN_SHARE = 0.34;
 const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ %$.,-]+/gu, " ").split(/\s+/).map((w) => w.replace(/^[.,-]+|[.,-]+$/g, "")).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;
 const cap = (text, max) => wordsOf(text).slice(0, max).join(" ");
+// A preset that asks a question on screen keeps its question mark, when the whole text fits.
+const capFor = (template, text, max) => {
+  const out = cap(text, max);
+  return template?.objects && out && /\?\s*$/.test(String(text)) && wordsOf(text).length <= max ? `${out}?` : out;
+};
 const longest = (ws) => ws.reduce((best, w) => (w.length > best.length ? w : best), "");
 
 // ---- the prompt ------------------------------------------------------------------
 
 export function templateList(templates) {
-  return templates
-    .map((t) => `${t.id}: ${t.when} Params: ${Object.entries(t.params).map(([id, p]) => `${id}${p.required ? "" : "?"}${p.type === "number" ? " (number)" : ` (max ${p.maxWords} words)`}`).join(", ")}`)
+  const kind = (p) => (p.type === "number" ? " (number)" : p.type === "object" ? " (one of OBJECTS)" : ` (max ${p.maxWords} words)`);
+  const list = templates
+    .map((t) => `${t.id}: ${t.when} Params: ${Object.entries(t.params).map(([id, p]) => `${id}${p.required ? "" : "?"}${kind(p)}`).join(", ")}`)
     .join("\n");
+  const objects = templates.find((t) => t.objects)?.objects;
+  return objects ? `${list}\n\nOBJECTS (what the scene shows, pick what the sentence is about)\n${objects.map((o) => o.id).join(", ")}` : list;
 }
 
 export function planMessages({ templates, sentences, title = "", language = "en", pace, previous = null, shotRules = {}, note = "" }) {
@@ -73,13 +81,111 @@ export function numberIn(text) {
   return { value, before: m[1] ?? "", after: m[3]?.toLowerCase() === "percent" ? "%" : (m[3] ?? "") };
 }
 
+const wordKey = (w) => String(w).toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}]/gu, "");
+const plain = (w) => wordKey(w).replace(/(es|s)$/, "");
+
+/** What a text is about, from a preset's objects: the matches in the order they are said. Pure. */
+export function objectsIn(text, objects = []) {
+  const out = [];
+  for (const raw of wordsOf(text)) {
+    const w = wordKey(raw);
+    const hit = objects.find((o) => (o.words ?? []).some((x) => x === w || x === plain(raw)));
+    if (hit && !out.some((x) => x.object.id === hit.id)) out.push({ object: hit, word: raw });
+  }
+  return out;
+}
+
+// Which object a text shows. Nothing named: the preset's first, its neutral one.
+const objectFor = (text, objects = []) => objectsIn(text, objects)[0]?.object.id ?? objects[0]?.id ?? "";
+
+// A line cut to its limit must not stop on a word that needs the next one.
+const HANGING = /^(a|an|the|and|or|but|of|to|in|on|at|for|with|from|by|is|are|was|were|be|that|this|its|your|my|az|egy|és|de|hogy)$/i;
+function headlineOf(text, max) {
+  const ws = wordsOf(text).slice(0, max);
+  while (ws.length > 1 && HANGING.test(ws.at(-1))) ws.pop();
+  return ws.join(" ");
+}
+
+// Before and after a joining word, up to `max` words each. The words nearest to it say the most.
+function around(text, joint, max) {
+  const m = joint.exec(text);
+  if (!m) return null;
+  const left = text.slice(0, m.index);
+  const right = text.slice(m.index + m[0].length);
+  const before = wordsOf(left).slice(-max);
+  const after = wordsOf(right).slice(0, max);
+  return before.length >= 2 && after.length >= 2 ? { before: before.join(" "), after: after.join(" "), left, right, joint: m[0].toLowerCase() } : null;
+}
+
+// One object for each side of a sentence: what that side names, else what the other
+// part of the sentence names that this side's partner does not show.
+function sideObjects(left, right, said, objects) {
+  const a = objectsIn(left, objects)[0]?.object.id;
+  const b = objectsIn(right, objects)[0]?.object.id;
+  const rest = objectsIn(said, objects).map((o) => o.object.id);
+  const fallback = objects[0]?.id ?? "";
+  return [a ?? rest.find((id) => id !== b) ?? fallback, b ?? rest.find((id) => id !== a) ?? fallback];
+}
+
+// The rules of a preset's own templates: a template is filled only when the sentence
+// really says that thing, else the next one is tried.
+function ownRule(template, said) {
+  const objects = template.objects ?? [];
+  switch (template.id) {
+    case "scale": {
+      if (!/\b(bigger|larger|smaller|taller|shorter|heavier|lighter|wider|size of|as big as|times)\b|nagyobb|kisebb|magasabb/i.test(said)) return null;
+      const found = objectsIn(said, objects);
+      if (found.length < 2) return null;
+      const [a, b] = found.slice(0, 2).sort((x, y) => (x.object.size ?? 0) - (y.object.size ?? 0));
+      const times = /(\d[\d,.]*)\s*times\b/i.exec(said);
+      return { small: a.word, big: b.word, smallObject: a.object.id, bigObject: b.object.id, ...(times ? { ratio: `${times[1]} times` } : {}) };
+    }
+    case "cutaway": {
+      if (!/\b(inside|core|layers?|beneath|underneath|interior|crust)\b|belsej|réteg/i.test(said)) return null;
+      return { headline: headlineOf(said, 5), object: objectFor(said, objects) };
+    }
+    case "versus": {
+      const m = around(said, /\b(but|instead of|instead|versus|vs\.?|unlike|rather than)\b/i, 4);
+      if (!m) return null;
+      const [leftObject, rightObject] = sideObjects(m.left, m.right, said, objects);
+      return { left: m.before, right: m.after, leftObject, rightObject };
+    }
+    case "cause": {
+      const m = around(said, /\b(because|leads to|causes|turns into|becomes)\b/i, 3);
+      if (!m) return null;
+      // "B because A": the cause comes second in the sentence
+      const reversed = m.joint === "because";
+      const [from, to] = reversed ? [m.after, m.before] : [m.before, m.after];
+      const [fromObject, toObject] = reversed ? sideObjects(m.right, m.left, said, objects) : sideObjects(m.left, m.right, said, objects);
+      return { from, to, fromObject, toObject };
+    }
+    default:
+      return null;
+  }
+}
+
 // What a rule can say for a template from the words of its sentences. Null: it
-// cannot fill it (four steps need four things the words do not give).
+// cannot fill it (four steps need four things the words do not give). A template with
+// an object parameter gets the thing the sentence names.
 export function ruleParams(template, sentences) {
-  // the words of one sentence: a line made across two reads as nonsense
-  const ws = wordsOf(sentences[0]?.text ?? "");
+  const params = ruleWords(template, sentences);
+  if (!params) return null;
+  const said = sentences.map((s) => s.text).join(" ");
+  for (const [id, p] of Object.entries(template.params ?? {})) {
+    if (p.type === "object" && !(id in params)) params[id] = objectFor(said, template.objects);
+  }
+  return params;
+}
+
+function ruleWords(template, sentences) {
+  // the words of one sentence: a line made across two reads as nonsense (a shot cut
+  // from the words before another shot can hold the end of one and the start of the next)
+  const first = String(sentences[0]?.text ?? "").split(/(?<=[.!?])\s+/)[0];
+  const ws = wordsOf(first);
   if (!ws.length) return null;
   const said = sentences.map((s) => s.text).join(" ");
+  const own = ownRule(template, first);
+  if (own) return own;
   switch (template.id) {
     case "statement": {
       const a = Math.min(5, Math.ceil(ws.length / 2));
@@ -116,6 +222,14 @@ export function cleanParams(template, params, sentences) {
   const out = {};
   for (const [id, p] of Object.entries(template.params)) {
     const v = params?.[id];
+    // never an object the preset cannot draw: the sentence's own, or the neutral one
+    if (p.type === "object") {
+      const ids = (template.objects ?? []).map((o) => o.id);
+      const asked = String(v ?? "").trim().toLowerCase();
+      if (ids.includes(asked)) out[id] = asked;
+      else if (p.required) out[id] = objectFor(said, template.objects);
+      continue;
+    }
     if (p.type === "number") {
       const n = Number(String(v ?? "").replace(/[,%$\s]/g, ""));
       if (!Number.isFinite(n) || v === "" || v === undefined || v === null) {
@@ -127,7 +241,7 @@ export function cleanParams(template, params, sentences) {
       out[id] = n;
       continue;
     }
-    const text = cap(v ?? "", p.maxWords ?? MAX_WORDS);
+    const text = capFor(template, v ?? "", p.maxWords ?? MAX_WORDS);
     if (!text) {
       if (p.required) return null;
       continue;
@@ -148,7 +262,7 @@ export function toScene(template, params, { from, to }) {
     if (template.draw.types?.[id] === "number") {
       if (value.trim() && Number.isFinite(Number(value))) vars[id] = Number(value);
     } else if (list) vars[id] = value;
-    else if (value.trim()) vars[id] = cap(value, MAX_WORDS);
+    else if (value.trim()) vars[id] = capFor(template, value, MAX_WORDS);
   }
   return { from, ...(to !== from ? { to } : {}), component: template.draw.component, vars, template: template.id };
 }
@@ -162,10 +276,12 @@ export function ruleScene({ byId, sentences, previous, turn, first, title }) {
   const from = sentences[0].id;
   const to = sentences[sentences.length - 1].id;
   if (first && byId.title && previous !== byId.title.draw.component) {
-    const headline = cap(title, byId.title.params.headline.maxWords) || ruleParams(byId.title, sentences)?.headline;
-    if (headline) return toScene(byId.title, { headline }, { from, to });
+    const headline = capFor(byId.title, title, byId.title.params.headline.maxWords) || ruleParams(byId.title, sentences)?.headline;
+    if (headline) return toScene(byId.title, { ...ruleParams(byId.title, sentences), headline }, { from, to });
   }
-  const tried = ["percent", "number", ...Array.from({ length: ROTATION.length }, (_, i) => ROTATION[(turn + i) % ROTATION.length]), "chapter", "question"];
+  // a preset's own templates come first, they fill only when the sentence says that thing
+  const own = Object.values(byId).filter((t) => t.ruleFirst).map((t) => t.id);
+  const tried = [...own, "percent", "number", ...Array.from({ length: ROTATION.length }, (_, i) => ROTATION[(turn + i) % ROTATION.length]), "chapter", "question"];
   for (const id of tried) {
     const t = byId[id];
     if (!t || t.draw.component === previous) continue;
