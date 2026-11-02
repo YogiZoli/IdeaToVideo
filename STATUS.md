@@ -15,8 +15,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **Installer kept:** `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`.
 - **`docs/BUILD_PLAN.md`:** new housekeeping rules, and Phase 9 (macOS build) added.
 - **Backup:** every local branch pushed. Every branch's `build.yml` runs only on `pull_request` and
-  `workflow_dispatch`, so no Actions run. No PR. This work is on `housekeeping-build-rules`, not
-  merged into `main`.
+  `workflow_dispatch`, so no Actions run. No PR. Merged into `main` from `housekeeping-build-rules`.
 - **Not touched:** `~/.cache/hyperframes` (727 MB) and `~/.cache/huggingface` (141 MB), other tools
   may use them.
 
