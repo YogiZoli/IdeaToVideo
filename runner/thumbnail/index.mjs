@@ -83,8 +83,17 @@ function saveState(projectDir, s) {
 export function stateView({ projectDir, identityDir }) {
   const s = loadState(projectDir);
   const v = (x) => ({ ...x, file: x.file ? abs(projectDir, x.file) : null, pictureFile: x.pictureFile ? abs(projectDir, x.pictureFile) : null });
+  // a channel video starts on the free maker (docs/BUILD_PLAN.md: 0 USD per
+  // video); the Gemini pictures stay one choice away, with their price
+  let fresh = {};
+  try {
+    if (!s.history?.length && loadProject(projectDir).recipe) fresh = { model: "brand" };
+  } catch {
+    fresh = {};
+  }
   return {
     ...s,
+    ...fresh,
     variants: s.variants.map(v),
     chosenFile: s.chosen && fs.existsSync(path.join(projectDir, CHOSEN)) ? path.join(projectDir, CHOSEN) : null,
     photos: photosOf(identityDir).map((p) => ({ name: p.name, file: p.file })),
@@ -150,6 +159,7 @@ export function estimate({ projectDir, identityDir, withFace = false, model = DE
   const m = modelOf(model);
   const n = (slots ?? [1, 2, 3]).length;
   if (m.test) return { usd: 0, low: 0, high: 0, guess: false, images: n, test: true, text: "free (test pictures)" };
+  if (m.free) return { usd: 0, low: 0, high: 0, guess: false, images: n, test: false, text: "free" };
   const photos = withFace ? photosOf(identityDir).length : 0;
   const ideas = estimateIdeas({ title: titleOf(projectDir), hook: hookOf(projectDir), audience: audienceOf(identityDir), language: loadProject(projectDir).language, count: n });
   const images = n * (m.usdPerImage + ((PROMPT_TOKENS + photos * PHOTO_TOKENS) * m.inPerMillion) / 1e6);
@@ -159,9 +169,20 @@ export function estimate({ projectDir, identityDir, withFace = false, model = DE
 
 // ---- make -------------------------------------------------------------------------------
 
+// Words without AI: three different cuts of the title.
+const ruleIdeas = ({ title, count, test }) => (test ? testIdeas({ title, count }) : testIdeas({ title, count }).map((x, i) => ({ ...x, picture: `Brand colours ${i + 1}` })));
+
 // The test maker's picture: ffmpeg's test pattern, plainly not a real one.
 async function testPicture(out, env) {
   await ffmpeg(["-f", "lavfi", "-i", "testsrc2=size=1376x768:rate=1", "-frames:v", "1", out], env);
+}
+
+// The free maker's picture: a soft gradient in the Brand's own colours, a
+// different direction per variant, so the three do not look the same.
+async function brandPicture(out, colors, slot, env) {
+  const hex = (c) => `0x${String(c).replace("#", "")}`;
+  const ends = [[0, 0, 1376, 768], [1376, 0, 0, 768], [0, 768, 1376, 0]][(slot - 1) % 3];
+  await ffmpeg(["-f", "lavfi", "-i", `gradients=s=1376x768:c0=${hex(colors.primary)}:c1=${hex(colors.background)}:x0=${ends[0]}:y0=${ends[1]}:x1=${ends[2]}:y1=${ends[3]}:duration=1:speed=0`, "-frames:v", "1", out], env);
 }
 
 function stamp(now = new Date()) {
@@ -197,22 +218,23 @@ export async function make({ projectDir, identityDir, apiKey, withFace = false, 
   const audience = audienceOf(identityDir);
 
   onProgress({ step: "ideas" });
-  const ideas = m.test ? testIdeas({ title, count: want.length }) : await writeIdeas({ apiKey, fetchImpl, title, hook, audience, language, count: want.length, onProgress });
+  const ideas = m.test || m.free ? ruleIdeas({ title, count: want.length, test: m.test }) : await writeIdeas({ apiKey, fetchImpl, title, hook, audience, language, count: want.length, onProgress });
 
   let s = loadState(projectDir);
   keepOld(projectDir, s, want);
   s = { ...s, withFace, model: m.id, variants: s.variants.filter((v) => !want.includes(v.slot)) };
   saveState(projectDir, s);
   const refs = photos.map((p) => ({ mime: p.mime, data: fs.readFileSync(p.file).toString("base64") }));
-  const perImage = m.test ? 0 : r2(m.usdPerImage + ((PROMPT_TOKENS + refs.length * PHOTO_TOKENS) * m.inPerMillion) / 1e6);
+  const perImage = m.test || m.free ? 0 : r2(m.usdPerImage + ((PROMPT_TOKENS + refs.length * PHOTO_TOKENS) * m.inPerMillion) / 1e6);
   const errors = [];
-  let spent = m.test ? 0 : estimateIdeas({ title, hook, audience, language, count: want.length }).usd; // the ideas call
+  let spent = m.test || m.free ? 0 : estimateIdeas({ title, hook, audience, language, count: want.length }).usd; // the ideas call
   for (const [i, slot] of want.entries()) {
     const idea = ideas[i];
     onProgress({ step: "picture", n: i + 1, of: want.length });
     const pictureFile = path.join(dirOf(projectDir), `v${slot}-picture.jpg`);
     try {
       if (m.test) await testPicture(pictureFile, env);
+      else if (m.free) await brandPicture(pictureFile, card.colors, slot, env);
       else {
         const prompt = picturePrompt({ idea, colors: card.colors, withFace, photoCount: refs.length });
         fs.writeFileSync(pictureFile, await makePicture({ apiKey, fetchImpl, model: m.id, prompt, refs, sleep, onRetry: (r) => onProgress({ step: "retry", ...r }) }));

@@ -40,6 +40,8 @@ export function backupFiles(projectDir, level = 4) {
   // the packaging chosen at gate 1, and what a course import prefilled
   add("packaging.json", "_packaging.json", 1);
   add("seed.json", "_seed.json", 1);
+  // where every outside picture of a channel video came from (assets/license.mjs)
+  add("assets_license.json", "_assets_license.json", 1);
   add("course-import.json", "_course_import.json", 1);
   add("log.txt", "_log.txt", 1);
   // the thumbnail picked on the Thumbnail tab (DECISIONS 131)

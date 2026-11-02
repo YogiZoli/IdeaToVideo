@@ -1,0 +1,430 @@
+{
+  "schema": "style-preset/1",
+  "id": "motion-frames",
+  "label": "Motion Frames",
+  "description": "The motion graphics this app already makes: the channel's Brand colours and font, its Motion profile, and its own scene library.",
+  "engine": "script",
+  "tokens": {
+    "from": "brand",
+    "colors": {
+      "background": "#0f1729",
+      "text": "#f4f6fb",
+      "muted": "#9aa7bd",
+      "primary": "#3b82f6",
+      "secondary": "#22c55e"
+    },
+    "fonts": {
+      "display": "Inter",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    },
+    "texture": "none"
+  },
+  "shotRules": {
+    "pacing": "balanced",
+    "cutFrequency": "A new picture every 3 to 5 seconds. Every scene change sits on a sentence.",
+    "camera": "The channel's Motion profile decides it.",
+    "characters": "None. No people on screen.",
+    "sound": "No transition sounds. The narration carries the video, the music sits under it."
+  },
+  "templates": [
+    {
+      "id": "title",
+      "label": "Big title",
+      "when": "The first scene, or a big new idea.",
+      "params": {
+        "headline": {
+          "maxWords": 4,
+          "required": true
+        },
+        "kicker": {
+          "maxWords": 4
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:hero",
+          "vars": {
+            "line1": "$headline",
+            "kick": "$kicker"
+          }
+        },
+        {
+          "component": "titlecard-calm",
+          "vars": {
+            "headline": "$headline",
+            "kicker": "$kicker"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter",
+      "label": "Chapter marker",
+      "when": "The start of a new section.",
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:step-card",
+          "vars": {
+            "line1": "$headline"
+          }
+        },
+        {
+          "component": "push-in",
+          "vars": {
+            "text": "$headline"
+          }
+        }
+      ]
+    },
+    {
+      "id": "statement",
+      "label": "Two line statement",
+      "when": "A claim: the first line sets it up, the second line lands it.",
+      "params": {
+        "line1": {
+          "maxWords": 5,
+          "required": true
+        },
+        "line2": {
+          "maxWords": 4,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:statement",
+          "vars": {
+            "line1": "$line1",
+            "line2": "$line2"
+          }
+        },
+        {
+          "component": "per-word-rise",
+          "vars": {
+            "text": "$line1 $line2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "word",
+      "label": "One big word",
+      "when": "One word is the whole point.",
+      "params": {
+        "word": {
+          "maxWords": 2,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:display-word",
+          "vars": {
+            "word": "$word"
+          }
+        },
+        {
+          "component": "text-shimmer",
+          "vars": {
+            "text": "$word"
+          }
+        }
+      ]
+    },
+    {
+      "id": "highlight",
+      "label": "Marked line",
+      "when": "A short line with one key word to mark.",
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "mark": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "marker-highlight",
+          "vars": {
+            "text": "$line",
+            "emphasis_word": "$mark"
+          }
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "Question",
+      "when": "The narration asks the viewer something.",
+      "params": {
+        "question": {
+          "maxWords": 6,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:question",
+          "vars": {
+            "line1": "$question"
+          }
+        },
+        {
+          "component": "typed-prompt",
+          "vars": {
+            "text": "$question"
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "label": "Two sides",
+      "when": "Wrong and right, before and after, this or that.",
+      "params": {
+        "left": {
+          "maxWords": 5,
+          "required": true
+        },
+        "right": {
+          "maxWords": 5,
+          "required": true
+        },
+        "word": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:split",
+          "vars": {
+            "item1": "$left",
+            "item2": "$right",
+            "word2": "$word"
+          }
+        },
+        {
+          "component": "line-swap",
+          "vars": {
+            "line_a": "$left",
+            "line_b": "$right",
+            "underline_word": "$word"
+          }
+        }
+      ]
+    },
+    {
+      "id": "relation",
+      "label": "A leads to B",
+      "when": "One thing causes or leads to another.",
+      "params": {
+        "from": {
+          "maxWords": 3,
+          "required": true
+        },
+        "to": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:arrow",
+          "vars": {
+            "lnode": "$from",
+            "rnode": "$to",
+            "lico": "$from",
+            "rico": "$to"
+          }
+        },
+        {
+          "component": "grid-card-assemble",
+          "vars": {
+            "items": "$from,$to"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choice",
+      "label": "Two outcomes",
+      "when": "It goes one of two ways.",
+      "params": {
+        "start": {
+          "maxWords": 5,
+          "required": true
+        },
+        "good": {
+          "maxWords": 5,
+          "required": true
+        },
+        "bad": {
+          "maxWords": 5,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:branch",
+          "vars": {
+            "root": "$start",
+            "win": "$good",
+            "lose": "$bad"
+          }
+        },
+        {
+          "component": "grid-card-assemble",
+          "vars": {
+            "items": "$start,$good,$bad"
+          }
+        }
+      ]
+    },
+    {
+      "id": "steps",
+      "label": "Four steps",
+      "when": "Exactly four steps in order.",
+      "params": {
+        "step1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step4": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "grid-card-assemble",
+          "vars": {
+            "items": "$step1,$step2,$step3,$step4",
+            "layout": "list"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tiles",
+      "label": "Four things",
+      "when": "Exactly four things that belong together, in no order.",
+      "params": {
+        "item1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item4": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:tiles",
+          "vars": {
+            "item1": "$item1",
+            "item2": "$item2",
+            "item3": "$item3",
+            "item4": "$item4",
+            "ico1": "$item1",
+            "ico2": "$item2",
+            "ico3": "$item3",
+            "ico4": "$item4"
+          }
+        },
+        {
+          "component": "notification-stack",
+          "vars": {
+            "titles": "$item1,$item2,$item3,$item4",
+            "bodies": ",,,"
+          }
+        }
+      ]
+    },
+    {
+      "id": "number",
+      "label": "Number counts up",
+      "when": "The narration says a number and it matters.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "before": {
+          "maxWords": 1
+        },
+        "after": {
+          "maxWords": 1
+        }
+      },
+      "use": [
+        {
+          "component": "count-up",
+          "vars": {
+            "end": "$value",
+            "prefix": "$before",
+            "suffix": "$after"
+          }
+        }
+      ]
+    },
+    {
+      "id": "percent",
+      "label": "Percent dial",
+      "when": "The narration says a percentage.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        }
+      },
+      "use": [
+        {
+          "component": "zg-archetypes:gauge",
+          "vars": {
+            "pct": "$value"
+          }
+        },
+        {
+          "component": "conic-progress-ring",
+          "vars": {
+            "progress": "$value",
+            "label": "$value"
+          }
+        }
+      ]
+    }
+  ]
+}

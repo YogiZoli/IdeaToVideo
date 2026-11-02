@@ -28,6 +28,22 @@
         "playlistUrl": { "type": ["string", "null"], "maxLength": 300 }
       }
     },
+    "recipe": {
+      "type": "object",
+      "$comment": "the channel's locked recipe when this video was started (channels/recipe.mjs, DECISIONS 132): changing the recipe later never changes a video under way"
+    },
+    "queue": {
+      "type": "object",
+      "$comment": "this video's place in a Week batch (channels/batch.mjs, DECISIONS 136)",
+      "required": ["batch", "position", "of"],
+      "additionalProperties": false,
+      "properties": {
+        "batch": { "type": "string", "maxLength": 40 },
+        "position": { "type": "integer", "minimum": 1 },
+        "of": { "type": "integer", "minimum": 1 },
+        "angle": { "type": "string", "maxLength": 400 }
+      }
+    },
     "publishing": {
       "type": "object",
       "$comment": "the last Send to Publishing that the publishing app took (DECISIONS 127)",

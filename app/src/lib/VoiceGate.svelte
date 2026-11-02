@@ -16,7 +16,7 @@
   import VoiceCards, { type Voice } from "./VoiceCards.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText, importMusic } from "./api";
-  import { narratorProvider } from "./catalog";
+  import { narratorProvider, voiceNeedsKey } from "./catalog";
   import { running } from "./work.svelte";
   import type { TabId } from "./tabs";
 
@@ -33,7 +33,7 @@
   let { app, dir, gate, scriptApproved, voiceInfo = null, changed, goto }: { app: AppState; dir: string; gate?: Gate; scriptApproved: boolean; voiceInfo?: Info | null; changed: () => Promise<void>; goto: (t: TabId) => void } = $props();
 
   const provider = $derived(narratorProvider(app.config?.narrator.provider));
-  const hasKey = $derived(!!app.keys[provider]);
+  const hasKey = $derived(!voiceNeedsKey(provider) || !!app.keys[provider]);
   const hasEleven = $derived(!!app.keys["elevenlabs"]);
 
   const COMMANDS = ["make-voice", "make-music", "set-music"];
@@ -49,7 +49,7 @@
   const info = $derived(madeInfo ?? voiceInfo);
   let stamp = $state(Date.now()); // reloads the players after a new mix
 
-  let kind = $state<"elevenlabs" | "file" | "none">(untrack(() => (app.keys["elevenlabs"] ? "elevenlabs" : "none")));
+  let kind = $state<"elevenlabs" | "synth" | "file" | "none">(untrack(() => (app.keys["elevenlabs"] ? "elevenlabs" : "synth")));
   let ownFile = $state<string | null>(null);
   let prompt = $state("");
   let usd = $state<number | null>(null);
@@ -231,6 +231,7 @@
           <textarea rows="2" bind:value={prompt} aria-label="What the music should sound like"></textarea>
           <p class="hint">The mood, in English. Commercial use needs a paid ElevenLabs plan.</p>
         {/if}
+        <label class="choice"><input type="radio" bind:group={kind} value="synth" /> Made by code (free)</label>
         <label class="choice"><input type="radio" bind:group={kind} value="file" disabled={!ownFile} /> My own file{ownFile ? `: ${ownFile.replace("audio/", "")}` : ""}</label>
         <div><button type="button" onclick={chooseMusic}>Choose a music file</button></div>
         <label class="choice"><input type="radio" bind:group={kind} value="none" /> No music</label>

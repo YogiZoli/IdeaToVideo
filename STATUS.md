@@ -1,10 +1,67 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-29 (thumbnails, DECISIONS 131)
+Frissítve: 2026-11-02 (B-roll engine, DECISIONS 137)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-02, B-roll engine, DECISIONS 137)
+
+**Phase 1b of `docs/BUILD_PLAN.md` is done. Phase 2, Archive Collage, is next.**
+
+- **Engine:** `runner/broll/engine.mjs`. For each stretch the cheapest source that
+  fits: public domain film (Prelinger, NASA, Wikimedia Commons), a free still moved
+  in 2.5D on this computer (`broll/parallax.mjs`, `broll/depth.mjs`, rendered by
+  HyperFrames, about 70 s a clip), Pixabay (the existing integration and key), then
+  a paid Kie AI clip.
+- **Paid clips:** off by default. Per channel in its recipe: a switch, a most per
+  video, a most per month. Seedance 1.0 Lite, 0.12 USD a 5 second clip at 720p. The
+  Preview tab lists the scenes and the total; nothing is spent until "Approve and
+  spend". Kie AI key in the keychain, tested with the free balance call: 80 credits,
+  about 0.40 USD.
+- **Open for Zoltan:** Kie AI's terms do not say who owns the output; only its product
+  page says "Fully licensed for business use" (BUILD_PLAN, phase 1b).
+- **A recipe locked before this keeps B-roll off:** turn it on in the channel's recipe.
+- **Ledger:** every clip in `assets_license.json` with source or model, license or
+  terms, author, prompt, cost, date.
+- Branch `broll-engine`, committed, not pushed. Tests and the installer: see DECISIONS 137.
+
+**Not tried yet:** a real paid clip; a real AI on the plan and the frame check (stand-ins
+and the rule through a real render only).
+
+**Next:** Zoltan turns B-roll on for one channel and tries one video. Then Phase 2.
+
+## Earlier (2026-11-02, channels and presets, DECISIONS 132 to 136)
+
+**The plan is `docs/BUILD_PLAN.md`. Every session reads it first and does only
+the next "todo" phase. Phase 1 is done, Phase 2 is next.**
+
+- **Home is the channel screen:** pick a channel, its locked recipe, idea or
+  script in, video out, stopping at the Preview. Advanced toggle in the top bar:
+  the wizards are behind it, nothing was deleted.
+- **Preset engine:** `runner/presets/`. Preset 1, Motion Frames: 13 templates,
+  the channel's zg-frames blocks first, bundled components second. The LLM only
+  fills templates; a dead AI still gives a video.
+- **Free voice:** Kokoro on this computer, word times from the model itself.
+  An option: Zoltan's channels keep his ElevenLabs clone. Music by code.
+- **Asset license module:** `runner/assets/`, `assets_license.json` per video.
+- **Week batch:** 7 scripts in one run, queued on the channel screen.
+- Branch `channel-presets`, **not committed**. Tests: Node 393 of 396 (the one
+  red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped),
+  Rust 49, UI check 0 errors, e2e 54/54, channel e2e 29/29 with the real voice
+  and render.
+- Local installer built 2026-11-02 16:46 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`
+  (109 MiB). No public installer, no GitHub Actions.
+
+**Not tried yet:** a real AI on the template planner (stand-in answers and the
+rule-based plan through a real render only); the `overlay` avatar against HeyGen
+(costs credits); Openverse live (its server gave a 504 that day). The Library
+of Congress search is blocked by a Cloudflare bot check; Wikimedia Commons works.
+
+**Next:** Zoltan tries one video on the local installer and decides the open
+licence table in `docs/BUILD_PLAN.md`. Then Phase 2, Archive Collage.
 
 ## Now (2026-10-29, thumbnails, DECISIONS 131)
 

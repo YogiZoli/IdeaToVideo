@@ -59,15 +59,26 @@ import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gate
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
 import { friendlyMessage } from "./friendly.mjs";
+import { planAuto, findFree, findPixabay, finishFind, setPaidWanted, reviewState as brollReview, approvePaid } from "./broll/engine.mjs";
+import { balance as kieBalance } from "./generate/kie.mjs";
 import { planBroll, estimateBroll, makeBroll, updateItem as updateBroll, againItem as againBroll, removeItem as removeBroll, attach as attachBroll, loadPlan as loadBrollPlan, usesGenerated } from "./broll/index.mjs";
-import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP } from "./broll/settings.mjs";
-import { choices as brollChoices } from "./generate/index.mjs";
+import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP, PAID_LIMITS } from "./broll/settings.mjs";
+import { choices as brollChoices, generatorOf, PAID_GENERATOR, usdFor } from "./generate/index.mjs";
 import { previewCourse, importCourse, listCourses, exportCourse, readSeed } from "./course/index.mjs";
 import { channelBoard, setUpload, markSent } from "./course/board.mjs";
 import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
 import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import * as thumbnail from "./thumbnail/index.mjs";
+import { listPresets, loadPreset, presetCard } from "./presets/index.mjs";
+import { renderStylesheet, tokensFor } from "./presets/stylesheet.mjs";
+import { makeTemplateScenes } from "./gates/scenes/templates.mjs";
+import { defaultRecipe, loadRecipe, saveRecipe, normalizeRecipe, scriptMarkdown, ownMusic, musicDir, VOICE_KINDS, MUSIC_SOURCES } from "./channels/recipe.mjs";
+import { runWeekBatch, listQueue, WEEK } from "./channels/batch.mjs";
+import { MOODS } from "./providers/music/synth.mjs";
+import { ensureModel, modelDir, MODEL_BYTES, MODEL_FILES, DEFAULT_VOICE } from "./providers/tts/kokoro.mjs";
+import { searchAll, addFreeImage, cachePreview as cacheFreePreview } from "./assets/sources.mjs";
+import { readLedger, logTableFootage } from "./assets/license.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -355,6 +366,75 @@ function latestVideo(projectDir) {
   };
 }
 
+// Gate 1: the script of one ONE Video. The Script tab, the channel screen and
+// the Week batch all come through here. Writes script.json + script.md and
+// leaves the gate pending (or approved in autopilot).
+async function writeScriptGate({ projectDir, identityDir, llm, input = {}, channel = {} }) {
+  const dict = loadDictionary(identityDir);
+  let project = setGate(loadProject(projectDir), "script", { state: "running", mode: "recommended" });
+  saveProject(projectDir, project);
+  appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
+  try {
+    const plan = ctaOf(identityDir, input.cta);
+    const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
+      writeScript({
+        llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
+        input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
+        onProgress: (p) => emit({ event: "progress", ...p }),
+      }),
+    );
+    Object.assign(res.script, takeSegments(projectDir, identityDir, plan, input.cta));
+    for (const c of plan) if (c.note) appendLog(projectDir, `script: ${c.note}`);
+    writeJson(path.join(projectDir, "script.json"), res.script);
+    writeAtomic(path.join(projectDir, "script.md"), res.markdown);
+    // The packaging (title ideas, summary, tags) right with the script
+    // (DECISIONS 86). A problem here never loses the script.
+    try {
+      const pack = await makePackaging({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, language: project.language });
+      appendLog(projectDir, `packaging: ${pack.titles.length} title ideas${pack.chosen ? ", the chosen title kept" : ""}`);
+    } catch (e) {
+      appendLog(projectDir, `packaging: failed, ${e.message}`);
+    }
+    project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
+    const packTitle = loadPackaging(projectDir)?.title;
+    if (packTitle) project.title = packTitle;
+    else if (res.script.title && !project.title) project.title = res.script.title;
+    saveProject(projectDir, project);
+    const findings = checkAll(dict, spokenFields(res.script).map(([where, text]) => [`script ${where}`, text]));
+    if (res.humanize !== "off") appendLog(projectDir, `script: natural voice ${res.humanize}${res.humanizeNote ? `, ${res.humanizeNote}` : ""}`);
+    appendLog(projectDir, `script: done, ${res.words} words${findings.length ? `, ${findings.length} dictionary findings` : ""}`);
+    return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status, dictionary: findings, humanize: res.humanize, humanizeNote: res.humanizeNote };
+  } catch (e) {
+    const failed = setGate(loadProject(projectDir), "script", { state: "failed", error: String(e.message).slice(0, 2000) });
+    saveProject(projectDir, failed);
+    appendLog(projectDir, `script: failed, ${e.message}`);
+    throw e;
+  }
+}
+
+// The channel recipe's scene plan: the same steps and checks as gate 3's other
+// plans, the same table. The price is on the channel screen, not asked per step.
+async function templateScenes({ projectDir, identityDir, look, llm }) {
+  const project = loadProject(projectDir);
+  const preset = loadPreset(project.recipe?.preset ?? (identityDir ? loadRecipe(identityDir)?.preset : null) ?? "motion-frames");
+  saveProject(projectDir, setGate(project, "scenes", { state: "running", mode: llm ? "recommended" : "default" }));
+  appendLog(projectDir, `scenes: ${preset.label} templates ${llm ? `with ${llm.provider}/${llm.model || "default model"}` : "by rule, no AI"}`);
+  try {
+    const r = await timed("scenes", jsonCount(projectDir, "sentences.json"), emit, () =>
+      makeTemplateScenes({ llm, projectDir, preset, language: project.language, title: project.title, off: offOf(look), identityDir: identityDir ?? null, videoId: path.basename(projectDir), onProgress: (p) => emit({ event: "progress", ...p }) }),
+    );
+    brollBack(projectDir);
+    const next = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: llm ? "recommended" : "default" });
+    saveProject(projectDir, next);
+    appendLog(projectDir, `scenes: done, ${r.scenes} scenes from ${r.parts} part${r.parts === 1 ? "" : "s"}, ${r.byRule} by rule${r.warnings.length ? `; ${r.warnings.slice(0, 3).join(" ")}` : ""}`);
+    return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: next.gates.scenes, status: next.status };
+  } catch (e) {
+    saveProject(projectDir, setGate(loadProject(projectDir), "scenes", { state: "failed", error: String(e.message).slice(0, 2000) }));
+    appendLog(projectDir, `scenes: failed, ${e.message}`);
+    throw e;
+  }
+}
+
 const commands = {
   // Send to Publishing (publishing.mjs, DECISIONS 115): the card of a
   // rendered video to the user's publishing app, with its token.
@@ -445,7 +525,7 @@ const commands = {
       const dir = path.join(projectsDir, name);
       try {
         const p = recovered(dir, liveProjects);
-        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates, render: p.render ?? null, autopilotRun: !!p.autopilotRun, series: p.series ?? null });
+        projects.push({ id: p.id, title: p.title, status: p.status, dir, createdAt: p.createdAt, gates: p.gates, render: p.render ?? null, autopilotRun: !!p.autopilotRun, series: p.series ?? null, queue: p.queue ?? null, recipe: p.recipe ?? null });
       } catch {
         // not a project folder, or a broken one: skip it
       }
@@ -556,7 +636,10 @@ const commands = {
 
   // AI B-roll (broll/, generate/, docs/ai-broll.md). The settings are the
   // Identity's (Identity, Footage); the plan is the ONE Video's.
-  "broll-settings": async ({ identityDir }) => ({ settings: loadBrollSettings(identityDir), cap: BROLL_CAP, ...brollChoices() }),
+  "broll-settings": async ({ identityDir }) => {
+    const g = generatorOf(PAID_GENERATOR);
+    return { settings: loadBrollSettings(identityDir), cap: BROLL_CAP, ...brollChoices(), paidChoice: { model: PAID_GENERATOR, label: g.label, limits: PAID_LIMITS, qualities: g.qualities.map((id) => ({ id, clipUsd: usdFor(g.minSeconds, { generator: PAID_GENERATOR, quality: id }), seconds: g.minSeconds })) } };
+  },
   "broll-settings-save": async ({ identityDir, settings }) => ({ settings: saveBrollSettings(identityDir, settings) }),
   "broll-state": async ({ projectDir, identityDir }) => brollState(projectDir, identityDir),
   "broll-plan": async ({ projectDir, identityDir, llm }) => {
@@ -601,6 +684,69 @@ const commands = {
     appendLog(projectDir, `broll: ${id} removed from the video (kept in the library)`);
     return brollState(projectDir, identityDir);
   },
+
+  // The B-roll engine (broll/engine.mjs, docs/BUILD_PLAN.md phase 1b): a plan,
+  // the free sources in their order, Pixabay, then what waits for a yes. One
+  // key per command, so each source is its own command; ProjectView runs them.
+  "broll-auto-state": async ({ projectDir, identityDir }) => brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) }),
+  "broll-auto-plan": async ({ projectDir, identityDir, llm }) => {
+    const r = await logged(projectDir, "broll engine: planning", () => planAuto({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, language: loadProject(projectDir).language, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: ${r.plan.items.length} stretches, planned by ${r.plan.plannedBy}`);
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-auto-plan-rule": async ({ projectDir, identityDir }) => {
+    const r = await planAuto({ projectDir, language: loadProject(projectDir).language });
+    appendLog(projectDir, `broll engine: ${r.plan.items.length} stretches, planned by rule`);
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-auto-find": async ({ projectDir, identityDir }) => {
+    const r = await logged(projectDir, "broll engine: free sources, words only", () => findFree({ projectDir, identityDir, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: free sources found ${r.found}, ${r.open} open`);
+    return { found: r.found, open: r.open };
+  },
+  "broll-auto-find-checked": async ({ projectDir, identityDir, llm }) => {
+    const r = await logged(projectDir, "broll engine: free sources, the AI looks at the frames", () => findFree({ projectDir, identityDir, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: free sources found ${r.found}, ${r.open} open`);
+    return { found: r.found, open: r.open };
+  },
+  "broll-auto-pixabay": async ({ projectDir, identityDir }) => {
+    const r = await logged(projectDir, "broll engine: Pixabay", () => findPixabay({ projectDir, identityDir, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: Pixabay found ${r.found}, ${r.open} open`);
+    return { found: r.found, open: r.open };
+  },
+  "broll-auto-finish": async ({ projectDir, identityDir }) => {
+    const settings = loadBrollSettings(identityDir);
+    const r = finishFind({ projectDir, identityDir, settings });
+    appendLog(projectDir, `broll engine: ${r.placed} clips in the scene table, ${r.plan.items.filter((i) => i.paidWanted).length} paid clips waiting for a yes`);
+    previewStale(projectDir);
+    return brollReview({ projectDir, identityDir, settings });
+  },
+  "broll-paid-toggle": async ({ projectDir, identityDir, id, on }) => {
+    setPaidWanted({ projectDir, id, on });
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-prompt-save": async ({ projectDir, identityDir, id, prompt }) => {
+    updateBroll(projectDir, id, { prompt });
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-auto-remove": async ({ projectDir, identityDir, id }) => {
+    removeBroll(projectDir, id);
+    previewStale(projectDir);
+    appendLog(projectDir, `broll engine: ${id} removed from the video (kept in the library)`);
+    const table = JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8"));
+    logTableFootage({ projectDir, table, clips: loadLibrary(identityDir).clips ?? [] });
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  // The only command of the engine that spends money. The UI sends the total it
+  // showed; engine.mjs refuses any other total, and anything over a limit.
+  "broll-paid-approve": async ({ projectDir, identityDir, quotedUsd }) => {
+    const settings = loadBrollSettings(identityDir);
+    appendLog(projectDir, `broll engine: paid clips approved at ${Number(quotedUsd).toFixed(2)} USD with ${settings.paid.model} ${settings.paid.quality}`);
+    const r = await logged(projectDir, "broll engine: paid clips", () => timed("broll-make", 1, emit, () => approvePaid({ projectDir, identityDir, apiKey: key(), settings, quotedUsd, onProgress: (p) => emit({ event: "progress", ...p }) })));
+    previewStale(projectDir);
+    return { ...brollReview({ projectDir, identityDir, settings }), made: r.made, failed: r.failed };
+  },
+  "kie-balance": async () => ({ account: await kieBalance({ apiKey: key() }) }),
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),
@@ -747,48 +893,7 @@ const commands = {
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
   // approved in autopilot).
-  "write-script": async ({ projectDir, identityDir, llm, input = {}, channel = {} }) => {
-    const dict = loadDictionary(identityDir);
-    let project = setGate(loadProject(projectDir), "script", { state: "running", mode: "recommended" });
-    saveProject(projectDir, project);
-    appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
-    try {
-      const plan = ctaOf(identityDir, input.cta);
-      const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
-        writeScript({
-          llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-          input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
-          onProgress: (p) => emit({ event: "progress", ...p }),
-        }),
-      );
-      Object.assign(res.script, takeSegments(projectDir, identityDir, plan, input.cta));
-      for (const c of plan) if (c.note) appendLog(projectDir, `script: ${c.note}`);
-      writeJson(path.join(projectDir, "script.json"), res.script);
-      writeAtomic(path.join(projectDir, "script.md"), res.markdown);
-      // The packaging (title ideas, summary, tags) right with the script
-      // (DECISIONS 86). A problem here never loses the script.
-      try {
-        const pack = await makePackaging({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, language: project.language });
-        appendLog(projectDir, `packaging: ${pack.titles.length} title ideas${pack.chosen ? ", the chosen title kept" : ""}`);
-      } catch (e) {
-        appendLog(projectDir, `packaging: failed, ${e.message}`);
-      }
-      project = setGate(loadProject(projectDir), "script", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
-      const packTitle = loadPackaging(projectDir)?.title;
-      if (packTitle) project.title = packTitle;
-      else if (res.script.title && !project.title) project.title = res.script.title;
-      saveProject(projectDir, project);
-      const findings = checkAll(dict, spokenFields(res.script).map(([where, text]) => [`script ${where}`, text]));
-      if (res.humanize !== "off") appendLog(projectDir, `script: natural voice ${res.humanize}${res.humanizeNote ? `, ${res.humanizeNote}` : ""}`);
-      appendLog(projectDir, `script: done, ${res.words} words${findings.length ? `, ${findings.length} dictionary findings` : ""}`);
-      return { markdown: res.markdown, words: res.words, gate: project.gates.script, status: project.status, dictionary: findings, humanize: res.humanize, humanizeNote: res.humanizeNote };
-    } catch (e) {
-      const failed = setGate(loadProject(projectDir), "script", { state: "failed", error: String(e.message).slice(0, 2000) });
-      saveProject(projectDir, failed);
-      appendLog(projectDir, `script: failed, ${e.message}`);
-      throw e;
-    }
-  },
+  "write-script": writeScriptGate,
 
   // Gate 1, optional (DECISIONS 42, 64): keyword ideas from vidIQ for the
   // topic, with the user's vidIQ key. The chosen one goes into the script.
@@ -879,7 +984,25 @@ const commands = {
   // Gate 2, music made for this video. The key is the ElevenLabs one.
   "music-estimate": async ({ seconds }) => ({ usd: costEstimateUsd(Number(seconds) || 0), prompt: MUSIC_PROMPT }),
 
-  "make-music": async ({ projectDir, music }) => {
+  "make-music": async ({ projectDir, identityDir, music }) => {
+    // made by code, or the channel's own file: free, and the same mix as ever
+    if (music?.provider === "synth" || music?.provider === "own") {
+      let choice = { kind: "synth", mood: music.mood };
+      if (music.provider === "own") {
+        const files = identityDir ? ownMusic(identityDir) : [];
+        if (!files.length) throw new Error(`The channel's music folder has no files yet. Put your music in ${musicDir(identityDir)}, or choose the music made by code.`);
+        // the next file each video, so a channel does not repeat one track
+        const pick = files[fs.readdirSync(path.dirname(projectDir)).length % files.length];
+        const rel = `audio/music${path.extname(pick).toLowerCase()}`;
+        fs.copyFileSync(path.join(musicDir(identityDir), pick), path.join(projectDir, rel));
+        choice = { kind: "file", path: rel };
+      }
+      appendLog(projectDir, `music: ${choice.kind === "synth" ? "made by code" : "the channel's own file"}`);
+      const info = await logged(projectDir, "music", () => timed("remix", 1, emit, () => setMusic({ projectDir, music: choice, onProgress: (p) => emit({ event: "progress", ...p }) })));
+      const project = setGate(loadProject(projectDir), "voice", { state: "pending", mode: "recommended" });
+      saveProject(projectDir, project);
+      return { info, gate: project.gates.voice, status: project.status };
+    }
     appendLog(projectDir, "music: ElevenLabs Music");
     const info = await logged(projectDir, "music: ElevenLabs Music", () => timed("music-length", Math.max(30, videoSeconds(projectDir)), emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) })));
     const project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "recommended" });
@@ -1129,6 +1252,8 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, "review: build, check, contact sheet");
     try {
+      // a channel video: every outside picture has a clear license, and is logged
+      if (project.recipe && identityDir) logTableFootage({ projectDir, table: JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8")), clips: loadLibrary(identityDir).clips ?? [] });
       const r = await timed("build", jsonCount(projectDir, "scenes.json", "scenes"), emit, () => buildAndReview(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
@@ -1229,6 +1354,101 @@ const commands = {
   "thumbnail-words": async ({ projectDir, identityDir, slot, words, accent = null }) => logged(projectDir, "thumbnail words", () => thumbnail.setWords({ projectDir, identityDir, slot, words, accent })),
   "thumbnail-pick": async ({ projectDir, identityDir, slot }) => thumbnail.pick({ projectDir, identityDir, slot }),
 
+  // ---- Channels: the locked recipe and the one screen (channels/, DECISIONS 132) ----
+  // Everything the start screen shows for the active channel. The recipe is a
+  // suggestion until it is saved once (`saved`).
+  "channel-state": async ({ identityDir, identity = {}, projectsDir }) => {
+    const stored = identityDir ? loadRecipe(identityDir) : null;
+    return {
+      recipe: stored ?? defaultRecipe(identity),
+      saved: !!stored,
+      presets: listPresets().map(presetCard),
+      voiceKinds: VOICE_KINDS,
+      musicSources: MUSIC_SOURCES,
+      moods: Object.keys(MOODS),
+      ownMusic: identityDir ? ownMusic(identityDir) : [],
+      musicDir: identityDir ? musicDir(identityDir) : null,
+      freeVoices: await VOICE_PROVIDERS.kokoro.listVoices(),
+      queue: listQueue(projectsDir),
+      week: WEEK,
+    };
+  },
+  "recipe-save": async ({ identityDir, recipe, language }) => ({ recipe: saveRecipe(identityDir, recipe, { language }) }),
+
+  // The style sheet PNG of a preset, rendered from its tokens.
+  "preset-stylesheet": async ({ identityDir, preset }) => {
+    const p = loadPreset(preset);
+    const dir = path.join(identityDir ?? dataDir(), "stylesheets", p.id);
+    return { file: await renderStylesheet({ preset: p, identityDir, dir }), tokens: tokensFor(p, identityDir) };
+  },
+
+  // A new video of a channel: its recipe copied into it, its idea or its own
+  // script in. With a script the Script step is done; with an idea it comes
+  // next. The UI's run (ProjectView) does the rest.
+  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", text, mode = "idea", title = "" }) => {
+    const recipe = normalizeRecipe(loadRecipe(identityDir) ?? defaultRecipe({}), { language });
+    const words = String(text ?? "").trim();
+    if (!words) throw new Error(mode === "script" ? "Paste the script first." : "Type the idea first.");
+    if (mode === "script") {
+      const { title: name, markdown } = scriptMarkdown(words, title);
+      const { dir, id } = createProject({ projectsDir, title: name, language, identity, recipe });
+      writeAtomic(path.join(dir, "script.md"), markdown);
+      saveProject(dir, setGate(setGate(loadProject(dir), "script", { state: "running", mode: "custom" }), "script", { state: "approved", mode: "custom" }));
+      appendLog(dir, "script: pasted in, approved with the video");
+      return { id, dir };
+    }
+    return createProject({ projectsDir, title: words.replace(/\s+/g, " ").slice(0, 200), language, identity, recipe });
+  },
+
+  // The scene table from the preset's templates (gates/scenes/templates.mjs).
+  // `simple-` is the same without the AI: planned by rule.
+  "make-template-scenes": async ({ projectDir, identityDir, llm, look }) => templateScenes({ projectDir, identityDir, look, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } }),
+  "simple-template-scenes": async ({ projectDir, identityDir, look }) => templateScenes({ projectDir, identityDir, look, llm: null }),
+
+  // Week batch: 7 ideas, 7 scripts, in one run, queued (channels/batch.mjs).
+  "week-batch": async ({ projectsDir, identityDir, identity, llm, channel = {}, name = "", theme = "", language = "en", count = WEEK }) => {
+    const recipe = normalizeRecipe(loadRecipe(identityDir) ?? defaultRecipe({}), { language });
+    const avoid = fs.existsSync(projectsDir) ? fs.readdirSync(projectsDir).flatMap((n) => { try { return [loadProject(path.join(projectsDir, n)).title]; } catch { return []; } }) : [];
+    return runWeekBatch({
+      llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
+      channel,
+      name,
+      theme,
+      language,
+      count,
+      avoid,
+      onProgress: (p) => emit({ event: "progress", ...p }),
+      create: ({ title, queue }) => createProject({ projectsDir, title, language, identity, recipe, queue }),
+      write: ({ dir, idea }) => writeScriptGate({ projectDir: dir, identityDir, llm, channel, input: { topic: idea.angle ? `${idea.title}. ${idea.angle}` : idea.title, targetLengthMin: recipe.targetLengthMin } }),
+    });
+  },
+  "queue-list": async ({ projectsDir }) => ({ queue: listQueue(projectsDir) }),
+
+  // The free voice's model: on this computer yet, and fetching it (once).
+  "voice-model-status": async () => ({ ready: Object.keys(MODEL_FILES).every((f) => fs.existsSync(path.join(modelDir(), f))), bytes: MODEL_BYTES }),
+  "voice-model-ensure": async ({ voice = DEFAULT_VOICE }) => ({ dir: await ensureModel({ voice, onProgress: (p) => emit({ event: "progress", ...p }) }) }),
+
+  // The free images: CC0 and public domain only (assets/, DECISIONS 135).
+  "assets-search": async ({ q }) => {
+    const r = await searchAll({ q });
+    const dir = path.join(dataDir(), "stock-previews");
+    const hits = await Promise.all(r.hits.map(async (h) => {
+      let local = null;
+      try {
+        local = h.preview ? await cacheFreePreview({ url: h.preview, dir }) : null;
+      } catch {
+        local = null;
+      }
+      return { ...h, local };
+    }));
+    return { hits: hits.filter((h) => h.local), failed: r.failed };
+  },
+  "assets-add": async ({ identityDir, hit }) => {
+    if (!identityDir) throw new Error("No channel to add the image to.");
+    return addFreeImage({ identityDir, hit });
+  },
+  "assets-ledger": async ({ projectDir }) => readLedger(projectDir),
+
   "approve-gate": async ({ projectDir, gate }) => {
     const current = loadProject(projectDir);
     // A scene table is approved only if it fits the current voice.
@@ -1247,7 +1467,7 @@ const commands = {
 
 // The commands that theme something or plan scenes: they get the Identity's
 // card as `look`, with its Motion profile (`look.motion`).
-const LOOK_COMMANDS = new Set(["make-scenes", "scenes-estimate", "visual-check", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
+const LOOK_COMMANDS = new Set(["make-template-scenes", "simple-template-scenes", "make-scenes", "scenes-estimate", "visual-check", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
 
 async function readStdin() {
   if (process.stdin.isTTY) return "";

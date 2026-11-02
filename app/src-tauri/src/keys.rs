@@ -21,6 +21,7 @@ pub const ALLOWED: &[&str] = &[
     "grok",
     "elevenlabs",
     "heygen",
+    "kie",
     "vidiq",
     "pixabay",
     "unsplash",

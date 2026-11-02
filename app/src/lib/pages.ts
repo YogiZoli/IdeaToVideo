@@ -25,6 +25,10 @@ export const MENUS: { id: MenuId; title: string }[] = [
   { id: "settings", title: "Settings" },
 ];
 
+/** The top menu. The wizards wait behind the Advanced toggle (docs/BUILD_PLAN.md):
+ * nothing was deleted, the channel's recipe makes them unnecessary to start. */
+export const visibleMenus = (advanced: boolean) => MENUS.filter((m) => advanced || m.id !== "wizards");
+
 export const SETTINGS_PAGES: SettingsPage[] = [
   // what the wizards make
   // the CTA wizard's comment calls (docs/wizards/cta.md)

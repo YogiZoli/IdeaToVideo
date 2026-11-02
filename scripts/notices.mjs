@@ -100,6 +100,20 @@ ${Object.entries(library.licenses?.fonts ?? {}).map(([f, l]) => `  - \`${f}\`: $
   (git.ffmpeg.org/ffmpeg.git, ${ffmpeg.tag}) and the build scripts of the
   build used (github.com/BtbN/FFmpeg-Builds on Windows, ffmpeg.martin-riedl.de on Apple silicon Macs, github.com/eugeneware/ffmpeg-static on Intel Macs).
 
+## The free voice
+
+- **Kokoro 82M v1.0** (the timestamped ONNX export, voices included), Apache License 2.0
+  (huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped, based on huggingface.co/hexgrad/Kokoro-82M).
+  Not in the installer: downloaded once, the first time the free voice is used, and checked against a pinned hash.
+- **ONNX Runtime** 1.22.0, MIT License. Only this platform's files ship; DirectML and its compilers do not.
+- **The CMU Pronouncing Dictionary**, BSD 2-Clause License, through the npm package cmu-pronouncing-dictionary (ISC).
+
+## The moving stills
+
+- **Depth Anything V2 Small** (the ONNX export), Apache License 2.0
+  (huggingface.co/onnx-community/depth-anything-v2-small, based on huggingface.co/depth-anything/Depth-Anything-V2-Small).
+  Only the Small size has this license. Not in the installer: downloaded once, the first time a still is moved, and checked against a pinned hash.
+
 ## Render engine packages (engine/package-lock.json)
 
 ${table(engine)}

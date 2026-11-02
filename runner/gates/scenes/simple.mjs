@@ -26,7 +26,7 @@ function phrase(sentences, max) {
 
 // The 2 to 4 words of a call sentence around its keyword, the keyword in
 // capitals (the same rule the AI's plan follows).
-function callLine(text, keyword) {
+export function callLine(text, keyword) {
   const ws = wordsOf(text);
   const at = ws.findIndex((w) => w.toLowerCase() === keyword.toLowerCase());
   if (at < 0) return keyword.toUpperCase();

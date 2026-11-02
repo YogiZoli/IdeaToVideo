@@ -10,6 +10,10 @@ Status: private pilot. See `STATUS.md` for where the work stands and
 
 ## How it works
 
+On start you pick a channel. Each channel has one locked recipe (engine, style
+preset, voice, avatar, music, length), then one screen: idea or script in, video
+out, stopping at the preview for approval. `docs/BUILD_PLAN.md` is the plan.
+
 Every video goes through gates the user can approve or change:
 Script, Voice and music, Scenes, Avatar, Preview, Your video.
 "Finish on Autopilot" runs all of them with the recommended settings.
@@ -19,6 +23,9 @@ Script, Voice and music, Scenes, Avatar, Preview, Your video.
 - **Look and motion** come from the Identity: Brand, Motion, Scenes and CTA
   wizards, block packs (`.itvpack`), icons (Lucide, Tabler, Iconoir),
   15 caption styles, Pixabay photos and videos, the user's own footage.
+- **Free by default:** a local voice (Kokoro, English), music made by code, a
+  Thumbnail from the Brand's colours, CC0 and public domain images with a
+  license ledger per video (`assets_license.json`).
 - **Keys:** Gemini (free tier is enough to start), optional ElevenLabs,
   HeyGen, vidIQ, Pixabay. Paid calls are never made without a visible price.
 

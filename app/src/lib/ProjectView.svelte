@@ -26,7 +26,9 @@
   import { llmFor, describeLlm } from "./llm";
   import { ask } from "@tauri-apps/plugin-dialog";
   import type { Series } from "./course/course";
+  import type { Recipe } from "./channels/channels";
   import { notifyDone } from "./notify";
+  import { findBroll } from "./brollRun";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
   let { app, dir: dirProp, back, saved, connections, openPage }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void; connections?: () => void; openPage?: (page: "cta" | "connections" | "voice") => void } = $props();
@@ -37,7 +39,7 @@
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; cardFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate>; series?: Series | null };
+    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
@@ -123,6 +125,10 @@
   $effect(() => {
     if (resumePilot && data && !anyJob && !pilots[dir]) {
       resumePilot = false;
+      if (data.project.recipe) {
+        recipeRun();
+        return;
+      }
       pilotNote = "Autopilot was cut off (the window reloaded or the app was closed), so it goes on from where it stopped. Stop any step to end it.";
       log("autopilot_resumed", {});
       autopilot(true);
@@ -225,6 +231,108 @@
       setPilot("");
     }
   }
+  // A channel video (docs/BUILD_PLAN.md): the locked recipe, step by step, with
+  // the same commands as the tabs, up to the existing Preview step, which waits
+  // for the user. Nothing is asked on the way but the avatar's price. A cut-off
+  // run goes on from where it stopped; what is made is never made again.
+  async function recipeRun() {
+    if (!data?.project.recipe || pilots[dir]) return;
+    const recipe = data.project.recipe;
+    pilotError = "";
+    pilotNote = "";
+    const gates = () => data!.project.gates;
+    const approved = (g: string) => gates()[g]?.state === "approved";
+    const made = (g: string) => gates()[g]?.state === "pending";
+    const approveGate = async (gate: string) => {
+      if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
+      await load();
+    };
+    const hasKey = (l: { provider: string }) => !!app.keys[l.provider];
+    setPilot("Starting");
+    try {
+      await runner("autopilot-mark", { projectDir: dir, on: true });
+      if (!approved("script")) {
+        if (!data.scriptMarkdown) {
+          setPilot("Writing the script");
+          show("script", "recipe");
+          await runner("write-script", { projectDir: dir, llm: llmFor(app.config, "script"), input: { topic: data.project.title, targetLengthMin: recipe.targetLengthMin }, channel: app.config!.channel });
+          await load();
+        }
+        await approveGate("script");
+      }
+      // a pasted script: its title ideas and summary, for the Publishing Card
+      if (hasKey(llmFor(app.config, "texts")) && gates().script?.mode === "custom") {
+        const has = await runner<{ packaging: unknown }>("packaging-state", { projectDir: dir });
+        if (!has.packaging) {
+          setPilot("Writing the title and the summary");
+          await runner("packaging-make", { projectDir: dir, llm: llmFor(app.config, "texts") }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
+        }
+      }
+      if (!approved("voice") && made("voice")) await approveGate("voice");
+      if (!approved("voice")) {
+        setPilot(recipe.voice.provider === "kokoro" ? "The free voice is reading the script" : "Reading the script aloud");
+        show("voice", "recipe");
+        await runner("make-voice", { projectDir: dir, narrator: { provider: recipe.voice.provider, voice: recipe.voice.voice }, music: null });
+        if (recipe.music.on) {
+          setPilot("Adding the music");
+          await runner("make-music", { projectDir: dir, music: { provider: recipe.music.source, mood: recipe.music.mood } });
+        }
+        await approveGate("voice");
+      }
+      if (!approved("scenes") && made("scenes")) await approveGate("scenes");
+      if (!approved("scenes")) {
+        setPilot("Filling the scene templates");
+        show("scenes", "recipe");
+        const ai = llmFor(app.config, "scenes");
+        if (hasKey(ai)) await runner("make-template-scenes", { projectDir: dir, llm: ai, look });
+        else await runner("simple-template-scenes", { projectDir: dir, look });
+        await approveGate("scenes");
+      }
+      const avatar = gates().avatar?.state;
+      if (avatar !== "approved" && avatar !== "skipped") {
+        if (recipe.avatar.on && recipe.avatar.lookId) {
+          if (avatar !== "pending") {
+            setPilot("Asking about the avatar");
+            show("avatar", "recipe");
+            const plan = await runner<{ estimate?: { low: number; high: number } }>("avatar-plan", { projectDir: dir, service: "heygen", engine: "avatar_iii" });
+            const price = plan.estimate ? `about $${plan.estimate.low.toFixed(2)} to $${plan.estimate.high.toFixed(2)}` : "some";
+            if (!(await ask(`This channel's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }))) throw new Error("you stopped it before the avatar; nothing was spent on it. Press Make the video to go on");
+            setPilot("HeyGen is making the avatar");
+            await runner("make-avatar", { projectDir: dir, service: "heygen", lookId: recipe.avatar.lookId, lookName: recipe.avatar.name ?? null, which: ["open", "close"], look, layout: { style: "overlay", position: "bottom-right", size: "medium" }, engine: "avatar_iii", lookEngines: [] });
+            await load();
+          }
+          await approveGate("avatar");
+        } else {
+          await runner("skip-gate", { projectDir: dir, gate: "avatar" });
+          await load();
+        }
+      }
+      if (!approved("review") && !made("review")) {
+        if (recipe.broll?.on) {
+          show("scenes", "recipe");
+          // the video goes on without it: a source that is down is only fewer clips
+          await findBroll(dir, llmFor(app.config, "scenes"), app.keys, setPilot).catch((e) => {
+            log("broll_engine_failed", { error: errorText(e) }, "warn");
+            pilotNote = `The B-roll search stopped: ${errorText(e)}. You can start it again on the Preview tab.`;
+          });
+        }
+        setPilot("Building the preview");
+        show("preview", "recipe");
+        await runner("build-video", { projectDir: dir, look });
+        await load();
+      }
+      await runner("autopilot-mark", { projectDir: dir, on: false });
+      show(approved("review") ? "video" : "preview", "recipe");
+      notifyDone("Your preview is ready", data?.project.title ?? "");
+    } catch (e) {
+      pilotError = `The video stopped: ${errorText(e)}`;
+      await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
+      await load().catch(() => {});
+    } finally {
+      setPilot("");
+    }
+  }
+
   // The render belongs to the ONE Video, not to a tab: started from the
   // Preview ("Approve and render") or from Your video, it goes on whichever
   // tab is open, and its error waits on Your video.
@@ -248,7 +356,11 @@
     <button type="button" class="ghost" onclick={back}>Back to the list</button>
     <h1 title={data?.project.title}>{data?.project.title ?? ""}</h1>
     {#if data}
-      <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
+      {#if data.project.recipe}
+        <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => recipeRun()} title="Every step of this channel's recipe, up to the preview.">{pilot ? `${pilot}...` : "Make the video"}</button>
+      {:else}
+        <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
+      {/if}
       <button type="button" class="ghost" onclick={() => revealItemInDir(dir + "/project.json")}>Open folder</button>
     {/if}
   </header>
@@ -283,7 +395,7 @@
       {:else if active === "avatar"}
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}
-        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} />
+        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} />
       {:else if active === "thumbnail"}
         <ThumbnailTab {app} {dir} hasVideo={!!data.latestVideo} changed={load} goto={show} {openPage} />
       {:else}

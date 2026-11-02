@@ -125,7 +125,7 @@ export function callSentences(script, sentences) {
   return out;
 }
 
-function readScript(projectDir) {
+export function readScript(projectDir) {
   const p = path.join(projectDir, "script.json");
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
@@ -328,7 +328,7 @@ export function gapsOf(projectDir) {
   }
 }
 
-async function audioLength(projectDir, sentences, env) {
+export async function audioLength(projectDir, sentences, env) {
   try {
     return r3(await duration(path.join(projectDir, "audio", "vo_bgm.mp3"), env));
   } catch {
@@ -374,7 +374,7 @@ async function ask(llm, messages, check) {
   return { answer, result };
 }
 
-const clean = (sc) => ({
+export const clean = (sc) => ({
   component: sc.component,
   from: sc.from,
   ...(sc.to && sc.to !== sc.from ? { to: sc.to } : {}),
@@ -387,7 +387,7 @@ const clean = (sc) => ({
   ...(typeof sc.why === "string" && sc.why.trim() ? { why: sc.why.trim().slice(0, 200) } : {}),
 });
 // The comment call a scene shows (assemble colours its button by temperature).
-const withCalls = (scenes, calls) =>
+export const withCalls = (scenes, calls) =>
   scenes.map((sc) => {
     const call = calls.get(sc.from);
     const { call: _old, ...rest } = sc;

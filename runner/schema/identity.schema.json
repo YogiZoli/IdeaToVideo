@@ -57,7 +57,7 @@
       "required": ["provider"],
       "additionalProperties": false,
       "properties": {
-        "provider": {"enum": ["gemini", "elevenlabs", "edge-tts"]},
+        "provider": {"enum": ["gemini", "elevenlabs", "edge-tts", "kokoro"]},
         "voice": {"type": ["string", "null"], "maxLength": 200}
       }
     },
@@ -68,7 +68,7 @@
         "enabled": {"type": "boolean"},
         "lookId": {"type": ["string", "null"], "maxLength": 200},
         "engine": {"enum": ["avatar_iii", "avatar_iv", "avatar_v"]},
-        "style": {"enum": ["cutout", "circle", "card", "full"]},
+        "style": {"enum": ["cutout", "circle", "card", "full", "overlay"]},
         "position": {"enum": ["bottom-right", "bottom-left", "top-right", "top-left"]},
         "size": {"enum": ["small", "medium", "large"]}
       }

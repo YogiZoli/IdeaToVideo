@@ -10,6 +10,7 @@
 
 import * as heygenVideo from "./heygen-video.mjs";
 import * as standin from "./standin.mjs";
+import * as kie from "./kie.mjs";
 
 // The user's choice in Identity, Footage, AI B-roll (Zoltan,
 // 2026-10-06): 480p, 768p (the default) and 1080p. HeyGen Video 1 has no
@@ -45,7 +46,24 @@ export const GENERATORS = {
     maxSeconds: 15,
     test: true,
   },
+  // Paid hero clips of the B-roll engine (broll/engine.mjs), approved on the
+  // Preview tab, never from the Scenes tab's panel. Kie AI's price list,
+  // 2026-11-02: 2, 4.5 and 10 credits a second, 1 credit is about 0.005 USD.
+  "kie-seedance-v1-lite": {
+    label: "Seedance 1.0 Lite (Kie AI)",
+    modelName: "bytedance/seedance-v1-lite",
+    key: "kie",
+    service: "Kie AI",
+    module: kie,
+    usdPerSecond: { "480p": 0.01, "720p": 0.0225, "1080p": 0.05 },
+    qualities: ["480p", "720p", "1080p"],
+    defaultQuality: "720p",
+    minSeconds: 5,
+    maxSeconds: 5,
+    engineOnly: true,
+  },
 };
+export const PAID_GENERATOR = "kie-seedance-v1-lite";
 export const DEFAULT_GENERATOR = "heygen-video-1";
 
 export function generatorOf(id) {
@@ -61,13 +79,14 @@ export const orderSeconds = (seconds, generator = DEFAULT_GENERATOR) => {
   return Math.min(g.maxSeconds, Math.max(g.minSeconds, Math.ceil(Number(seconds) - 0.05)));
 };
 
-export const usdFor = (seconds, { generator = DEFAULT_GENERATOR, quality = DEFAULT_QUALITY } = {}) => Math.round(seconds * (generatorOf(generator).usdPerSecond[quality] ?? 0) * 100) / 100;
+// Whole cents, rounded up: an estimate is high, never low.
+export const usdFor = (seconds, { generator = DEFAULT_GENERATOR, quality = DEFAULT_QUALITY } = {}) => Math.ceil(seconds * (generatorOf(generator).usdPerSecond[quality] ?? 0) * 100 - 1e-9) / 100 + 0;
 
 // 16:9 or 9:16, from the video's own frame.
 export const aspectOf = ({ width = 1920, height = 1080 } = {}) => (height > width ? "9:16" : "16:9");
 
 // The settings of the choices, for the UI.
 export const choices = () => ({
-  generators: Object.entries(GENERATORS).map(([id, g]) => ({ id, label: g.label, test: !!g.test, usdPerSecond: g.usdPerSecond })),
+  generators: Object.entries(GENERATORS).filter(([, g]) => !g.engineOnly).map(([id, g]) => ({ id, label: g.label, test: !!g.test, usdPerSecond: g.usdPerSecond })),
   qualities: Object.entries(QUALITIES).map(([id, q]) => ({ id, ...q })),
 });

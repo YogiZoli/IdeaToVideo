@@ -68,7 +68,7 @@ export async function addStock({ identityDir, hit, query = "", service = "pixaba
   return { clip, again: false };
 }
 
-const STOP = new Set("a an the of and or but to in on at by for with from into over under about this that these those is are was were be been it its your you we our they their them he she his her i me my not no so if then than as how what why when where who which will can just very more most also only even still there here".split(" "));
+export const STOP = new Set("a an the of and or but to in on at by for with from into over under about this that these those is are was were be been it its your you we our they their them he she his her i me my not no so if then than as how what why when where who which will can just very more most also only even still there here".split(" "));
 
 // Search words for the video: its title, its section headings, and the
 // words its script repeats most (a starting point the user can change).

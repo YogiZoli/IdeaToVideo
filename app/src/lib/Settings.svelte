@@ -55,7 +55,7 @@
   let identLlm = $state<Llm>(untrack(() => snap(app.identity?.llm ?? app.app!.llm)));
   // every key a field can bind to, false when not set (a bound prop with a
   // fallback must not get undefined)
-  const KEY_NAMES = [...LLM_PROVIDERS.map((p) => p.id), "elevenlabs", "heygen", "pixabay", "unsplash", "vidiq", "publishing"];
+  const KEY_NAMES = [...LLM_PROVIDERS.map((p) => p.id), "elevenlabs", "heygen", "kie", "pixabay", "unsplash", "vidiq", "publishing"];
   const allKeys = (k: Record<string, boolean>) => ({ ...Object.fromEntries(KEY_NAMES.map((n) => [n, false])), ...k });
   let keys = $state(untrack(() => allKeys(app.keys)));
   let busy = $state(false);
@@ -306,7 +306,8 @@
         <h2>Services</h2>
         <ConnectionRow name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} hint="The narrator voice and the music." identityName={app.identity?.name} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
         <ConnectionRow name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} hint="Avatars, CTA clips and AI B-roll." identityName={app.identity?.name} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
-        <ConnectionRow name="pixabay" label="Pixabay" keyUrl={SERVICE_KEY_URLS.pixabay} hint="Free stock photos and videos (Pixabay Content License: also commercially, no credit required)." identityName={app.identity?.name} bind:isSet={keys.pixabay} test={() => ({ command: "test-service", service: "pixabay" })} />
+        <ConnectionRow name="kie" label="Kie AI" keyUrl={SERVICE_KEY_URLS.kie} hint="Optional: paid AI clips for hero moments, off until you turn them on in a channel's recipe. Nothing is spent without your yes on the Preview tab." identityName={app.identity?.name} bind:isSet={keys.kie} test={() => ({ command: "test-service", service: "kie" })} />
+        <ConnectionRow name="pixabay" label="Pixabay" keyUrl={SERVICE_KEY_URLS.pixabay} hint="Free stock photos and videos (Pixabay Content License: a free license, not CC0; also commercially, no credit required)." identityName={app.identity?.name} bind:isSet={keys.pixabay} test={() => ({ command: "test-service", service: "pixabay" })} />
         <ConnectionRow name="unsplash" label="Unsplash Access Key" keyUrl={SERVICE_KEY_URLS.unsplash} hint="Free stock photos (Unsplash License). Make an app at Unsplash and paste its Access Key, never the Secret key. Demo mode: 50 searches an hour." identityName={app.identity?.name} bind:isSet={keys.unsplash} test={() => ({ command: "test-service", service: "unsplash" })} />
         <ConnectionRow name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} hint="Optional: keyword data for your topics." identityName={app.identity?.name} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
       </section>

@@ -14,6 +14,7 @@
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
   import BrollSettings from "./BrollSettings.svelte";
+  import FreeImages from "./FreeImages.svelte";
 
   let { app, goto }: { app: AppState; goto?: (page: "connections") => void } = $props();
 
@@ -165,6 +166,7 @@
   {/if}
 </section>
 
+<FreeImages added={load} />
 <BrollSettings {app} />
 <section class="card">
   <h2>Stock photos and videos</h2>

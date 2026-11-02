@@ -14,20 +14,17 @@ felvétel.
 
 ## 2. Források
 
-A HeyGen ezekből dolgozik: Pexels, Getty, Unsplash, Storyblocks.
-
 | Forrás | Mit ad | Állapot (2026-10-06) | Az appban |
 |---|---|---|---|
 | Pixabay | videó, kép | Zoltannak van kulcsa | **első kör** |
 | Coverr | videó | **kivéve** (DECISIONS 108): az API ingyenes hozzáférése nem kereskedelmi célra szól | nem |
 | Unsplash | csak kép | a user saját Access Key-e (BYOK), Demo módban (50 kérés óránként) | **látható, Demo módban** (DECISIONS 117) |
-| Pexels | videó, kép | új kulcs kiadása szünetel | rejtve, amíg nem ad kulcsot |
 | Shutterstock | videó, kép, fizetős licenc | félretéve (lásd lent) | később, ha Zoltan dönt |
 | Storyblocks | videó, kép | API csak üzleti ügyfélnek, egyedi áron | félretéve |
 | Getty | prémium | önkiszolgáló kulcs nincs, szerződés kell | félretéve |
 
 Egy forrás csak akkor látszik, ha a kódban be van kapcsolva **és** van hozzá
-kulcs. Az Unsplash és a Pexels illesztője elkészülhet, de rejtve marad.
+kulcs.
 
 **A Shutterstockról** (Zoltan kérdése): a fizetős licenc jogilag a
 legtisztább. Klipenként megveszed, nem kell forrásmegjelölés, és a licenc
@@ -118,7 +115,7 @@ needed" állásában.
 
 - `runner/stock/`: közös réteg (keresés, előnézet, letöltés, licenc), és
   forrásonként egy kis illesztő: `pixabay.mjs`, `coverr.mjs`; később
-  `unsplash.mjs`, `pexels.mjs`, `shutterstock.mjs`.
+  `unsplash.mjs`, `shutterstock.mjs`.
 - Egy találat formája: `{ id, source, kind, orientation, width, height,
   seconds, previewUrl, downloadUrl, author, license, pageUrl }`.
 - Minden hálózati hívás a runnerben. Az előnézetek helyben, gyorsítótárban

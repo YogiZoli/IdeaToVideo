@@ -13,6 +13,7 @@
   import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
   import Needs from "./Needs.svelte";
+  import BrollReview from "./BrollReview.svelte";
   import type { AppState, Gate, Still } from "./api";
   import { runner, onProgress, errorText } from "./api";
   import { running } from "./work.svelte";
@@ -42,6 +43,7 @@
     changed,
     goto,
     render,
+    recipe = false,
   }: {
     app: AppState;
     dir: string;
@@ -51,6 +53,7 @@
     changed: () => Promise<void>;
     goto: (t: TabId) => void;
     render: () => void;
+    recipe?: boolean;
   } = $props();
 
   const COMMANDS = ["build-video", "visual-check", "refill-scene", "save-scenes"];
@@ -295,6 +298,8 @@
         {/each}
       </div>
     {/if}
+
+    {#if recipe}<BrollReview {app} {dir} {changed} {locked} />{/if}
 
     <div class="actionbar">
       {#if approved && !changes}

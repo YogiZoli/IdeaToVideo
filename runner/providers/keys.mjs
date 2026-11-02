@@ -3,6 +3,7 @@
 
 import { redact } from "./llm.mjs";
 import { testVidiq } from "./research/vidiq.mjs";
+import { balance as kieBalance } from "../generate/kie.mjs";
 
 const CHECKS = {
   elevenlabs: { label: "ElevenLabs", url: "https://api.elevenlabs.io/v1/user", header: "xi-api-key" },
@@ -16,11 +17,16 @@ const CHECKS = {
   unsplash: { label: "Unsplash", url: "https://api.unsplash.com/photos?per_page=1", header: "Authorization", prefix: "Client-ID " },
 };
 
-export const KEY_SERVICES = [...Object.keys(CHECKS), "vidiq"];
+export const KEY_SERVICES = [...Object.keys(CHECKS), "vidiq", "kie"];
 
 export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeoutMs = 30000 }) {
   // vidIQ has no REST API: its test is an MCP call (0 credits)
   if (service === "vidiq") return testVidiq({ apiKey, fetchImpl });
+  // Kie AI answers HTTP 200 to many failures: its balance call reads the code (free)
+  if (service === "kie") {
+    const b = await kieBalance({ apiKey, fetchImpl });
+    return { ok: true, message: `Kie AI key works${b.credits === null ? "" : `: ${b.credits} credits, about ${b.usd.toFixed(2)} USD`}.` };
+  }
   const c = CHECKS[service];
   if (!c) throw new Error(`Unknown service: ${service}`);
   if (!apiKey) throw new Error(`No API key set for ${c.label}. Add it in Settings.`);
