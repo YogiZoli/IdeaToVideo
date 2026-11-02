@@ -1,12 +1,38 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-02 (channels and presets, DECISIONS 132 to 136)
+Frissítve: 2026-11-02 (B-roll engine, DECISIONS 137)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-02, channels and presets, DECISIONS 132 to 136)
+## Now (2026-11-02, B-roll engine, DECISIONS 137)
+
+**Phase 1b of `docs/BUILD_PLAN.md` is done. Phase 2, Archive Collage, is next.**
+
+- **Engine:** `runner/broll/engine.mjs`. For each stretch the cheapest source that
+  fits: public domain film (Prelinger, NASA, Wikimedia Commons), a free still moved
+  in 2.5D on this computer (`broll/parallax.mjs`, `broll/depth.mjs`, rendered by
+  HyperFrames, about 70 s a clip), Pixabay (the existing integration and key), then
+  a paid Kie AI clip.
+- **Paid clips:** off by default. Per channel in its recipe: a switch, a most per
+  video, a most per month. Seedance 1.0 Lite, 0.12 USD a 5 second clip at 720p. The
+  Preview tab lists the scenes and the total; nothing is spent until "Approve and
+  spend". Kie AI key in the keychain, tested with the free balance call: 80 credits,
+  about 0.40 USD.
+- **Open for Zoltan:** Kie AI's terms do not say who owns the output; only its product
+  page says "Fully licensed for business use" (BUILD_PLAN, phase 1b).
+- **A recipe locked before this keeps B-roll off:** turn it on in the channel's recipe.
+- **Ledger:** every clip in `assets_license.json` with source or model, license or
+  terms, author, prompt, cost, date.
+- Branch `broll-engine`, committed, not pushed. Tests and the installer: see DECISIONS 137.
+
+**Not tried yet:** a real paid clip; a real AI on the plan and the frame check (stand-ins
+and the rule through a real render only).
+
+**Next:** Zoltan turns B-roll on for one channel and tries one video. Then Phase 2.
+
+## Earlier (2026-11-02, channels and presets, DECISIONS 132 to 136)
 
 **The plan is `docs/BUILD_PLAN.md`. Every session reads it first and does only
 the next "todo" phase. Phase 1 is done, Phase 2 is next.**

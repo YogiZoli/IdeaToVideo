@@ -181,7 +181,9 @@
   const STATE: Record<string, string> = { planned: "to make", ordered: "ordered, not downloaded yet", done: "made", failed: "failed" };
 </script>
 
-{#if st?.settings.enabled}
+{#if plan?.auto}
+  <section class="card"><h3>B-roll</h3><p class="hint">This video's B-roll comes from its channel recipe. See it, with every license and any paid clip, on the Preview tab.</p></section>
+{:else if st?.settings.enabled}
   <section class="broll">
     <h3>B-roll clips (AI)</h3>
     <p class="hint">Short clips that show what a sentence says, made by AI for this video. At most every third scene gets one, never the first, the last or a comment call. {isTest ? "Test mode: free test patterns instead of real clips." : `${genLabel}, ${st.settings.quality}.`}</p>

@@ -19,7 +19,7 @@ use serde_json::{json, Value};
 /// (docs/identity.md 9).
 pub const LOCAL_HEAVY_LIMIT: usize = 1;
 
-const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "visual-check", "render-video", "avatar-layout", "brand-preview", "motion-preview"];
+const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "visual-check", "render-video", "avatar-layout", "brand-preview", "motion-preview", "broll-auto-find", "broll-auto-find-checked"];
 
 /// Commands that spend a key on real work. Quick lookups (test a key, list
 /// voices or avatars, a cost estimate, a voice sample) are not jobs.
@@ -39,6 +39,10 @@ const KEY_JOBS: &[&str] = &[
     "youtube-texts",
     "broll-plan",
     "broll-make",
+    "broll-auto-plan",
+    "broll-auto-find-checked",
+    "broll-auto-pixabay",
+    "broll-paid-approve",
     "thumbnail-make",
 ];
 
@@ -235,6 +239,9 @@ fn waiting_text(j: &Job) -> String {
         "segment-voice" | "segment-make" => "a CTA segment",
         "broll-plan" => "the B-roll plan",
         "broll-make" => "the B-roll clips",
+        "broll-auto-plan" | "broll-auto-plan-rule" => "the B-roll plan",
+        "broll-auto-find" | "broll-auto-find-checked" | "broll-auto-pixabay" => "the free B-roll",
+        "broll-paid-approve" => "the paid B-roll clips",
         "thumbnail-make" => "the thumbnails",
         _ => "another job",
     };

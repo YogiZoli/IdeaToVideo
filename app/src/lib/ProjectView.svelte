@@ -28,6 +28,7 @@
   import type { Series } from "./course/course";
   import type { Recipe } from "./channels/channels";
   import { notifyDone } from "./notify";
+  import { findBroll } from "./brollRun";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
   let { app, dir: dirProp, back, saved, connections, openPage }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void; connections?: () => void; openPage?: (page: "cta" | "connections" | "voice") => void } = $props();
@@ -307,6 +308,14 @@
         }
       }
       if (!approved("review") && !made("review")) {
+        if (recipe.broll?.on) {
+          show("scenes", "recipe");
+          // the video goes on without it: a source that is down is only fewer clips
+          await findBroll(dir, llmFor(app.config, "scenes"), app.keys, setPilot).catch((e) => {
+            log("broll_engine_failed", { error: errorText(e) }, "warn");
+            pilotNote = `The B-roll search stopped: ${errorText(e)}. You can start it again on the Preview tab.`;
+          });
+        }
         setPilot("Building the preview");
         show("preview", "recipe");
         await runner("build-video", { projectDir: dir, look });
@@ -386,7 +395,7 @@
       {:else if active === "avatar"}
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}
-        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} />
+        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} />
       {:else if active === "thumbnail"}
         <ThumbnailTab {app} {dir} hasVideo={!!data.latestVideo} changed={load} goto={show} {openPage} />
       {:else}

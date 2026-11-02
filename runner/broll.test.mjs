@@ -12,7 +12,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadSettings, saveSettings, normalizeSettings, capOf } from "./broll/settings.mjs";
+import { loadSettings, saveSettings, normalizeSettings, capOf, normalizePaid } from "./broll/settings.mjs";
 import { orderSeconds, usdFor, aspectOf, generatorOf } from "./generate/index.mjs";
 import { orderBody, order, fetchClip } from "./generate/heygen-video.mjs";
 import { planBroll, planIssues, eligibleScenes, maxClips, estimateBroll, makeBroll, loadPlan, attach, removeItem, againItem, updateItem, usesGenerated, libraryForPlanner } from "./broll/index.mjs";
@@ -69,14 +69,14 @@ const GOOD = { clips: [{ scene: 2, from: "S2", to: "S3", prompt: PROMPT }, { sce
 
 test("settings: off by default, the limit on its slider, unknown values back to the default", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-brs-"));
-  assert.deepEqual(loadSettings(dir), { schema: "itv-broll-settings/1", enabled: false, generator: "heygen-video-1", quality: "768p", capUsd: 1 });
+  assert.deepEqual(loadSettings(dir), { schema: "itv-broll-settings/1", enabled: false, generator: "heygen-video-1", quality: "768p", capUsd: 1, paid: normalizePaid() });
   assert.equal(capOf(0.3), 1);
   assert.equal(capOf(12), 10);
   assert.equal(capOf(2.26), 2.5);
   assert.equal(normalizeSettings({ generator: "veo", quality: "4k" }).generator, "heygen-video-1");
   assert.equal(normalizeSettings({ quality: "4k" }).quality, "768p");
   saveSettings(dir, { enabled: true, quality: "1080p", capUsd: 3.5, generator: "test" });
-  assert.deepEqual(loadSettings(dir), { schema: "itv-broll-settings/1", enabled: true, generator: "test", quality: "1080p", capUsd: 3.5 });
+  assert.deepEqual(loadSettings(dir), { schema: "itv-broll-settings/1", enabled: true, generator: "test", quality: "1080p", capUsd: 3.5, paid: normalizePaid() });
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

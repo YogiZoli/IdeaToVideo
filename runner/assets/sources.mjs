@@ -42,6 +42,7 @@ export function openverseHits(json) {
       preview: r.thumbnail ?? r.url,
       license: r.license === "cc0" ? "cc0" : r.license === "pdm" ? "pd" : String(r.license ?? ""),
       licenseUrl: r.license_url ?? null,
+      width: r.width ?? null,
       author: strip(r.creator) || "unknown",
       date: today(),
     })),
@@ -79,6 +80,7 @@ export function wikimediaHits(json) {
         preview: info.thumburl ?? info.url,
         license: commonsLicense(meta),
         licenseUrl: meta.LicenseUrl?.value ?? null,
+        width: info.width ?? null,
         author: strip(meta.Artist?.value) || "unknown",
         date: today(),
       };
@@ -87,7 +89,7 @@ export function wikimediaHits(json) {
 }
 export async function searchWikimedia({ q, fetchImpl }) {
   const u = new URL("https://commons.wikimedia.org/w/api.php");
-  for (const [k, v] of Object.entries({ action: "query", format: "json", generator: "search", gsrnamespace: "6", gsrlimit: String(PAGE * 2), gsrsearch: `${q} filetype:bitmap`, prop: "imageinfo", iiprop: "url|extmetadata", iiurlwidth: "480" })) u.searchParams.set(k, v);
+  for (const [k, v] of Object.entries({ action: "query", format: "json", generator: "search", gsrnamespace: "6", gsrlimit: String(PAGE * 2), gsrsearch: `${q} filetype:bitmap`, prop: "imageinfo", iiprop: "url|size|extmetadata", iiurlwidth: "480" })) u.searchParams.set(k, v);
   return wikimediaHits(await getJson(u.toString(), { fetchImpl, label: "Wikimedia Commons" })).slice(0, PAGE);
 }
 
@@ -120,7 +122,47 @@ export async function searchLoc({ q, fetchImpl }) {
   return locHits(await getJson(url, { fetchImpl, label: "The Library of Congress" })).slice(0, PAGE);
 }
 
-export const SEARCHERS = { openverse: searchOpenverse, wikimedia: searchWikimedia, loc: searchLoc };
+// ---- NASA (US federal works, nothing it marks as someone else's) ----------------------
+
+// NASA's own works are public domain; its site also hosts other people's. A
+// copyright notice, a credit to someone else, or a named creator that does not
+// say NASA (a launch company's own film) is not NASA's to give, so it stays out.
+export function nasaBlocked(d) {
+  const credit = [d?.photographer, d?.secondary_creator].filter(Boolean).join(" ");
+  if (credit && !/\bnasa\b/i.test(credit)) return true;
+  return /©|copyright|courtesy|all rights reserved|credit:\s*(?!\s|nasa\b)/i.test(`${d?.description ?? ""} ${credit}`);
+}
+export const nasaHit = (item, kind) => {
+  const d = item?.data?.[0];
+  if (!d?.nasa_id || nasaBlocked(d)) return null;
+  return {
+    id: String(d.nasa_id),
+    source: "nasa",
+    kind,
+    title: strip(d.title),
+    tags: (d.keywords ?? []).map(String),
+    sourceUrl: `https://images.nasa.gov/details/${encodeURIComponent(d.nasa_id)}`,
+    preview: item.links?.find((l) => l.render === "image")?.href ?? null,
+    license: "us-federal",
+    licenseUrl: "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+    author: strip(d.photographer ?? d.secondary_creator ?? d.center) || "NASA",
+    date: today(),
+    collection: item.href ?? null,
+  };
+};
+export function nasaImageHits(json) {
+  return keep((json?.collection?.items ?? []).map((item) => {
+    const hit = nasaHit(item, "image");
+    if (!hit) return null;
+    const large = item.links?.find((l) => /~(large|orig)\.(jpe?g|png)$/i.test(l.href ?? ""));
+    return large ? { ...hit, imageUrl: large.href, width: large.width ?? null } : null;
+  }).filter(Boolean));
+}
+export async function searchNasaImages({ q, fetchImpl }) {
+  return nasaImageHits(await getJson(`https://images-api.nasa.gov/search?q=${encodeURIComponent(q)}&media_type=image&page_size=${PAGE}`, { fetchImpl, label: "NASA" }));
+}
+
+export const SEARCHERS = { openverse: searchOpenverse, wikimedia: searchWikimedia, nasa: searchNasaImages, loc: searchLoc };
 
 /** Every source at once. One that fails does not hide the others. */
 export async function searchAll({ q, sources = Object.keys(SEARCHERS), fetchImpl }) {

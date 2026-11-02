@@ -59,9 +59,11 @@ import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gate
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
 import { friendlyMessage } from "./friendly.mjs";
+import { planAuto, findFree, findPixabay, finishFind, setPaidWanted, reviewState as brollReview, approvePaid } from "./broll/engine.mjs";
+import { balance as kieBalance } from "./generate/kie.mjs";
 import { planBroll, estimateBroll, makeBroll, updateItem as updateBroll, againItem as againBroll, removeItem as removeBroll, attach as attachBroll, loadPlan as loadBrollPlan, usesGenerated } from "./broll/index.mjs";
-import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP } from "./broll/settings.mjs";
-import { choices as brollChoices } from "./generate/index.mjs";
+import { loadSettings as loadBrollSettings, saveSettings as saveBrollSettings, CAP as BROLL_CAP, PAID_LIMITS } from "./broll/settings.mjs";
+import { choices as brollChoices, generatorOf, PAID_GENERATOR, usdFor } from "./generate/index.mjs";
 import { previewCourse, importCourse, listCourses, exportCourse, readSeed } from "./course/index.mjs";
 import { channelBoard, setUpload, markSent } from "./course/board.mjs";
 import { bridgeLines } from "./course/bridge.mjs";
@@ -634,7 +636,10 @@ const commands = {
 
   // AI B-roll (broll/, generate/, docs/ai-broll.md). The settings are the
   // Identity's (Identity, Footage); the plan is the ONE Video's.
-  "broll-settings": async ({ identityDir }) => ({ settings: loadBrollSettings(identityDir), cap: BROLL_CAP, ...brollChoices() }),
+  "broll-settings": async ({ identityDir }) => {
+    const g = generatorOf(PAID_GENERATOR);
+    return { settings: loadBrollSettings(identityDir), cap: BROLL_CAP, ...brollChoices(), paidChoice: { model: PAID_GENERATOR, label: g.label, limits: PAID_LIMITS, qualities: g.qualities.map((id) => ({ id, clipUsd: usdFor(g.minSeconds, { generator: PAID_GENERATOR, quality: id }), seconds: g.minSeconds })) } };
+  },
   "broll-settings-save": async ({ identityDir, settings }) => ({ settings: saveBrollSettings(identityDir, settings) }),
   "broll-state": async ({ projectDir, identityDir }) => brollState(projectDir, identityDir),
   "broll-plan": async ({ projectDir, identityDir, llm }) => {
@@ -679,6 +684,69 @@ const commands = {
     appendLog(projectDir, `broll: ${id} removed from the video (kept in the library)`);
     return brollState(projectDir, identityDir);
   },
+
+  // The B-roll engine (broll/engine.mjs, docs/BUILD_PLAN.md phase 1b): a plan,
+  // the free sources in their order, Pixabay, then what waits for a yes. One
+  // key per command, so each source is its own command; ProjectView runs them.
+  "broll-auto-state": async ({ projectDir, identityDir }) => brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) }),
+  "broll-auto-plan": async ({ projectDir, identityDir, llm }) => {
+    const r = await logged(projectDir, "broll engine: planning", () => planAuto({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, projectDir, language: loadProject(projectDir).language, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: ${r.plan.items.length} stretches, planned by ${r.plan.plannedBy}`);
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-auto-plan-rule": async ({ projectDir, identityDir }) => {
+    const r = await planAuto({ projectDir, language: loadProject(projectDir).language });
+    appendLog(projectDir, `broll engine: ${r.plan.items.length} stretches, planned by rule`);
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-auto-find": async ({ projectDir, identityDir }) => {
+    const r = await logged(projectDir, "broll engine: free sources, words only", () => findFree({ projectDir, identityDir, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: free sources found ${r.found}, ${r.open} open`);
+    return { found: r.found, open: r.open };
+  },
+  "broll-auto-find-checked": async ({ projectDir, identityDir, llm }) => {
+    const r = await logged(projectDir, "broll engine: free sources, the AI looks at the frames", () => findFree({ projectDir, identityDir, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: free sources found ${r.found}, ${r.open} open`);
+    return { found: r.found, open: r.open };
+  },
+  "broll-auto-pixabay": async ({ projectDir, identityDir }) => {
+    const r = await logged(projectDir, "broll engine: Pixabay", () => findPixabay({ projectDir, identityDir, apiKey: key(), onProgress: (p) => emit({ event: "progress", ...p }) }));
+    appendLog(projectDir, `broll engine: Pixabay found ${r.found}, ${r.open} open`);
+    return { found: r.found, open: r.open };
+  },
+  "broll-auto-finish": async ({ projectDir, identityDir }) => {
+    const settings = loadBrollSettings(identityDir);
+    const r = finishFind({ projectDir, identityDir, settings });
+    appendLog(projectDir, `broll engine: ${r.placed} clips in the scene table, ${r.plan.items.filter((i) => i.paidWanted).length} paid clips waiting for a yes`);
+    previewStale(projectDir);
+    return brollReview({ projectDir, identityDir, settings });
+  },
+  "broll-paid-toggle": async ({ projectDir, identityDir, id, on }) => {
+    setPaidWanted({ projectDir, id, on });
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-prompt-save": async ({ projectDir, identityDir, id, prompt }) => {
+    updateBroll(projectDir, id, { prompt });
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  "broll-auto-remove": async ({ projectDir, identityDir, id }) => {
+    removeBroll(projectDir, id);
+    previewStale(projectDir);
+    appendLog(projectDir, `broll engine: ${id} removed from the video (kept in the library)`);
+    const table = JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8"));
+    logTableFootage({ projectDir, table, clips: loadLibrary(identityDir).clips ?? [] });
+    return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
+  },
+  // The only command of the engine that spends money. The UI sends the total it
+  // showed; engine.mjs refuses any other total, and anything over a limit.
+  "broll-paid-approve": async ({ projectDir, identityDir, quotedUsd }) => {
+    const settings = loadBrollSettings(identityDir);
+    appendLog(projectDir, `broll engine: paid clips approved at ${Number(quotedUsd).toFixed(2)} USD with ${settings.paid.model} ${settings.paid.quality}`);
+    const r = await logged(projectDir, "broll engine: paid clips", () => timed("broll-make", 1, emit, () => approvePaid({ projectDir, identityDir, apiKey: key(), settings, quotedUsd, onProgress: (p) => emit({ event: "progress", ...p }) })));
+    previewStale(projectDir);
+    return { ...brollReview({ projectDir, identityDir, settings }), made: r.made, failed: r.failed };
+  },
+  "kie-balance": async () => ({ account: await kieBalance({ apiKey: key() }) }),
 
   // "Previously used": the voice and the avatar look this Identity used last.
   "last-used": async ({ identityDir }) => ({ used: lastUsed(identityDir) }),

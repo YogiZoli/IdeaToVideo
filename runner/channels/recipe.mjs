@@ -1,7 +1,7 @@
 // channels/recipe.mjs: a channel's one locked recipe (docs/BUILD_PLAN.md,
 // DECISIONS 132). A channel is an Identity (brand, audience, keys, folder) plus
 // <identity>/recipe.json: engine, style preset, voice, avatar on or off, music
-// on or off, target length. Every video of the channel is made with it; the
+// on or off, B-roll on or off, target length. Every video of the channel is made with it; the
 // start screen shows it and asks nothing else. Each video keeps a copy in its
 // project.json, so changing the recipe later never changes a video under way.
 
@@ -39,6 +39,7 @@ export function defaultRecipe(identity = {}) {
     voice,
     avatar: { on: Boolean(identity.avatar?.enabled && identity.avatar?.lookId), lookId: identity.avatar?.lookId ?? null },
     music: { on: true, source: "synth", mood: DEFAULT_MOOD },
+    broll: { on: true },
     targetLengthMin: Number(identity.defaults?.targetLengthMin) || 8,
   };
 }
@@ -68,6 +69,8 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
     // the rule: avatar_iii only, transparent, composited 1:1
     avatar: { on, lookId, ...(r.avatar?.name ? { name: String(r.avatar.name).slice(0, 120) } : {}), engine: "avatar_iii", layout: "overlay" },
     music: { on: Boolean(r.music?.on), source, mood: MOODS[r.music?.mood] ? r.music.mood : DEFAULT_MOOD },
+    // a recipe locked before the B-roll engine keeps what it had: no B-roll
+    broll: { on: r.broll?.on === true },
     targetLengthMin: target,
   };
 }

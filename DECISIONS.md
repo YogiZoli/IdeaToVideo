@@ -2336,3 +2336,45 @@
     new `scripts/phase2/channel-e2e.mjs` 29/29. No paid call was made while building, and
     no real AI answered the template planner yet: it was tested with stand-in
     answers, and by rule through a real render.
+
+137. **The B-roll engine** (Zoltan, 2026-11-02, `docs/BUILD_PLAN.md` phase 1b;
+    `runner/broll/engine.mjs`). Moving video under the sentences that name something
+    visible, shared by every preset and later the Recorded engine. The cheapest source
+    that fits, in this order: public domain film, a free still moved in 2.5D, Pixabay,
+    a paid Kie AI clip. Same `broll.json`, footage library and scene table as the Scenes
+    tab's panel, whose HeyGen path is unchanged.
+    - **A parallax clip is a HyperFrames composition:** one canvas, a shader over the still
+      and its depth map, seeked by the engine's timeline. No frame code of our own
+      (the canon's border). About 70 s a clip on this computer. Tested with a real NASA
+      still in all three moves.
+    - **Depth Anything V2 Small on the existing ONNX runtime:** 27 MB, once, pinned hash.
+      Only the Small size is Apache 2.0.
+    - **Kie AI: Seedance 1.0 Lite,** the cheapest per second that gives a 16:9 clip of
+      about 5 seconds. Only the engine can order it, not the Scenes tab's panel.
+    - **No yes, no money:** the Preview tab sends the total it showed, and `approvePaid`
+      refuses any other total, a missing total (a test found this one: `NaN` passed
+      the first version's comparison), the switch off, or a limit. The month is per
+      channel (`<identity>/broll-spend.json`); a clip Kie AI cannot make comes back on
+      the month and the video, and its free clip stays.
+    - **Who sees the frame (Claude's decision, can be overruled):** with an AI key the AI
+      looks at the frame of a film or still: does it show what is said, can a face be
+      recognized. Without a key only an exact word match counts, and no old film,
+      whose title says nothing about a given frame.
+    - **NASA's site hosts other people's work (found in the ledger of the first real
+      run: a launch company's film):** a NASA item counts only when its own credit says
+      NASA. Stricter than it has to be, on purpose: other sources remain.
+    - **A recipe locked before this keeps B-roll off,** like DECISIONS 132; a new channel
+      starts with it on. The switch is in the recipe, paid clips under it.
+    - **Prompt rule by code too** (`promptRefusal`): a capital inside a sentence, a list of
+      famous names, "in the style of". Checked when planned, edited and ordered.
+    - Pixabay is now allowed in a channel video, logged as a free license, not CC0.
+      Unsplash stays refused. No Pexels: a test reads the code for the word.
+    - **Keys:** Kie AI added to the keychain's names, stored in Windows Credential Manager
+      as `default.ideatovideo.kie`. Pixabay's was already there and was not touched.
+
+    Tests: Node 423 of 426 (the one red is `traffic-card.test.mjs`, red on main before; 2
+    live tests skipped), Rust 49, UI check 0 errors, e2e 54/54, channel e2e 38/38 with
+    real footage from NASA through a real render. The still path through the engine, real
+    still, depth and render: 61 s. Kie AI: only the free balance call was made (80 credits).
+    No paid call was made while building, and no real AI answered the plan or the frame
+    check: stand-ins and the rule only.

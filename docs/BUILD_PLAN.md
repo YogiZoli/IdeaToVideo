@@ -21,12 +21,17 @@ everything that exists, never rebuild what is already there.
 - Fonts: OFL licensed only, bundled with the app.
 - Bundled models and libraries: MIT, Apache 2.0, BSD or OFL only. No GPL, no
   non-commercial licenses.
-- External images: only CC0 or Public Domain, from Openverse (license filter
-  cc0 and pdm), Wikimedia Commons (PD and CC0 only), Library of Congress ("no
-  known restrictions") or US federal government works. Maps: Natural Earth,
-  bundled. Every external asset is logged in the project's
-  `assets_license.json` (source URL, license, author, date). Anything without
-  a clear CC0 or PD license is rejected.
+- External images and video: CC0 or Public Domain, from Openverse (license
+  filter cc0 and pdm), Wikimedia Commons (PD and CC0 only), Library of Congress
+  ("no known restrictions"), the Prelinger Archives on the Internet Archive
+  (only an item that itself says public domain or CC0), NASA media or other US
+  federal government works. Maps: Natural Earth, bundled.
+- Two named exceptions to CC0 or PD: Pixabay (logged as "free license, not CC0")
+  and Kie AI outputs (logged with model and prompt). No Pexels anywhere.
+- Every external asset, from any source, is logged in the project's
+  `assets_license.json`: source URL or model name, license or terms, author,
+  prompt (for AI), cost, date. Anything else without a clear license is rejected.
+- AI prompts never name a real person, brand, logo, character or artist.
 - Never show a recognizable real person. People and characters are drawn by
   code.
 - Music and sound effects: synthesized by code, or Zoltan's own files in a
@@ -78,6 +83,57 @@ Status: done (2026-11-02, DECISIONS 132 to 136)
 - Asset license module and the free voice option, as in the rules.
 - Preset 1 = the current HyperFrames motion graphics with Zoltan's zg-frames
   library, unchanged, as the default.
+
+### Phase 1b: B-roll engine
+
+Status: done (2026-11-02, DECISIONS 137). Not tried yet: a real paid clip (it needs
+Zoltan's yes on the Preview tab) and a real AI on the plan and the frame check.
+
+Moving video, not just stills, shared by every style preset and the Recorded
+engine. For each scene that needs B-roll, the cheapest source that fits, in this
+order:
+
+a) Public Domain or CC0 video: Prelinger Archives on the Internet Archive, NASA
+   media, Wikimedia Commons (PD and CC0 only).
+b) Free animation of a still: a CC0 or Public Domain photo, depth estimated locally
+   with Depth Anything V2 Small (Apache 2.0, downloaded once), a 2.5D parallax
+   camera move (push in, drift, orbit) as a 4 to 6 second clip. Local, 0 USD.
+c) Pixabay video and images, through the integration and key ITV already has.
+   Logged as "free license, not CC0".
+d) AI video via Kie AI (paid): image-to-video or text-to-video, 4 to 6 second clips,
+   only for hero moments. The cheapest suitable model, its cost per clip in the UI.
+   Prompts never name a real person, brand, logo, character or artist.
+
+Budget for d): off by default. Per channel: a toggle, a max USD per video, a max
+USD per month. The preview step shows which scenes would use paid clips and the
+total cost; nothing is spent until Zoltan approves.
+
+**Kie AI's terms on commercial use of outputs (read 2026-11-02).** The Terms of
+Use (kie.ai/terms-of-use, NEXUSAI SERVICES LLC, last updated 2026-10-26) do **not**
+say who owns AI-generated outputs and do not address their commercial use. They
+cover "User Content", of which the user keeps ownership, granting a worldwide,
+non-exclusive, royalty-free license to operate and improve the services; content
+must not infringe third-party rights. They do not mention the terms of the
+third-party models Kie AI resells. The only statement on commercial use is
+marketing copy on the Seedance 1.0 page (kie.ai/bytedance/seedance-v1): a
+"Commercial use" tag and "Fully licensed for business use". So: allowed according
+to the product page, not granted in the terms. **Open for Zoltan:** ask
+support@kie.ai for written confirmation before a paid clip goes into a monetized
+video. The ledger records model, prompt, cost and date for every clip.
+
+**The model:** Seedance 1.0 Lite (`bytedance/v1-lite-text-to-video`,
+`bytedance/v1-lite-image-to-video`). Kie AI's price list, 2026-11-02: 2, 4.5 and 10
+credits a second at 480p, 720p and 1080p, 1 credit is about 0.005 USD, a failed task
+is not charged. A 5 second clip: 0.05, 0.12 (the default, 720p; exactly 0.1125,
+shown rounded up) and 0.25 USD. The cheapest per second on that list that gives a
+16:9 clip of about 5 seconds.
+
+**Built on what was there:** `runner/broll/engine.mjs` uses the same `broll.json`
+plan, order file (`pending.json`), footage library and scene table `footage` list
+as the Scenes tab's panel. A parallax clip is a HyperFrames composition rendered by
+the engine (about 70 s a clip on this computer), never a frame engine of our own.
+**Where it runs:** the recipe's new B-roll switch (a new channel: on; a recipe locked
+before this phase keeps what it had: off), between the scene plan and the build.
 
 ### Phase 2: Preset "Archive Collage" (documentary collage explainer)
 
@@ -159,7 +215,9 @@ avoids them where it can; the rest waits for his decision.
 | libvips through sharp (LGPL), inside the engine | MIT, Apache, BSD or OFL only | Comes with HyperFrames, not used by ITV directly. |
 | Non-OFL fonts | OFL only | library/fonts.json records no license per font. Not audited yet. Phase 2 must list only OFL fonts in its tokens. |
 | The registry component `vox-annotate` | no brand names | Status "on" in library/catalog.json, so the catalog plan (Advanced) can still pick it. No preset template uses it. |
-| Pixabay, Unsplash, AI B-roll, ElevenLabs Music | allowed sources, music, 0 USD | Still in the Advanced paths. A channel video's build refuses outside pictures without CC0 or PD proof; the channel flow never calls the others. |
+| Unsplash, HeyGen AI B-roll, ElevenLabs Music | allowed sources, music, 0 USD | Still in the Advanced paths. A channel video's build refuses Unsplash; HeyGen clips are logged with model and prompt. Pixabay and Kie AI are allowed now (Phase 1b). |
+| Kie AI's terms say nothing about who owns the output | clean licensing | Only the product page says "Fully licensed for business use". See Phase 1b: ask Kie AI in writing before a paid clip goes into a monetized video. |
+| Prelinger and other old film can show real people | never a recognizable real person | Filtered by words, and with an AI key the AI looks at the frame. Without a key no old film is used. The Preview tab still asks Zoltan to look at each clip. |
 | Gemini thumbnail pictures | 0 USD | Still a choice on the Thumbnail tab, with its price. Channel videos start on the free maker. |
 
 Other findings:
@@ -187,6 +245,9 @@ Other findings:
   bring its own pack from its folder (today `registerPacks` reads the Identity's).
 - `ruleParams` in `runner/gates/scenes/templates.mjs` knows the Motion Frames
   template ids. A new preset adds its own rules there or names rule-fillable ids.
+- B-roll for any preset or engine: `planAuto`, `findFree`, `findPixabay`,
+  `finishFind`, `approvePaid` in `runner/broll/engine.mjs` need only sentences,
+  scene rows and an Identity. A preset that must not have B-roll: the recipe's switch.
 - Whisper is not in the app yet. Kokoro gives word times itself and ElevenLabs
   gives them with its audio, so Phase 7 is the first to need a local transcriber.
 - Publishing Card sources (Phase 4): `video-publishing-card/1` takes optional blocks.

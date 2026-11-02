@@ -8,12 +8,13 @@
   import type { AppState } from "../api";
   import { runner, errorText } from "../api";
   import { avatarLooks } from "../avatars";
+  import PaidClips from "./PaidClips.svelte";
   import type { ChannelState, Recipe } from "./channels";
 
   let { app, state: st, done, cancel }: { app: AppState; state: ChannelState; done: (r: Recipe) => void; cancel?: () => void } = $props();
 
   // the editor works on a copy until Lock
-  let r = $state<Recipe>(untrack(() => JSON.parse(JSON.stringify(st.recipe))));
+  let r = $state<Recipe>(untrack(() => ({ broll: { on: false }, ...JSON.parse(JSON.stringify(st.recipe)) })));
   let busy = $state(false);
   let error = $state("");
   const language = $derived(app.config?.channel.contentLanguage ?? "en");
@@ -175,6 +176,15 @@
           <p class="hint">{st.ownMusic.length ? `${st.ownMusic.length} files in this channel's music folder.` : "No files yet."} The folder appears when you lock the recipe: {st.musicDir}</p>
         {/if}
       {/if}
+    </div>
+  </div>
+
+  <div class="row">
+    <span class="label">B-roll</span>
+    <div>
+      <label><input type="checkbox" bind:checked={r.broll!.on} /> On: moving footage under the sentences that name something you can see</label>
+      <p class="hint">Free sources first, in this order: public domain film, a free still moved in 2.5D on this computer, Pixabay. The Preview tab shows every clip with its license.</p>
+      {#if r.broll?.on}<PaidClips {app} />{/if}
     </div>
   </div>
 

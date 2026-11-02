@@ -50,6 +50,7 @@ export function effortChoices(provider: string, model: string): string[] {
 export const SERVICE_KEY_URLS: Record<string, string> = {
   elevenlabs: "https://elevenlabs.io/app/settings/api-keys",
   heygen: "https://app.heygen.com/settings?nav=API",
+  kie: "https://kie.ai/api-key",
   vidiq: "https://app.vidiq.com/account/settings/mcp",
   pixabay: "https://pixabay.com/api/docs/",
   unsplash: "https://unsplash.com/oauth/applications",

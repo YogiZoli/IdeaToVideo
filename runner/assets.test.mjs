@@ -13,8 +13,8 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "itv-assets-"));
 
 test("anything without a clear CC0 or PD license is refused", () => {
   assert.equal(refusal(good), null);
-  for (const license of ["by", "by-sa", "CC BY 4.0", "pixabay", "unsplash", "", undefined, "unknown"]) assert.ok(refusal({ ...good, license }), String(license));
-  assert.match(refusal({ ...good, source: "pixabay" }), /not an allowed/);
+  for (const license of ["by", "by-sa", "CC BY 4.0", "unsplash", "", undefined, "unknown"]) assert.ok(refusal({ ...good, license }), String(license));
+  assert.match(refusal({ ...good, source: "pixabay" }), /cannot give the license/);
   assert.match(refusal({ ...good, source: "unsplash" }), /not an allowed/);
 });
 
@@ -73,7 +73,7 @@ test("a refused asset writes nothing; an edited ledger is caught", () => {
 test("a channel video: stock clips stop the build, own uploads are not external, free ones are logged", () => {
   const dir = tmp();
   const table = { footage: [{ from: "S1", clip: "a" }] };
-  const stock = { id: "a", name: "Photo", file: "a.mp4", credit: { source: "Pixabay", license: "Pixabay Content License", author: "x" } };
+  const stock = { id: "a", name: "Photo", file: "a.mp4", credit: { source: "Unsplash", license: "Unsplash License", author: "x" } };
   assert.throws(() => logTableFootage({ projectDir: dir, table, clips: [stock] }), /cannot be in this channel's video/);
   assert.equal(clipAsset({ id: "a", name: "Mine", file: "a.mp4" }), null);
   assert.deepEqual(logTableFootage({ projectDir: dir, table, clips: [{ id: "a", name: "Mine", file: "a.mp4" }] }), []);
@@ -128,7 +128,7 @@ test("a source that fails does not hide the others", async () => {
   };
   const r = await searchAll({ q: "map", fetchImpl });
   assert.equal(r.hits.length, 1);
-  assert.equal(r.failed.length, 2);
+  assert.equal(r.failed.length, 3);
   await assert.rejects(searchAll({ q: " ", fetchImpl }), /Type what/);
 });
 

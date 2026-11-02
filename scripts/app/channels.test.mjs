@@ -12,15 +12,17 @@ const free = { engine: "script", preset: "motion-frames", voice: { provider: "ko
 const presets = [{ id: "motion-frames", label: "Motion Frames" }];
 const voices = [{ id: "am_michael", name: "Michael", gender: "male" }];
 
-test("the recipe in six plain lines", () => {
+test("the recipe in seven plain lines", () => {
   const lines = recipeLines(free, presets, voices);
-  assert.deepEqual(lines.map((l) => l.label), ["Engine", "Style", "Voice", "Avatar", "Music", "Length"]);
+  assert.deepEqual(lines.map((l) => l.label), ["Engine", "Style", "Voice", "Avatar", "Music", "B-roll", "Length"]);
   assert.equal(lines[1].value, "Motion Frames");
   assert.match(lines[2].value, /Michael, free/);
   assert.equal(lines[3].value, "Off");
   assert.match(lines[4].value, /by code/);
-  assert.equal(lines[5].value, "8 minutes");
-  assert.equal(recipeLines({ ...free, targetLengthMin: 1, music: { ...free.music, on: false } }, presets)[5].value, "1 minute");
+  assert.equal(lines[5].value, "Off");
+  assert.equal(recipeLines({ ...free, broll: { on: true } }, presets, voices)[5].value, "On, free sources first");
+  assert.equal(lines[6].value, "8 minutes");
+  assert.equal(recipeLines({ ...free, targetLengthMin: 1, music: { ...free.music, on: false } }, presets)[6].value, "1 minute");
 });
 
 test("the price is said before the video starts: 0 USD only when it is", () => {

@@ -60,7 +60,7 @@ Do you tell people what they get? A clear promise keeps them watching. A vague p
 
 ## Part 2
 
-Pick one viewer. Name one problem. Show one result. Then stop talking.`;
+Think of a rocket launch. A rocket launch shows the whole promise at once. Pick one viewer. Name one problem. Show one result. Then stop talking.`;
 
 const work = path.resolve(args.work);
 fs.rmSync(work, { recursive: true, force: true });
@@ -98,6 +98,24 @@ check("the plan has several scenes", table.scenes.length >= 3, table.scenes.map(
 check("no component twice in a row", table.scenes.every((s, i) => !i || s.component !== table.scenes[i - 1].component));
 step("scenes approved", "approve-gate", { projectDir, gate: "scenes" });
 step("no avatar on this recipe", "skip-gate", { projectDir, gate: "avatar" });
+
+// The B-roll engine with no AI and no key: words only, free sources only.
+check("the B-roll switch is copied into the video", read().recipe?.broll?.on === true);
+const brollPlan = step("B-roll: where it goes, by rule", "broll-auto-plan-rule", { projectDir, identityDir }, (d) => d.plan.items.map((i) => i.query).join("; "));
+check("B-roll: the channel's paid clips are off by default", brollPlan.paid.on === false && brollPlan.paid.clips === 0);
+// a stretch the search can find for certain, so this step does not hang on the rule's words
+const broll = JSON.parse(fs.readFileSync(path.join(projectDir, "broll", "broll.json"), "utf8"));
+if (broll.items[0]) broll.items[0].query = "rocket launch";
+fs.writeFileSync(path.join(projectDir, "broll", "broll.json"), JSON.stringify(broll, null, 2));
+const free = step("B-roll: the free sources, live", "broll-auto-find", { projectDir, identityDir }, (d) => `${d.found} found, ${d.open} open`);
+const finished = step("B-roll: finish", "broll-auto-finish", { projectDir, identityDir }, (d) => `${d.plan.items.filter((i) => i.state === "done").map((i) => i.source).join(", ")}`);
+check("B-roll: nothing was spent and nothing waits for a yes", finished.paid.totalUsd === 0 && finished.paid.spentVideoUsd === 0 && !finished.plan.items.some((i) => i.paidWanted));
+if (free.found) {
+  const ledger = JSON.parse(fs.readFileSync(path.join(projectDir, "assets_license.json"), "utf8"));
+  check("B-roll: every clip is in assets_license.json", ledger.assets.length === free.found && ledger.assets.every((a) => a.source && a.sourceUrl && a.license && a.author && a.date && a.costUsd === 0), ledger.assets.map((a) => `${a.source}: ${a.licenseName}`).join("; "));
+  check("B-roll: the clip is in the scene table", (JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8")).footage ?? []).length === free.found);
+}
+step("scenes approved again", "approve-gate", { projectDir, gate: "scenes" });
 
 const build = step("the existing preview step builds it", "build-video", { projectDir, identityDir }, (d) => `${d.scenes} scenes, ${d.seconds} s, ${d.stills?.length ?? 0} stills`);
 check("the preview has stills", (build.stills?.length ?? 0) >= 1);

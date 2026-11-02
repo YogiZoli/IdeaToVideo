@@ -110,7 +110,21 @@ async function brandState() {
 }
 // AI B-roll: the Identity's settings, the video's plan, the library.
 const brollOn = q.get("broll");
-let brollSettings = { schema: "itv-broll-settings/1", enabled: !!brollOn, generator: brollOn === "test" ? "test" : "heygen-video-1", quality: "768p", capUsd: 1 };
+const PAID_CHOICE = { model: "kie-seedance-v1-lite", label: "Seedance 1.0 Lite (Kie AI)", limits: { perVideo: { min: 0, max: 100, default: 1 }, perMonth: { min: 0, max: 1000, default: 5 } }, qualities: [{ id: "480p", clipUsd: 0.05, seconds: 5 }, { id: "720p", clipUsd: 0.12, seconds: 5 }, { id: "1080p", clipUsd: 0.25, seconds: 5 }] };
+const HERO_PROMPT = "A slow push in over a rocket standing on its launch pad at dawn, thin vapour drifting across the frame, soft orange light, one continuous shot from far away, natural colours.";
+const engineItems = [
+  { id: "b1", scene: 2, said: "The first steam engines changed how cities moved.", seconds: 4.2, query: "steam locomotive", hero: false, prompt: "", use: true, state: "done", source: "archive", usd: 0, license: "Public Domain", sourceUrl: "https://archive.org/details/x", author: "Prelinger Archives", checked: true },
+  { id: "b2", scene: 5, said: "From orbit, the whole coast looks like a thin line of light.", seconds: 4.8, query: "earth from orbit coast", hero: true, prompt: HERO_PROMPT, use: true, state: "done", source: "still", usd: 0, license: "US federal government work", sourceUrl: "https://images.nasa.gov/details/x", author: "NASA", checked: true },
+  { id: "b3", scene: 8, said: "Traffic slows when one car brakes.", seconds: 3.5, query: "city traffic", hero: false, prompt: "", use: true, state: "done", source: "pixabay", usd: 0, license: "Free license, not CC0 (Pixabay Content License)", sourceUrl: "https://pixabay.com/videos/x-1/", author: "ana", checked: false },
+  { id: "b4", scene: 11, said: "Then the rocket leaves the pad.", seconds: 3.1, query: "rocket launch pad dawn", hero: true, prompt: HERO_PROMPT, use: true, state: "none", source: null, paidWanted: true },
+];
+function engineState() {
+  const wanted = engineItems.filter((i) => i.use && i.paidWanted);
+  const totalUsd = Math.round(wanted.length * 12) / 100;
+  const spentVideoUsd = engineItems.filter((i) => i.source === "ai").length * 0.12;
+  return { plan: q.get("engine") ? { auto: true, finished: true, stale: false, items: engineItems } : null, clips: {}, footageDir: "/preview", paid: { on: true, model: PAID_CHOICE.model, quality: "720p", maxPerVideoUsd: 1, maxPerMonthUsd: 5, label: PAID_CHOICE.label, clipUsd: 0.12, clips: wanted.length, totalUsd, spentVideoUsd, spentMonthUsd: spentVideoUsd, leftVideoUsd: 1 - spentVideoUsd, leftMonthUsd: 5 - spentVideoUsd, over: false } };
+}
+let brollSettings = { schema: "itv-broll-settings/1", enabled: !!brollOn, generator: brollOn === "test" ? "test" : "heygen-video-1", quality: "768p", capUsd: 1, paid: { on: q.get("engine") === "1", model: "kie-seedance-v1-lite", quality: "720p", maxPerVideoUsd: 1, maxPerMonthUsd: 5 } };
 const BROLL_GENERATORS = [{ id: "heygen-video-1", label: "HeyGen Video 1", test: false, usdPerSecond: { "480p": 0.02, "768p": 0.03, "1080p": 0.09 } }, { id: "test", label: "Test clips (free, placeholder)", test: true, usdPerSecond: { "480p": 0, "768p": 0, "1080p": 0 } }];
 const BROLL_QUALITIES = [{ id: "480p", label: "480p", note: "cheapest, soft on a 1080p video" }, { id: "768p", label: "768p", note: "the default" }, { id: "1080p", label: "1080p", note: "sharp, three times the 768p price" }];
 let brollPlan = null;
@@ -154,7 +168,7 @@ const replies = {
   "build-video": { scenes: 1, seconds: 5, stills: [] },
   "validate-config": { errors: [] },
   "channel-state": {
-    recipe: { schema: "channel-recipe/1", engine: "script", preset: "motion-frames", voice: q.get("recipe") === "eleven" ? { provider: "elevenlabs", voice: "v1", name: "My voice" } : { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 },
+    recipe: { schema: "channel-recipe/1", engine: "script", preset: "motion-frames", voice: q.get("recipe") === "eleven" ? { provider: "elevenlabs", voice: "v1", name: "My voice" } : { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, broll: { on: true }, targetLengthMin: 8 },
     saved: !q.get("newrecipe"),
     presets: [{ id: "motion-frames", label: "Motion Frames", description: "The motion graphics this app already makes.", engine: "script", templates: Array.from({ length: 13 }, (_, i) => ({ id: `t${i}`, label: `T${i}` })), shotRules: {} }],
     voiceKinds: { kokoro: "Free voice on this computer (Kokoro)", elevenlabs: "My ElevenLabs voice" },
@@ -307,7 +321,14 @@ window.__TAURI_INTERNALS__ = {
         // A real scene table, when prepare.mjs or a test put one next to the page.
         if (args.command === "scene-table") { try { const r = await fetch("/scene-table.json"); if (r.ok) return await r.json(); } catch {} }
         if (args.command === "scene-table" && brollOn) return brollTable();
-        if (args.command === "broll-settings") return { settings: brollSettings, cap: { min: 1, max: 10, step: 0.5, default: 1 }, generators: BROLL_GENERATORS, qualities: BROLL_QUALITIES };
+        if (args.command === "broll-settings") return { settings: brollSettings, cap: { min: 1, max: 10, step: 0.5, default: 1 }, generators: BROLL_GENERATORS, qualities: BROLL_QUALITIES, paidChoice: PAID_CHOICE };
+        // The B-roll engine on the Preview tab (?engine=1, runner/broll/engine.mjs).
+        if (args.command === "broll-auto-state") return engineState();
+        if (args.command === "kie-balance") return { account: { credits: 80, usd: 0.4 } };
+        if (args.command === "broll-paid-toggle") { engineItems.find((i) => i.id === args.request.id).paidWanted = args.request.on; return engineState(); }
+        if (args.command === "broll-auto-remove") { engineItems.find((i) => i.id === args.request.id).use = false; return engineState(); }
+        if (args.command === "broll-prompt-save") { engineItems.find((i) => i.id === args.request.id).prompt = args.request.prompt; return engineState(); }
+        if (args.command === "broll-paid-approve") { for (const i of engineItems.filter((x) => x.paidWanted)) Object.assign(i, { paidWanted: false, state: "done", source: "ai", usd: 0.12, license: "Kie AI terms of use (AI output, see docs/BUILD_PLAN.md)", author: "AI: Seedance 1.0 Lite (Kie AI)" }); return { ...engineState(), made: 1, failed: [] }; }
         if (args.command === "broll-settings-save") { brollSettings = { ...brollSettings, ...args.request.settings, capUsd: Math.min(10, Math.max(1, Math.round(Number(args.request.settings.capUsd) * 2) / 2)) }; return { settings: brollSettings }; }
         if (args.command === "broll-state") return brollState();
         if (args.command === "broll-balance") return { account: { kind: "wallet", remaining: 4.88, currency: "usd" } };

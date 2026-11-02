@@ -8,6 +8,7 @@ export type Recipe = {
   voice: { provider: "kokoro" | "elevenlabs"; voice: string; name?: string };
   avatar: { on: boolean; lookId: string | null; name?: string; engine?: string; layout?: string };
   music: { on: boolean; source: "synth" | "own"; mood: string };
+  broll?: { on: boolean };
   targetLengthMin: number;
   updatedAt?: string;
 };
@@ -40,6 +41,7 @@ export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVo
     { label: "Voice", value: r.voice.provider === "kokoro" ? `${free}, free, on this computer` : `${r.voice.name ?? "My voice"}, ElevenLabs` },
     { label: "Avatar", value: r.avatar.on ? `On${r.avatar.name ? `, ${r.avatar.name}` : ""}` : "Off" },
     { label: "Music", value: !r.music.on ? "Off" : r.music.source === "own" ? "My own files" : `Made by code, ${r.music.mood}` },
+    { label: "B-roll", value: r.broll?.on ? "On, free sources first" : "Off" },
     { label: "Length", value: minutes(r.targetLengthMin) },
   ];
 }

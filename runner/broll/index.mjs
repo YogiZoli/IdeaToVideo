@@ -28,6 +28,7 @@ import { patiently } from "../providers/retry.mjs";
 import { sceneRows, writeTable, callSentences } from "../gates/scenes/index.mjs";
 import { loadLibrary, footageDir, addClip, incomingFootage } from "../footage/library.mjs";
 import { generatorOf, orderSeconds, usdFor, aspectOf } from "../generate/index.mjs";
+import { promptRefusal } from "../generate/kie.mjs";
 import { loadSettings } from "./settings.mjs";
 import { appendLog } from "../project.mjs";
 
@@ -54,7 +55,7 @@ function writeJsonAtomic(file, data) {
   fs.renameSync(`${file}.tmp`, file);
 }
 
-const voBytes = (projectDir) => {
+export const voBytes = (projectDir) => {
   try {
     return fs.statSync(path.join(projectDir, "audio", "vo.mp3")).size;
   } catch {
@@ -67,7 +68,7 @@ export function loadPlan(projectDir) {
   if (!plan?.items) return null;
   return { ...plan, stale: plan.voBytes !== voBytes(projectDir) };
 }
-const savePlan = (projectDir, plan) => {
+export const savePlan = (projectDir, plan) => {
   const { stale, ...clean } = plan;
   writeJsonAtomic(planFile(projectDir), clean);
 };
@@ -101,7 +102,7 @@ export function eligibleScenes(rows, { brollClips = new Set() } = {}) {
 export const maxClips = (sceneCount) => Math.floor(sceneCount / 3);
 
 // The AI's answer, checked. Returns the issues (empty: good).
-export function planIssues(answer, { rows, eligible, sentences, max, library = [], minSeconds = 2, maxSeconds = 15 }) {
+export function planIssues(answer, { rows, eligible, sentences, max, library = [], minSeconds = 2, maxSeconds = 15, needsPrompt = () => true }) {
   if (!answer || !Array.isArray(answer.clips)) return ["answer with { \"clips\": [...] }"];
   const issues = [];
   const allowed = new Map(eligible.map((r) => [r.index + 1, r]));
@@ -126,7 +127,7 @@ export function planIssues(answer, { rows, eligible, sentences, max, library = [
       if (!known.has(c.library)) issues.push(`${at}: unknown library clip ${c.library}`);
       else if (usedLib.has(c.library)) issues.push(`${at}: library clip ${c.library} is used twice`);
       usedLib.add(c.library);
-    } else {
+    } else if (needsPrompt(c)) {
       const p = String(c.prompt ?? "").trim();
       const words = p.split(/\s+/).filter(Boolean).length;
       if (words < 15 || words > 160) issues.push(`${at}: the prompt must have 30 to 120 words (it has ${words})`);
@@ -223,7 +224,8 @@ export async function planBroll({ llm, projectDir, settings, identity = {}, libr
 }
 
 // What a run would order: chosen, not made yet, not from the library.
-const toOrder = (plan, ids = null) => plan.items.filter((i) => i.use && !i.library && i.state !== "done" && (!ids || ids.includes(i.id)));
+// In the B-roll engine's plan (plan.auto) only an AI row the user approved.
+const toOrder = (plan, ids = null) => plan.items.filter((i) => i.use && !i.library && i.state !== "done" && (!plan.auto || (i.source === "ai" && i.approved)) && (!ids || ids.includes(i.id)));
 
 // 2. The estimate, against the video's limit.
 export function estimateBroll({ projectDir, settings, ids = null }) {
@@ -262,6 +264,8 @@ export function updateItem(projectDir, id, { prompt, use } = {}) {
   if (typeof prompt === "string") {
     const p = prompt.replace(/\s+/g, " ").trim().slice(0, 2000);
     if (!p) throw new Error("The picture description is empty.");
+    const why = plan.auto ? promptRefusal(p) : null;
+    if (why) throw new Error(why);
     if (p !== item.prompt) {
       item.prompt = p;
       // a library clip with new words is a new clip
@@ -352,11 +356,12 @@ const orderKey = (projectDir, item, settings, aspect) =>
 // order placed for an earlier plan (planned again while HeyGen worked, or a
 // new voice) is never lost. Such an order is picked up on the next run and
 // kept in the library, free, even when no row of the new plan wants it.
-export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids = null, allowOverCap = false, fetchImpl = fetch, sleep, env = process.env, onProgress = () => {} }) {
+export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids = null, allowOverCap = false, fetchImpl = fetch, sleep, env = process.env, onProgress = () => {}, onSpend = () => {} }) {
   const plan = loadPlan(projectDir);
   if (!plan) throw new Error("There is no B-roll plan yet. Click Make B-roll clips.");
   const g = generatorOf(settings.generator);
-  if (g.key && !apiKey) throw new Error("No HeyGen API key. Add it in Settings.");
+  const service = g.service ?? "HeyGen";
+  if (g.key && !apiKey) throw new Error(`No ${service} API key. Add it in Settings.`);
   const project = path.basename(projectDir);
   const pending = readJson(pendingFile(projectDir), {});
   const savePending = () => (Object.keys(pending).length ? writeJsonAtomic(pendingFile(projectDir), pending) : fs.rmSync(pendingFile(projectDir), { force: true }));
@@ -366,7 +371,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
   const bring = async (key, info, n, of, item = null) => {
     const gen = generatorOf(info.generator);
     const out = path.join(brollDir(projectDir), "clips", `${info.itemId}-${info.attempt ?? 0}.mp4`);
-    await gen.module.fetchClip({ apiKey, id: info.id, out, fetchImpl, sleep, env, onStatus: (status) => onProgress({ step: "broll-clip", status, n, of, scene: (info.scene ?? 0) + 1, ...(info.reused ? { reused: true } : {}) }) });
+    await gen.module.fetchClip({ apiKey, id: info.id, out, fetchImpl, ...(sleep ? { sleep } : {}), env, onStatus: (status) => onProgress({ step: "broll-clip", status, n, of, scene: (info.scene ?? 0) + 1, ...(info.reused ? { reused: true } : {}) }) });
     const incoming = incomingFootage(".mp4");
     fs.mkdirSync(footageDir(identityDir), { recursive: true });
     fs.copyFileSync(out, path.join(footageDir(identityDir), incoming));
@@ -376,7 +381,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
       name: `${gen.test ? "Test clip" : "AI clip"}: ${String(info.said ?? "").slice(0, 60)}`,
       description: String(info.prompt ?? "").slice(0, 400),
       source: "generated",
-      extra: { generated: { generator: info.generator, label: gen.label, quality: info.quality, aspect: info.aspect, prompt: info.prompt, seconds: info.seconds, usd: info.usd ?? 0, videoId: info.id, project, ...(gen.test ? { test: true } : {}), at: new Date().toISOString() } },
+      extra: { generated: { generator: info.generator, label: gen.label, ...(gen.modelName ? { model: gen.modelName } : {}), quality: info.quality, aspect: info.aspect, prompt: info.prompt, seconds: info.seconds, usd: info.usd ?? 0, videoId: info.id, project, ...(gen.test ? { test: true } : {}), at: new Date().toISOString() } },
       env,
     });
     if (item) Object.assign(item, { state: "done", clip: clip.id, file: path.relative(projectDir, out).split(path.sep).join("/"), usd: info.usd ?? 0, error: null });
@@ -386,6 +391,10 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
   };
   // HeyGen gave up on an order: the next run orders it again.
   const gaveUp = (e) => /could not make the B-roll clip/i.test(e.message);
+  // Kie AI does not charge a failed clip: its price goes back on the month.
+  const refund = (info) => {
+    if (info?.generator && generatorOf(info.generator).engineOnly) onSpend(-(info.usd ?? 0), info);
+  };
 
   // Orders of an earlier plan that no row wants now: into the library.
   const wanted = new Set(plan.stale ? [] : toOrder(plan).map(keyOf));
@@ -396,6 +405,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
       kept++;
     } catch (e) {
       if (!gaveUp(e)) throw e;
+      refund(info);
       delete pending[key];
       savePending();
     }
@@ -409,7 +419,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
     e.code = "OVER_CAP";
     throw e;
   }
-  const retry = { label: "HeyGen", onRetry: (x) => onProgress({ step: "retry", ...x }), ...(sleep ? { sleep } : {}) };
+  const retry = { label: service, onRetry: (x) => onProgress({ step: "retry", ...x }), ...(sleep ? { sleep } : {}) };
 
   // Library clips: free, in at once.
   let fromLibrary = 0;
@@ -434,8 +444,10 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
       continue;
     }
     onProgress({ step: "broll-order", n: n + 1, of: items.length, scene: item.scene + 1 });
-    const id = await patiently(() => g.module.order({ apiKey, prompt: item.prompt, seconds: item.order, quality: settings.quality, aspect: plan.aspect, key, fetchImpl }), retry);
+    const image = item.still ? path.join(projectDir, item.still) : null;
+    const id = await patiently(() => g.module.order({ apiKey, prompt: item.prompt, seconds: item.order, quality: settings.quality, aspect: plan.aspect, key, image, fetchImpl }), retry);
     const usd = usdFor(item.order, settings);
+    onSpend(usd, { itemId: item.id, generator: settings.generator, id });
     pending[key] = { id, itemId: item.id, attempt: item.attempt ?? 0, scene: item.scene, said: item.said, prompt: item.prompt, seconds: item.order, generator: settings.generator, quality: settings.quality, aspect: plan.aspect, usd, at: new Date().toISOString() };
     savePending();
     Object.assign(item, { state: "ordered", videoId: id, error: null });
@@ -451,6 +463,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
       await bring(key, { ...pending[key], reused }, n + 1, jobs.length, item);
     } catch (e) {
       if (!gaveUp(e)) throw e;
+      refund(pending[key]);
       delete pending[key];
       savePending();
       Object.assign(item, { state: "failed", error: e.message });

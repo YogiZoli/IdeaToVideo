@@ -52,7 +52,7 @@ const sha256 = (file) => new Promise((resolve, reject) => {
 
 // One file into the model folder, checked against its pinned hash. A partial
 // or wrong download is removed, never used.
-async function fetchFile({ url, sha, out, fetchImpl, label, onProgress }) {
+export async function fetchFile({ url, sha, out, fetchImpl, label, onProgress, what = "the free voice" }) {
   if (fs.existsSync(out)) {
     if ((await sha256(out)) === sha) return;
     fs.rmSync(out, { force: true });
@@ -62,9 +62,9 @@ async function fetchFile({ url, sha, out, fetchImpl, label, onProgress }) {
   try {
     res = await fetchImpl(url);
   } catch (e) {
-    throw new Error(`Could not download the free voice (${label}): ${e.message}. Check the internet connection and press the button again.`);
+    throw new Error(`Could not download ${what} (${label}): ${e.message}. Check the internet connection and press the button again.`);
   }
-  if (!res.ok) throw new Error(`Could not download the free voice (${label}): HTTP ${res.status}. Try again later.`);
+  if (!res.ok) throw new Error(`Could not download ${what} (${label}): HTTP ${res.status}. Try again later.`);
   const total = Number(res.headers?.get?.("content-length")) || 0;
   const tmp = `${out}.part`;
   const w = fs.createWriteStream(tmp);
@@ -85,7 +85,7 @@ async function fetchFile({ url, sha, out, fetchImpl, label, onProgress }) {
   }
   if ((await sha256(tmp)) !== sha) {
     fs.rmSync(tmp, { force: true });
-    throw new Error(`The download of the free voice (${label}) did not match its checksum, so it was not used. Press the button again.`);
+    throw new Error(`The download of ${what} (${label}) did not match its checksum, so it was not used. Press the button again.`);
   }
   fs.renameSync(tmp, out);
 }
