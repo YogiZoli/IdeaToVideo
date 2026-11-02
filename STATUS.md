@@ -1,10 +1,24 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-02 (Recorded engine, DECISIONS 138 to 141)
+Frissítve: 2026-11-02 (housekeeping, after the Recorded engine, DECISIONS 138 to 141)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Housekeeping (2026-11-02, no new features)
+
+- **Space:** 9.26 GB freed on C:, free space from 33.07 GB to 42.33 GB. Removed the Rust build
+  output except the installer, `app/build`, `app/.svelte-kit`, the npm cache, render history, preview
+  files, temporary test folders and the duplicate Kokoro model.
+- **The next build is slower:** Rust compiles from scratch, and npm downloads again.
+- **Installer kept:** `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`.
+- **`docs/BUILD_PLAN.md`:** new housekeeping rules, and Phase 9 (macOS build) added.
+- **Backup:** every local branch pushed. Every branch's `build.yml` runs only on `pull_request` and
+  `workflow_dispatch`, so no Actions run. No PR. This work is on `housekeeping-build-rules`, not
+  merged into `main`.
+- **Not touched:** `~/.cache/hyperframes` (727 MB) and `~/.cache/huggingface` (141 MB), other tools
+  may use them.
 
 ## Now (2026-11-02, Recorded engine, DECISIONS 138 to 141)
 

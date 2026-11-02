@@ -48,6 +48,13 @@ everything that exists, never rebuild what is already there.
 - 16:9 only. No shorts. Never publish automatically.
 - Build the Windows installer locally. Never trigger GitHub Actions (billing).
 
+## Housekeeping rules (valid for every phase)
+
+- After every phase: delete old build outputs, keep only the newest installer.
+- Models download once into one shared models folder, never per project.
+- All code stays cross-platform for a later macOS build: no Windows-only paths or
+  commands, use path joins, platform-specific parts behind a small adapter.
+
 ## The preset engine (the contract every preset follows)
 
 A style preset is three things in one folder, `runner/presets/<id>/`:
@@ -254,6 +261,10 @@ Status: todo
 three.js scenes with a matte, hand-made clay look: rounded faceless figures,
 subtle fingerprint texture, warm lamp light, old map table surfaces, a soft glow
 on the object the story is about, a small date label in a corner.
+
+### Phase 9: macOS build, done on a Mac with Claude Code, no CI.
+
+Status: todo
 
 ## Open decisions for Zoltan (found in Phase 1, nothing changed yet)
 
