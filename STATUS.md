@@ -24,7 +24,15 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   test screen gets the smooth drawn one, with a known limit: at one stop of the test clip a sliver of
   the filmed cursor stayed visible (the recipe has a switch). Recordings with no voice stop with a
   sentence that says so.
-- Branch `recorded-engine`, pushed, no PR. `main` has Phases 1 and 1b only.
+- Branch `recorded-engine`, pushed, no PR, no GitHub Actions run. `main` has Phases 1 and 1b only.
+- Tests: Node 486 of 489 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests
+  skipped), Rust green, UI check 0 errors. `scripts/phase2/recorded-e2e.mjs`, all steps with a real
+  render: Talking Head 41, with cut-out on a real clip 38, with B-roll 49, Screen Recording 44, on a
+  real recording with real speech 38, Screen Share 44, Profile Silhouette 39. Screens seen in
+  `scripts/ui-mock` (`?recorded=talking-head`), not in the installed app.
+- Local installer built 2026-11-02 20:49 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (109 MiB). The installed
+  copy's runner transcribed a real clip.
 
 **Not tried yet:** a real AI on the plan (the rule only); a recording over a minute; a real
 side-angle take with a separate front take (a front-facing clip stood in); Hungarian speech (no

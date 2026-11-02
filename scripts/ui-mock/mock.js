@@ -8,6 +8,8 @@
 // project are approved (default 3), ?slow=<ms> how long a long job takes
 // (default 2500). Long jobs show up in the Jobs list and send progress
 // events, like the real core; window.__emit(event, payload) sends one by hand.
+// Recorded engine (runner/recorded): ?recorded=talking-head (or another preset) makes the
+// channel's recipe and the test project a recording's.
 // AI B-roll (docs/ai-broll.md): ?broll=1 on with HeyGen Video 1, ?broll=test
 // on with the free test clips; both give the Scenes tab a seven-scene table.
 window.__calls = [];
@@ -20,6 +22,8 @@ const project = { id: "p", title: "How to turn viewers into subscribers with one
 // ?run=1: a channel video whose run just started (ProjectView recipeRun)
 if (q.get("run")) Object.assign(project, { autopilotRun: { at: "2026-11-02T10:00:00Z" }, recipe: { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 } });
 let video = stage >= 6 ? { file: "/preview/motion.mp4", seconds: 128, renderSeconds: 417, chapters: "0:00 Intro\n0:35 The mistake", srt: "x.srt", publishFile: "x.publish.json", comments: "GUIDE", youtube: null } : null;
+const RECORDED = q.get("recorded");
+if (RECORDED) project.recipe = { engine: "recorded", preset: RECORDED, voice: { provider: "recording", voice: "own" }, avatar: { on: false, lookId: null }, music: { on: false, source: "synth", mood: "calm" }, broll: { on: true }, recorded: { cutout: true, smoothCursor: true }, targetLengthMin: 8 };
 const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.state !== "todo";
 const listeners = {};
 window.__emit = (event, payload) => (listeners[event] ?? []).forEach((h) => window["_" + h]?.({ event, payload, id: 1 }));
@@ -168,9 +172,9 @@ const replies = {
   "build-video": { scenes: 1, seconds: 5, stills: [] },
   "validate-config": { errors: [] },
   "channel-state": {
-    recipe: { schema: "channel-recipe/1", engine: "script", preset: "motion-frames", voice: q.get("recipe") === "eleven" ? { provider: "elevenlabs", voice: "v1", name: "My voice" } : { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, broll: { on: true }, targetLengthMin: 8 },
+    recipe: RECORDED ? project.recipe : { schema: "channel-recipe/1", engine: "script", preset: "motion-frames", voice: q.get("recipe") === "eleven" ? { provider: "elevenlabs", voice: "v1", name: "My voice" } : { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, broll: { on: true }, targetLengthMin: 8 },
     saved: !q.get("newrecipe"),
-    presets: [{ id: "motion-frames", label: "Motion Frames", description: "The motion graphics this app already makes.", engine: "script", templates: Array.from({ length: 13 }, (_, i) => ({ id: `t${i}`, label: `T${i}` })), shotRules: {} }],
+    presets: [{ id: "motion-frames", label: "Motion Frames", description: "The motion graphics this app already makes.", engine: "script", templates: Array.from({ length: 13 }, (_, i) => ({ id: `t${i}`, label: `T${i}` })), shotRules: {} }, ...[{"id":"talking-head","label":"Talking Head","description":"Your face is the main picture. B-roll on the things you name, big words on screen, chapter titles. Optional: a person cut-out, so a big word can sit behind your head.","engine":"recorded","templates":[{"id":"big-word","label":"Big word"},{"id":"chapter-title","label":"Chapter title"},{"id":"broll","label":"B-roll"}],"shotRules":{"pacing":"balanced","cutFrequency":"A new element on a word every 7 to 15 seconds. The face stays between them.","camera":"The recording itself, untouched.","characters":"The person speaking, nobody else.","sound":"No transition sounds, ever. The recording's own voice carries the video."},"recorded":{"main":"camera","bigWords":true,"chapterTitles":true,"broll":true,"cutout":true,"slots":[{"id":"camera","label":"Camera file","hint":"You talking to the camera."},{"id":"combined","label":"Or one combined file","hint":"One file with picture and sound."}]}},{"id":"screen-recording","label":"Screen Recording","description":"The screen is the main picture. The view zooms to clicks and follows the cursor, the cursor moves smoothly. Optional: a small face bubble from a separate camera file.","engine":"recorded","templates":[{"id":"zoom","label":"Zoom to a click"},{"id":"cursor","label":"Smooth cursor"},{"id":"chapter-title","label":"Chapter title"},{"id":"face-bubble","label":"Face bubble"}],"shotRules":{"pacing":"balanced","cutFrequency":"The view moves with the clicks, never faster than the viewer can follow.","camera":"A zoom to every group of clicks, then back out to the whole screen.","characters":"At most the small face bubble.","sound":"No transition sounds, ever. The recording's own voice carries the video."},"recorded":{"main":"screen","zoom":true,"chapterTitles":true,"bubble":true,"slots":[{"id":"screen","label":"Screen file","hint":"The screen recording."},{"id":"combined","label":"Or one combined file","hint":"One file with picture and sound."},{"id":"camera","label":"Camera file (optional)","hint":"Gives the small face bubble.","optional":true}]}},{"id":"screen-share","label":"Screen Share","description":"A camera file and a screen file. The layout switches between full face, split, and big screen with a small face, about every 8 seconds, timed to your sentences.","engine":"recorded","templates":[{"id":"full-face","label":"Full face"},{"id":"split","label":"Split"},{"id":"big-screen","label":"Big screen, small face"},{"id":"chapter-title","label":"Chapter title"}],"shotRules":{"pacing":"fast","cutFrequency":"A layout change about every 8 seconds, always where a sentence starts.","camera":"No camera moves: the layouts change.","characters":"The person speaking.","sound":"No transition sounds, ever. The recording's own voice carries the video."},"recorded":{"main":"both","layouts":true,"chapterTitles":true,"slots":[{"id":"camera","label":"Camera file","hint":"You talking."},{"id":"screen","label":"Screen file","hint":"What you show."}]}},{"id":"profile-silhouette","label":"Profile Silhouette","description":"A side-angle take becomes a dark silhouette with a thin rim light on a flat color background that changes at story beats. A front take supplies the voice.","engine":"recorded","templates":[{"id":"silhouette","label":"Silhouette"},{"id":"color-beat","label":"Color beat"}],"shotRules":{"pacing":"calm","cutFrequency":"The background changes at story beats, on a sentence.","camera":"None. The silhouette stays where it was filmed.","characters":"One dark figure, side on, with a thin rim light.","sound":"No transition sounds, ever. The recording's own voice carries the video."},"recorded":{"main":"camera","silhouette":true,"beats":true,"slots":[{"id":"camera","label":"Side-angle take","hint":"Filmed from the side, against anything: the background goes."},{"id":"front","label":"Front take (the voice)","hint":"Gives the sound. Without it the side take's own sound is used.","optional":true}]}}]],
     voiceKinds: { kokoro: "Free voice on this computer (Kokoro)", elevenlabs: "My ElevenLabs voice" },
     musicSources: { synth: "Made by code, free", own: "My own files" },
     moods: ["calm", "warm", "dark", "bright"],
@@ -181,6 +185,15 @@ const replies = {
     week: 7,
   },
   "recipe-save": { recipe: { engine: "script" } },
+  "recorded-state": {
+    input: { files: { camera: "C:/Videos/my take.mp4" }, voice: "camera", notes: [] },
+    preset: RECORDED,
+    cuts: { before: 754, after: 612, removed: 142, counts: { take: 3, filler: 2, sound: 1 }, careful: false, keepPauses: false, words: 1830, check: { ok: true, words: 1830, wordsOnSpeech: 0.99, speechWithWords: 0.95, drift: 0.04, past: 0, seconds: 754 }, marks: [{ id: "c1", kind: "take", start: 12.4, end: 15.6, text: "The best way to start,", on: true }, { id: "c2", kind: "filler", start: 40.1, end: 40.4, text: "Um,", on: true }, { id: "c3", kind: "sound", start: 91, end: 91.4, text: "", on: false }] },
+    plan: { title: "One clear promise", total: 612, plannedBy: "rule", chapters: [{ start: 0, sentence: "S1", title: "Why people leave" }, { start: 190, sentence: "S40", title: "One clear promise" }, { start: 420, sentence: "S88", title: "What to do next" }], bigWords: [{ id: "w1", text: "40%", start: 22.5, end: 24, behind: true }, { id: "w2", text: "promise", start: 80, end: 82, behind: true }], layouts: [], beats: [] },
+    after: { ok: true, words: 1790, wordsOnSpeech: 0.99, speechWithWords: 0.96, drift: 0.05, past: 0, seconds: 612 },
+    kept: 612,
+    motion: null,
+  },
   "week-batch": { written: 7, failed: 0, videos: [] },
   "queue-list": { queue: [] },
   "channel-video-new": { id: "new", dir: "C:/P/new" },
