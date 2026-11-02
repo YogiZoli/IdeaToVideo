@@ -6,6 +6,8 @@
   // batch writes seven scripts for the channel and queues them.
   import { onDestroy } from "svelte";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
+  import { open as pickFile } from "@tauri-apps/plugin-dialog";
+  import { filesMissing } from "./recorded";
   import ErrorBox from "../ErrorBox.svelte";
   import RecipeEditor from "./RecipeEditor.svelte";
   import type { AppState } from "../api";
@@ -52,7 +54,8 @@
   async function locked(r: Recipe) {
     editing = false;
     try {
-      saved(await saveSettings(null, { ...app.identity!, narrator: { provider: r.voice.provider, voice: r.voice.voice } }));
+      // a recording has its own voice: the Identity's narrator stays as it is
+      if (r.voice.provider !== "recording") saved(await saveSettings(null, { ...app.identity!, narrator: { provider: r.voice.provider, voice: r.voice.voice } }));
     } catch (e) {
       error = errorText(e);
     }
@@ -68,6 +71,35 @@
       await runner("autopilot-mark", { projectDir: r.dir, on: true });
       log("channel_video", { mode, preset: st.recipe.preset });
       text = "";
+      openProject(r.dir);
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      starting = false;
+    }
+  }
+
+  // ---- a recording: its files in, the edited video out -------------------------------
+  let files = $state<Record<string, string>>({});
+  let recTitle = $state("");
+  const card = $derived(st?.presets.find((p) => p.id === st?.recipe.preset));
+  const missing = $derived(st?.recipe.engine === "recorded" ? filesMissing(st.recipe.preset, files) : null);
+  const VIDEO = [{ name: "Video", extensions: ["mp4", "mov", "m4v", "mkv", "webm", "avi"] }];
+  async function pick(slot: string) {
+    const f = await pickFile({ multiple: false, directory: false, filters: VIDEO });
+    if (typeof f === "string") files = { ...files, [slot]: f };
+  }
+  const nameOf = (f: string) => f.split(/[\\/]/).pop();
+  async function makeRecorded() {
+    if (!st || missing || starting) return;
+    starting = true;
+    error = "";
+    try {
+      const r = await runner<{ id: string; dir: string }>("recorded-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, files, title: recTitle });
+      await runner("autopilot-mark", { projectDir: r.dir, on: true });
+      log("recorded_video", { preset: st.recipe.preset, files: Object.keys(files) });
+      files = {};
+      recTitle = "";
       openProject(r.dir);
     } catch (e) {
       error = errorText(e);
@@ -181,6 +213,26 @@
       <p class="hint">{costLine(st.recipe, aiProvider)}</p>
     </section>
 
+    {#if st.recipe.engine === "recorded"}
+      <section class="card make">
+        <h2>Your recording</h2>
+        <p class="hint">Words, cuts and render all happen on this computer. Your files are read, never changed.</p>
+        <div class="slots">
+          {#each card?.recorded?.slots ?? [] as s (s.id)}
+            <div class="slot">
+              <div class="what"><b>{s.label}</b><span class="hint">{files[s.id] ? nameOf(files[s.id]) : s.hint}</span></div>
+              {#if files[s.id]}<button type="button" class="ghost" onclick={() => { const { [s.id]: _, ...rest } = files; files = rest; }}>Remove</button>{/if}
+              <button type="button" onclick={() => pick(s.id)}>{files[s.id] ? "Change" : "Choose a file"}</button>
+            </div>
+          {/each}
+        </div>
+        <input bind:value={recTitle} aria-label="Working title" placeholder="Working title (optional, the AI names it from what you said)" />
+        <div class="actions">
+          <span class="hint">{missing ?? "It stops at the preview for your approval. Nothing is ever published by itself."}</span>
+          <button type="button" class="primary big" disabled={starting || !!missing} onclick={makeRecorded}>{starting ? "Starting..." : "Edit the recording"}</button>
+        </div>
+      </section>
+    {:else}
     <section class="card make">
       <div class="tabs" role="tablist">
         <button type="button" role="tab" class:on={mode === "idea"} aria-selected={mode === "idea"} onclick={() => (mode = "idea")}>My idea</button>
@@ -199,7 +251,9 @@
         <button type="button" class="primary big" disabled={starting || !text.trim() || !!stop} onclick={makeVideo}>{starting ? "Starting..." : "Make the video"}</button>
       </div>
     </section>
+    {/if}
 
+    {#if st.recipe.engine !== "recorded"}
     <section class="card batch">
       <div class="head">
         <h2>Week batch</h2>
@@ -221,6 +275,7 @@
         </ol>
       {/if}
     </section>
+    {/if}
 
     {#if st.recipe.music.on && st.recipe.music.source === "own" && st.musicDir}
       <p class="hint">Your music: <button type="button" class="link" onclick={() => revealItemInDir(st!.musicDir!)}>open this channel's music folder</button></p>
@@ -244,7 +299,9 @@
   .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
   .tabs button { border: none; background: var(--muted); padding: 6px 14px; }
   .tabs button.on { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
-  textarea, .batch input { width: 100%; box-sizing: border-box; }
+  textarea, .batch input, .make > input { width: 100%; box-sizing: border-box; }
+  .slots { display: grid; gap: 8px; margin: 10px 0; }
+  .slot { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
   .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
   .big { font-size: 16px; padding: 10px 22px; white-space: nowrap; }
   .hint { font-size: 13px; color: var(--muted-foreground); margin: 6px 0 0; }

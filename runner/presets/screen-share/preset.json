@@ -1,0 +1,127 @@
+{
+  "schema": "style-preset/1",
+  "id": "screen-share",
+  "label": "Screen Share",
+  "description": "A camera file and a screen file. The layout switches between full face, split, and big screen with a small face, about every 8 seconds, timed to your sentences.",
+  "engine": "recorded",
+  "tokens": {
+    "colors": {
+      "background": "#0e1116",
+      "text": "#ffffff",
+      "muted": "#a7b0bf",
+      "primary": "#37d39a",
+      "secondary": "#ffc533"
+    },
+    "fonts": {
+      "display": "Archivo Black",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    },
+    "texture": "none"
+  },
+  "shotRules": {
+    "pacing": "fast",
+    "cutFrequency": "A layout change about every 8 seconds, always where a sentence starts.",
+    "camera": "No camera moves: the layouts change.",
+    "characters": "The person speaking.",
+    "sound": "No transition sounds, ever. The recording's own voice carries the video."
+  },
+  "recorded": {
+    "main": "both",
+    "layouts": true,
+    "chapterTitles": true,
+    "slots": [
+      {
+        "id": "camera",
+        "label": "Camera file",
+        "hint": "You talking."
+      },
+      {
+        "id": "screen",
+        "label": "Screen file",
+        "hint": "What you show."
+      }
+    ]
+  },
+  "templates": [
+    {
+      "id": "full-face",
+      "label": "Full face",
+      "when": "Opening, and when the point is the person.",
+      "params": {
+        "layout": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:full-face",
+          "vars": {
+            "layout": "$layout"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split",
+      "label": "Split",
+      "when": "Talking about what is on screen.",
+      "params": {
+        "layout": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:split",
+          "vars": {
+            "layout": "$layout"
+          }
+        }
+      ]
+    },
+    {
+      "id": "big-screen",
+      "label": "Big screen, small face",
+      "when": "When the screen is the point: here, this, click.",
+      "params": {
+        "layout": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:big-screen",
+          "vars": {
+            "layout": "$layout"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter-title",
+      "label": "Chapter title",
+      "when": "Where a new part starts.",
+      "params": {
+        "title": {
+          "maxWords": 5,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:chapter-title",
+          "vars": {
+            "title": "$title"
+          }
+        }
+      ]
+    }
+  ]
+}

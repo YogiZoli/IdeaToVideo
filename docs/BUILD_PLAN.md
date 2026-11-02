@@ -141,7 +141,9 @@ before this phase keeps what it had: off), between the scene plan and the build.
 
 ### Phase 2: Recorded engine
 
-Status: todo
+Status: done (2026-11-02, DECISIONS 138 to 141). Not tried yet: a real AI on the plan
+(the rule only), a long recording, a real side-angle take with a separate front take, and
+Hungarian speech. A smooth cursor only where nothing else on the screen travels.
 
 Own implementation, never read or copy third-party editing skills. Input: a camera
 file, a screen file, both, or one combined file. Local transcription with word
@@ -299,10 +301,15 @@ Other findings:
 - B-roll for any preset or engine: `planAuto`, `findFree`, `findPixabay`,
   `finishFind`, `approvePaid` in `runner/broll/engine.mjs` need only sentences,
   scene rows and an Identity. A preset that must not have B-roll: the recipe's switch.
-- Whisper is not in the app yet. Kokoro gives word times itself and ElevenLabs
-  gives them with its audio, so Phase 2 is the first to need a local transcriber.
+- Local speech to words: `transcribeFile` in `runner/recorded/transcribe.mjs` (Whisper Base,
+  ONNX, word times). The Shot map (Phase 3) gets its word times from the voice as before.
+- Person cut-out: `personMasks` and `cutoutClip` in `runner/recorded/matte.mjs`. VP9 with
+  alpha renders through the engine, so a preset can stack a picture behind a person.
+- A preset of the Recorded engine: `recorded` in its `preset.json` says which files it takes and
+  what it adds; `recordedHtml` in `runner/recorded/compose.mjs` draws it.
 - Publishing Card sources (Phase 3 and Phase 7): `video-publishing-card/1` takes optional blocks.
 
 ## Next step
 
-Phase 2: Recorded engine.
+Phase 3: Direction, Research and Shot map. First, Zoltan tries one real recording on the
+installer, and his decisions on the table above if he has made them.

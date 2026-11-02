@@ -1,12 +1,46 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-02 (phases 1 and 1b merged into main, new phase order)
+Frissítve: 2026-11-02 (Recorded engine, DECISIONS 138 to 141)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-02, merge and new phase order)
+## Now (2026-11-02, Recorded engine, DECISIONS 138 to 141)
+
+**Phase 2 of `docs/BUILD_PLAN.md` is done. Phase 3, Direction, Research and Shot map, is next.**
+
+- **Where to find it:** a channel's recipe, Engine: Recorded. Four presets: Talking Head,
+  Screen Recording, Screen Share, Profile Silhouette. The start screen then asks for the files.
+- **The run:** words on this computer (Whisper, downloaded once, 79 MB), checked against the
+  recording's sound; silences, filler words and repeated takes cut; chapters and big words by
+  the AI or a rule; up to the existing Preview. Render, Publishing Card, Thumbnail and the
+  publishing app are unchanged. Chapter times come from the real cut video.
+- **The Recording tab:** every cut with a Put back, chapter titles, big words, the check.
+- **Person cut-out and silhouette:** MODNet, Apache 2.0, downloaded once, 26 MB. Checked by eye
+  in real renders: the word sits behind the head, the figure has its rim light.
+- **Smooth cursor, only when safe:** on three of your real recordings the tracker followed enough to
+  zoom, but other things moved on those screens, so the filmed cursor stays there. The clean
+  test screen gets the smooth drawn one, with a known limit: at one stop of the test clip a sliver of
+  the filmed cursor stayed visible (the recipe has a switch). Recordings with no voice stop with a
+  sentence that says so.
+- Branch `recorded-engine`, pushed, no PR, no GitHub Actions run. `main` has Phases 1 and 1b only.
+- Tests: Node 486 of 489 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests
+  skipped), Rust green, UI check 0 errors. `scripts/phase2/recorded-e2e.mjs`, all steps with a real
+  render: Talking Head 41, with cut-out on a real clip 38, with B-roll 49, Screen Recording 44, on a
+  real recording with real speech 38, Screen Share 44, Profile Silhouette 39. Screens seen in
+  `scripts/ui-mock` (`?recorded=talking-head`), not in the installed app.
+- Local installer built 2026-11-02 20:49 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (109 MiB). The installed
+  copy's runner transcribed a real clip.
+
+**Not tried yet:** a real AI on the plan (the rule only); a recording over a minute; a real
+side-angle take with a separate front take (a front-facing clip stood in); Hungarian speech (no
+Hungarian recording with sound was at hand).
+
+**Next:** Zoltan tries one real recording on the installer. Then Phase 3.
+
+## Earlier (2026-11-02, merge and new phase order)
 
 - **`broll-engine` is merged into `main`**, which brings Phase 1 (`channel-presets`) too.
   No PR. `engine/node_modules/` and `itv-local-build.log` are ignored by the new root
@@ -18,7 +52,6 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   Chronicle. New clean room rules: no source that asks for attribution, nothing about sources
   in the YouTube description, never "Vox" or any other brand name.
 
-**Next:** Phase 2, the Recorded engine.
 
 ## Earlier (2026-11-02, B-roll engine, DECISIONS 137)
 

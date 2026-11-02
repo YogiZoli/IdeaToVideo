@@ -437,7 +437,7 @@ export function footagePlan(table, sentences, lib, project) {
 }
 
 // The piece, cut, fitted to the frame (cover), without sound.
-async function cutPiece(f, out, { width, height, env }) {
+export async function cutPiece(f, out, { width, height, env }) {
   const seconds = Math.round((f.end - f.start) * 1000) / 1000;
   await ffmpegRun([...(f.loop ? ["-stream_loop", "-1"] : []), "-ss", String(f.from), "-i", f.src, "-t", String(seconds), "-an", "-vf", `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},fps=30`, "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", out], env);
 }
