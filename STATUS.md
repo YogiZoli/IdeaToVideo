@@ -24,7 +24,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
   test screen gets the smooth drawn one, with a known limit: at one stop of the test clip a sliver of
   the filmed cursor stayed visible (the recipe has a switch). Recordings with no voice stop with a
   sentence that says so.
-- Branch `recorded-engine`, pushed, no PR, no GitHub Actions run. `main` has Phases 1 and 1b only.
+- Merged into `main` from branch `recorded-engine`. No PR, no GitHub Actions run.
 - Tests: Node 486 of 489 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests
   skipped), Rust green, UI check 0 errors. `scripts/phase2/recorded-e2e.mjs`, all steps with a real
   render: Talking Head 41, with cut-out on a real clip 38, with B-roll 49, Screen Recording 44, on a
