@@ -25,7 +25,7 @@ export function slugify(title) {
   return s || "video";
 }
 
-export function createProject({ projectsDir, title, language = "en", brief = null, autopilot = false, identity = null, recipe = null, queue = null, now = new Date() }) {
+export function createProject({ projectsDir, title, language = "en", brief = null, autopilot = false, identity = null, recipe = null, queue = null, start = null, now = new Date() }) {
   if (!projectsDir) throw new Error("No projects folder set.");
   if (brief) {
     const errors = validate(brief, loadSchema("brief-card"));
@@ -48,6 +48,7 @@ export function createProject({ projectsDir, title, language = "en", brief = nul
     ...(identity ? { identity } : {}),
     ...(recipe ? { recipe } : {}),
     ...(queue ? { queue } : {}),
+    ...(start ? { start } : {}),
     createdAt: now.toISOString(),
     gates: Object.fromEntries(GATES.map((g) => [g, { state: "todo" }])),
   };

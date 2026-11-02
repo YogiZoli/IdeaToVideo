@@ -234,7 +234,7 @@ test("swap: the LLM reads that component's code and fills in only that scene", a
   await refillScene({ llm: llm(g), projectDir: proj, index: 2, component: "kinetic-type-swap", env });
   assert.match(g.calls[0].messages[1].content, /### kinetic-type-swap/);
   const saved = JSON.parse(fs.readFileSync(path.join(proj, "scenes.json"), "utf8"));
-  assert.deepEqual(saved.scenes[2], { component: "kinetic-type-swap", from: "S4", vars: { options: "Short,Clear" }, candidates: ["kinetic-type-swap"], why: "two words take turns" });
+  assert.deepEqual(saved.scenes[2], { component: "kinetic-type-swap", from: "S4", vars: { options: "Short,Clear" }, override: true, candidates: ["kinetic-type-swap"], why: "two words take turns" });
   await assert.rejects(refillScene({ llm: llm(g), projectDir: proj, index: 2, component: "count-up", env }), /same role/);
   fs.rmSync(dir, { recursive: true, force: true });
 });

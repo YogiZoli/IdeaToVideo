@@ -25,6 +25,7 @@ import { validate, loadSchema } from "../../schema/validate.mjs";
 import { loadProject, saveProject } from "../../project.mjs";
 import { loadPackaging } from "./youtube.mjs";
 import { thumbnailBlock } from "../../thumbnail/card.mjs";
+import { loadBrief, briefForCard } from "../../research/index.mjs";
 
 export const CARD_SCHEMA = "video-publishing-card/1";
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -89,6 +90,10 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
   // video is rendered again. Left out while none is picked.
   const thumb = thumbnailBlock(projectDir, videoFile);
   const thumbnail = thumb ? { thumbnail: thumb } : {};
+  // The research brief's sources, for the user's own checking (docs/BUILD_PLAN.md
+  // phase 3). Left out without research; never part of the YouTube description.
+  const checked = briefForCard(loadBrief(projectDir));
+  const research = checked ? { researchSources: checked } : {};
   return {
     schema: CARD_SCHEMA,
     cardId: cardIdOf(projectDir),
@@ -116,6 +121,7 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
     syntheticMedia: !!syntheticMedia,
     ...series,
     ...thumbnail,
+    ...research,
   };
 }
 

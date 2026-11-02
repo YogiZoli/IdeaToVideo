@@ -167,6 +167,17 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("make-template-scenes", Some(&["llm", "provider"])),
     ("simple-template-scenes", None),
     ("week-batch", Some(&["llm", "provider"])),
+    ("week-batch-local", None),
+    // Direction, Research and Shot map (docs/BUILD_PLAN.md phase 3): only the brief
+    // needs an AI; the Shot map is local work
+    ("research-make", Some(&["llm", "provider"])),
+    ("research-state", None),
+    ("research-save", None),
+    ("research-approve", None),
+    ("shot-map-make", None),
+    ("shot-map-state", None),
+    ("shot-flow-set", None),
+    ("shot-flow-clip", None),
     ("queue-list", None),
     ("voice-model-status", None),
     ("voice-model-ensure", None),

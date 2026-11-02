@@ -26,7 +26,8 @@
         { "url": "https://studio.youtube.com/*" },
         { "url": "https://www.youtube.com/playlist?list=*" },
         { "url": "https://www.youtube.com/watch?v=*" },
-        { "url": "https://vidrev.app/*" }
+        { "url": "https://vidrev.app/*" },
+        { "url": "https://www.google.com/search?q=*" }
       ]
     },
     "opener:allow-reveal-item-in-dir",

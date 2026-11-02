@@ -14,6 +14,7 @@ import { dataDir } from "./tools.mjs";
 
 export const DEFAULTS = {
   script: { perUnit: 9, min: 8 }, // per minute of script (1 min: 9 s)
+  research: { perUnit: 45, min: 20 }, // per brief; a guess until the first real run
   voice: { perUnit: 1.6, min: 5 }, // per sentence (11 sentences: 17 s)
   scenes: { perUnit: 2.6, min: 8 }, // per sentence (11 sentences: 28 s)
   refill: { perUnit: 6, min: 4 }, // per call

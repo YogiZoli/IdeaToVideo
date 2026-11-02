@@ -74,7 +74,10 @@ import * as thumbnail from "./thumbnail/index.mjs";
 import { listPresets, loadPreset, presetCard } from "./presets/index.mjs";
 import { renderStylesheet, tokensFor } from "./presets/stylesheet.mjs";
 import { makeTemplateScenes } from "./gates/scenes/templates.mjs";
-import { defaultRecipe, loadRecipe, saveRecipe, normalizeRecipe, scriptMarkdown, ownMusic, musicDir, VOICE_KINDS, MUSIC_SOURCES } from "./channels/recipe.mjs";
+import { defaultRecipe, loadRecipe, saveRecipe, normalizeRecipe, recipeFor, cleanStart, ownMusic, musicDir, VOICE_KINDS, MUSIC_SOURCES } from "./channels/recipe.mjs";
+import { newScriptVideo, notesOf, splitPasted } from "./channels/start.mjs";
+import { makeBrief, loadBrief, saveBrief, approveBrief, cleanEdit, briefForScript } from "./research/index.mjs";
+import { makeShotMap, shotMapView, writeShotMap, setFlow, addFlowClip } from "./shots/index.mjs";
 import { runWeekBatch, listQueue, WEEK } from "./channels/batch.mjs";
 import { MOODS } from "./providers/music/synth.mjs";
 import { ensureModel, modelDir, MODEL_BYTES, MODEL_FILES, DEFAULT_VOICE } from "./providers/tts/kokoro.mjs";
@@ -380,7 +383,7 @@ async function writeScriptGate({ projectDir, identityDir, llm, input = {}, chann
     const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
       writeScript({
         llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-        input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator") },
+        input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator"), notes: notesOf(projectDir), research: briefForScript(loadBrief(projectDir)) },
         onProgress: (p) => emit({ event: "progress", ...p }),
       }),
     );
@@ -411,6 +414,36 @@ async function writeScriptGate({ projectDir, identityDir, llm, input = {}, chann
     appendLog(projectDir, `script: failed, ${e.message}`);
     throw e;
   }
+}
+
+// A week batch in any mode. Pasted texts skip the AI's ideas. What each video gets
+// next depends on what it started from: a finished script needs nothing here, notes
+// and a topic get their script, and with research on each gets its brief and waits.
+async function weekBatch({ projectsDir, identityDir, identity, llm = null, channel = {}, name = "", theme = "", language = "en", count = WEEK, pasted = "", textKind = "notes", research = false }) {
+  const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
+  const texts = splitPasted(pasted);
+  const avoid = fs.existsSync(projectsDir) ? fs.readdirSync(projectsDir).flatMap((n) => { try { return [loadProject(path.join(projectsDir, n)).title]; } catch { return []; } }) : [];
+  const firstWords = (t) => t.replace(/\s+/g, " ").trim().split(" ").slice(0, 8).join(" ").replace(/[.,:;!?]+$/, "");
+  return runWeekBatch({
+    llm: llm ? { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } : null,
+    channel,
+    name,
+    theme,
+    language,
+    count,
+    avoid,
+    given: texts.length ? texts.map((text) => ({ title: firstWords(text), text })) : null,
+    onProgress: (p) => emit({ event: "progress", ...p }),
+    create: ({ title, idea, queue }) => newScriptVideo({ projectsDir, identity, language, recipe, topic: idea.text ? "" : title, text: idea.text ?? "", textKind, research, queue, title }),
+    write: async ({ dir, idea }) => {
+      if (research) {
+        await commands["research-make"]({ projectDir: dir, llm, channel });
+        return;
+      }
+      if (idea.text && textKind === "finished") return;
+      await writeScriptGate({ projectDir: dir, identityDir, llm, channel, input: { topic: idea.angle ? `${idea.title}. ${idea.angle}` : idea.title, targetLengthMin: recipe.targetLengthMin } });
+    },
+  });
 }
 
 // The channel recipe's scene plan: the same steps and checks as gate 3's other
@@ -722,8 +755,8 @@ const commands = {
     previewStale(projectDir);
     return brollReview({ projectDir, identityDir, settings });
   },
-  "broll-paid-toggle": async ({ projectDir, identityDir, id, on }) => {
-    setPaidWanted({ projectDir, id, on });
+  "broll-paid-toggle": async ({ projectDir, identityDir, id, on, tier = null }) => {
+    setPaidWanted({ projectDir, id, on, tier });
     return brollReview({ projectDir, identityDir, settings: loadBrollSettings(identityDir) });
   },
   "broll-prompt-save": async ({ projectDir, identityDir, id, prompt }) => {
@@ -889,7 +922,7 @@ const commands = {
   "load-project": async ({ projectDir, liveProjects = null }) => {
     const project = recovered(projectDir, liveProjects);
     const md = path.join(projectDir, "script.md");
-    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, calls: scriptCalls(projectDir), latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir), thumbnailChosen: !!thumbnail.loadState(projectDir).chosen };
+    return { project, brief: readBrief(projectDir), scriptMarkdown: fs.existsSync(md) ? fs.readFileSync(md, "utf8") : null, calls: scriptCalls(projectDir), latestVideo: latestVideo(projectDir), stills: stillsOf(projectDir), voiceInfo: readVoiceInfo(projectDir), thumbnailChosen: !!thumbnail.loadState(projectDir).chosen, researchState: loadBrief(projectDir)?.state ?? null };
   },
 
   // Gate 1. Writes script.json + script.md and leaves the gate pending (or
@@ -1260,6 +1293,8 @@ const commands = {
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
+      // the map as it stands now, kept with the video
+      if (project.recipe && project.recipe.engine !== "recorded") await writeShotMap({ projectDir }).catch((e) => appendLog(projectDir, `shot map: not saved, ${e.message}`));
       if (r.icons?.length) {
         appendLog(projectDir, `review: icons ${r.icons.join(" ")}`);
         rememberIcons(identityDir, path.basename(projectDir), r.icons);
@@ -1362,7 +1397,8 @@ const commands = {
   "channel-state": async ({ identityDir, identity = {}, projectsDir }) => {
     const stored = identityDir ? loadRecipe(identityDir) : null;
     return {
-      recipe: stored ?? defaultRecipe(identity),
+      // a recipe locked before the start screen's defaults gets them here
+      recipe: stored ? { ...stored, start: cleanStart(stored.start) } : defaultRecipe(identity),
       saved: !!stored,
       presets: listPresets().map(presetCard),
       voiceKinds: VOICE_KINDS,
@@ -1387,20 +1423,52 @@ const commands = {
   // A new video of a channel: its recipe copied into it, its idea or its own
   // script in. With a script the Script step is done; with an idea it comes
   // next. The UI's run (ProjectView) does the rest.
-  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", text, mode = "idea", title = "" }) => {
-    const recipe = normalizeRecipe(loadRecipe(identityDir) ?? defaultRecipe({}), { language });
-    const words = String(text ?? "").trim();
-    if (!words) throw new Error(mode === "script" ? "Paste the script first." : "Type the idea first.");
-    if (mode === "script") {
-      const { title: name, markdown } = scriptMarkdown(words, title);
-      const { dir, id } = createProject({ projectsDir, title: name, language, identity, recipe });
-      writeAtomic(path.join(dir, "script.md"), markdown);
-      saveProject(dir, setGate(setGate(loadProject(dir), "script", { state: "running", mode: "custom" }), "script", { state: "approved", mode: "custom" }));
-      appendLog(dir, "script: pasted in, approved with the video");
-      return { id, dir };
-    }
-    return createProject({ projectsDir, title: words.replace(/\s+/g, " ").slice(0, 200), language, identity, recipe });
+  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "" }) => {
+    const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
+    const { id, dir } = newScriptVideo({ projectsDir, identity, language, recipe, topic, text, textKind, research, title });
+    return { id, dir };
   },
+
+  // The research brief (research/index.mjs): shown and editable before the script.
+  "research-make": async ({ projectDir, llm, channel = {} }) => logged(projectDir, "research", async () => {
+    const project = loadProject(projectDir);
+    const mdFile = path.join(projectDir, "script.md");
+    const text = notesOf(projectDir) ?? (project.start?.kind === "finished" && fs.existsSync(mdFile) ? fs.readFileSync(mdFile, "utf8") : "");
+    appendLog(projectDir, `research: with ${llm.provider}/${llm.model || "default model"}`);
+    const brief = saveBrief(projectDir, await timed("research", 1, emit, () => makeBrief({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, topic: project.start?.topic ?? project.title, text, language: project.language, channel })));
+    appendLog(projectDir, `research: ${brief.grounded ? "searched the web" : "no web search"}, ${brief.sources.length} sources`);
+    return { brief };
+  }),
+  "research-state": async ({ projectDir }) => ({ brief: loadBrief(projectDir) }),
+  "research-save": async ({ projectDir, brief }) => {
+    const before = loadBrief(projectDir);
+    if (!before) throw new Error("There is no research brief yet.");
+    return { brief: saveBrief(projectDir, cleanEdit(before, brief)) };
+  },
+  "research-approve": async ({ projectDir }) => {
+    appendLog(projectDir, "research: brief approved");
+    return { brief: approveBrief(projectDir) };
+  },
+
+  // The Shot map (shots/index.mjs): no AI, no key.
+  "shot-map-make": async ({ projectDir, identityDir, look }) => logged(projectDir, "shot map", async () => {
+    const project = loadProject(projectDir);
+    const view = await makeShotMap({ projectDir, identityDir: identityDir ?? null, preset: loadPreset(project.recipe?.preset ?? "motion-frames"), off: offOf(look), title: project.title });
+    appendLog(projectDir, `shot map: ${view.summary?.shots ?? 0} shots${view.warning ? `; ${view.warning}` : ""}`);
+    return view;
+  }),
+  "shot-map-state": async ({ projectDir }) => shotMapView({ projectDir }),
+  "shot-flow-set": async ({ projectDir, identityDir, id, on, prompt }) => {
+    const view = await setFlow({ projectDir, identityDir, id, on, prompt });
+    previewStale(projectDir);
+    return view;
+  },
+  "shot-flow-clip": async ({ projectDir, identityDir, id, file }) => logged(projectDir, "google flow clip", async () => {
+    const view = await addFlowClip({ projectDir, identityDir, id, file });
+    previewStale(projectDir);
+    appendLog(projectDir, "shot map: a Google Flow clip laid under its shot");
+    return view;
+  }),
 
   // The scene table from the preset's templates (gates/scenes/templates.mjs).
   // `simple-` is the same without the AI: planned by rule.
@@ -1408,28 +1476,15 @@ const commands = {
   "simple-template-scenes": async ({ projectDir, identityDir, look }) => templateScenes({ projectDir, identityDir, look, llm: null }),
 
   // Week batch: 7 ideas, 7 scripts, in one run, queued (channels/batch.mjs).
-  "week-batch": async ({ projectsDir, identityDir, identity, llm, channel = {}, name = "", theme = "", language = "en", count = WEEK }) => {
-    const recipe = normalizeRecipe(loadRecipe(identityDir) ?? defaultRecipe({}), { language });
-    const avoid = fs.existsSync(projectsDir) ? fs.readdirSync(projectsDir).flatMap((n) => { try { return [loadProject(path.join(projectsDir, n)).title]; } catch { return []; } }) : [];
-    return runWeekBatch({
-      llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-      channel,
-      name,
-      theme,
-      language,
-      count,
-      avoid,
-      onProgress: (p) => emit({ event: "progress", ...p }),
-      create: ({ title, queue }) => createProject({ projectsDir, title, language, identity, recipe, queue }),
-      write: ({ dir, idea }) => writeScriptGate({ projectDir: dir, identityDir, llm, channel, input: { topic: idea.angle ? `${idea.title}. ${idea.angle}` : idea.title, targetLengthMin: recipe.targetLengthMin } }),
-    });
-  },
+  // Every mode (phase 3): pasted texts give one video each. With research on, each
+  // stops at its brief: the brief comes before the script, also in a batch.
+  "week-batch": (req) => weekBatch(req),
+  "week-batch-local": (req) => weekBatch({ ...req, llm: null }),
   "queue-list": async ({ projectsDir }) => ({ queue: listQueue(projectsDir) }),
 
   // ---- The Recorded engine (recorded/, docs/BUILD_PLAN.md phase 2) ----
   "recorded-video-new": async ({ projectsDir, identityDir, identity, language = "en", files, title = "" }) => {
-    const recipe = normalizeRecipe(loadRecipe(identityDir) ?? defaultRecipe({}), { language });
-    if (recipe.engine !== "recorded") throw new Error("This channel's recipe makes videos from a script. Change the recipe to Recorded first.");
+    const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "recorded", { language });
     return recorded.newRecordedVideo({ projectsDir, identity, language, recipe, files, title });
   },
   "recorded-state": async ({ projectDir }) => recorded.recordedState(projectDir),
@@ -1484,7 +1539,7 @@ const commands = {
 
 // The commands that theme something or plan scenes: they get the Identity's
 // card as `look`, with its Motion profile (`look.motion`).
-const LOOK_COMMANDS = new Set(["make-template-scenes", "simple-template-scenes", "make-scenes", "scenes-estimate", "visual-check", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
+const LOOK_COMMANDS = new Set(["shot-map-make", "make-template-scenes", "simple-template-scenes", "make-scenes", "scenes-estimate", "visual-check", "simple-scenes", "refill-scene", "make-avatar", "build-video", "scene-table", "save-scenes"]);
 
 async function readStdin() {
   if (process.stdin.isTTY) return "";

@@ -11,6 +11,7 @@
 import * as heygenVideo from "./heygen-video.mjs";
 import * as standin from "./standin.mjs";
 import * as kie from "./kie.mjs";
+import * as kieImage from "./kie-image.mjs";
 
 // The user's choice in Identity, Footage, AI B-roll (Zoltan,
 // 2026-10-06): 480p, 768p (the default) and 1080p. HeyGen Video 1 has no
@@ -62,8 +63,26 @@ export const GENERATORS = {
     maxSeconds: 5,
     engineOnly: true,
   },
+  // The cheaper paid tier of a hero moment (docs/BUILD_PLAN.md phase 3): one AI
+  // picture, moved in 2.5D on this computer. A price per picture, not per second.
+  "kie-z-image-parallax": {
+    label: "Z-Image picture, moved in 2.5D (Kie AI)",
+    modelName: "z-image",
+    key: "kie",
+    service: "Kie AI",
+    module: kieImage,
+    usdPerClip: 0.004,
+    usdPerSecond: {},
+    qualities: ["default"],
+    defaultQuality: "default",
+    minSeconds: 4,
+    maxSeconds: 6,
+    engineOnly: true,
+    derived: "2.5D camera move, depth by Depth Anything V2 Small, on this computer",
+  },
 };
 export const PAID_GENERATOR = "kie-seedance-v1-lite";
+export const IMAGE_GENERATOR = "kie-z-image-parallax";
 export const DEFAULT_GENERATOR = "heygen-video-1";
 
 export function generatorOf(id) {
@@ -80,7 +99,10 @@ export const orderSeconds = (seconds, generator = DEFAULT_GENERATOR) => {
 };
 
 // Whole cents, rounded up: an estimate is high, never low.
-export const usdFor = (seconds, { generator = DEFAULT_GENERATOR, quality = DEFAULT_QUALITY } = {}) => Math.ceil(seconds * (generatorOf(generator).usdPerSecond[quality] ?? 0) * 100 - 1e-9) / 100 + 0;
+export const usdFor = (seconds, { generator = DEFAULT_GENERATOR, quality = DEFAULT_QUALITY } = {}) => {
+  const g = generatorOf(generator);
+  return Math.ceil((g.usdPerClip ?? seconds * (g.usdPerSecond[quality] ?? 0)) * 100 - 1e-9) / 100 + 0;
+};
 
 // 16:9 or 9:16, from the video's own frame.
 export const aspectOf = ({ width = 1920, height = 1080 } = {}) => (height > width ? "9:16" : "16:9");

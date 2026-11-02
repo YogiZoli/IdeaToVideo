@@ -158,7 +158,7 @@ const ROTATION = ["statement", "highlight", "word"];
 
 // A scene by rule: a number the sentence says if there is one, else the
 // rotation, never what the scene before it used.
-function ruleScene({ byId, sentences, previous, turn, first, title }) {
+export function ruleScene({ byId, sentences, previous, turn, first, title }) {
   const from = sentences[0].id;
   const to = sentences[sentences.length - 1].id;
   if (first && byId.title && previous !== byId.title.draw.component) {

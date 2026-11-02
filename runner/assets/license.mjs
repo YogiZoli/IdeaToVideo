@@ -21,6 +21,7 @@ export const LICENSES = {
   pixabay: "Free license, not CC0 (Pixabay Content License)",
   "kie-terms": "Kie AI terms of use (AI output, see docs/BUILD_PLAN.md)",
   "heygen-terms": "HeyGen terms of use (AI output)",
+  "own-generation": "Google Flow (Veo), own generation",
 };
 
 // Hosts of US federal agencies, whose own works are public domain. Not every
@@ -48,6 +49,8 @@ export const SOURCES = {
   pixabay: { label: "Pixabay", licenses: ["pixabay"], hosts: ["pixabay.com"] },
   kie: { label: "Kie AI", licenses: ["kie-terms"], ai: true },
   heygen: { label: "HeyGen", licenses: ["heygen-terms"], ai: true },
+  // the manual slot of a shot (docs/BUILD_PLAN.md phase 3): the user's own clip
+  flow: { label: "Google Flow (Veo), own generation", licenses: ["own-generation"], ai: true },
 };
 
 // Words in a title or tags that point to a person: such an image is refused,
@@ -138,12 +141,12 @@ export function clipAsset(clip) {
   const g = clip?.generated;
   if (g && !g.test) {
     const kie = String(g.generator ?? "").startsWith("kie-");
-    return { file: clip.file, title: clip.name, source: kie ? "kie" : "heygen", sourceUrl: null, license: kie ? "kie-terms" : "heygen-terms", licenseUrl: kie ? "https://kie.ai/terms-of-use" : "https://www.heygen.com/terms", author: `AI: ${g.label ?? g.generator}`, model: g.model ?? g.generator, prompt: g.prompt ?? null, costUsd: g.usd ?? 0, date: String(g.at ?? clip.createdAt ?? "").slice(0, 10) };
+    return { file: clip.file, title: clip.name, source: kie ? "kie" : "heygen", sourceUrl: null, license: kie ? "kie-terms" : "heygen-terms", licenseUrl: kie ? "https://kie.ai/terms-of-use" : "https://www.heygen.com/terms", author: `AI: ${g.label ?? g.generator}`, model: g.model ?? g.generator, prompt: g.prompt ?? null, costUsd: g.usd ?? 0, derived: g.derived ?? null, date: String(g.at ?? clip.createdAt ?? "").slice(0, 10) };
   }
   if (!clip?.credit) return null;
   const c = clip.credit;
   if (c.source === "Pixabay") return { file: clip.file, title: clip.name, source: "pixabay", sourceUrl: c.pageUrl ?? null, license: "pixabay", licenseUrl: c.licenseUrl ?? null, author: c.author ?? null, date: String(c.at ?? clip.createdAt ?? "").slice(0, 10) };
-  return { derived: c.derived ?? null, file: clip.file, title: clip.name, source: c.licenseKey ? c.sourceId : `stock:${c.source}`, sourceUrl: c.pageUrl ?? c.url ?? null, license: c.licenseKey ?? c.license, licenseUrl: c.licenseUrl ?? null, author: c.author ?? null, date: c.date ?? null };
+  return { derived: c.derived ?? null, file: clip.file, title: clip.name, source: c.licenseKey ? c.sourceId : `stock:${c.source}`, sourceUrl: c.pageUrl ?? c.url ?? null, license: c.licenseKey ?? c.license, licenseUrl: c.licenseUrl ?? null, author: c.author ?? null, model: c.model ?? null, prompt: c.prompt ?? null, date: c.date ?? null };
 }
 
 /**

@@ -18,7 +18,7 @@ import path from "node:path";
 import { redact } from "../providers/llm.mjs";
 import { BusyError, busyStatus } from "../providers/retry.mjs";
 
-const API = "https://api.kie.ai/api/v1";
+export const API = "https://api.kie.ai/api/v1";
 const UPLOAD = "https://kieai.redpandaai.co/api/file-base64-upload";
 export const MODEL = { text: "bytedance/v1-lite-text-to-video", image: "bytedance/v1-lite-image-to-video" };
 // Kie AI's price list: 1 credit is about 0.005 USD.
@@ -63,7 +63,7 @@ export function orderBody({ prompt, seconds = 5, quality = "720p", aspect = "16:
 }
 
 // One call. Waiting helps only a busy service; a refused key or no credits does not.
-async function call(url, { apiKey, method = "GET", body, fetchImpl = fetch }) {
+export async function call(url, { apiKey, method = "GET", body, fetchImpl = fetch }) {
   let res;
   try {
     res = await fetchImpl(url, { method, headers: { authorization: `Bearer ${apiKey}`, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(120000) });
@@ -119,9 +119,9 @@ export function resultUrl(task) {
 
 const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Waits for the clip and downloads it to `out`. A lost connection only means
-// "ask again"; the order is not given up, and it costs nothing more.
-export async function fetchClip({ apiKey, id, out, fetchImpl = fetch, sleep = defaultSleep, onStatus = () => {}, limitMs = POLL_LIMIT_MS }) {
+// Waits for the result's address. A lost connection only means "ask again"; the
+// order is not given up, and it costs nothing more.
+export async function waitForResult({ apiKey, id, fetchImpl = fetch, sleep = defaultSleep, onStatus = () => {}, limitMs = POLL_LIMIT_MS }) {
   const t0 = Date.now();
   for (;;) {
     let task = null;
@@ -135,15 +135,21 @@ export async function fetchClip({ apiKey, id, out, fetchImpl = fetch, sleep = de
     if (task?.state === "success") {
       const url = resultUrl(task);
       if (!url) throw new Error("Kie AI could not make the B-roll clip: its answer has no video address.");
-      const res = await fetchImpl(url, { signal: AbortSignal.timeout(300000) });
-      if (!res.ok) throw new BusyError(`Could not download the clip (HTTP ${res.status}).`, { status: res.status });
-      fs.mkdirSync(path.dirname(out), { recursive: true });
-      fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));
-      return { file: out };
+      return url;
     }
     if (Date.now() - t0 > limitMs) throw new BusyError("Kie AI is still working on the clip. Press the button again later: the order is kept and is not paid twice.");
     await sleep(8000);
   }
+}
+
+// Waits for the clip and downloads it to `out`.
+export async function fetchClip({ apiKey, id, out, fetchImpl = fetch, sleep = defaultSleep, onStatus = () => {}, limitMs = POLL_LIMIT_MS }) {
+  const url = await waitForResult({ apiKey, id, fetchImpl, sleep, onStatus, limitMs });
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(300000) });
+  if (!res.ok) throw new BusyError(`Could not download the clip (HTTP ${res.status}).`, { status: res.status });
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));
+  return { file: out };
 }
 
 // The account's balance, a free request: also what "Test key" uses.

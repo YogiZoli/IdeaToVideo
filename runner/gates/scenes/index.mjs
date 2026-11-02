@@ -16,7 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chat, extractJson } from "../../providers/llm.mjs";
-import { loadComponent, checkVars, sceneTimes, mountTheme } from "../build/assemble.mjs";
+import { loadComponent, checkVars, sceneTimes, mountTheme, readWords } from "../build/assemble.mjs";
 import { narrationFromMarkdown } from "../voice/narration.mjs";
 import { duration } from "../../audio.mjs";
 import { ROLES, COMPONENTS, roleOf, paceOf, componentMeta, PACK_COMPONENTS } from "./roles.mjs";
@@ -140,7 +140,7 @@ const NOT_SHOWN = ["type", "split", "style", "rule", "sketch", "pen", "orientati
 export function listIds(item) {
   return new Set([...LIST_IDS, ...(item?.variables ?? []).filter((v) => v.type === "string" && /comma|separated|one per|pipe/i.test(String(v.description ?? ""))).map((v) => v.id)]);
 }
-function onScreen(component, vars = {}, lists = new Set(LIST_IDS)) {
+export function onScreen(component, vars = {}, lists = new Set(LIST_IDS)) {
   const lines = [];
   for (const [id, v] of Object.entries(vars)) {
     if (typeof v !== "string" || !v.trim()) continue;
@@ -381,6 +381,12 @@ export const clean = (sc) => ({
   ...(sc.component === "whiteboard-ink" && typeof sc.icon === "string" && sc.icon.trim() ? { icon: sc.icon.trim().slice(0, 60) } : {}),
   vars: sc.vars ?? {},
   ...(sc.call ? { call: sc.call } : {}),
+  // the Shot map's fields (shots/index.mjs), and what says the row was chosen by hand
+  ...(Number.isFinite(sc.at) ? { at: sc.at } : {}),
+  ...(sc.cut ? { cut: true } : {}),
+  ...(sc.camera ? { camera: sc.camera } : {}),
+  ...(sc.template ? { template: sc.template } : {}),
+  ...(sc.override ? { override: true } : {}),
   // the planner's ranked candidates (the visual check swaps to the next one)
   // and its one line on why this one fits (DECISIONS 130)
   ...(Array.isArray(sc.candidates) && sc.candidates.length ? { candidates: sc.candidates.filter((c) => typeof c === "string").slice(0, 5) } : {}),
@@ -702,7 +708,12 @@ export async function saveScenes({ projectDir, scenes, env = process.env, pace }
   const { issues, warnings } = checkScenes({ scenes }, { sentences, total, env, calls, gaps: gapsOf(projectDir), pace });
   if (issues.length) throw new Error(`The scene table has problems: ${issues.slice(0, 5).join("; ")}`);
   const current = readJson(projectDir, "scenes.json", "scene table");
-  writeTable(projectDir, { ...current, scenes: withCalls(scenes.map(clean), calls), warnings });
+  // a block changed by hand stays that block whatever the Shot map does
+  const chosen = scenes.map((sc) => {
+    const was = (current.scenes ?? []).find((b) => b.from === sc.from && (b.at ?? null) === (sc.at ?? null));
+    return was && was.component !== sc.component ? { ...sc, override: true } : sc;
+  });
+  writeTable(projectDir, { ...current, scenes: withCalls(chosen.map(clean), calls), warnings });
   return { scenes: scenes.length, warnings };
 }
 
@@ -743,14 +754,14 @@ export async function refillScene({ llm, projectDir, index, component, request =
     const chosen = await choosePart(llm, { part: [{ from: sc.from, to: sc.to, candidates }], sentences: covered, codes, data, previous, usedInVideo: {}, limit: 99, env, off, calls: new Map() });
     pick = chosen[0].component;
     if (pick === next) throw new Error("The scene after uses the same component. Ask again.");
-    const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...chosen[0], from: sc.from, to: sc.to }) : s));
+    const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...chosen[0], from: sc.from, to: sc.to, at: sc.at, cut: sc.cut, camera: sc.camera, override: true }) : s));
     writeTable(projectDir, { ...table, scenes });
     return { scene: scenes[index] };
   }
   if (pick === previous) throw new Error("The scene before uses the same component. Pick another one.");
   if (pick === next) throw new Error("The scene after uses the same component. Pick another one.");
   const filled = await fillScene({ llm, sc, component: pick, sentences, env, language, name, themeIsLight, previous, next, wish });
-  const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...filled, candidates: candidates ?? [pick] }) : s));
+  const scenes = table.scenes.map((s, i) => (i === index ? clean({ ...filled, at: sc.at, cut: sc.cut, camera: sc.camera, override: true, candidates: candidates ?? [pick] }) : s));
   writeTable(projectDir, { ...table, scenes });
   return { scene: scenes[index] };
 }
@@ -770,6 +781,12 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
   }
   const ids = sentences.map((s) => s.id);
   const gaps = gapsOf(projectDir);
+  // a shot that starts or ends inside a sentence says only its own words
+  const allWords = table.scenes.some((sc) => Number.isFinite(sc.at)) ? readWords(projectDir) : [];
+  const saidIn = (i) => {
+    const own = allWords.filter((w) => times[i].start !== null && w.start >= times[i].start - 0.05 && w.start < times[i].start + times[i].duration);
+    return own.length ? own.map((w) => w.text).join(" ") : null;
+  };
   const own = (i) => (times[i].duration === null ? null : r3(times[i].duration - gaps.reduce((t, g) => t + Math.max(0, Math.min(g.end, times[i].start + times[i].duration) - Math.max(g.start, times[i].start)), 0)));
   const rows = table.scenes.map((sc, i) => {
     const meta = componentMeta(sc.component) ?? { role: null, label: sc.component, mainVar: null };
@@ -779,7 +796,7 @@ export async function sceneRows(projectDir, { env = process.env, off = [] } = {}
       to: sc.to ?? sc.from,
       start: times[i].start,
       duration: own(i),
-      said: sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1).map((s) => s.text).join(" "),
+      said: saidIn(i) ?? sentences.slice(ids.indexOf(sc.from), ids.indexOf(sc.to ?? sc.from) + 1).map((s) => s.text).join(" "),
       component: sc.component,
       label: meta.label,
       role: meta.role,

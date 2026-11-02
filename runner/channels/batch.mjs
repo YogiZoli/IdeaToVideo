@@ -3,11 +3,13 @@
 // one run. Each becomes a ONE Video with its queue place, waiting for its voice;
 // nothing is rendered or published by the batch. A script that fails does not
 // stop the others: it stays in the queue, marked, and can be written again.
+// Pasted texts (`given`) skip the ideas: 7 notes give 7 scripts (phase 3).
 
 import fs from "node:fs";
 import path from "node:path";
 import { chat, extractJson } from "../providers/llm.mjs";
 import { loadProject } from "../project.mjs";
+import { loadBrief } from "../research/index.mjs";
 
 export const WEEK = 7;
 
@@ -60,12 +62,12 @@ export async function weekIdeas({ llm, channel, name, theme, language, count = W
  * The run: the ideas, then for each a project (`create`) and its script
  * (`write`). Both come in from main.mjs, the same code the single video uses.
  */
-export async function runWeekBatch({ llm, channel, name, theme, language, count = WEEK, avoid = [], create, write, batchId = new Date().toISOString().slice(0, 16), onProgress = () => {} }) {
-  const ideas = await weekIdeas({ llm, channel, name, theme, language, count, avoid, onProgress });
+export async function runWeekBatch({ llm, channel, name, theme, language, count = WEEK, avoid = [], given = null, create, write, batchId = new Date().toISOString().slice(0, 16), onProgress = () => {} }) {
+  const ideas = given ?? (await weekIdeas({ llm, channel, name, theme, language, count, avoid, onProgress }));
   const videos = [];
   for (const [i, idea] of ideas.entries()) {
     onProgress({ step: "batch-script", n: i + 1, of: ideas.length, title: idea.title });
-    const { dir, id } = create({ title: idea.title, queue: { batch: batchId, position: i + 1, of: ideas.length, angle: idea.angle } });
+    const { dir, id } = create({ title: idea.title, idea, queue: { batch: batchId, position: i + 1, of: ideas.length, ...(idea.angle ? { angle: idea.angle } : {}) } });
     try {
       await write({ dir, idea });
       videos.push({ id, dir, title: idea.title, ok: true });
@@ -88,7 +90,7 @@ export function listQueue(projectsDir) {
       if (!p.queue) continue;
       const rendered = p.render?.state === "done" && p.gates?.review?.state === "approved";
       if (rendered) continue;
-      out.push({ dir, id: p.id, title: p.title, status: p.status, script: p.gates?.script?.state ?? "todo", error: p.gates?.script?.error ?? null, running: !!p.autopilotRun, ...p.queue });
+      out.push({ dir, id: p.id, title: p.title, status: p.status, script: p.gates?.script?.state ?? "todo", error: p.gates?.script?.error ?? null, running: !!p.autopilotRun, research: p.start?.research ? (loadBrief(dir)?.state ?? "none") : null, ...p.queue });
     } catch {
       // not a project folder: skip it
     }

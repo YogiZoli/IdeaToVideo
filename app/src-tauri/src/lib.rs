@@ -950,6 +950,58 @@ fn open_publishing_link(app: AppHandle, url: String) -> Result<(), String> {
     }
 }
 
+/// The addresses a video's own files record: its research sources and the source
+/// pages of its B-roll. Pure, the tests call it.
+fn recorded_links(research: Option<Value>, broll: Option<Value>) -> Vec<String> {
+    let of = |v: &Option<Value>, list: &str, field: &str| -> Vec<String> {
+        v.as_ref()
+            .and_then(|j| j.get(list))
+            .and_then(Value::as_array)
+            .map(|rows| rows.iter().filter_map(|r| r.get(field).and_then(Value::as_str).map(String::from)).collect())
+            .unwrap_or_default()
+    };
+    let mut all = of(&research, "sources", "url");
+    all.extend(of(&broll, "items", "sourceUrl"));
+    all
+}
+
+#[cfg(test)]
+mod source_link_tests {
+    use super::recorded_links;
+    use serde_json::json;
+
+    #[test]
+    fn only_what_the_video_recorded() {
+        let research = json!({ "sources": [{ "title": "A", "url": "https://a.example/x" }] });
+        let broll = json!({ "items": [{ "sourceUrl": "https://archive.org/details/y" }, { "sourceUrl": null }] });
+        assert_eq!(recorded_links(Some(research), Some(broll)), vec!["https://a.example/x", "https://archive.org/details/y"]);
+        assert!(recorded_links(None, None).is_empty());
+    }
+}
+
+/// A source this video recorded (docs/BUILD_PLAN.md phase 3): the opener's fixed
+/// list cannot know those hosts, so only an https address found in the video's own
+/// research.json or broll.json is opened.
+#[tauri::command]
+fn open_source_link(app: AppHandle, project_dir: String, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let read = |rel: &[&str]| -> Option<Value> {
+        let mut p = std::path::PathBuf::from(&project_dir);
+        for part in rel {
+            p.push(part);
+        }
+        std::fs::read_to_string(p).ok().and_then(|t| serde_json::from_str(&t).ok())
+    };
+    let known = recorded_links(read(&["research.json"]), read(&["broll", "broll.json"]));
+    if !url.starts_with("https://") && !url.starts_with("http://") {
+        return Err("This link is not a web address, so it is not opened.".into());
+    }
+    if !known.iter().any(|u| u == &url) {
+        return Err("This link is not one of this video's sources, so it is not opened.".into());
+    }
+    app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
+}
+
 /// The finished video, out of the project (Zoltan, 2026-10-05): "Download"
 /// (a place the user picked in the save dialog) and "Save a copy to Google
 /// Drive" (the cloud's own folder on this computer, from `cloud_folders`).
@@ -1103,6 +1155,7 @@ pub fn run() {
             import_music,
             export_card,
             open_publishing_link,
+            open_source_link,
             export_video,
             import_segment,
             import_footage,
