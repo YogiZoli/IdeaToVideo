@@ -217,7 +217,8 @@ Card, Thumbnail, PDT export.
 
 ### Phase 4: Preset "3D Explainer" (one strange question per video)
 
-Status: todo
+Status: done (2026-11-03, DECISIONS 148 to 151). Not tried yet: a real AI on the plan and on the
+script's one strange question (the rule and stand-ins only), and a video over a minute.
 
 Simple 3D scenes rendered with three.js inside the composition: soft-shaded
 objects, cutaway views, scale comparisons, bright clean materials, smooth camera
@@ -306,11 +307,24 @@ Other findings:
 - A preset is one folder: `runner/presets/<id>/preset.json`, checked by
   `checkPreset`. The contract is in `runner/presets/index.mjs`.
 - `use` names what draws a template: a bundled component, or `<pack>:<block>`.
-  New hand-drawn templates should ship as a block pack (`runner/packs/`), which
-  already has variables, roles and a build path. The first style preset (Phase 4) needs to let a preset
-  bring its own pack from its folder (today `registerPacks` reads the Identity's).
-- `ruleParams` in `runner/gates/scenes/templates.mjs` knows the Motion Frames
-  template ids. A new preset adds its own rules there or names rule-fillable ids.
+  A preset brings its own pack in `runner/presets/<id>/pack/` (`pack.json`, `blocks/`, `shared/`).
+  `builtinPacks` finds it; it is never offered to another channel. `runtime: ["three"]` and `script`
+  in `pack.json` put libraries and shared code on the root page (`packScripts`).
+- A preset with its own palette: tokens without `from: "brand"`. `presetLook` gives the build those
+  colors and fonts, plain cuts and no 2D camera; the channel's captions stay.
+- `scripts/make-3d-blocks.mjs` writes a pack's thin blocks, manifest and templates from one list, so
+  they cannot disagree. Phases 5 to 8 can copy it, or make it take a preset id.
+- Drawing in 3D (Phase 8 too): `runner/presets/explainer-3d/pack/shared/world3d.js`. One renderer per
+  page, each scene copies its frame to its own canvas, every frame comes from one tween's value, so
+  any seek gives the same picture. Same for any canvas drawing by code (Stick World, Archive Collage).
+- `ruleParams` in `runner/gates/scenes/templates.mjs` knows the shared template ids (title, chapter,
+  statement, word, highlight, question, number, percent), whatever preset they are in. A preset adds
+  its own rule in `ownRule`, and `ruleFirst` on a template makes a rule try it before the rotation.
+- A template parameter of type `object` picks from the preset's `objects` list: the AI names one, a
+  rule finds it in the sentence, anything else falls back to the list's first, neutral one.
+- `scriptNote` and `ideaNote` in `preset.json`: the shape of a preset's videos, told to the script
+  writer and the week batch (Phase 5's "you" narrator, Phase 7's fact-checking).
+- `defaults.broll` in `preset.json`: the recipe editor's B-roll switch when this style is chosen.
 - B-roll for any preset or engine: `planAuto`, `findFree`, `findPixabay`,
   `finishFind`, `approvePaid` in `runner/broll/engine.mjs` need only sentences,
   scene rows and an Identity. A preset that must not have B-roll: the recipe's switch.
@@ -329,7 +343,8 @@ Other findings:
 
 ## Next step
 
-Phase 4: Preset "3D Explainer". First, Zoltan tries Phase 3 on the installer: one topic with research
-on, one set of notes, one real recording; and his decisions on the table above if he has made them.
-New in that table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143) and the
-Z-Image picture size (DECISIONS 146).
+Phase 5: Preset "Stick World". First, Zoltan tries Phase 4 on the installer: a channel on 3D Explainer,
+one strange question, up to the render; and Phase 3 if he has not yet (one topic with research on, one
+set of notes, one real recording); and his decisions on the table above if he has made them. New in that
+table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143) and the Z-Image picture size
+(DECISIONS 146).

@@ -2533,3 +2533,65 @@
     Tests: Node 524 of 527 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests
     skipped), Rust 50, UI check 0 errors, channel e2e 56/56 with the real voice and render. No real AI
     and no paid call were used while building: the brief and the notes were tested with stand-ins.
+
+## 2026-11-03
+
+148. **The 3D Explainer preset** (Zoltan, 2026-11-02, `docs/BUILD_PLAN.md` phase 4; `runner/presets/explainer-3d/`).
+    14 templates, one strange question per video: soft-shaded objects, cutaway views, scale comparisons, bright clean
+    materials, one smooth camera move per scene. All drawing is own code in `pack/shared/world3d.js`, from three.js
+    primitives: no model files, nothing downloaded at run time, no third-party skill opened. 38 objects, a person is a
+    faceless figure.
+    - **HyperFrames still makes every frame.** A block registers a paused timeline like any other block, and one tween
+      on it gives the frame's time to the code, so any seek gives the same picture. No engine of our own.
+    - **One renderer per page, not one per scene.** A page may hold about 16 WebGL contexts and a video has far more
+      scenes. Each scene copies the frame to its own canvas, so it always shows its own picture; a scene's objects and
+      canvas memory are released when two newer scenes have drawn.
+    - **three.js 0.180.0 (MIT) is pinned in `engine/`** with the rest of the render toolchain. Reduced to the one file a
+      build reads (`build/three.cjs`, 2 MB of the package's 21 MB), wrapped into a global when it is put on the page.
+    - **A preset brings its own pack** (`runner/presets/<id>/pack/`, `builtinPacks`), as phase 1 planned. It is never
+      offered to the catalog plan or another channel. `scripts/make-3d-blocks.mjs` writes the thin blocks, the manifest
+      and the templates from one list, so they cannot disagree; a test holds that.
+
+149. **The look belongs to the preset here, not to the channel** (`presetLook`). Own colors, and the OFL fonts Outfit
+    and DM Sans from the fonts the app already ships. Tokens without `from: "brand"` give the build those. Scenes change
+    on plain cuts and no 2D camera wraps them, because the 3D camera is the scene's, so the channel's Motion wizard does
+    not touch a video on this preset. **What stays the channel's (Claude's decision, can be overruled):** its captions
+    and spoken word setting, which are about the audience and not the look. Motion Frames and the Recorded presets are
+    exactly as before. The video's own copy of the recipe says which preset applies, so nothing changes under a video
+    already made.
+
+150. **What the AI fills, and what a rule fills.** The AI names an `object` from the preset's list; anything it names
+    that the code cannot draw falls back to what the sentence names, else to the neutral one. New: rules that fill a
+    template only when the sentence really says that thing (`ownRule`): scale ("bigger than" and two things to compare),
+    cutaway ("inside"), versus ("but"), cause ("because"), question. A dead AI gets a varied video, not a rotation of text.
+    - **A ratio the voice says is the ratio on screen.** "4 times wider" draws one 4 times the other; with no ratio said
+      the difference is only a clear one, and no number shows.
+    - **A number under 10 shows exactly that many objects.** Over that, nine: a crowd, with the number on screen.
+    - **Object words are kept narrow on purpose.** "you", "think", "key" and Hungarian words that are English words too
+      (hold, nap, fog) were taken out after the first test showed them pulling in the wrong object. Other languages get
+      fewer matches, so a rule-made video shows the neutral object more often there; the AI's choice has no such limit.
+    - **The question mark stays** on a template of this preset (`capFor`). Motion Frames still drops it, as before.
+    - **One fix reaches Motion Frames, on purpose:** a rule's line now stays inside one sentence when the Shot map
+      hands it the words of two. Only a shot filler can get that text, and "number The Moon is" was a bug there too.
+    - `scriptNote` and `ideaNote` in the preset tell the script writer and the week batch the video's shape. With notes
+      or research they add no fact: the prompt says so. Not tried against a real AI yet.
+    - **B-roll off when this style is chosen in the recipe** (`defaults.broll`): its pictures are its own. The switch
+      stays, so a user can turn it back on.
+
+151. **Two bugs only the real render showed.**
+    - **The engine moves every scene's timeline on every frame, also a scene's that is over.** The first version drew on
+      each of those, so past scenes were rebuilt and evicted again on every frame. Each scene alone rendered at about 10
+      frames a second, and 15 s across several took 145 s; a 43 s video had not finished after 12 minutes. A scene now
+      draws only inside its own time: the same 15 s takes 40 s, and 43 s takes 86 s, the same pace as Motion Frames.
+      At exactly a scene's first frame nothing is drawn, and its objects have not popped up by then, so nothing is lost.
+    - **A block's script runs in the runtime's scope** (its own `document` and timeline registry per mount), and is
+      injected into the page's body, not inside the block. A shared file sees the plain page, so the second mount of the
+      same block could not find its root. The block's own two lines now ask for the root and register the timeline;
+      `make-3d-blocks.mjs` says why they must stay there.
+    - **`THIRD-PARTY-NOTICES.md` is generated, and a section had been added by hand in phase 2** (the Whisper and MODNet
+      models). Regenerating it for three.js would have dropped that section, so it is in `scripts/notices.mjs` now.
+
+    Tests: Node 547 of 550 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0
+    errors. Rust was not touched and its tests were not run again. New `scripts/phase2/explainer3d-e2e.mjs` 42/42 with the
+    real free voice and real renders: one video by rule, one with every template once, each looked at frame by frame.
+    A real AI was not used: the plan was tested by rule and with stand-in answers. Longest video tried: 43 s.

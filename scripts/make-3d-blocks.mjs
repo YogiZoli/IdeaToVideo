@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+// make-3d-blocks.mjs: writes the 3D Explainer's blocks from one list, so the pack's
+// manifest, its blocks and the preset's templates cannot disagree. A tool for whoever
+// changes the preset, not part of the app: the files it writes are committed.
+//
+//   node scripts/make-3d-blocks.mjs
+//
+// runner/presets/explainer-3d/pack/pack.json          the pack's manifest
+// runner/presets/explainer-3d/pack/blocks/<id>.html   one thin block each: all the
+//                                                     drawing is in shared/world3d.js
+// runner/presets/explainer-3d/preset.json             templates (tokens, rules, objects stay)
+//
+// A block's script runs inside the runtime's scope: this mount's own document and timeline
+// registry, also when the same block is mounted many times. So those two calls stay here,
+// in the block, and never move into the shared code, which sees the plain page.
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const DIR = path.join(ROOT, "runner", "presets", "explainer-3d");
+const PACK = "explainer-3d";
+
+const text = (maxWords, required = true) => ({ maxWords, required });
+const object = (required = true) => ({ type: "object", required });
+const number = () => ({ type: "number", required: true, said: true });
+
+// id, what it is, when it fits, its role, its parameters; `first`: a rule tries it first.
+export const BLOCKS = [
+  { id: "title", label: "Question over one object", role: "opening", when: "The first scene: the video's one strange question, with the thing it is about.", params: { headline: text(6), object: object(), kicker: text(4, false) } },
+  { id: "chapter", label: "Chapter on a turntable", role: "opening", when: "The start of a new section.", params: { headline: text(5), object: object() } },
+  { id: "statement", label: "Object and two lines", role: "statement", when: "A claim: the first line sets it up, the second lands it.", params: { line1: text(5), line2: text(4), object: object() } },
+  { id: "word", label: "One huge word", role: "emphasis", when: "One word is the whole point.", params: { word: text(2), object: object() } },
+  { id: "highlight", label: "Marked line", role: "emphasis", when: "A short line with one key word to mark.", params: { line: text(6), mark: text(1), object: object() } },
+  { id: "question", label: "Question mark", role: "statement", first: true, when: "The narration asks the viewer something.", params: { question: text(6), object: object(false) } },
+  { id: "number", label: "Number and a pile", role: "proof", when: "The narration says a number and it matters; the object is what is counted.", params: { value: number(), before: text(1, false), after: text(1, false), object: object() } },
+  { id: "percent", label: "Tank fills up", role: "proof", when: "The narration says a percentage.", params: { value: number() } },
+  { id: "scale", label: "Scale comparison", role: "contrast", first: true, when: "How big one thing is next to another: the camera pulls back from the small one.", params: { small: text(3), big: text(3), smallObject: object(), bigObject: object(), ratio: text(3, false) } },
+  { id: "cutaway", label: "Cutaway view", role: "detail", first: true, when: "What is inside something: a ball cut open, up to three named layers.", params: { headline: text(5), object: object(), outer: text(3, false), middle: text(3, false), inner: text(3, false) } },
+  { id: "versus", label: "Two sides on plinths", role: "contrast", first: true, when: "This or that, before and after, wrong and right.", params: { left: text(4), right: text(4), leftObject: object(), rightObject: object() } },
+  { id: "cause", label: "A leads to B", role: "relation", first: true, when: "One thing causes or leads to another.", params: { from: text(3), to: text(3), fromObject: object(), toObject: object() } },
+  { id: "stairs", label: "Four steps", role: "process", when: "Exactly four steps in order.", params: { step1: text(3), step2: text(3), step3: text(3), step4: text(3) } },
+  { id: "shelf", label: "Four things", role: "list", when: "Exactly four things that belong together.", params: { item1: text(3), item2: text(3), item3: text(3), item4: text(3), object1: object(), object2: object(), object3: object(), object4: object() } },
+];
+
+const label = (id) => id.replace(/([A-Z0-9])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+const variablesOf = (b) =>
+  Object.entries(b.params).map(([id, p]) => ({
+    id,
+    type: p.type === "number" ? "number" : "string",
+    label: label(id),
+    default: p.type === "number" ? 0 : p.type === "object" ? "orb" : "",
+    ...(p.required && p.type !== "object" ? {} : { optional: true }),
+    ...(p.maxWords ? { maxWords: p.maxWords } : {}),
+  }));
+
+export function blockHtml(b) {
+  const comp = `x3d-${b.id}`;
+  const vars = JSON.stringify(variablesOf(b).map(({ id, type, label: l, default: def }) => ({ id, type, label: l, default: def })));
+  return `<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='${vars}'>
+<head><meta charset="UTF-8"/></head>
+<body>
+<template>
+<div id="root" data-composition-id="${comp}" data-width="1920" data-height="1080" data-start="0" data-duration="600">
+<div class="x3d-root">
+<canvas class="x3d-view" width="1" height="1"></canvas>
+<section class="clip x3d-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+window.__timelines["${comp}"] = ITV3D.block(document.getElementById("root"), "${b.id}", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
+</script>
+</div>
+</template>
+</body>
+</html>
+`;
+}
+
+function main() {
+  fs.mkdirSync(path.join(DIR, "pack", "blocks"), { recursive: true });
+  for (const b of BLOCKS) fs.writeFileSync(path.join(DIR, "pack", "blocks", `${b.id}.html`), blockHtml(b));
+  const manifest = {
+    schema: "itv-pack/1",
+    id: PACK,
+    name: "3D Explainer",
+    look: "own",
+    runtime: ["three"],
+    script: "shared/world3d.js",
+    blocks: BLOCKS.map((b) => ({ id: b.id, role: b.role, label: b.label, what: b.when, variables: variablesOf(b), seconds: 5 })),
+  };
+  fs.writeFileSync(path.join(DIR, "pack", "pack.json"), JSON.stringify(manifest, null, 2) + "\n");
+  const preset = JSON.parse(fs.readFileSync(path.join(DIR, "preset.json"), "utf8"));
+  preset.templates = BLOCKS.map((b) => ({
+    id: b.id,
+    label: b.label,
+    when: b.when,
+    ...(b.first ? { ruleFirst: true } : {}),
+    params: b.params,
+    use: [{ component: `${PACK}:${b.id}`, vars: Object.fromEntries(Object.keys(b.params).map((p) => [p, `$${p}`])) }],
+  }));
+  fs.writeFileSync(path.join(DIR, "preset.json"), JSON.stringify(preset, null, 2) + "\n");
+  console.log(`${BLOCKS.length} blocks written to ${DIR}`);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

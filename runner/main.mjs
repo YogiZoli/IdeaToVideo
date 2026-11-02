@@ -71,7 +71,7 @@ import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
 import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import * as thumbnail from "./thumbnail/index.mjs";
-import { listPresets, loadPreset, presetCard } from "./presets/index.mjs";
+import { listPresets, loadPreset, presetCard, presetLook } from "./presets/index.mjs";
 import { renderStylesheet, tokensFor } from "./presets/stylesheet.mjs";
 import { makeTemplateScenes } from "./gates/scenes/templates.mjs";
 import { defaultRecipe, loadRecipe, saveRecipe, normalizeRecipe, recipeFor, cleanStart, ownMusic, musicDir, VOICE_KINDS, MUSIC_SOURCES } from "./channels/recipe.mjs";
@@ -149,11 +149,19 @@ const key = () => process.env.STUDIO_API_KEY || "";
 // The look of a build, from the Identity's Brand Identity Card. The Rust core
 // sets identityDir (the ONE Video's own Identity) on every request; without
 // it (tests, pilots) a preset name in `look` still works.
-function lookOf({ identityDir, look }) {
+function lookOf({ identityDir, look, projectDir }) {
   if (!identityDir) return look;
   const { card } = loadCard(identityDir);
   const motion = motionOf(identityDir);
-  return { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion, scenes: loadScenesProfile(identityDir, { motionOff: motion?.scenes?.off ?? [] }).profile, footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
+  const brand = { theme: cardTheme(card, categories()), families: cardFamilies(card), light: card.appearance === "light", name: card.nameplate?.name || null, motion, scenes: loadScenesProfile(identityDir, { motionOff: motion?.scenes?.off ?? [] }).profile, footage: { dir: footageDir(identityDir), ...loadLibrary(identityDir) } };
+  // the video's own copy of the recipe says which preset it is made with
+  let presetId = null;
+  try {
+    presetId = projectDir ? loadProject(projectDir).recipe?.preset ?? null : null;
+  } catch {
+    presetId = null;
+  }
+  return presetId ? presetLook(loadPreset(presetId), brand) : brand;
 }
 
 // The icons the Identity's other videos draw (<identity>/icons-used.json, one
@@ -383,7 +391,7 @@ async function writeScriptGate({ projectDir, identityDir, llm, input = {}, chann
     const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
       writeScript({
         llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-        input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator"), notes: notesOf(projectDir), research: briefForScript(loadBrief(projectDir)) },
+        input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator"), notes: notesOf(projectDir), research: briefForScript(loadBrief(projectDir)), styleNote: project.recipe?.preset ? loadPreset(project.recipe.preset).scriptNote : null },
         onProgress: (p) => emit({ event: "progress", ...p }),
       }),
     );
@@ -428,7 +436,7 @@ async function weekBatch({ projectsDir, identityDir, identity, llm = null, chann
     llm: llm ? { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } : null,
     channel,
     name,
-    theme,
+    theme: [theme, loadPreset(recipe.preset).ideaNote].filter(Boolean).join(" "),
     language,
     count,
     avoid,
@@ -1586,7 +1594,7 @@ async function main() {
         hasFootage = false;
       }
       await registerPacks(req.identityDir, { hasFootage });
-    }
+    } else await registerPacks(null);
     if (req.identityDir && LOOK_COMMANDS.has(name)) req.look = lookOf(req);
     emit({ event: "result", data: await cmd(req) });
     return 0;

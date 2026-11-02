@@ -46,20 +46,20 @@ export function stylesheetHtml({ preset, tokens, fontCss = "" }) {
 ${fontCss}
       html, body { margin: 0; background: ${esc(c.background)}; }
       #sheet { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: ${esc(c.background)}; color: ${esc(c.text)}; font-family: '${esc(tokens.fonts.body)}', Inter, Arial, sans-serif; }
-      .in { position: absolute; inset: 64px 80px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; }
+      .in { position: absolute; inset: 64px 80px; display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; }
       h1 { margin: 0; font: 800 96px/1 '${esc(tokens.fonts.display)}', Inter, Arial, sans-serif; letter-spacing: -0.02em; }
       h1 em { font-style: normal; color: ${esc(c.primary)}; }
       p.lead { margin: 18px 0 40px; font-size: 28px; line-height: 1.35; color: ${esc(c.muted)}; max-width: 880px; }
       h2 { margin: 0 0 16px; font: 700 22px/1.2 '${esc(tokens.fonts.body)}', Inter, Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.1em; color: ${esc(c.muted)}; }
-      .swatches { display: flex; gap: 18px; margin-bottom: 40px; }
+      .swatches { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 40px; }
       .sw { display: grid; gap: 6px; font-size: 20px; }
       .sw span { color: ${esc(c.muted)}; font-size: 18px; }
-      .chip { width: 138px; height: 92px; border-radius: ${radius}px; border: 2px solid ${esc(c.muted)}; }
+      .chip { width: 104px; height: 80px; border-radius: ${radius}px; border: 2px solid ${esc(c.muted)}; }
       .type { font: 700 60px/1.1 '${esc(tokens.fonts.display)}', Inter, Arial, sans-serif; margin-bottom: 10px; }
       .body { font-size: 30px; line-height: 1.4; }
-      ul { margin: 0 0 36px; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; font-size: 25px; }
-      li { padding: 12px 18px; border-radius: ${radius}px; border: 2px solid ${esc(c.primary)}; }
-      .rule { display: grid; grid-template-columns: 170px 1fr; gap: 14px; font-size: 21px; line-height: 1.3; margin-bottom: 12px; }
+      ul { margin: 0 0 26px; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 22px; }
+      li { padding: 7px 14px; white-space: nowrap; border-radius: ${radius}px; border: 2px solid ${esc(c.primary)}; }
+      .rule { display: grid; grid-template-columns: 150px 1fr; gap: 12px; font-size: 19px; line-height: 1.25; margin-bottom: 9px; }
       .rule span { color: ${esc(c.muted)}; }
     </style>
   </head>

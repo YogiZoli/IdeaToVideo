@@ -34,7 +34,7 @@ starts, and never pad. Do not aim for a word count.
 // notes: the creator's own notes or cleaned transcript, turned into the script
 // and never added to (docs/BUILD_PLAN.md phase 3). research: an approved brief
 // (research/index.mjs briefForScript), the only place new facts may come from.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null, notes = null, research = null }) {
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null, styleNote = null, notes = null, research = null }) {
   const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
   const cta = null;
   const data = {
@@ -58,6 +58,7 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
   const written = String(notes ?? "").trim().slice(0, NOTES_MAX);
   if (written) data.notes = written;
   if (research) data.research = research;
+  if (styleNote) data.styleNote = styleNote;
   // One lesson of an imported course: its plan (course/index.mjs, seed.json).
   const outline = lessonOutline(bridge && seed ? { ...seed, closingLine: undefined } : seed);
   if (outline) data.lessonOutline = outline;

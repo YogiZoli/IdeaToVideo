@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { zipBuffers, unzipBuffer } from "./packs/zip.mjs";
-import { checkManifest, importPack, listPacks, writeState, exportPack, removePack, fitPackBlock, readPackFile, registerPacks, packCatalog, PACK_SCHEMA } from "./packs/index.mjs";
+import { builtinPacks, checkManifest, importPack, listPacks, writeState, exportPack, removePack, fitPackBlock, readPackFile, registerPacks, packCatalog, PACK_SCHEMA } from "./packs/index.mjs";
 import { componentMeta, PACK_COMPONENTS } from "./gates/scenes/roles.mjs";
 import { fixBlock, emptyOptional, blockVariables } from "../scripts/make-pack.mjs";
 
@@ -59,7 +59,7 @@ test("registered pack blocks are known to the scene checks by their pack:block n
   const ident = path.join(dir, "ident");
   fs.mkdirSync(ident);
   importPack(ident, packFile(dir));
-  assert.equal(await registerPacks(ident), 1);
+  assert.equal(await registerPacks(ident), 1 + builtinPacks().reduce((n, p) => n + p.blocks.length, 0), "the imported block, and the ones presets bring");
   assert.equal(componentMeta("zg:split").role, "contrast");
   assert.equal(componentMeta("zg:split").mainVar, "word");
   PACK_COMPONENTS.clear();

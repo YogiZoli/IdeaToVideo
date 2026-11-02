@@ -81,6 +81,8 @@ ${Object.entries(library.licenses?.items ?? {}).map(([n, l]) => `  - \`${n}\`: $
 ${Object.entries(library.licenses?.fonts ?? {}).map(([f, l]) => `  - \`${f}\`: ${l}.`).join("\n")}
 - **GSAP** (npm \`gsap\` ${engine.find((r) => r.name === "gsap")?.version ?? ""}), the animation library the components use.
   GreenSock's standard "no charge" license (gsap.com/standard-license).
+- **three.js** (npm \`three\` ${engine.find((r) => r.name === "three")?.version ?? ""}), draws the 3D scenes of the presets that have them. MIT License,
+  in \`engine/node_modules/three/LICENSE\`. Only its one build file ships.
 - **Fonts**: ${library.fonts} font families from fontsource, SIL Open Font License 1.1.
   Each font's license is in \`library/fonts/<font>/LICENSE\`.
 - **Icons** for the whiteboard scenes: ${icons.map((f) => `${f.label} ${f.version} (${f.license})`).join(", ")}.
@@ -129,6 +131,13 @@ ${table(ui)}
 ## Rust crates the app is built from (app/src-tauri/Cargo.lock)
 
 ${table(crates)}
+
+## Models downloaded on first use by the Recorded engine
+
+Not in the installer. Each is downloaded once into the app's data folder and checked against a pinned SHA-256.
+
+- **Whisper Base** (OpenAI), MIT license, ONNX export \`onnx-community/whisper-base_timestamped\` on Hugging Face. Turns the recording's sound into words with times, on this computer.
+- **MODNet** (Zhanghan Ke and others), Apache License 2.0, ONNX export \`Xenova/modnet\` on Hugging Face. Finds the person in the picture for the person cut-out and the silhouette.
 `;
 }
 

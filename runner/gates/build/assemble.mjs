@@ -69,7 +69,7 @@ export function loadComponent(name, { env = process.env } = {}) {
     const pb = loadPackBlock(name, env.ITV_IDENTITY_DIR);
     const compositionId = (/data-composition-id="([a-z0-9-]+)"/.exec(pb.html) ?? [])[1];
     if (!compositionId) throw new Error(`${name}: the block has no composition id.`);
-    return { name, item: pb.item, html: pb.html, target: null, assets: [], pack: { fontface: pb.fontface, seconds: pb.block.seconds, followBrand: pb.pack.followBrand, compositionId } };
+    return { name, item: pb.item, html: pb.html, target: null, assets: [], pack: { fontface: pb.fontface, seconds: pb.block.seconds, followBrand: pb.pack.followBrand, compositionId, builtin: pb.pack.builtin ? pb.pack : null } };
   }
   if (!/^[a-z0-9-]+$/.test(String(name))) throw new Error(`Not a component name: ${name}`);
   const dir = path.join(libraryDir(env), "components", name);
@@ -475,6 +475,28 @@ export function segmentClips(projectDir) {
 export const avatarVideo = (a, width = 1920, height = 1080) =>
   `    <video id="avatar-${a.name}" src="${a.file}" muted data-volume="0" data-start="${a.start}" data-duration="${a.duration}" data-track-index="3" style="${avatarStyle(a.layout, width, height)}"></video>`;
 
+// What a preset's own pack needs on the root page, before any block runs: libraries
+// from the engine, then the pack's shared code. three.js ships as a CommonJS file for
+// a page without a bundler, so its exports become one global here. Returns the names.
+export const THREE_FILE = "three.global.js";
+export function packScripts(components, out, env = process.env) {
+  const names = [];
+  const packs = new Map(components.filter((c) => c.pack?.builtin).map((c) => [c.pack.builtin.id, c.pack.builtin]));
+  for (const p of packs.values()) {
+    if ((p.runtime ?? []).includes("three") && !names.includes(THREE_FILE)) {
+      const code = fs.readFileSync(path.join(engineDir(env), "node_modules", "three", "build", "three.cjs"), "utf8");
+      fs.writeFileSync(path.join(out, THREE_FILE), `var THREE = {};\n(function (exports) {\n${code}\n})(THREE);\n`);
+      names.push(THREE_FILE);
+    }
+    if (p.script) {
+      const name = `${p.id}-${path.basename(p.script)}`;
+      fs.copyFileSync(path.join(p.dir, ...p.script.split("/")), path.join(out, name));
+      names.push(name);
+    }
+  }
+  return names;
+}
+
 // Motion (the Identity's Motion profile, motion/): `motion` is null for a
 // build without one, and then the page is exactly what it was before the
 // Motion wizard. Otherwise:
@@ -495,7 +517,7 @@ const hostHtml = (m, width, height, motion) => {
 };
 const NL = "\n";
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null, captions = null }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null, captions = null, pageScripts = [] }) {
   const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
   const ground = motion?.backgrounds?.length
     ? motion.backgrounds
@@ -545,7 +567,7 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
         background: var(--bg, #000);
       }
     </style>
-    <script src="gsap.min.js"></script>${shaderTag}
+    <script src="gsap.min.js"></script>${shaderTag}${pageScripts.map((s) => `${NL}    <script src="${s}"></script>`).join("")}
   </head>
   <body>
     <div id="main" data-composition-id="main" data-start="0" data-duration="${total}" data-width="${width}" data-height="${height}" data-fps="30">
@@ -686,6 +708,8 @@ export async function assemble(projectDir, { env = process.env, total, language,
   const icons = pickIcons(scenes, { sentences, recent: look.iconsRecent ?? [], families: look.scenes?.icons?.families, env });
   const fitted = scenes.map((sc, n) => {
     const comp = components.get(sc.component);
+    // a preset's own pack keeps its own look: the build's theme is already the preset's
+    if (comp.pack?.builtin) return fitPackBlock(comp.html, { seconds: r3(times[n].duration + ext(n)) });
     if (comp.pack) {
       // a pack block: the scene's length and the Brand
       const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
@@ -741,6 +765,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     return { id: `background-${k + 1}`, compositionId: bgComponent.name, src, ...mountTheme(mp.background.vars), ...p };
   });
   if (mp?.shader) fs.copyFileSync(path.join(engineDir(env), "node_modules", "@hyperframes", "shader-transitions", "dist", "index.global.js"), path.join(out, SHADER_FILE));
+  const pageScripts = packScripts([...components.values()], out, env);
   // The look's fonts, local: no font is fetched while rendering.
   const fonts = fontFaces(look.families ?? [], { dir: libraryDir(env) });
   for (const f of fonts.files) {
@@ -785,7 +810,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount, pageScripts }));
   return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
 }
 

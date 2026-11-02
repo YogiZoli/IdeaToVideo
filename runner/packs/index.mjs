@@ -14,7 +14,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { unzipBuffer } from "./zip.mjs";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 export const PACK_SCHEMA = "itv-pack/1";
 export const PACK_EXT = ".itvpack";
@@ -94,11 +97,29 @@ export function packCatalog(identityDir, { hasFootage = false } = {}) {
     );
 }
 
+// A style preset can bring its own pack, in its folder (runner/presets/<id>/pack).
+// Unlike an imported pack it ships with the app, it belongs to that preset: its
+// blocks are never offered to the catalog plan or to another channel, and it keeps
+// its own look. `runtime` names libraries from the engine, `script` the pack's own
+// shared code; both go on the root page.
+const presetsDir = path.join(here, "..", "presets");
+let builtin = null;
+export function builtinPacks() {
+  if (builtin) return builtin;
+  builtin = [];
+  for (const e of fs.readdirSync(presetsDir, { withFileTypes: true })) {
+    const dir = path.join(presetsDir, e.name, "pack");
+    if (!e.isDirectory() || !fs.existsSync(path.join(dir, "pack.json"))) continue;
+    builtin.push({ ...checkManifest(JSON.parse(fs.readFileSync(path.join(dir, "pack.json"), "utf8"))), dir, builtin: true, on: true, off: [] });
+  }
+  return builtin;
+}
+
 // One block for the build: { html, item, pack } (item: name + variables, the
 // registry-item shape the checks use).
 export function loadPackBlock(name, identityDir) {
   const { pack, block } = split(name);
-  const p = listPacks(identityDir).find((x) => x.id === pack);
+  const p = builtinPacks().find((x) => x.id === pack) ?? listPacks(identityDir).find((x) => x.id === pack);
   if (!p) throw new Error(`The pack ${pack} is not in this Identity. Import it in Settings, Import & Export.`);
   const b = p.blocks.find((x) => x.id === block);
   if (!b) throw new Error(`The pack ${p.name} has no block ${block}.`);
@@ -210,6 +231,13 @@ export async function exportPack(identityDir, id, out) {
 export async function registerPacks(identityDir, { hasFootage = false } = {}) {
   const { PACK_COMPONENTS } = await import("../gates/scenes/roles.mjs");
   PACK_COMPONENTS.clear();
+  for (const p of builtinPacks()) {
+    for (const b of p.blocks) {
+      const text = b.variables.filter((v) => v.type === "string" && !v.optional);
+      PACK_COMPONENTS.set(`${p.id}:${b.id}`, { role: b.role, label: `${b.label} (${p.name})`, mainVar: text[0]?.id ?? null, words: Object.fromEntries(b.variables.filter((v) => v.maxWords).map((v) => [v.id, v.maxWords])), description: b.what ?? "", variables: b.variables, pack: true, presetOnly: true, camera: "3D move, its own" });
+    }
+  }
+  if (!identityDir) return PACK_COMPONENTS.size;
   for (const b of packCatalog(identityDir, { hasFootage })) {
     const text = b.variables.filter((v) => v.type === "string" && !v.optional);
     PACK_COMPONENTS.set(b.name, {

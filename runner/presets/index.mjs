@@ -12,7 +12,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMPONENTS, PACK_COMPONENTS, PACES } from "../gates/scenes/roles.mjs";
-import { loadComponent } from "../gates/build/assemble.mjs";
+import { BASE_MOTION, loadComponent } from "../gates/build/assemble.mjs";
+import { fixContrast } from "../brand/card.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,6 +42,7 @@ export function checkPreset(p) {
   const seen = new Set();
   for (const t of Array.isArray(list) ? list : []) {
     const at = `template ${t?.id ?? "?"}`;
+    if (Object.values(t?.params ?? {}).some((x) => x.type === "object") && !p.objects?.length) issues.push(`${at}: an object parameter needs the preset's objects list`);
     if (!t?.id || seen.has(t.id)) issues.push(`${at}: needs a unique id`);
     seen.add(t?.id);
     if (!String(t?.when ?? "").trim()) issues.push(`${at}: says nothing about when it fits`);
@@ -80,7 +82,26 @@ export function loadPreset(id, opts) {
 }
 
 /** What the recipe editor shows of a preset. */
-export const presetCard = (p) => ({ id: p.id, label: p.label, description: p.description, engine: p.engine, templates: p.templates.map((t) => ({ id: t.id, label: t.label })), shotRules: p.shotRules, ...(p.recorded ? { recorded: p.recorded } : {}) });
+export const presetCard = (p) => ({ id: p.id, label: p.label, description: p.description, engine: p.engine, templates: p.templates.map((t) => ({ id: t.id, label: t.label })), shotRules: p.shotRules, ...(p.recorded ? { recorded: p.recorded } : {}), ...(p.defaults ? { defaults: p.defaults } : {}) });
+
+/**
+ * The look of a build on this preset. A preset that says tokens.from "brand" (Motion
+ * Frames) takes the channel's look as it is. One with its own palette keeps it, and
+ * its own scene moves: its blocks hold their own camera, so no 2D camera or changing
+ * background goes around them, and scenes change on a cut. The channel's captions stay.
+ */
+export function presetLook(preset, look) {
+  if (!preset || preset.engine !== "script" || preset.tokens.from === "brand") return look;
+  const { colors: c, fonts: f } = preset.tokens;
+  const stack = (family) => `'${family}', Inter, sans-serif`;
+  return {
+    ...look,
+    theme: { bg: c.background, fg: c.text, muted: c.muted, surface: c.surface ?? c.background, border: c.border ?? c.muted, brand: fixContrast(c.primary, c.background, 3), accent: fixContrast(c.secondary ?? c.primary, c.background, 3), "accent-2": fixContrast(c.tertiary ?? c.secondary ?? c.primary, c.background, 3), radius: "28px", "font-display": stack(f.display), "font-body": stack(f.body), "font-mono": "ui-monospace, Consolas, monospace" },
+    families: [...new Set([f.display, f.body, "Inter"])],
+    light: preset.tokens.appearance !== "dark",
+    motion: { ...BASE_MOTION, camera: { move: "off" }, ...(look?.motion?.captions ? { captions: look.motion.captions } : {}), ...(look?.motion?.spokenWord ? { spokenWord: look.motion.spokenWord } : {}) },
+  };
+}
 
 // The block's own text variables nobody fills would show its sample text, so a
 // pack block counts only when the template fills all of them.
@@ -101,6 +122,6 @@ export function resolveTemplates(preset, { off = [], env = process.env } = {}) {
     const use = t.use.find((u) => !off.includes(u.component) && usable(u));
     if (!use) return [];
     const variables = PACK_COMPONENTS.get(use.component)?.variables ?? loadComponent(use.component, { env }).item.variables ?? [];
-    return [{ ...t, draw: { ...use, types: Object.fromEntries(variables.map((v) => [v.id, v.type])) } }];
+    return [{ ...t, ...(preset.objects ? { objects: preset.objects } : {}), draw: { ...use, types: Object.fromEntries(variables.map((v) => [v.id, v.type])) } }];
   });
 }

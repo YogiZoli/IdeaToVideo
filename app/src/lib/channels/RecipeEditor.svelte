@@ -66,6 +66,13 @@
   }
   r.start ??= { text: "notes", research: false };
 
+  // A style can say what suits it (its own pictures need no B-roll); the switch stays yours.
+  function chooseStyle() {
+    sheet = "";
+    const wants = st.presets.find((p) => p.id === r.preset)?.defaults;
+    if (wants?.broll !== undefined && r.broll) r.broll.on = wants.broll;
+  }
+
   function chooseKind(k: "kokoro" | "elevenlabs") {
     r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : { provider: "elevenlabs", voice: "" };
     sample = "";
@@ -135,7 +142,7 @@
   <div class="row">
     <label class="label" for="rpreset">Style</label>
     <div>
-      <select id="rpreset" bind:value={r.preset} onchange={() => (sheet = "")}>
+      <select id="rpreset" bind:value={r.preset} onchange={chooseStyle}>
         {#each presetsOfEngine as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
       </select>
       {#if preset}<p class="hint">{preset.description}{r.engine === "script" ? ` ${preset.templates.length} scene templates.` : ""}</p>{/if}
