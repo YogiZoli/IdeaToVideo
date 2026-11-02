@@ -21,8 +21,10 @@
   import { narratorProvider } from "./catalog";
   import { setScreen, log } from "./logger";
   import { work, running, track, measure, startWork, pilots } from "./work.svelte";
-  import { TABS, RECORDED_TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import { TABS, RECORDED_TABS, scriptTabs, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
   import RecordingTab from "./channels/RecordingTab.svelte";
+  import ResearchTab from "./channels/ResearchTab.svelte";
+  import ShotMapTab from "./channels/ShotMapTab.svelte";
   import { avatarLooks } from "./avatars";
   import { llmFor, describeLlm } from "./llm";
   import { ask } from "@tauri-apps/plugin-dialog";
@@ -40,7 +42,7 @@
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; cardFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null };
+    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null; start?: { kind: string; research: boolean; topic?: string } | null };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
@@ -48,6 +50,7 @@
     stills: { scene: number; at: number; file: string }[];
     voiceInfo: { seconds: number; voLufs: number; finalLufs: number; musicGainDb: number | null; music: string | null; musicLabel?: string | null; words: number } | null;
     thumbnailChosen?: boolean;
+    researchState?: string | null;
   };
 
   let data = $state<Loaded | null>(null);
@@ -58,7 +61,9 @@
   const look = $derived(app.config?.brand?.preset ?? "blue-professional");
 
   const isRecorded = $derived(data?.project.recipe?.engine === "recorded");
-  const tabList = $derived(isRecorded ? RECORDED_TABS : TABS);
+  const listOf = (p: Loaded["project"]) => (p.recipe?.engine === "recorded" ? RECORDED_TABS : p.recipe ? scriptTabs(!!p.start?.research) : TABS);
+  const tabList = $derived(data ? listOf(data.project) : TABS);
+  const researchApproved = $derived(data?.researchState === "approved");
 
   function show(id: TabId, why = "click") {
     if (active !== id) log("tab", { tab: id, why });
@@ -79,7 +84,7 @@
       if (first) {
         setScreen(`video/${name}`);
         log("video_state", { video: name, status: next.project.status, gates: states, autopilot: !!next.project.autopilot, hasVideo: !!next.latestVideo });
-        active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen, next.project.recipe?.engine === "recorded" ? RECORDED_TABS : TABS);
+        active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen, listOf(next.project), next.researchState === "approved");
         // a render that failed or was cut off before this view opened
         if (next.project.render?.state === "failed" && !renderError) renderError = next.project.render.error ?? "The last render did not finish.";
         // the app works ahead, for free (K10 b): the avatar list and its
@@ -101,7 +106,7 @@
   }
   load();
 
-  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, !!data.thumbnailChosen, tabList) : null);
+  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, !!data.thumbnailChosen, tabList, researchApproved) : null);
   // the percent of the job running for a tab, for its label
   function tabJob(cmds: string[]) {
     const c = running(dir, cmds);
@@ -256,6 +261,19 @@
     setPilot("Starting");
     try {
       await runner("autopilot-mark", { projectDir: dir, on: true });
+      // Research comes first, and the run waits for the brief: one click goes on
+      if (data.project.start?.research && data.researchState !== "approved") {
+        if (!data.researchState) {
+          setPilot("Researching");
+          show("research", "recipe");
+          await runner("research-make", { projectDir: dir, llm: llmFor(app.config, "script"), channel: app.config!.channel });
+          await load();
+        }
+        show("research", "recipe");
+        await runner("autopilot-mark", { projectDir: dir, on: false });
+        notifyDone("Your research brief is ready", data?.project.title ?? "");
+        return;
+      }
       if (!approved("script")) {
         if (!data.scriptMarkdown) {
           setPilot("Writing the script");
@@ -284,13 +302,18 @@
         }
         await approveGate("voice");
       }
-      if (!approved("scenes") && made("scenes")) await approveGate("scenes");
       if (!approved("scenes")) {
-        setPilot("Filling the scene templates");
-        show("scenes", "recipe");
-        const ai = llmFor(app.config, "scenes");
-        if (hasKey(ai)) await runner("make-template-scenes", { projectDir: dir, llm: ai, look });
-        else await runner("simple-template-scenes", { projectDir: dir, look });
+        if (!made("scenes")) {
+          setPilot("Filling the scene templates");
+          show("scenes", "recipe");
+          const ai = llmFor(app.config, "scenes");
+          if (hasKey(ai)) await runner("make-template-scenes", { projectDir: dir, llm: ai, look });
+          else await runner("simple-template-scenes", { projectDir: dir, look });
+        }
+        // after the voice: every shot starts on its word (runner/shots)
+        setPilot("Making the shot map");
+        show("shots", "recipe");
+        await runner("shot-map-make", { projectDir: dir, look });
         await approveGate("scenes");
       }
       const avatar = gates().avatar?.state;
@@ -485,12 +508,16 @@
     <div class="body" bind:this={body}>
       {#if active === "recording"}
         <RecordingTab {dir} busy={!!pilot || anyJob} changed={load} redo={() => recordedRun()} />
+      {:else if active === "research"}
+        <ResearchTab {dir} busy={!!pilot} kind={data.project.start?.kind ?? "topic"} made={load} goOn={() => recipeRun()} />
+      {:else if active === "shots"}
+        <ShotMapTab {dir} busy={!!pilot} changed={load} goto={show} next={nextAfter("shots", hasHeygen, tabList)} />
       {:else if active === "script"}
         <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}
-        <SceneGate {app} {dir} {saved} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} goto={show} next={nextAfter("scenes", hasHeygen)} />
+        <SceneGate {app} {dir} {saved} gate={data.project.gates.scenes} voiceApproved={data.project.gates.voice?.state === "approved"} changed={load} goto={show} next={nextAfter("scenes", hasHeygen, tabList)} />
       {:else if active === "avatar"}
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}

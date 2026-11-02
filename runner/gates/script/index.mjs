@@ -12,6 +12,14 @@ import { humanizeScript, LEVELS } from "./humanize.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WORDS_PER_MINUTE = 150;
+const NOTES_MAX = 40000;
+// Notes set their own length: a target would ask the AI to add what they do not say.
+const NOTES_LENGTH = `## Length
+
+The notes set the length. Cover everything they say, cut only repetition and false
+starts, and never pad. Do not aim for a word count.
+
+`;
 
 // The data block the model sees. Brief fields win over channel defaults.
 // commentCalls: the video's comment calls (cta/profile.mjs ctaPlan), the
@@ -23,7 +31,10 @@ const WORDS_PER_MINUTE = 150;
 // bridge: the playlist bridge lines of a lesson (course/bridge.mjs). The app
 // says them, so the model is not told the next video and writes no line
 // about it (DECISIONS 128).
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null }) {
+// notes: the creator's own notes or cleaned transcript, turned into the script
+// and never added to (docs/BUILD_PLAN.md phase 3). research: an approved brief
+// (research/index.mjs briefForScript), the only place new facts may come from.
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null, notes = null, research = null }) {
   const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
   const cta = null;
   const data = {
@@ -44,6 +55,9 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
   if (calls.length) data.commentCalls = calls;
   const own = String(angle ?? "").trim().slice(0, 1500);
   if (own) data.ownAngle = own;
+  const written = String(notes ?? "").trim().slice(0, NOTES_MAX);
+  if (written) data.notes = written;
+  if (research) data.research = research;
   // One lesson of an imported course: its plan (course/index.mjs, seed.json).
   const outline = lessonOutline(bridge && seed ? { ...seed, closingLine: undefined } : seed);
   if (outline) data.lessonOutline = outline;
@@ -72,7 +86,8 @@ export function buildMessages(data) {
     .readFileSync(path.join(here, "prompt.md"), "utf8")
     .replaceAll("{{targetWords}}", String(Math.round(minutes * WORDS_PER_MINUTE)))
     .replaceAll("{{targetMinutes}}", String(minutes))
-    .replaceAll("{{minWords}}", String(Math.round(minutes * WORDS_PER_MINUTE * 0.85)));
+    .replaceAll("{{minWords}}", String(Math.round(minutes * WORDS_PER_MINUTE * 0.85)))
+    .replace(/## Length[\s\S]*?(?=## Data)/, (part) => (data.notes ? NOTES_LENGTH : part));
   const user = `DATA\n${JSON.stringify(data, null, 2)}\nEND DATA\n\nWrite the script now. Answer with the JSON object only.`;
   return [
     { role: "system", content: system },
@@ -123,10 +138,23 @@ export function styleIssues(script) {
   return issues;
 }
 
+// Notes mode never adds a claim: a number in the script comes from the notes, or
+// from the approved research. Words are the AI's to judge; digits can be checked.
+const digitsIn = (text) => String(text ?? "").replace(/(\d),(?=\d)/g, "$1").match(/\d+(?:\.\d+)?/g) ?? [];
+export function notesIssues(script, data) {
+  if (!data.notes) return [];
+  const known = new Set([...digitsIn(data.notes), ...digitsIn(JSON.stringify(data.research ?? {}))]);
+  const out = [];
+  for (const [where, text] of spokenFields(script)) {
+    for (const n of digitsIn(text)) if (!known.has(n)) out.push(`${where}: the number ${n} is not in the notes${data.research ? " or the research" : ""}. Never add a claim they do not make: remove it`);
+  }
+  return out;
+}
+
 export function checkScript(script, data) {
   const problems = validate(script, loadSchema("script"));
   if (problems.length) return problems;
-  const issues = styleIssues(script);
+  const issues = [...styleIssues(script), ...notesIssues(script, data)];
   if (data.commentCalls) return [...issues, ...commentCallIssues(script, data.commentCalls)];
   if (data.cta && !script.own.cta) issues.push("own.cta is missing although the data has a CTA");
   if (!data.cta && (script.ownershipCta || script.own.cta)) issues.push("the data has no CTA, ownershipCta and own.cta must be null");
@@ -164,6 +192,7 @@ export function commentCallIssues(script, calls) {
 // passes; otherwise the repair call is told how many words to add or cut.
 const targetWords = (data) => Math.round((data.targetLengthMin || 8) * WORDS_PER_MINUTE);
 export function lengthIssues(script, data) {
+  if (data.notes) return [];
   const target = targetWords(data);
   const words = wordCount(script);
   if (words < target * 0.85) return [`the script has ${words} spoken words, too short for ${data.targetLengthMin} minutes: write about ${target} words (at least ${Math.round(target * 0.85)}), with more substance in the TEACH sections, not padding`];

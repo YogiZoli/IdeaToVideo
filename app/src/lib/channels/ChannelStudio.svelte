@@ -1,9 +1,11 @@
 <script lang="ts">
-  // The start screen (docs/BUILD_PLAN.md, phase 1). Pick a channel; its locked
-  // recipe says how; idea or script in, video out. A new video opens with its
-  // run already going (ProjectView recipeRun) and stops at the existing Preview
-  // step: approve, render, Publishing Card, Thumbnail, publishing app. The week
-  // batch writes seven scripts for the channel and queues them.
+  // The start screen (docs/BUILD_PLAN.md, phases 1 and 3). Pick a channel; its locked
+  // recipe says how. Three choices, each starting from the recipe: the direction,
+  // the text (empty for a topic, else a finished script or notes), and research. A
+  // new video opens with its run already going (ProjectView recipeRun) and stops at
+  // the brief, if there is one, then at the existing Preview step: approve, render,
+  // Publishing Card, Thumbnail, publishing app. The week batch works with the same
+  // choices, and queues what it writes.
   import { onDestroy } from "svelte";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import { open as pickFile } from "@tauri-apps/plugin-dialog";
@@ -17,7 +19,7 @@
   import { llmFor } from "../llm";
   import { setScreen, log } from "../logger";
   import { fullPlanText } from "../edition";
-  import { blocker, costLine, recipeLines, type ChannelState, type Recipe } from "./channels";
+  import { blocker, costLine, recipeLines, recipeSide, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
 
   let { app, choose, saved, openProject, goto }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void } = $props();
 
@@ -26,14 +28,20 @@
   let st = $state<ChannelState | null>(null);
   let error = $state("");
   let editing = $state(false);
-  let mode = $state<"idea" | "script">("idea");
+  let direction = $state<Direction>("script");
+  let topic = $state("");
   let text = $state("");
+  let kind = $state<TextKind>("notes");
+  let research = $state(false);
   let starting = $state(false);
 
   const config = $derived(app.config!);
   const aiProvider = $derived(llmFor(config, "script").provider);
   const language = $derived(config.channel.contentLanguage ?? "en");
-  const stop = $derived(st ? blocker(st.recipe, app.keys, aiProvider, mode) : null);
+  const side = $derived(st ? recipeSide(st.recipe, direction) : null);
+  const hasText = $derived(!!text.trim());
+  const mode = $derived<"idea" | "script" | "notes">(!hasText ? "idea" : kind === "finished" ? "script" : "notes");
+  const stop = $derived(side ? blocker(side, app.keys, aiProvider, mode, research) : null);
   const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
 
   async function load() {
@@ -41,6 +49,10 @@
     try {
       st = await runner<ChannelState>("channel-state", { projectsDir: app.projectsDir, identity: app.identity });
       editing = !st.saved;
+      // the recipe's defaults; one video can change them here
+      direction = st.recipe.engine;
+      kind = st.recipe.start?.text ?? "notes";
+      research = st.recipe.start?.research === true;
     } catch (e) {
       error = errorText(e);
     }
@@ -63,13 +75,14 @@
   }
 
   async function makeVideo() {
-    if (!st || !text.trim() || starting) return;
+    if (!st || (!topic.trim() && !hasText) || starting) return;
     starting = true;
     error = "";
     try {
-      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, text, mode });
+      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research });
       await runner("autopilot-mark", { projectDir: r.dir, on: true });
-      log("channel_video", { mode, preset: st.recipe.preset });
+      log("channel_video", { mode, research, preset: side?.preset });
+      topic = "";
       text = "";
       openProject(r.dir);
     } catch (e) {
@@ -82,8 +95,8 @@
   // ---- a recording: its files in, the edited video out -------------------------------
   let files = $state<Record<string, string>>({});
   let recTitle = $state("");
-  const card = $derived(st?.presets.find((p) => p.id === st?.recipe.preset));
-  const missing = $derived(st?.recipe.engine === "recorded" ? filesMissing(st.recipe.preset, files) : null);
+  const card = $derived(st?.presets.find((p) => p.id === side?.preset));
+  const missing = $derived(direction === "recorded" && side ? filesMissing(side.preset, files) : null);
   const VIDEO = [{ name: "Video", extensions: ["mp4", "mov", "m4v", "mkv", "webm", "avi"] }];
   async function pick(slot: string) {
     const f = await pickFile({ multiple: false, directory: false, filters: VIDEO });
@@ -97,7 +110,7 @@
     try {
       const r = await runner<{ id: string; dir: string }>("recorded-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, files, title: recTitle });
       await runner("autopilot-mark", { projectDir: r.dir, on: true });
-      log("recorded_video", { preset: st.recipe.preset, files: Object.keys(files) });
+      log("recorded_video", { preset: side?.preset, files: Object.keys(files) });
       files = {};
       recTitle = "";
       openProject(r.dir);
@@ -131,14 +144,15 @@
 
   // ---- week batch -------------------------------------------------------------------
   let theme = $state("");
+  let pasted = $state("");
   let batching = $state(false);
   let batchStep = $state("");
   let batchNote = $state("");
   const unlisten = onProgress((p) => {
-    if (p.command !== "week-batch") return;
+    if (p.command !== "week-batch" && p.command !== "week-batch-local") return;
     const s = p.progress as { step?: string; n?: number; of?: number; title?: string; message?: string };
     if (s.step === "ideas") batchStep = "The AI is planning the week...";
-    if (s.step === "batch-script") batchStep = `Script ${s.n} of ${s.of}: ${s.title}`;
+    if (s.step === "batch-script") batchStep = `${research ? "Research" : "Script"} ${s.n} of ${s.of}: ${s.title}`;
     if (s.step === "retry" && s.message) batchStep = s.message;
   });
   onDestroy(() => unlisten.then((f) => f()));
@@ -148,9 +162,12 @@
     batchNote = "";
     error = "";
     try {
-      const r = await runner<{ written: number; failed: number }>("week-batch", { projectsDir: app.projectsDir, identity: app.identity?.id, llm: llmFor(config, "script"), channel: config.channel, name: app.identity?.name, theme, language });
-      batchNote = `${r.written} scripts written and queued.${r.failed ? ` ${r.failed} failed: they are in the queue, open one to write it again.` : ""}`;
+      // a finished script needs no AI, and no key
+      const local = !!pasted.trim() && kind === "finished" && !research;
+      const r = await runner<{ written: number; failed: number }>(local ? "week-batch-local" : "week-batch", { projectsDir: app.projectsDir, identity: app.identity?.id, ...(local ? {} : { llm: llmFor(config, "script") }), channel: config.channel, name: app.identity?.name, theme, language, pasted, textKind: kind, research });
+      batchNote = `${r.written} ${research ? "briefs ready, each waits for your click," : local ? "scripts" : "scripts written and"} queued.${r.failed ? ` ${r.failed} failed: they are in the queue, open one to do it again.` : ""}`;
       theme = "";
+      pasted = "";
       st = await runner<ChannelState>("channel-state", { projectsDir: app.projectsDir, identity: app.identity });
     } catch (e) {
       error = errorText(e);
@@ -206,14 +223,24 @@
         <button type="button" class="ghost" onclick={() => (editing = true)}>Change</button>
       </div>
       <dl>
-        {#each recipeLines(st.recipe, st.presets, st.freeVoices) as l (l.label)}
+        {#each recipeLines(side ?? st.recipe, st.presets, st.freeVoices) as l (l.label)}
           <div><dt>{l.label}</dt><dd>{l.value}</dd></div>
         {/each}
       </dl>
-      <p class="hint">{costLine(st.recipe, aiProvider)}</p>
+      <p class="hint">{costLine(side ?? st.recipe, aiProvider)}</p>
     </section>
 
-    {#if st.recipe.engine === "recorded"}
+    <section class="card direction">
+      <div class="tabs" role="radiogroup" aria-label="Direction">
+        <button type="button" role="radio" class:on={direction === "script"} aria-checked={direction === "script"} onclick={() => (direction = "script")}>Script to video</button>
+        <button type="button" role="radio" class:on={direction === "recorded"} aria-checked={direction === "recorded"} onclick={() => (direction = "recorded")}>Edit a recording</button>
+      </div>
+      {#if !side}
+        <p class="stop">This channel has no voice for a script video yet. <button type="button" class="link" onclick={() => (editing = true)}>Change its recipe</button>, choose Script to video, and lock it once.</p>
+      {/if}
+    </section>
+
+    {#if direction === "recorded"}
       <section class="card make">
         <h2>Your recording</h2>
         <p class="hint">Words, cuts and render all happen on this computer. Your files are read, never changed.</p>
@@ -232,42 +259,51 @@
           <button type="button" class="primary big" disabled={starting || !!missing} onclick={makeRecorded}>{starting ? "Starting..." : "Edit the recording"}</button>
         </div>
       </section>
-    {:else}
+    {:else if side}
     <section class="card make">
-      <div class="tabs" role="tablist">
-        <button type="button" role="tab" class:on={mode === "idea"} aria-selected={mode === "idea"} onclick={() => (mode = "idea")}>My idea</button>
-        <button type="button" role="tab" class:on={mode === "script"} aria-selected={mode === "script"} onclick={() => (mode = "script")}>My script</button>
-      </div>
-      {#if mode === "idea"}
-        <textarea rows="3" bind:value={text} aria-label="The idea" placeholder="What is the video about? One sentence is enough."></textarea>
-      {:else}
-        <textarea rows="10" bind:value={text} aria-label="The script" placeholder="Paste the whole script. A first line starting with # is its title; lines starting with ## are its parts."></textarea>
+      <label class="field" for="stopic">Topic or idea</label>
+      <input id="stopic" bind:value={topic} placeholder={hasText ? "Optional: the title, or leave it to the AI" : "What is the video about? One sentence is enough."} />
+      <label class="field" for="stext">Text <span class="hint">(optional)</span></label>
+      <textarea id="stext" rows={hasText ? 10 : 3} bind:value={text} placeholder="Leave empty to give only the topic. Or paste a finished script, or your notes, for example a cleaned transcript from your phone."></textarea>
+      {#if hasText}
+        <div class="opts" role="radiogroup" aria-label="What this text is">
+          <label><input type="radio" name="kind" checked={kind === "finished"} onchange={() => (kind = "finished")} /> Finished script, use as is</label>
+          <label><input type="radio" name="kind" checked={kind === "notes"} onchange={() => (kind = "notes")} /> Notes, turn into a script</label>
+        </div>
+        <p class="hint">{kind === "finished" ? "A first line starting with # is its title; lines starting with ## are its parts." : `Keeps your ideas, opinions, stories and way of speaking, in this channel's script structure.${research ? " Only the research can add a fact." : " It never adds a claim you did not make."}`}</p>
       {/if}
+      <label class="research"><input type="checkbox" bind:checked={research} /> Research</label>
+      <p class="hint">
+        {#if !research}Off: nothing is searched.
+        {:else if kind === "finished" && hasText}Checks your script's claims and shows the sources. Your script stays exactly as it is.
+        {:else}{aiProvider === "gemini" ? "Gemini searches the web" : "This AI cannot search the web here, so the brief comes from its memory and says so"}: key facts, numbers, dates, 3 to 8 sources.{hasText ? " It checks your claims and adds what is missing." : ""} You see and can change the brief before the script.{/if}
+      </p>
       {#if stop}
         <p class="stop">{stop.text} {#if stop.connections}<button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>{/if}</p>
       {/if}
       <div class="actions">
         <span class="hint">It stops at the preview for your approval. Nothing is ever published by itself.</span>
-        <button type="button" class="primary big" disabled={starting || !text.trim() || !!stop} onclick={makeVideo}>{starting ? "Starting..." : "Make the video"}</button>
+        <button type="button" class="primary big" disabled={starting || (!topic.trim() && !hasText) || !!stop} onclick={makeVideo}>{starting ? "Starting..." : "Make the video"}</button>
       </div>
     </section>
     {/if}
 
-    {#if st.recipe.engine !== "recorded"}
+    {#if direction === "script" && side}
     <section class="card batch">
       <div class="head">
         <h2>Week batch</h2>
-        <button type="button" disabled={batching || !app.keys[aiProvider]} onclick={weekBatch}>{batching ? "Writing..." : `Write ${st.week} scripts`}</button>
+        <button type="button" disabled={batching || !(app.keys[aiProvider] || (pasted.trim() && kind === "finished" && !research))} onclick={weekBatch}>{batching ? "Working..." : pasted.trim() ? "Make them all" : `Write ${st.week} scripts`}</button>
       </div>
-      <p class="hint">{st.week} video ideas and their scripts for this channel, in one run, then queued here. No voice, no render, nothing published.{app.keys[aiProvider] ? "" : " Needs your AI key."}</p>
-      <input bind:value={theme} disabled={batching} aria-label="Theme of the week" placeholder="This week's theme (optional)" />
+      <p class="hint">{st.week} video ideas and their scripts for this channel, or one video per text you paste, in one run, then queued here. No voice, no render, nothing published. It follows your choices above: {pasted.trim() ? (kind === "finished" ? "finished scripts" : "notes") : "topics"}, research {research ? "on, so each stops at its brief for your click" : "off"}.{app.keys[aiProvider] ? "" : " Needs your AI key, except for finished scripts."}</p>
+      <input bind:value={theme} disabled={batching || !!pasted.trim()} aria-label="Theme of the week" placeholder="This week's theme (optional)" />
+      <textarea rows="3" bind:value={pasted} disabled={batching} aria-label="Pasted texts" placeholder="Or paste up to 7 texts here, with a line of --- between them."></textarea>
       {#if batchStep}<p class="busy" role="status">{batchStep}</p>{/if}
       {#if batchNote}<p class="good">{batchNote}</p>{/if}
       {#if st.queue.length}
         <ol class="queue">
           {#each st.queue as q (q.dir)}
             <li>
-              <span class="what"><b>{q.title}</b><span class="hint">{q.script === "failed" ? `The script failed: ${q.error ?? "no reason given"}` : q.status}</span></span>
+              <span class="what"><b>{q.title}</b><span class="hint">{q.script === "failed" ? `The script failed: ${q.error ?? "no reason given"}` : q.research === "pending" ? "The brief is ready: one click goes on" : q.research === "none" ? "Research not done" : q.status}</span></span>
               <button type="button" class="ghost" onclick={() => openProject(q.dir)}>Open</button>
               <button type="button" disabled={q.script === "failed"} onclick={() => makeQueued(q.dir)}>Make the video</button>
             </li>
@@ -300,6 +336,14 @@
   .tabs button { border: none; background: var(--muted); padding: 6px 14px; }
   .tabs button.on { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
   textarea, .batch input, .make > input { width: 100%; box-sizing: border-box; }
+  .batch textarea { margin-top: 8px; }
+  .make { display: grid; gap: 6px; }
+  .field { font-size: 14px; font-weight: 600; margin-top: 4px; }
+  .field .hint { font-weight: 400; }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+  .opts label, .research { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+  .research { font-weight: 600; margin-top: 6px; }
+  .direction .tabs { margin-bottom: 0; }
   .slots { display: grid; gap: 8px; margin: 10px 0; }
   .slot { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
   .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }

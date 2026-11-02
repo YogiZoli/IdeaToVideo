@@ -7,9 +7,10 @@
 //   a) a Public Domain or CC0 film: Prelinger Archives, NASA, Wikimedia Commons
 //   b) a CC0 or Public Domain still, moved in 2.5D on this computer (parallax.mjs)
 //   c) Pixabay video, then Pixabay images, logged as a free license, not CC0
-//   d) a paid AI clip through Kie AI, only for a hero moment, only on a channel
-//      that switched it on, only after a yes on the Preview tab, inside the
-//      channel's limits per video and per month
+//   d) a paid Kie AI picture moved in 2.5D here (generate/kie-image.mjs), then a paid
+//      Kie AI video: only for a hero moment, only on a channel that switched it on,
+//      only after a yes on the Preview tab, inside the channel's limits per video
+//      and per month
 //
 // The plan is the same broll/broll.json as the Scenes tab's panel, marked `auto`,
 // and clips reach the build the same way: the footage library and the scene
@@ -29,7 +30,7 @@ import * as pixabay from "../stock/pixabay.mjs";
 import { addStock, STOP } from "../stock/index.mjs";
 import { ffmpegRun, duration } from "../audio.mjs";
 import { dataDir } from "../tools.mjs";
-import { aspectOf, generatorOf, orderSeconds, usdFor, PAID_GENERATOR } from "../generate/index.mjs";
+import { aspectOf, generatorOf, orderSeconds, usdFor, PAID_GENERATOR, IMAGE_GENERATOR } from "../generate/index.mjs";
 import { promptRefusal } from "../generate/kie.mjs";
 import { parallaxClip, clipSeconds, moveFor, MOVES } from "./parallax.mjs";
 import { BROLL_SCHEMA, attach, brollDir, eligibleScenes, loadPlan, makeBroll, maxClips, planIssues, savePlan, stretchOf, voBytes } from "./index.mjs";
@@ -83,6 +84,18 @@ export function ruleClips(sentences, eligible, max) {
   return out;
 }
 
+/** A hero clip's picture description when no AI wrote one. Pure. */
+export const rulePrompt = (query) => `A clear view of ${String(query).toLowerCase()}, one continuous shot, one slow camera move, soft natural light, natural colours, nobody close to the camera, no text, no logos.`;
+
+// Hero moments are automatic (phase 3): when nobody marked one, the clips that name
+// the most become hero. Nothing is spent by this: free sources still come first.
+export function ruleHeroes(clips, maxHero) {
+  if (clips.some((c) => c.hero)) return clips;
+  const fits = (c) => !promptRefusal(c.prompt || rulePrompt(c.query));
+  const best = clips.filter(fits).sort((a, b) => wordsOf(b.query).length - wordsOf(a.query).length).slice(0, maxHero);
+  return clips.map((c) => (best.includes(c) ? { ...c, hero: true, prompt: c.prompt || rulePrompt(c.query) } : c));
+}
+
 // One clip of the AI's answer, checked on top of the panel's own checks.
 export function autoIssues(answer, opts) {
   const issues = planIssues(answer, { ...opts, library: [], maxSeconds: MAX_STRETCH_SECONDS, needsPrompt: (c) => c?.hero === true });
@@ -133,11 +146,16 @@ export async function planAuto({ llm = null, projectDir, language = "en", onProg
     }
     if (clips) plan.plannedBy = llm.provider;
   }
-  clips ??= ruleClips(sentences, eligible, max);
+  clips = ruleHeroes(clips ?? ruleClips(sentences, eligible, max), maxHero);
+  // a Google Flow clip is the user's own: a new plan keeps it, and goes around it
+  const ids = sentences.map((s) => s.id);
+  const own = before && !before.stale ? before.items.filter((i) => i.source === "flow" && i.use) : [];
+  clips = clips.filter((c) => !own.some((i) => ids.indexOf(i.from) <= ids.indexOf(c.to ?? c.from) && ids.indexOf(i.to ?? i.from) >= ids.indexOf(c.from)));
   plan.items = clips.map((c, n) => {
     const s = stretchOf(sentences, c.from, c.to ?? c.from);
     return { id: `b${n + 1}`, scene: Number(c.scene) - 1, from: c.from, to: c.to ?? c.from, said: s.said, start: s.start, seconds: s.seconds, order: clipSeconds(s.seconds), query: String(c.query).replace(/\s+/g, " ").trim().slice(0, 80), hero: c.hero === true, prompt: c.hero === true ? String(c.prompt).replace(/\s+/g, " ").trim() : "", library: null, use: true, state: "planned", attempt: 0, source: null };
   });
+  plan.items.push(...own);
   savePlan(projectDir, plan);
   return { plan: loadPlan(projectDir) };
 }
@@ -281,7 +299,7 @@ async function tryStill({ item, n, used, llm, projectDir, identityDir, tmp, fetc
       await parallaxClip({ image, out: path.join(dir, target), seconds: item.seconds, move, keepStill: path.join(projectDir, still), env, signal, onProgress });
       const label = LICENSE_SOURCES[hit.source]?.label ?? hit.source;
       const clip = await addClip({ identityDir, file: target, name: `Moving still: ${hit.title || label}`.slice(0, 80), description: `${hit.title || "A public domain picture"} (${label}), searched for: ${item.query}.`, source: hit.source, credit: creditOf({ ...hit, kind: "image" }, { derived: `2.5D camera move (${MOVES[move].label}), depth by Depth Anything V2 Small, on this computer` }), env });
-      return { clip, hit, checked: !!verdict, source: "still", still: still.split(path.sep).join("/") };
+      return { clip, hit, checked: !!verdict, source: "still", move, still: still.split(path.sep).join("/") };
     } catch (e) {
       if (signal?.aborted) throw e;
       // the next picture; a depth model or browser that cannot come down is the
@@ -295,7 +313,7 @@ async function tryStill({ item, n, used, llm, projectDir, identityDir, tmp, fetc
 }
 
 const done = (item, r, extra = {}) =>
-  Object.assign(item, { state: "done", source: r.source, clip: r.clip.id, usd: 0, error: null, checked: r.checked ?? false, license: LICENSES[r.hit?.license] ?? r.license ?? null, sourceUrl: r.hit?.sourceUrl ?? r.sourceUrl ?? null, author: r.hit?.author ?? r.author ?? null, title: r.hit?.title ?? null, ...(r.still ? { still: r.still } : {}), ...extra });
+  Object.assign(item, { state: "done", source: r.source, clip: r.clip.id, usd: 0, error: null, checked: r.checked ?? false, license: LICENSES[r.hit?.license] ?? r.license ?? null, sourceUrl: r.hit?.sourceUrl ?? r.sourceUrl ?? null, author: r.hit?.author ?? r.author ?? null, title: r.hit?.title ?? null, ...(r.still ? { still: r.still } : {}), ...(r.move ? { move: r.move } : {}), ...extra });
 
 const open = (plan) => plan.items.filter((i) => i.use && i.state === "planned" && !i.approved);
 
@@ -376,12 +394,18 @@ export function addSpend(identityDir, usd, info = {}, now = new Date()) {
 }
 
 const paidSettings = (settings) => ({ generator: settings.paid.model, quality: settings.paid.quality, capUsd: settings.paid.maxPerVideoUsd });
+const imageSettings = (settings) => ({ generator: IMAGE_GENERATOR, quality: "default", capUsd: settings.paid.maxPerVideoUsd });
 export const clipUsd = (settings) => usdFor(orderSeconds(5, settings.paid.model), paidSettings(settings));
+// The picture tier's price, the cheaper one a hero moment tries first.
+export const imageUsd = (settings) => usdFor(orderSeconds(5, IMAGE_GENERATOR), imageSettings(settings));
+export const tierOf = (item) => (item.paidTier === "video" ? "video" : "image");
+export const rowUsd = (item, settings) => (tierOf(item) === "video" ? clipUsd(settings) : imageUsd(settings));
 
-/** May this row have a paid clip? A sentence why not, or null. */
-export function paidBlock(item) {
+/** May this row have a paid clip of this tier? A sentence why not, or null. */
+export function paidBlock(item, tier = tierOf(item)) {
   if (!String(item.prompt ?? "").trim()) return "This row has no picture description for a paid clip.";
-  if (item.seconds > MAX_PAID_STRETCH_SECONDS) return `A paid clip is 5 seconds; this stretch is ${r2(item.seconds)} seconds.`;
+  if (tier === "video" && item.seconds > MAX_PAID_STRETCH_SECONDS) return `A paid video clip is 5 seconds; this stretch is ${r2(item.seconds)} seconds.`;
+  if (tier === "image" && item.seconds > MAX_STRETCH_SECONDS) return `A moved picture is at most ${MAX_STRETCH_SECONDS} seconds; this stretch is ${r2(item.seconds)} seconds.`;
   return promptRefusal(item.prompt);
 }
 
@@ -389,12 +413,12 @@ export function paidBlock(item) {
 export function budgetOf({ plan, settings, identityDir, now = new Date() }) {
   const each = clipUsd(settings);
   const wanted = (plan?.items ?? []).filter((i) => i.use && i.paidWanted && !(i.source === "ai" && i.state === "done"));
-  const totalUsd = r2(wanted.length * each);
+  const totalUsd = r2(wanted.reduce((t, i) => t + rowUsd(i, settings), 0));
   const spentVideoUsd = r2(plan?.spentUsd ?? 0);
   const spentMonthUsd = spentThisMonth(identityDir, now);
   const leftVideoUsd = r2(Math.max(0, settings.paid.maxPerVideoUsd - spentVideoUsd));
   const leftMonthUsd = r2(Math.max(0, settings.paid.maxPerMonthUsd - spentMonthUsd));
-  return { clipUsd: each, clips: wanted.length, totalUsd, spentVideoUsd, spentMonthUsd, leftVideoUsd, leftMonthUsd, maxPerVideoUsd: settings.paid.maxPerVideoUsd, maxPerMonthUsd: settings.paid.maxPerMonthUsd, over: totalUsd > Math.min(leftVideoUsd, leftMonthUsd) + 0.001 };
+  return { clipUsd: each, imageUsd: imageUsd(settings), clips: wanted.length, totalUsd, spentVideoUsd, spentMonthUsd, leftVideoUsd, leftMonthUsd, maxPerVideoUsd: settings.paid.maxPerVideoUsd, maxPerMonthUsd: settings.paid.maxPerMonthUsd, over: totalUsd > Math.min(leftVideoUsd, leftMonthUsd) + 0.001 };
 }
 
 /**
@@ -412,10 +436,12 @@ export function finishFind({ projectDir, identityDir, settings, now = new Date()
     item.overBudget = false;
   }
   if (settings.paid.on) {
-    const each = clipUsd(settings);
+    // the cheapest paid tier first: a picture moved in 2.5D here
+    const each = imageUsd(settings);
     const room = Math.min(settings.paid.maxPerVideoUsd - (plan.spentUsd ?? 0), settings.paid.maxPerMonthUsd - spentThisMonth(identityDir, now));
     let total = 0;
-    for (const item of plan.items.filter((i) => i.use && i.hero && i.state === "none" && !paidBlock(i))) {
+    for (const item of plan.items.filter((i) => i.use && i.hero && i.state === "none" && !paidBlock(i, "image"))) {
+      item.paidTier = "image";
       if (total + each > room + 0.001) {
         item.overBudget = true;
         continue;
@@ -432,10 +458,11 @@ export function finishFind({ projectDir, identityDir, settings, now = new Date()
 }
 
 /** The user's tick on one row: a paid clip here, or not. */
-export function setPaidWanted({ projectDir, id, on }) {
+export function setPaidWanted({ projectDir, id, on, tier = null }) {
   const plan = loadPlan(projectDir);
   const item = plan?.items.find((i) => i.id === id);
   if (!item) throw new Error("There is no such B-roll clip.");
+  if (tier === "image" || tier === "video") item.paidTier = tier;
   if (on) {
     const why = paidBlock(item);
     if (why) throw new Error(why);
@@ -450,7 +477,7 @@ export function reviewState({ projectDir, identityDir, settings, now = new Date(
   const plan = loadPlan(projectDir);
   const lib = identityDir ? loadLibrary(identityDir) : { clips: [] };
   const clips = Object.fromEntries((plan?.items ?? []).filter((i) => i.clip).map((i) => [i.id, lib.clips.find((c) => c.id === i.clip) ?? null]));
-  return { plan: plan?.auto ? plan : null, clips, footageDir: identityDir ? footageDir(identityDir) : null, paid: { ...settings.paid, label: generatorOf(settings.paid.model).label, ...budgetOf({ plan, settings, identityDir, now }) } };
+  return { plan: plan?.auto ? plan : null, clips, footageDir: identityDir ? footageDir(identityDir) : null, paid: { ...settings.paid, label: generatorOf(settings.paid.model).label, imageLabel: generatorOf(IMAGE_GENERATOR).label, ...budgetOf({ plan, settings, identityDir, now }) } };
 }
 
 // ---- 4. The yes -----------------------------------------------------------------------------
@@ -460,7 +487,7 @@ export function reviewState({ projectDir, identityDir, settings, now = new Date(
  * Preview tab showed. A different total, a limit, or the switch off stops it
  * before any order. A clip Kie AI cannot make leaves the row's free clip in place.
  */
-export async function approvePaid({ projectDir, identityDir, apiKey, settings, quotedUsd, fetchImpl = fetch, sleep, env = process.env, onProgress = () => {}, now = new Date() }) {
+export async function approvePaid({ projectDir, identityDir, apiKey, settings, quotedUsd, fetchImpl = fetch, sleep, parallax = null, env = process.env, onProgress = () => {}, now = new Date() }) {
   if (!settings.paid.on) throw new Error("Paid AI clips are off for this channel. Turn them on in its recipe first. Nothing was spent.");
   const plan = loadPlan(projectDir);
   if (!plan?.auto) throw new Error("There is no B-roll plan yet.");
@@ -476,7 +503,8 @@ export async function approvePaid({ projectDir, identityDir, apiKey, settings, q
     const why = paidBlock(item);
     if (why) throw new Error(`${why} Nothing was spent.`);
     item.fallback = item.clip ? { clip: item.clip, source: item.source, license: item.license ?? null, sourceUrl: item.sourceUrl ?? null, author: item.author ?? null, checked: item.checked ?? false } : null;
-    Object.assign(item, { source: "ai", approved: true, state: "planned", clip: null, order: orderSeconds(5, settings.paid.model), error: null });
+    const tier = tierOf(item);
+    Object.assign(item, { source: "ai", aiTier: tier, approved: true, state: "planned", clip: null, order: tier === "video" ? orderSeconds(5, settings.paid.model) : orderSeconds(item.seconds, IMAGE_GENERATOR), error: null });
   }
   savePlan(projectDir, plan);
   const project = path.basename(projectDir);
@@ -485,20 +513,41 @@ export async function approvePaid({ projectDir, identityDir, apiKey, settings, q
     if (usd < 0) refunded += -usd;
     addSpend(identityDir, usd, { ...info, project }, now);
   };
-  let result;
+  let result = { made: 0, fromLibrary: 0, failed: [], placed: 0, kept: 0 };
+  let gaveUp = null;
   try {
-    result = await makeBroll({ projectDir, identityDir, apiKey, settings: { ...settings, ...paidSettings(settings) }, ids, fetchImpl, ...(sleep ? { sleep } : {}), env, onProgress, onSpend });
+    // the cheap tier first; one tier Kie AI cannot make does not stop the other
+    for (const [tier, tierSettings] of [["image", imageSettings(settings)], ["video", paidSettings(settings)]]) {
+      const tierIds = rows.filter((i) => i.aiTier === tier).map((i) => i.id);
+      if (!tierIds.length) continue;
+      try {
+        const r = await makeBroll({ projectDir, identityDir, apiKey, settings: { ...settings, ...tierSettings }, ids: tierIds, fetchImpl, ...(sleep ? { sleep } : {}), ...(parallax ? { parallax } : {}), env, onProgress, onSpend });
+        result = { ...r, made: result.made + r.made, fromLibrary: result.fromLibrary + r.fromLibrary, failed: [...result.failed, ...r.failed], placed: r.placed, kept: result.kept + r.kept };
+      } catch (e) {
+        if (!/could not make the B-roll clip/i.test(String(e.message))) throw e;
+        gaveUp = e;
+        result = { ...result, failed: [...result.failed, ...tierIds.map((id) => ({ id, error: e.message }))] };
+      }
+    }
   } finally {
     // what was not ordered or failed goes back to what it was
     const after = loadPlan(projectDir);
     for (const item of after.items.filter((i) => ids.includes(i.id))) {
       if (item.state === "done") {
-        Object.assign(item, { paidWanted: false, usd: item.usd ?? 0, license: LICENSES["kie-terms"], sourceUrl: null, author: `AI: ${generatorOf(settings.paid.model).label}`, checked: false });
+        Object.assign(item, { paidWanted: false, usd: item.usd ?? 0, license: LICENSES["kie-terms"], sourceUrl: null, author: `AI: ${generatorOf(item.aiTier === "image" ? IMAGE_GENERATOR : settings.paid.model).label}`, checked: false });
         delete item.fallback;
       } else if (item.state === "failed" || item.state === "planned") {
         const f = item.fallback;
+        const tried = item.aiTier;
         Object.assign(item, f ? { ...f, state: "done", approved: false } : { source: null, state: "none", approved: false });
         delete item.fallback;
+        delete item.aiTier;
+        // a picture Kie AI could not make: the video tier is put forward, for a new yes
+        if (tried === "image" && item.state === "none") {
+          const video = !paidBlock(item, "video");
+          Object.assign(item, { paidTier: "video", paidWanted: video });
+          if (!video) item.paidWanted = false;
+        }
       }
     }
     if (refunded) after.spentUsd = r2(Math.max(0, (after.spentUsd ?? 0) - refunded));
@@ -507,6 +556,7 @@ export async function approvePaid({ projectDir, identityDir, apiKey, settings, q
   }
   const table = readJson(path.join(projectDir, "scenes.json"), null);
   if (table) logTableFootage({ projectDir, table, clips: loadLibrary(identityDir).clips });
+  if (gaveUp && !result.made) throw gaveUp;
   return { ...result, plan: loadPlan(projectDir) };
 }
 

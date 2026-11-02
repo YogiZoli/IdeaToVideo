@@ -91,6 +91,27 @@ the first person where it fits best (often the OPEN or the highest-value
 section), keep its facts exactly, and never add details it does not give.
 When the data has no ownAngle, ignore this.
 
+## Notes
+
+When the data has "notes", they are the creator's own notes or a cleaned transcript
+of them talking, and this video is theirs. Turn them into the script:
+
+- Keep their ideas, opinions, stories and way of speaking: first person, their own
+  phrases, their own examples. It must still sound like them.
+- Reorganize into OPEN, TEACH and OWN, and remove repetition and false starts.
+- Never add a claim, number, name, example or story the notes do not contain.
+  The only exception is the research below.
+
+When the data has no notes, ignore this.
+
+## Research
+
+When the data has "research", it is a brief checked by the creator. Every factual
+claim about the world in the script comes from it (facts, numbers, dates, missing).
+Under "corrections" are claims from the notes that are wrong: say them as the note
+corrects them, or leave them out. Never state a fact that is in neither the research
+nor the notes. When the data has no research, ignore this.
+
 ## Lesson outline
 
 When the data has "lessonOutline", this video is one lesson of a course, and

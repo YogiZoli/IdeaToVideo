@@ -42,16 +42,29 @@
   });
 
   // Engine and style belong together: a preset is one engine's.
+  // The other direction's choices are kept, so switching back finds them.
   function chooseEngine(e: "script" | "recorded") {
+    if (r.engine === e) return;
+    const directions = { ...(r.directions ?? {}) };
+    if (r.engine === "script") directions.script = { preset: r.preset, voice: r.voice, avatar: r.avatar, targetLengthMin: r.targetLengthMin };
+    else directions.recorded = { preset: r.preset, recorded: r.recorded ?? { cutout: false, smoothCursor: true } };
+    r.directions = directions;
     r.engine = e;
-    if (st.presets.find((p) => p.id === r.preset)?.engine !== e) r.preset = st.presets.find((p) => p.engine === e)?.id ?? r.preset;
     if (e === "recorded") {
-      r.recorded ??= { cutout: false, smoothCursor: true };
-    } else if (r.voice.provider === "recording") {
-      r.voice = { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" };
+      r.preset = directions.recorded?.preset ?? st.presets.find((p) => p.engine === e)?.id ?? r.preset;
+      r.recorded = directions.recorded?.recorded ?? { cutout: false, smoothCursor: true };
+    } else {
+      const side = directions.script;
+      r.preset = side?.preset ?? st.presets.find((p) => p.engine === e)?.id ?? r.preset;
+      r.voice = side?.voice ?? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" };
+      if (side) {
+        r.avatar = side.avatar;
+        r.targetLengthMin = side.targetLengthMin;
+      }
     }
     sheet = "";
   }
+  r.start ??= { text: "notes", research: false };
 
   function chooseKind(k: "kokoro" | "elevenlabs") {
     r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : { provider: "elevenlabs", voice: "" };
@@ -111,10 +124,11 @@
   <p class="hint">Asked once. After this, every video of the channel is made the same way.</p>
 
   <div class="row">
-    <span class="label">Engine</span>
+    <span class="label">Direction</span>
     <div class="opts">
-      <label><input type="radio" name="engine" checked={r.engine === "script"} onchange={() => chooseEngine("script")} /> Script: idea or script in, video out</label>
-      <label><input type="radio" name="engine" checked={r.engine === "recorded"} onchange={() => chooseEngine("recorded")} /> Recorded: your recording in, edited video out</label>
+      <label><input type="radio" name="engine" checked={r.engine === "script"} onchange={() => chooseEngine("script")} /> Script to video: topic, notes or script in, video out</label>
+      <label><input type="radio" name="engine" checked={r.engine === "recorded"} onchange={() => chooseEngine("recorded")} /> Edit a recording: your recording in, edited video out</label>
+      <p class="hint">What the start screen begins with. Each video can take the other one. Its choices below are kept separately.</p>
     </div>
   </div>
 
@@ -229,6 +243,18 @@
     <div class="inline"><input id="rlen" type="number" min="1" max="30" bind:value={r.targetLengthMin} /> minutes</div>
   </div>
   {/if}
+
+  <div class="row">
+    <span class="label">Start</span>
+    <div>
+      <div class="opts">
+        <label><input type="radio" name="stext" checked={r.start?.text !== "finished"} onchange={() => (r.start = { research: false, ...r.start, text: "notes" })} /> A pasted text is notes: turn it into a script</label>
+        <label><input type="radio" name="stext" checked={r.start?.text === "finished"} onchange={() => (r.start = { research: false, ...r.start, text: "finished" })} /> A pasted text is a finished script: use it as it is</label>
+      </div>
+      <label><input type="checkbox" checked={r.start?.research === true} onchange={(e) => (r.start = { text: "notes", ...r.start, research: e.currentTarget.checked })} /> Research on</label>
+      <p class="hint">What the start screen begins with. You can change both for one video there.</p>
+    </div>
+  </div>
 
   {#if error}<ErrorBox message={error} context={{ step: "recipe" }} />{/if}
   <div class="actions">

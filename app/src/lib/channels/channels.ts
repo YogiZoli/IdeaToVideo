@@ -12,9 +12,52 @@ export type Recipe = {
   recorded?: { cutout: boolean; smoothCursor: boolean };
   targetLengthMin: number;
   updatedAt?: string;
+  // what the start screen begins with, and the other direction's choices (phase 3)
+  start?: { text: TextKind; research: boolean };
+  directions?: {
+    script?: { preset: string; voice: Recipe["voice"]; avatar: Recipe["avatar"]; targetLengthMin: number } | null;
+    recorded?: { preset: string; recorded: { cutout: boolean; smoothCursor: boolean } } | null;
+  };
 };
+export type TextKind = "notes" | "finished";
+export type Direction = "script" | "recorded";
+
+// The research brief (runner/research) and the Shot map (runner/shots).
+export type BriefRow = { text: string; source: number | null };
+export type ResearchBrief = {
+  state: "pending" | "approved";
+  grounded: boolean;
+  queries?: string[];
+  warnings?: string[];
+  facts: BriefRow[];
+  numbers: BriefRow[];
+  dates: BriefRow[];
+  missing: BriefRow[];
+  claims: { claim: string; verdict: string; note: string; source: number | null }[];
+  sources: { title: string; url: string }[];
+};
+export type Shot = {
+  id: string;
+  n: number;
+  start: number;
+  seconds: number;
+  said: string;
+  kind: "graphic" | "broll";
+  block: string;
+  override: boolean;
+  call: boolean;
+  camera: string;
+  transition: string;
+  hero: boolean;
+  source: string | null;
+  license: string | null;
+  paid: { tier: string } | null;
+  entrances: { text: string; word: string | null; at: number | null; how: string }[];
+  flow: { on: boolean; prompt: string; seconds: number; clip: string | null; name: string | null; short: boolean } | null;
+};
+export type ShotMap = { shots: Shot[]; warning: string | null; summary: { shots: number; broll: number; hero: number; overrides: number; elements: number; onTheirWord: number; withBlock: number } | null };
 export type PresetCard = { id: string; label: string; description: string; engine: string; templates: { id: string; label: string }[]; shotRules: Record<string, string>; recorded?: { slots: { id: string; label: string; hint?: string; optional?: boolean }[]; broll?: boolean; cutout?: boolean; zoom?: boolean } };
-export type QueueItem = { dir: string; id: string; title: string; status: string; script: string; error: string | null; running: boolean; batch: string; position: number; of: number; angle?: string };
+export type QueueItem = { dir: string; id: string; title: string; status: string; script: string; error: string | null; running: boolean; batch: string; position: number; of: number; angle?: string; research?: string | null };
 export type FreeVoice = { id: string; name: string; gender: string | null };
 export type ChannelState = {
   recipe: Recipe;
@@ -31,6 +74,21 @@ export type ChannelState = {
 };
 
 const minutes = (n: number) => `${n} ${n === 1 ? "minute" : "minutes"}`;
+
+/**
+ * The recipe as one direction of this video sees it. The start screen's first
+ * choice can differ from the recipe's own engine; nothing is saved by it. Null:
+ * this channel has never had a voice for a script video.
+ */
+export function recipeSide(r: Recipe, direction: Direction): Recipe | null {
+  if (r.engine === direction) return r;
+  if (direction === "recorded") {
+    const side = r.directions?.recorded;
+    return { ...r, engine: "recorded", preset: side?.preset ?? "talking-head", recorded: side?.recorded ?? { cutout: false, smoothCursor: true }, voice: { provider: "recording", voice: "own" } };
+  }
+  const side = r.directions?.script;
+  return side ? { ...r, engine: "script", ...side } : null;
+}
 
 /** The locked recipe in the plain lines the start screen shows. */
 export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVoice[] = []): { label: string; value: string }[] {
@@ -72,9 +130,11 @@ export function costLine(r: Recipe, aiProvider: string): string {
 }
 
 /** Can this channel make a video right now, or the sentence why not. */
-export function blocker(r: Recipe, keys: Record<string, boolean>, aiProvider: string, mode: "idea" | "script"): { text: string; connections: boolean } | null {
+export function blocker(r: Recipe, keys: Record<string, boolean>, aiProvider: string, mode: "idea" | "script" | "notes", research = false): { text: string; connections: boolean } | null {
   if (r.engine === "recorded") return null;
   if (mode === "idea" && !keys[aiProvider]) return { text: "An idea needs your AI key, to write the script. Add it first, or paste your own script.", connections: true };
+  if (mode === "notes" && !keys[aiProvider]) return { text: "Notes need your AI key, to turn them into a script. Add it first, or mark the text as a finished script.", connections: true };
+  if (research && !keys[aiProvider]) return { text: "Research needs your AI key. Add it first, or turn research off.", connections: true };
   if (r.voice.provider === "elevenlabs" && !keys["elevenlabs"]) return { text: "This channel's voice needs your ElevenLabs key.", connections: true };
   if (r.avatar.on && !keys["heygen"]) return { text: "This channel's avatar needs your HeyGen key.", connections: true };
   return null;

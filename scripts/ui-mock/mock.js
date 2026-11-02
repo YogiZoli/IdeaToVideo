@@ -22,6 +22,18 @@ const project = { id: "p", title: "How to turn viewers into subscribers with one
 // ?run=1: a channel video whose run just started (ProjectView recipeRun)
 if (q.get("run")) Object.assign(project, { autopilotRun: { at: "2026-11-02T10:00:00Z" }, recipe: { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 } });
 let video = stage >= 6 ? { file: "/preview/motion.mp4", seconds: 128, renderSeconds: 417, chapters: "0:00 Intro\n0:35 The mistake", srt: "x.srt", publishFile: "x.publish.json", comments: "GUIDE", youtube: null } : null;
+// Direction, Research and Shot map: ?research=notes (or topic, finished) a channel video
+// with its brief waiting; ?shots=1 a channel video with its Shot map; ?noscriptvoice=1
+// a recording channel that never had a voice.
+if (q.get("research")) Object.assign(project, { start: { kind: q.get("research"), research: true }, recipe: { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, broll: { on: true }, targetLengthMin: 8 } });
+if (q.get("shots")) Object.assign(project, { start: { kind: "topic", research: false }, recipe: { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, broll: { on: true }, targetLengthMin: 8 } });
+const BRIEF = { state: "pending", grounded: true, queries: ["why are trains late", "train delays statistics"], warnings: [], facts: [{ text: "Most delays start with one late departure.", source: 1 }, { text: "A timetable has slack built in at the big stations.", source: 2 }], numbers: [{ text: "About 1 in 10 trains arrives over 5 minutes late.", source: 2 }], dates: [{ text: "Railway time came in during the 1840s.", source: 3 }], missing: [{ text: "Your notes leave out freight traffic on shared lines.", source: 1 }], claims: [{ claim: "Nobody owns the timetable.", verdict: "wrong", note: "A named office plans it each year.", source: 1 }, { claim: "Staff shortages cause most delays.", verdict: "unclear", note: "The sources disagree.", source: null }, { claim: "Trains used to run on time.", verdict: "right", note: "", source: 3 }], sources: [{ title: "Rail regulator: performance report", url: "https://example.org/report" }, { title: "How timetables are built", url: "https://example.org/timetables" }, { title: "A short history of railway time", url: "https://example.org/history" }] };
+const SHOTMAP = { warning: null, summary: { shots: 4, broll: 1, hero: 1, overrides: 1, elements: 7, onTheirWord: 5, withBlock: 2 }, shots: [
+  { id: "S1@0", n: 1, start: 0, seconds: 4.2, said: "Trains used to run on time.", kind: "graphic", block: "Big title", override: false, call: false, camera: "The channel's move", transition: "The channel's change", hero: false, source: null, license: null, paid: null, entrances: [], flow: null, entrances: [{ text: "Trains on time", word: "Trains", at: 0, how: "shot" }] },
+  { id: "S2@4.2", n: 2, start: 4.2, seconds: 3.6, said: "Then costs went up and most lines lost", kind: "graphic", block: "Rising words", override: false, call: false, camera: "The channel's move", transition: "The channel's change", hero: false, source: null, license: null, paid: null, entrances: [], flow: null,  },
+  { id: "S2@7.8", n: 3, start: 7.8, seconds: 2.4, said: "40 percent of their staff.", kind: "graphic", block: "Counting number", override: false, call: false, camera: "The channel's move", transition: "The channel's change", hero: false, source: null, license: null, paid: null, entrances: [], flow: null, camera: "Still", transition: "Cut, inside a sentence", override: true, entrances: [{ text: "40", word: "40", at: 7.8, how: "shot" }, { text: "of staff", word: "of", at: 9.1, how: "block" }] },
+  { id: "S3@10.2", n: 4, start: 10.2, seconds: 5, said: "An old steam engine crossed the valley at dawn.", kind: "broll", block: "Rising words", override: false, call: false, camera: "The channel's move", transition: "The channel's change", hero: false, source: null, license: null, paid: null, entrances: [], flow: null, hero: true, kind: "broll", source: "Free still, moved in 2.5D", license: "Public Domain", camera: "2.5D push-in", flow: { on: true, prompt: "A clear view of old steam engine crossed valley dawn, one continuous shot, one slow camera move, soft natural light, no text, no logos. 16:9, 5 seconds.", seconds: 5, clip: null, name: null, short: false } },
+] };
 const RECORDED = q.get("recorded");
 if (RECORDED) project.recipe = { engine: "recorded", preset: RECORDED, voice: { provider: "recording", voice: "own" }, avatar: { on: false, lookId: null }, music: { on: false, source: "synth", mood: "calm" }, broll: { on: true }, recorded: { cutout: true, smoothCursor: true }, targetLengthMin: 8 };
 const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.state !== "todo";
@@ -162,7 +174,7 @@ if (courseHere) project.series = SERIES;
 const coursePreview = async () => { const p = await (await fetch("/course-preview.json")).json(); return { ...p, lessons: p.lessons.map((l) => ({ ...l, exists: courseHere })), newCount: courseHere ? 0 : p.lessons.length, existingCount: courseHere ? p.lessons.length : 0 }; };
 const jobs = q.get("otherjob") ? [{ id: 1, command: "render-video", identity: "voxflow", identityName: "VoxFlow", project: "C:/P/VoxFlow/2026-10-01_first", state: "running" }] : [];
 const replies = {
-  "load-project": { project, brief: null, scriptMarkdown: "# T\n", latestVideo: null, stills: [], voiceInfo: null },
+  "load-project": { project, brief: null, scriptMarkdown: "# T\n", latestVideo: null, stills: [], voiceInfo: null, researchState: q.get("research") ? "pending" : null },
   "scene-table": { rows: [], gaps: [], warnings: [] },
   "list-voices": { voices: [{ id: "v1", name: "Zoltan BD", own: true, accent: null, gender: null, previewUrl: null }, { id: "v2", name: "Zoltan EN calm", own: true, accent: "hungarian", gender: "male", previewUrl: null }, ...["Adam", "Alice", "Bella", "Bill", "Brian", "Callum", "Charlie", "Charlotte", "Chris", "Daniel", "Emily", "Eric", "George", "Jessica", "Laura", "Liam", "Lily", "Matilda", "River", "Roger", "Sarah", "Will"].map((n, i) => ({ id: `s${i}`, name: n, own: false, accent: ["american", "british", "australian"][i % 3], gender: i % 2 ? "female" : "male", description: "narration", previewUrl: null }))] },
   "music-estimate": { usd: 0.2, prompt: "calm" },
@@ -185,6 +197,15 @@ const replies = {
     week: 7,
   },
   "recipe-save": { recipe: { engine: "script" } },
+  "research-state": { brief: BRIEF },
+  "research-save": { brief: BRIEF },
+  "research-approve": { brief: { ...BRIEF, state: "approved" } },
+  "research-make": { brief: BRIEF },
+  "shot-map-state": SHOTMAP,
+  "shot-map-make": SHOTMAP,
+  "shot-flow-set": SHOTMAP,
+  "shot-flow-clip": SHOTMAP,
+  "week-batch-local": { written: 7, failed: 0, videos: [] },
   "recorded-state": {
     input: { files: { camera: "C:/Videos/my take.mp4" }, voice: "camera", notes: [] },
     preset: RECORDED,

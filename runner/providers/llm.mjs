@@ -122,7 +122,7 @@ export async function chat(opts) {
         opts.onFallback?.(models[i]);
       }
       try {
-        return await chatOnce({ ...opts, model: models[i] });
+        return await (opts.once ?? chatOnce)({ ...opts, model: models[i] });
       } catch (e) {
         // only a busy model hands over; a rejected key or request does not
         if (!transient(e) || (i === 0 && round === 0 && opts.noFallback)) throw e;
@@ -210,6 +210,53 @@ async function chatOnce({ provider, apiKey, model, effort = null, messages, json
   }
   throw lastError;
 }
+
+// Web research (docs/BUILD_PLAN.md phase 3): only Gemini searches here, with
+// Google Search grounding on its own generateContent API. Same retries and model
+// hand-over as chat(). The answer is { text, chunks, supports, queries }; the
+// search tool and JSON mode are not asked for together, so the caller reads JSON
+// out of the text.
+export const canSearch = (provider) => provider === "gemini";
+
+async function searchOnce({ provider, apiKey, model, messages, temperature = 0.2, fetchImpl = fetch, sleep = defaultSleep, timeoutMs = 180000 }) {
+  const p = PROVIDERS[provider];
+  if (!canSearch(provider)) throw new LlmError(`${p?.label ?? provider} cannot search the web here.`);
+  if (!apiKey) throw new LlmError(`No API key set for ${p.label}. Add it in Settings.`);
+  const useModel = model || p.model;
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const contents = messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: String(m.content) }] }));
+  const body = { ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}), contents, tools: [{ google_search: {} }], generationConfig: { temperature } };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(useModel)}:generateContent`;
+  const attempts = 3;
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    let res;
+    try {
+      res = await fetchImpl(url, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
+    } catch (e) {
+      lastError = new LlmError(`Could not reach ${p.label}: ${redact(e.message, apiKey)}`, { retryable: true });
+      report({ step: "retry", provider, model: useModel, attempt: i + 1, of: attempts, status: "network" });
+      if (i < attempts - 1) await sleep(backoffMs(i));
+      continue;
+    }
+    if (res.ok) {
+      const c = (await res.json())?.candidates?.[0];
+      const text = (c?.content?.parts ?? []).map((x) => x.text ?? "").join("");
+      if (!text.trim()) throw new LlmError(`${p.label} returned an empty answer.`);
+      const g = c.groundingMetadata ?? {};
+      return { text, chunks: (g.groundingChunks ?? []).map((x) => x.web).filter((w) => w?.uri), supports: g.groundingSupports ?? [], queries: g.webSearchQueries ?? [] };
+    }
+    const said = redact(await res.text().catch(() => ""), apiKey);
+    const retryable = res.status === 429 || res.status >= 500;
+    lastError = new LlmError(friendlyError(p.label, res.status, said), { status: res.status, retryable });
+    report({ step: "retry", provider, model: useModel, attempt: i + 1, of: attempts, status: res.status });
+    if (!retryable) throw lastError;
+    if (i < attempts - 1) await sleep(retryAfterMs(res) ?? backoffMs(i));
+  }
+  throw lastError;
+}
+
+export const searchChat = (opts) => chat({ ...opts, once: searchOnce });
 
 // A tiny request that proves the key and the model work ("Test key").
 export async function testKey(opts) {

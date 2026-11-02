@@ -295,6 +295,22 @@
         }
       }
     },
+    "researchSources": {
+      "type": "object",
+      "description": "Optional. The research brief's sources and flagged claims, for the owner's own checking (docs/BUILD_PLAN.md phase 3). Never goes into the YouTube description. A receiver that does not know it ignores it.",
+      "required": ["grounded", "sources", "flags"],
+      "properties": {
+        "grounded": { "type": "boolean" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "object", "required": ["title", "url"], "properties": { "title": { "type": "string" }, "url": { "type": "string" } } }
+        },
+        "flags": {
+          "type": "array",
+          "items": { "type": "object", "required": ["claim", "verdict"], "properties": { "claim": { "type": "string" }, "verdict": { "type": "string" }, "note": { "type": "string" } } }
+        }
+      }
+    },
     "thumbnail": {
       "type": "object",
       "description": "Optional. The thumbnail chosen in IdeaToVideo's Thumbnail step (DECISIONS 131): a JPEG under 1 MB, inside the card as base64, so the card stays under the publishing app's 2 MB. A receiver that does not know it ignores it.",

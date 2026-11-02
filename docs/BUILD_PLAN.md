@@ -174,7 +174,9 @@ PDT export).
 
 ### Phase 3: Direction, Research and Shot map
 
-Status: todo
+Status: done (2026-11-02, DECISIONS 142 to 147). Not tried yet: a real AI on the brief and on notes
+(a stand-in answered, so Google Search grounding has not run against the real service), a real paid
+picture, a real Google Flow clip, drag and drop in the installed app (the button path is tested).
 
 **Start screen, three choices with per-channel defaults in the recipe:**
 
@@ -318,9 +320,16 @@ Other findings:
   alpha renders through the engine, so a preset can stack a picture behind a person.
 - A preset of the Recorded engine: `recorded` in its `preset.json` says which files it takes and
   what it adds; `recordedHtml` in `runner/recorded/compose.mjs` draws it.
-- Publishing Card sources (Phase 3 and Phase 7): `video-publishing-card/1` takes optional blocks.
+- Publishing Card sources (Phase 7 too): `researchSources` in `video-publishing-card/1`, filled from
+  `research.json` by `briefForCard` in `runner/research/index.mjs`.
+- Fact-checked scripts (Phase 7): a video with `start.research` on goes through the Research tab first.
+- A shot on its word for any script preset: `makeShotMap` in `runner/shots/index.mjs` works on any
+  preset's rule-fillable templates; rows carry `at`, `cut`, `camera`, and `sceneTimes` honours them.
+- A cheap paid picture moved in 2.5D: `kie-z-image-parallax` in `runner/generate/index.mjs`.
 
 ## Next step
 
-Phase 3: Direction, Research and Shot map. First, Zoltan tries one real recording on the
-installer, and his decisions on the table above if he has made them.
+Phase 4: Preset "3D Explainer". First, Zoltan tries Phase 3 on the installer: one topic with research
+on, one set of notes, one real recording; and his decisions on the table above if he has made them.
+New in that table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143) and the
+Z-Image picture size (DECISIONS 146).

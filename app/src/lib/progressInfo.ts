@@ -96,7 +96,7 @@ export function costText(command: string, provider?: string): string {
  * connection, or at a service that keeps working without the app. */
 export function workPlace(command: string): "local" | "online" | "service" {
   if (command === "make-avatar" || command === "segment-make" || command === "broll-make") return "service";
-  if (["broll-plan", "write-script", "make-scenes", "refill-scene", "visual-check", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks", "planner-research", "planner-plan", "planner-outline"].includes(command)) return "online";
+  if (["research-make", "broll-plan", "write-script", "make-scenes", "refill-scene", "visual-check", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks", "planner-research", "planner-plan", "planner-outline"].includes(command)) return "online";
   return "local";
 }
 

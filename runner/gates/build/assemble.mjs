@@ -204,14 +204,18 @@ export function sceneTimes(scenes, sentences, total) {
     if (from === undefined) errors.push(`${label}: there is no sentence ${sc.from}.`);
     else if (to === undefined) errors.push(`${label}: there is no sentence ${sc.to}.`);
     else if (to < from) errors.push(`${label}: ${sc.to} comes before ${sc.from}.`);
-    else if (from !== expect) errors.push(`${label} starts at ${sc.from}, but the next sentence is ${sentences[expect]?.id ?? "none (all are covered)"}.`);
+    // a shot (shots/index.mjs) may start inside the sentence the shot before it ends in
+    else if (from !== expect && !(Number.isFinite(sc.at) && from === expect - 1)) errors.push(`${label} starts at ${sc.from}, but the next sentence is ${sentences[expect]?.id ?? "none (all are covered)"}.`);
     if (to !== undefined) expect = to + 1;
     return { from, to };
   });
   if (!errors.length && expect !== sentences.length) errors.push(`The scenes end at ${sentences[expect - 1].id}; ${sentences[expect].id} and after have no scene.`);
   if (errors.length) throw new Error(errors.join(" "));
   const r3 = (x) => Math.round(x * 1000) / 1000;
-  const starts = spans.map((s, n) => (n === 0 ? 0 : sentences[s.from].start));
+  const starts = spans.map((s, n) => (n === 0 ? 0 : (Number.isFinite(scenes[n].at) ? scenes[n].at : sentences[s.from].start)));
+  starts.forEach((t, n) => {
+    if (n > 0 && t <= starts[n - 1]) throw new Error(`Scene ${n + 1} starts at ${t} s, before the scene ahead of it ends.`);
+  });
   return starts.map((start, n) => {
     const end = n + 1 < starts.length ? starts[n + 1] : total;
     return { start: r3(start), duration: r3(end - start) };
@@ -427,8 +431,9 @@ export function footagePlan(table, sentences, lib, project) {
     const a = ids.get(f.from);
     const b = ids.get(f.to ?? f.from);
     if (!clip || a === undefined || b === undefined) continue;
-    const start = sentences[a].start;
-    const end = Math.min(sentences[b + 1]?.start ?? Infinity, sentences[b].end + 0.6);
+    // at, until: a clip made for one shot, which can start and end inside a sentence
+    const start = Number.isFinite(f.at) ? f.at : sentences[a].start;
+    const end = Number.isFinite(f.until) ? f.until : Math.min(sentences[b + 1]?.start ?? Infinity, sentences[b].end + 0.6);
     const seconds = Math.round((end - start) * 1000) / 1000;
     const piece = choosePiece(clip, seconds, { project });
     out.push({ clip: clip.id, src: path.join(lib.dir, clip.file), start, end, from: piece.start, to: piece.end, loop: piece.loop });
@@ -565,15 +570,19 @@ export const BASE_MOTION = Object.freeze({ transition: { mood: "premium", primar
 // The Motion profile's part of a build (motion/): scene changes, camera
 // wrappers, background pieces. `sectionStarts`: the scenes that open a new
 // script section (the topic changes of HyperFrames' narrative positions).
-export function motionPlan(profile, { times, theme, light, width, height, sectionStarts = new Set(), env = process.env }) {
+export function motionPlan(profile, { times, theme, light, width, height, sectionStarts = new Set(), scenes = [], env = process.env }) {
   const ids = times.map((_, n) => `scene-${n + 1}`);
   // Only cuts (the base motion): no transition registry is needed.
   const allCut = profile.transition?.primary === CUT && !profile.transition?.accent;
   const registry = allCut ? null : loadRegistry(libraryDir(env));
   const plan = allCut ? times.slice(1).map(() => ({ type: CUT })) : planTransitions(times, { transition: profile.transition, registry, sectionStarts });
+  // the Shot map's choices: a plain cut into a shot inside a sentence
+  scenes.forEach((sc, n) => {
+    if (n > 0 && sc?.cut && plan[n - 1]) plan[n - 1] = { type: CUT };
+  });
   const built = allCut ? { extend: times.map(() => 0), lines: [], shader: false } : transitionBuild(times, plan, { ids, registry, theme, width, height });
   const move = profile.camera?.move ?? "off";
-  const cameras = times.map((t, n) => (move === "off" ? null : `cam-${n + 1}`));
+  const cameras = times.map((t, n) => (move === "off" || scenes[n]?.camera === "off" ? null : `cam-${n + 1}`));
   const lines = [...built.lines];
   times.forEach((t, n) => {
     if (cameras[n]) lines.push(...cameraLines(move, { id: cameras[n], start: t.start, duration: t.duration + built.extend[n], index: n }));
@@ -591,7 +600,8 @@ export function sectionStartsOf(projectDir, scenes, sentences) {
   const starts = new Set();
   scenes.forEach((sc, n) => {
     const i = index.get(sc.from);
-    if (n > 0 && i > 0 && sections[i] !== sections[i - 1]) starts.add(n);
+    // a shot inside a sentence opens nothing, whatever that sentence does
+    if (n > 0 && i > 0 && sections[i] !== sections[i - 1] && !sc.cut) starts.add(n);
   });
   return starts;
 }
@@ -656,6 +666,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
         width,
         height,
         sectionStarts: sectionStarts ?? sectionStartsOf(projectDir, scenes, sentences),
+        scenes,
         env,
       })
     : null;

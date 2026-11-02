@@ -11,11 +11,12 @@ Status: private pilot. See `STATUS.md` for where the work stands and
 ## How it works
 
 On start you pick a channel. Each channel has one locked recipe (engine, style
-preset, voice, avatar, music, length), then one screen: idea or script in, video
-out, stopping at the preview for approval. `docs/BUILD_PLAN.md` is the plan.
+preset, voice, avatar, music, length), then one screen: script to video or edit a
+recording; a topic, notes or a finished script; research on or off. It stops at
+the brief and at the preview for approval. `docs/BUILD_PLAN.md` is the plan.
 
 Every video goes through gates the user can approve or change:
-Script, Voice and music, Scenes, Avatar, Preview, Your video.
+Research (when on), Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video.
 "Finish on Autopilot" runs all of them with the recommended settings.
 
 - **Rendering** is done by the HyperFrames engine (pinned in `engine/`).

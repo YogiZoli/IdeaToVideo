@@ -4,6 +4,11 @@
 // on or off, B-roll on or off, target length. Every video of the channel is made with it; the
 // start screen shows it and asks nothing else. Each video keeps a copy in its
 // project.json, so changing the recipe later never changes a video under way.
+//
+// `start` is what the start screen begins with (docs/BUILD_PLAN.md phase 3): how a
+// pasted text is marked, and research on or off; the engine is the direction it
+// begins with. `directions` keeps the other direction's choices, so a channel can
+// make either kind of video without its recipe being asked again.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -30,6 +35,10 @@ export const ownMusic = (identityDir) => {
 };
 
 /** The recipe of a channel that has none yet, from what its Identity already says. */
+export const START_TEXT = ["notes", "finished"];
+export const cleanStart = (s) => ({ text: START_TEXT.includes(s?.text) ? s.text : "notes", research: s?.research === true });
+const recordedSide = (r) => ({ preset: r?.preset ?? DEFAULT_RECORDED_PRESET, recorded: { cutout: r?.recorded?.cutout === true, smoothCursor: r?.recorded?.smoothCursor !== false } });
+
 export function defaultRecipe(identity = {}) {
   const voice = identity.narrator?.provider === "elevenlabs" && identity.narrator?.voice ? { provider: "elevenlabs", voice: identity.narrator.voice } : { provider: "kokoro", voice: DEFAULT_VOICE };
   return {
@@ -41,6 +50,7 @@ export function defaultRecipe(identity = {}) {
     music: { on: true, source: "synth", mood: DEFAULT_MOOD },
     broll: { on: true },
     targetLengthMin: Number(identity.defaults?.targetLengthMin) || 8,
+    start: cleanStart(),
   };
 }
 
@@ -63,6 +73,8 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
       broll: { on: r.broll?.on === true },
       recorded: { cutout: r.recorded?.cutout === true, smoothCursor: r.recorded?.smoothCursor !== false },
       targetLengthMin: Number(r.targetLengthMin) > 0 ? Number(r.targetLengthMin) : 8,
+      start: cleanStart(r.start),
+      directions: { script: scriptSideOf(r), recorded: recordedSide({ preset: preset.id, recorded: r.recorded }) },
     };
   }
   const provider = r.voice?.provider;
@@ -87,7 +99,34 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
     // a recipe locked before the B-roll engine keeps what it had: no B-roll
     broll: { on: r.broll?.on === true },
     targetLengthMin: target,
+    start: cleanStart(r.start),
+    directions: { script: { preset: preset.id, voice: { provider, voice, ...(r.voice.name ? { name: String(r.voice.name).slice(0, 120) } : {}) }, avatar: { on, lookId, ...(r.avatar?.name ? { name: String(r.avatar.name).slice(0, 120) } : {}) }, targetLengthMin: target }, recorded: recordedSide(r.directions?.recorded) },
   };
+}
+
+// The script side of a recipe locked as Recorded: what it says itself when the
+// editor just switched over, else what it kept. Null: never set.
+function scriptSideOf(r) {
+  if (r.voice?.provider && r.voice.provider !== "recording" && r.voice.voice) return { preset: r.directions?.script?.preset ?? DEFAULT_PRESET, voice: r.voice, avatar: { on: Boolean(r.avatar?.on), lookId: r.avatar?.lookId ?? null, ...(r.avatar?.name ? { name: r.avatar.name } : {}) }, targetLengthMin: Number(r.targetLengthMin) > 0 ? Number(r.targetLengthMin) : 8 };
+  return r.directions?.script ?? null;
+}
+
+/**
+ * The channel's recipe for one direction of this video. The start screen's first
+ * choice can differ from the recipe's own engine; nothing is saved by it.
+ */
+export function recipeFor(recipe, direction, { language } = {}) {
+  const r = recipe ?? defaultRecipe({});
+  if (direction !== "script" && direction !== "recorded") throw new Error("Choose Script to video or Edit a recording.");
+  if (r.engine === direction) return normalizeRecipe(r, { language });
+  if (direction === "recorded") {
+    const side = recordedSide(r.directions?.recorded);
+    const scriptSide = scriptSideOf(r);
+    return normalizeRecipe({ ...r, engine: "recorded", preset: side.preset, recorded: side.recorded, voice: { provider: "recording", voice: "own" }, directions: { ...r.directions, script: scriptSide } }, { language });
+  }
+  const side = r.directions?.script;
+  if (!side) throw new Error("This channel has no voice for a script video yet. Press Change on its recipe, choose Script to video, and lock it once.");
+  return normalizeRecipe({ ...r, engine: "script", ...side, directions: { ...r.directions, recorded: recordedSide({ preset: r.preset, recorded: r.recorded }) } }, { language });
 }
 
 const fileOf = (identityDir) => path.join(identityDir, RECIPE_FILE);

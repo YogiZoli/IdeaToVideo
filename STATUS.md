@@ -1,10 +1,50 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-02 (housekeeping, after the Recorded engine, DECISIONS 138 to 141)
+Frissítve: 2026-11-02 (Direction, Research and Shot map, DECISIONS 142 to 147)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-02, Direction, Research and Shot map, DECISIONS 142 to 147)
+
+**Phase 3 of `docs/BUILD_PLAN.md` is done. Phase 4, 3D Explainer, is next.**
+
+- **Start screen:** Script to video or Edit a recording (either one from any channel); a topic, or
+  pasted text marked Finished or Notes; research on or off. The recipe holds the defaults.
+- **Notes:** your ideas and way of speaking kept, no word target, and any number not in the notes or
+  the approved brief goes back to the AI.
+- **Research:** Gemini with Google Search. A tab with the brief, editable, with claims flagged; one
+  click goes on. Sources go into the Publishing Card only. Another AI cannot search here, and its
+  brief says so. A finished script is only checked, never changed.
+- **Shot map:** a new stage and tab after the voice, no AI. Each shot starts on the word of its main
+  text, a long one is cut at a pause, and the tab shows graphic or B-roll, camera, change, hero. A block
+  you chose stays. Limit, also on the tab: a second line inside a block keeps the block's own animation.
+- **Hero moments:** automatic. Free sources, then a Kie AI picture (Z-Image, about 0.004 USD, shown as
+  0.01) moved in 2.5D here, then Kie AI video, which only ever goes out on a new yes.
+- **Google Flow slot:** per shot, off by default: prompt, copy, exact length, mp4 back.
+- **Week batch:** every mode. Pasted texts split on `---`, at most 7. With research on, each stops at
+  its brief (Claude's decision, can be overruled).
+- **Bug fixed from phase 1b:** the B-roll "source" link on the Preview tab could not open most
+  addresses. New command `open_source_link` opens only what the video itself recorded.
+- **One change from the plan's order:** the free B-roll search stays before the Preview; only money
+  waits for the approval. DECISIONS 145 says why.
+- Merged into `main` from branch `direction-research-shotmap`. No PR, no GitHub Actions run.
+- Tests: Node 524 of 527 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests
+  skipped), Rust 50, UI check 0 errors. `scripts/phase2/channel-e2e.mjs` 56/56 with the real free voice
+  and a real render; a shot was seen in the real video to change on its word. Stand-ins only for the AI.
+- Local installer built 2026-11-02 23:36 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (109 MiB). The installed
+  copy starts, its runner answers, and the new start screen took real clicks.
+
+**Not tried yet:** a real AI on the brief and on notes, so **Google Search grounding has not run against
+the real service**; a real paid picture and its look at 1080p; a real Google Flow clip; dropping an mp4
+in the installed app (the button path is tested). Screens seen in `scripts/ui-mock`
+(`?research=notes`, `?shots=1`), and in the installed app only as far as noted above.
+
+**Open for Zoltan:** Google's terms on showing Search Suggestions with grounded answers (DECISIONS 143).
+
+**Next:** Zoltan tries one topic with research, one set of notes and one recording. Then Phase 4.
 
 ## Housekeeping (2026-11-02, no new features)
 
@@ -19,9 +59,9 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **Not touched:** `~/.cache/hyperframes` (727 MB) and `~/.cache/huggingface` (141 MB), other tools
   may use them.
 
-## Now (2026-11-02, Recorded engine, DECISIONS 138 to 141)
+## Earlier (2026-11-02, Recorded engine, DECISIONS 138 to 141)
 
-**Phase 2 of `docs/BUILD_PLAN.md` is done. Phase 3, Direction, Research and Shot map, is next.**
+**Phase 2 of `docs/BUILD_PLAN.md` is done.**
 
 - **Where to find it:** a channel's recipe, Engine: Recorded. Four presets: Talking Head,
   Screen Recording, Screen Share, Profile Silhouette. The start screen then asks for the files.

@@ -237,7 +237,7 @@ export function estimateBroll({ projectDir, settings, ids = null }) {
   // an order placed already is paid: it costs nothing more
   const fresh = items.filter((i) => !pending[orderKey(projectDir, i, settings, plan.aspect)]);
   const seconds = fresh.reduce((t, i) => t + i.order, 0);
-  const usd = usdFor(seconds, settings);
+  const usd = g.usdPerClip !== undefined ? r2(fresh.length * usdFor(0, settings)) : usdFor(seconds, settings);
   const spent = plan.spentUsd ?? 0;
   return {
     generator: settings.generator,
@@ -329,7 +329,7 @@ export function attach(projectDir) {
       for (let k = a; k <= b; k++) if (calls.has(ids[k])) return false;
       return true;
     })
-    .map((i) => ({ from: i.from, ...(i.to !== i.from ? { to: i.to } : {}), clip: i.clip }));
+    .map((i) => ({ from: i.from, ...(i.to !== i.from ? { to: i.to } : {}), clip: i.clip, ...(Number.isFinite(i.at) ? { at: i.at } : {}), ...(Number.isFinite(i.until) ? { until: i.until } : {}) }));
   const hits = (f) => wanted.some((w) => {
     const [a, b] = span(w);
     const [c, d] = span(f);
@@ -356,7 +356,7 @@ const orderKey = (projectDir, item, settings, aspect) =>
 // order placed for an earlier plan (planned again while HeyGen worked, or a
 // new voice) is never lost. Such an order is picked up on the next run and
 // kept in the library, free, even when no row of the new plan wants it.
-export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids = null, allowOverCap = false, fetchImpl = fetch, sleep, env = process.env, onProgress = () => {}, onSpend = () => {} }) {
+export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids = null, allowOverCap = false, fetchImpl = fetch, sleep, parallax = null, env = process.env, onProgress = () => {}, onSpend = () => {} }) {
   const plan = loadPlan(projectDir);
   if (!plan) throw new Error("There is no B-roll plan yet. Click Make B-roll clips.");
   const g = generatorOf(settings.generator);
@@ -371,7 +371,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
   const bring = async (key, info, n, of, item = null) => {
     const gen = generatorOf(info.generator);
     const out = path.join(brollDir(projectDir), "clips", `${info.itemId}-${info.attempt ?? 0}.mp4`);
-    await gen.module.fetchClip({ apiKey, id: info.id, out, fetchImpl, ...(sleep ? { sleep } : {}), env, onStatus: (status) => onProgress({ step: "broll-clip", status, n, of, scene: (info.scene ?? 0) + 1, ...(info.reused ? { reused: true } : {}) }) });
+    await gen.module.fetchClip({ apiKey, id: info.id, out, seconds: info.seconds, n: info.scene ?? 0, fetchImpl, ...(sleep ? { sleep } : {}), ...(parallax ? { parallax } : {}), env, onStatus: (status) => onProgress({ step: "broll-clip", status, n, of, scene: (info.scene ?? 0) + 1, ...(info.reused ? { reused: true } : {}) }) });
     const incoming = incomingFootage(".mp4");
     fs.mkdirSync(footageDir(identityDir), { recursive: true });
     fs.copyFileSync(out, path.join(footageDir(identityDir), incoming));
@@ -381,7 +381,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
       name: `${gen.test ? "Test clip" : "AI clip"}: ${String(info.said ?? "").slice(0, 60)}`,
       description: String(info.prompt ?? "").slice(0, 400),
       source: "generated",
-      extra: { generated: { generator: info.generator, label: gen.label, ...(gen.modelName ? { model: gen.modelName } : {}), quality: info.quality, aspect: info.aspect, prompt: info.prompt, seconds: info.seconds, usd: info.usd ?? 0, videoId: info.id, project, ...(gen.test ? { test: true } : {}), at: new Date().toISOString() } },
+      extra: { generated: { generator: info.generator, label: gen.label, ...(gen.modelName ? { model: gen.modelName } : {}), ...(gen.derived ? { derived: gen.derived } : {}), quality: info.quality, aspect: info.aspect, prompt: info.prompt, seconds: info.seconds, usd: info.usd ?? 0, videoId: info.id, project, ...(gen.test ? { test: true } : {}), at: new Date().toISOString() } },
       env,
     });
     if (item) Object.assign(item, { state: "done", clip: clip.id, file: path.relative(projectDir, out).split(path.sep).join("/"), usd: info.usd ?? 0, error: null });
@@ -485,7 +485,7 @@ export async function makeBroll({ projectDir, identityDir, apiKey, settings, ids
 export function usesGenerated(projectDir, identityDir) {
   const table = readJson(path.join(projectDir, "scenes.json"), {});
   if (!table.footage?.length || !identityDir) return false;
-  const generated = new Set(loadLibrary(identityDir).clips.filter((c) => c.source === "generated").map((c) => c.id));
+  const generated = new Set(loadLibrary(identityDir).clips.filter((c) => c.source === "generated" || c.source === "flow").map((c) => c.id));
   return table.footage.some((f) => generated.has(f.clip));
 }
 

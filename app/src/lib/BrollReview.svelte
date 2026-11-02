@@ -4,12 +4,11 @@
   // paid clips are approved: which scenes, what each costs, the total against the
   // channel's limits. Nothing is spent until the button is pressed.
   import { convertFileSrc } from "@tauri-apps/api/core";
-  import { openUrl } from "@tauri-apps/plugin-opener";
   import { onMount } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import Progress from "./Progress.svelte";
   import type { AppState, BrollReviewState, BrollEngineItem } from "./api";
-  import { runner, errorText } from "./api";
+  import { runner, errorText, openSourceLink } from "./api";
   import { running } from "./work.svelte";
   import { llmFor } from "./llm";
   import { log } from "./logger";
@@ -50,7 +49,9 @@
     }
   });
 
-  const SOURCE: Record<string, string> = { archive: "Public domain film", still: "Free still, moved in 2.5D", pixabay: "Pixabay", ai: "AI clip" };
+  const SOURCE: Record<string, string> = { archive: "Public domain film", still: "Free still, moved in 2.5D", pixabay: "Pixabay", ai: "AI clip", flow: "Google Flow (Veo), own generation" };
+  const priceOf = (i: BrollEngineItem) => (i.paidTier === "video" ? paid!.clipUsd : paid!.imageUsd);
+  const sourceOf = (i: BrollEngineItem) => (i.source === "ai" && i.aiTier === "image" ? "AI picture, moved in 2.5D" : (SOURCE[i.source ?? ""] ?? i.source));
   const thumb = (i: BrollEngineItem) => {
     const c = st?.clips[i.id];
     return c?.stills?.[0] && st?.footageDir ? convertFileSrc(`${st.footageDir}/${c.stills[0]}`) : null;
@@ -76,7 +77,7 @@
       await load();
       await changed();
     });
-  const toggle = (i: BrollEngineItem, on: boolean) => act(async () => void (st = await runner<BrollReviewState>("broll-paid-toggle", { projectDir: dir, id: i.id, on })));
+  const toggle = (i: BrollEngineItem, on: boolean, tier: string = i.paidTier ?? "image") => act(async () => void (st = await runner<BrollReviewState>("broll-paid-toggle", { projectDir: dir, id: i.id, on, tier })));
   const remove = (i: BrollEngineItem) =>
     act(async () => {
       st = await runner<BrollReviewState>("broll-auto-remove", { projectDir: dir, id: i.id });
@@ -115,15 +116,19 @@
             <p class="said"><b>Scene {i.scene + 1}.</b> {i.said}</p>
             {#if i.state === "done"}
               <p class="meta">
-                {SOURCE[i.source ?? ""] ?? i.source}, {i.license ?? "license not recorded"}{i.author ? `, ${i.author}` : ""}, {(i.usd ?? 0) > 0 ? `${(i.usd ?? 0).toFixed(2)} USD` : "0 USD"}{i.source !== "ai" && !i.checked ? ", not looked at by the AI" : ""}
-                {#if i.sourceUrl}<button type="button" class="link" onclick={() => openUrl(i.sourceUrl!)}>source</button>{/if}
+                {sourceOf(i)}, {i.license ?? "license not recorded"}{i.author ? `, ${i.author}` : ""}, {(i.usd ?? 0) > 0 ? `${(i.usd ?? 0).toFixed(2)} USD` : "0 USD"}{i.source !== "ai" && !i.checked ? ", not looked at by the AI" : ""}
+                {#if i.sourceUrl}<button type="button" class="link" onclick={() => openSourceLink(dir, i.sourceUrl!).catch((e) => (error = errorText(e)))}>source</button>{/if}
               </p>
             {:else if i.state === "none"}
               <p class="meta">Nothing free fits "{i.query}", so the animated scene stays here.{i.overBudget ? " A paid clip would go over the channel's limit." : ""}</p>
             {/if}
             {#if paid?.on && i.hero && i.prompt && !(i.source === "ai" && i.state === "done")}
-              <label class="tick"><input type="checkbox" checked={!!i.paidWanted} disabled={off} onchange={(e) => toggle(i, e.currentTarget.checked)} /> Use a paid AI clip here, {paid.clipUsd.toFixed(2)} USD</label>
+              <label class="tick"><input type="checkbox" checked={!!i.paidWanted} disabled={off} onchange={(e) => toggle(i, e.currentTarget.checked)} /> Use a paid clip here, {priceOf(i).toFixed(2)} USD</label>
               {#if i.paidWanted}
+                <div class="tiers">
+                  <label><input type="radio" name="tier-{i.id}" checked={i.paidTier !== "video"} disabled={off} onchange={() => toggle(i, true, "image")} /> AI picture, moved in 2.5D here, {paid.imageUsd.toFixed(2)} USD</label>
+                  <label class:dim={i.seconds > 5}><input type="radio" name="tier-{i.id}" checked={i.paidTier === "video"} disabled={off || i.seconds > 5} onchange={() => toggle(i, true, "video")} /> AI video, {paid.clipUsd.toFixed(2)} USD{i.seconds > 5 ? " (a video clip is 5 seconds, this stretch is longer)" : ""}</label>
+                </div>
                 <textarea rows="3" aria-label="Picture description" value={i.prompt} disabled={off} onchange={(e) => savePrompt(i, e.currentTarget.value)}></textarea>
               {/if}
             {/if}
@@ -135,12 +140,13 @@
     {#if paid && wanted.length}
       <div class="approve">
         <h3>Waiting for your approval</h3>
-        <p>Scene{wanted.length === 1 ? "" : "s"} {wanted.map((i) => i.scene + 1).join(", ")} would use paid AI clips: {wanted.length} at {paid.clipUsd.toFixed(2)} USD = <b>{paid.totalUsd.toFixed(2)} USD</b>, with {paid.label} at {paid.quality}.</p>
+        <p>Scene{wanted.length === 1 ? "" : "s"} {wanted.map((i) => i.scene + 1).join(", ")} would use paid clips: {wanted.filter((i) => i.paidTier !== "video").length} moved picture{wanted.filter((i) => i.paidTier !== "video").length === 1 ? "" : "s"} at {paid.imageUsd.toFixed(2)} USD, {wanted.filter((i) => i.paidTier === "video").length} video{wanted.filter((i) => i.paidTier === "video").length === 1 ? "" : "s"} at {paid.clipUsd.toFixed(2)} USD = <b>{paid.totalUsd.toFixed(2)} USD</b>.</p>
+        <p class="hint">Pictures: {paid.imageLabel}. Videos: {paid.label} at {paid.quality}.</p>
         <p class="hint">This video: {paid.spentVideoUsd.toFixed(2)} of {paid.maxPerVideoUsd.toFixed(2)} USD spent. This month: {paid.spentMonthUsd.toFixed(2)} of {paid.maxPerMonthUsd.toFixed(2)} USD spent.{credits?.usd !== null && credits?.usd !== undefined ? ` Kie AI balance: about ${credits.usd.toFixed(2)} USD.` : ""}</p>
         {#if !hasKie}<p class="warn">Add your Kie AI key in Settings, Connections.</p>{/if}
         {#if paid.over}<p class="warn">That is over this channel's limit. Untick some, or raise the limits in its recipe.</p>{/if}
         <button type="button" class="primary" disabled={off || paid.over || !hasKie} onclick={approve}>Approve and spend {paid.totalUsd.toFixed(2)} USD</button>
-        <p class="hint">Nothing is spent until you press this. A clip Kie AI cannot make is not charged, and its free clip stays.</p>
+        <p class="hint">Nothing is spent until you press this. A clip Kie AI cannot make is not charged, and its free clip stays. When a picture fails, its row offers the video, for a new yes.</p>
       </div>
     {/if}
     <button type="button" class="ghost" disabled={off} onclick={() => find(true)}>Find B-roll again</button>
@@ -157,6 +163,9 @@
   .said { margin: 0; font-size: 14px; }
   .meta { margin: 4px 0 0; font-size: 13px; color: var(--muted-foreground); overflow-wrap: anywhere; }
   .tick { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 14px; }
+  .tiers { display: grid; gap: 4px; margin: 4px 0 0 24px; font-size: 13px; }
+  .tiers label { display: flex; gap: 6px; align-items: center; }
+  .dim { color: var(--muted-foreground); }
   textarea { width: 100%; margin-top: 6px; font-size: 13px; box-sizing: border-box; }
   .approve { margin: 12px 0; padding: 12px; border: 1px solid var(--primary); border-radius: 8px; }
   .approve h3 { margin: 0 0 6px; font-size: 15px; }

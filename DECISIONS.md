@@ -2460,3 +2460,76 @@
       two other stops checked were clean. The recipe has a switch. This is
       one of the two places where our code touches pixels (with the person masks).
       Both prepare footage for the composition; HyperFrames still makes every frame.
+
+142. **Direction, one recipe for both** (Zoltan, 2026-11-02, `docs/BUILD_PLAN.md` phase 3;
+    `runner/channels/recipe.mjs`, `start.mjs`). The start screen has three choices, each starting
+    from the recipe: the direction, the text (empty: a topic; else Finished or Notes), research.
+    - **`recipe.directions` keeps the other direction's choices,** so a script channel can edit a
+      recording without its recipe being asked again, and back. A recording channel that never had a
+      voice says so instead of guessing one. Nothing on the start screen is saved to the recipe.
+    - **Notes: nothing added.** The prompt keeps the user's ideas and way of speaking, and has no word
+      target, because a target would ask the AI to add what the notes do not say. Words are the AI's to
+      judge, but digits can be checked: any number not in the notes or the approved brief goes to the
+      repair call.
+    - **A finished script with research on is only checked.** Its words never change; the flags are
+      for the user to act on.
+
+143. **Research** (`runner/research/index.mjs`, `searchChat` in `providers/llm.mjs`). Gemini searches
+    through `google_search` on its own `generateContent` API, with the same retries and model hand-over
+    as every other call. Sources are what the search really used, never what the model says it read.
+    - **Another AI cannot search here:** its brief says it comes from memory, and a source it names stays
+      only if the address answers. Nothing pretends to be researched. Adding a search for the other
+      providers is possible later; each has its own price.
+    - **Gemini can answer without searching:** then the brief is marked the same way.
+    - **The run stops at the brief,** one click goes on, and the script gets an approved brief only.
+    - **Sources go in the card as `researchSources`, never in the description** (tested). The card
+      schema stays version 1: an optional block.
+    - **Open for Zoltan:** Google's grounding terms ask apps to show its Search Suggestions with grounded
+      answers. The tab lists the searches as links to Google, not Google's own widget, because the app's
+      content rules block outside markup. For one person's own tool this may be fine; it is not checked.
+    - **Links:** the opener only opens a fixed list of hosts, so a source could not open. The same held
+      for the B-roll "source" link on the Preview tab, which is a bug from phase 1b, fixed here. New Rust
+      command `open_source_link`: only an address found in this video's own files.
+
+144. **Week batch in every mode.** Pasted texts split on a `---` line, at most 7, one video each, without
+    the ideas call. **With research on, each video stops at its brief (Claude's decision, can be
+    overruled):** the plan says the brief comes before the script, so a batch with research gives 7 briefs
+    to approve, not 7 scripts. Finished scripts need no key (`week-batch-local`).
+
+145. **The Shot map** (`runner/shots/index.mjs`). A stage after the voice, no AI, no cost. It works on the
+    same `scenes.json` through three row fields, so preview, render and stills needed no other change:
+    `at` (the exact start of a word), `cut` (a plain cut inside a sentence), `camera: "off"` (too short
+    to move). `sceneTimes` honours `at`; it is the one place that says when a scene starts.
+    - **A row starts on the word of its main text.** The shot before holds until then; if that would be
+      too long, the words before get a shot of their own, filled by rule.
+    - **A long template row is cut** at a comma, a pause, a sentence start or a word that opens a clause.
+      Kokoro leaves no pauses, so punctuation and those words do most of it.
+    - **Overrides:** a row with no `template`, or changed by hand (`override`), stays that block.
+    - **Known limit, said on the tab:** "every element on its word" holds for a block's main element and
+      for lists that take cues. A second line inside one block keeps that block's own animation, because
+      a block's inner timeline is not ours to change generally. The tab counts both.
+    - **A result that fails the table's checks is thrown away** and the video goes on with its sentences.
+    - **Order, one change from the plan:** the plan puts "B-roll and assets" after the Preview's approval.
+      The free search still runs before the Preview, because the price it shows depends on which hero
+      moments found nothing free, and because the user must look at old film for faces. Only money waits
+      for the yes.
+
+146. **Hero moments and the picture tier** (`generate/kie-image.mjs`, `broll/engine.mjs`). Automatic: with
+    no hero marked, the clips that name the most become hero, with a rule's prompt. Cheapest first:
+    free sources, then one Kie AI picture moved in 2.5D here, then a Kie AI video.
+    - **Z-Image:** 0.8 credits, about 0.004 USD a picture (kie.ai/z-image, read 2026-11-02), takes 16:9,
+      PNG. Shown as 0.01 USD: estimates are whole cents, rounded up. Its pixel size is not published, so it
+      may look soft at 1080p: to check on the first real picture.
+    - **Video only on a new yes:** when a picture fails, its row offers the video and nothing is ordered.
+      The row can also be switched to video by hand. Never above the channel's limits.
+    - Kie AI's terms question (phase 1b) applies to pictures too.
+
+147. **The Google Flow slot.** Per shot, off by default: a ready prompt checked by the same prompt rule, a
+    copy button, the exact length, and the mp4 back by dropping it on the shot or with a button. It goes
+    into the footage library and the ledger as "Google Flow (Veo), own generation", with its prompt and
+    model, and counts as synthetic media for YouTube's question. It starts and ends on the shot's own
+    words (`at`, `until` on the footage row). A new B-roll plan keeps it and goes around it.
+
+    Tests: Node 524 of 527 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests
+    skipped), Rust 50, UI check 0 errors, channel e2e 56/56 with the real voice and render. No real AI
+    and no paid call were used while building: the brief and the notes were tested with stand-ins.

@@ -26,6 +26,7 @@ const LOCAL_HEAVY: &[&str] = &["build-video", "check-video", "visual-check", "re
 const KEY_JOBS: &[&str] = &[
     "suggest-channel",
     "write-script",
+    "research-make",
     "keyword-ideas",
     "make-voice",
     "make-music",
@@ -232,6 +233,7 @@ fn waiting_text(j: &Job) -> String {
         "build-video" | "check-video" | "visual-check" => "the video check",
         "avatar-layout" => "the avatar placement",
         "write-script" => "the script",
+        "research-make" => "the research",
         "make-voice" => "the narration",
         "make-music" => "the music",
         "make-scenes" | "refill-scene" => "the scene plan",

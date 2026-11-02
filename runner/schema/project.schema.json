@@ -32,6 +32,17 @@
       "type": "object",
       "$comment": "the channel's locked recipe when this video was started (channels/recipe.mjs, DECISIONS 132): changing the recipe later never changes a video under way"
     },
+    "start": {
+      "type": "object",
+      "$comment": "what this video started from (channels/start.mjs, docs/BUILD_PLAN.md phase 3): a topic, the user's notes (notes.txt) or a finished script; research on or off",
+      "required": ["kind", "research"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["topic", "notes", "finished"] },
+        "research": { "type": "boolean" },
+        "topic": { "type": "string", "maxLength": 300 }
+      }
+    },
     "queue": {
       "type": "object",
       "$comment": "this video's place in a Week batch (channels/batch.mjs, DECISIONS 136)",

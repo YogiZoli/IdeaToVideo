@@ -38,7 +38,7 @@ function project(items, { spentUsd = 0 } = {}) {
   savePlan(projectDir, { schema: "itv-broll/1", auto: true, voBytes: 5, aspect: "16:9", spentUsd, items, at: "x" });
   return { root, projectDir, identityDir };
 }
-const row = (id, over = {}) => ({ id, scene: 1, from: "S1", to: "S1", said: "Boats in a harbour.", start: 0, seconds: 4, order: 4, query: "harbour boats", hero: true, prompt: GOOD, library: null, use: true, state: "none", attempt: 0, source: null, ...over });
+const row = (id, over = {}) => ({ id, scene: 1, from: "S1", to: "S1", said: "Boats in a harbour.", start: 0, seconds: 4, order: 4, query: "harbour boats", hero: true, prompt: GOOD, library: null, use: true, state: "none", attempt: 0, source: null, paidTier: "video", ...over });
 
 test("the depth model is the Apache licensed Small size, pinned", () => {
   assert.equal(DEPTH_MODEL.license, "Apache-2.0");
@@ -288,12 +288,12 @@ test("nothing is put forward with the switch off, and a free clip always wins", 
 
 test("the limits decide how many are put forward", () => {
   const { root, projectDir, identityDir } = project(["b1", "b2", "b3"].map((id) => row(id)));
-  let plan = finishFind({ projectDir, identityDir, settings: paidOn({ maxPerVideoUsd: 0.25 }), now: NOW }).plan;
+  let plan = finishFind({ projectDir, identityDir, settings: paidOn({ maxPerVideoUsd: 0.02 }), now: NOW }).plan;
   assert.deepEqual(plan.items.map((i) => !!i.paidWanted), [true, true, false]);
   assert.equal(plan.items[2].overBudget, true);
-  addSpend(identityDir, 4.9, {}, NOW);
+  addSpend(identityDir, 5, {}, NOW);
   plan = finishFind({ projectDir, identityDir, settings: paidOn(), now: NOW }).plan;
-  assert.equal(plan.items.filter((i) => i.paidWanted).length, 0, "month: 0.10 USD left, a clip is 0.12");
+  assert.equal(plan.items.filter((i) => i.paidWanted).length, 0, "month: nothing left, a picture is 0.01");
   fs.rmSync(root, { recursive: true, force: true });
 });
 

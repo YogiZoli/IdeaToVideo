@@ -195,6 +195,7 @@ export const exportBrand = (path: string) => call<string>("export_brand", { path
 export const importFootage = (path: string) => call<string>("import_footage", { path });
 export const importSegment = (path: string) => call<string>("import_segment", { path });
 export const openPublishingLink = (url: string) => call<void>("open_publishing_link", { url });
+export const openSourceLink = (projectDir: string, url: string) => call<void>("open_source_link", { projectDir, url });
 export const exportCard = (file: string, path: string) => call<string>("export_card", { file, path });
 /** A rendered video (and its .srt) out of the project; never overwrites. */
 export const exportVideo = (file: string, path: string) => call<string>("export_video", { file, path });
@@ -290,12 +291,12 @@ export type PaidSettings = { on: boolean; model: string; quality: string; maxPer
 export type BrollSettings = { schema?: string; enabled: boolean; generator: string; quality: BrollQuality; capUsd: number; paid: PaidSettings };
 export type PaidChoice = { model: string; label: string; limits: { perVideo: { min: number; max: number; default: number }; perMonth: { min: number; max: number; default: number } }; qualities: { id: string; clipUsd: number; seconds: number }[] };
 // The B-roll engine (runner/broll/engine.mjs, docs/BUILD_PLAN.md phase 1b).
-export type BrollEngineItem = { id: string; scene: number; said: string; seconds: number; query: string; hero: boolean; prompt: string; use: boolean; state: "planned" | "done" | "none" | "failed" | "ordered"; source: string | null; clip?: string | null; usd?: number; license?: string | null; sourceUrl?: string | null; author?: string | null; checked?: boolean; paidWanted?: boolean; overBudget?: boolean };
+export type BrollEngineItem = { id: string; scene: number; said: string; seconds: number; query: string; hero: boolean; prompt: string; use: boolean; state: "planned" | "done" | "none" | "failed" | "ordered"; source: string | null; clip?: string | null; usd?: number; license?: string | null; sourceUrl?: string | null; author?: string | null; checked?: boolean; paidWanted?: boolean; overBudget?: boolean; paidTier?: "image" | "video"; aiTier?: "image" | "video" };
 export type BrollReviewState = {
   plan: { auto: true; finished?: boolean; stale: boolean; items: BrollEngineItem[] } | null;
   clips: Record<string, FootageClip | null>;
   footageDir: string | null;
-  paid: PaidSettings & { label: string; clipUsd: number; clips: number; totalUsd: number; spentVideoUsd: number; spentMonthUsd: number; leftVideoUsd: number; leftMonthUsd: number; over: boolean };
+  paid: PaidSettings & { label: string; imageLabel: string; imageUsd: number; clipUsd: number; clips: number; totalUsd: number; spentVideoUsd: number; spentMonthUsd: number; leftVideoUsd: number; leftMonthUsd: number; over: boolean };
 };
 export type BrollChoices = { generators: { id: string; label: string; test: boolean; usdPerSecond: Record<string, number> }[]; qualities: { id: BrollQuality; label: string; note: string }[] };
 export type BrollItem = { id: string; scene: number; from: string; to: string; said: string; start: number; seconds: number; order: number; prompt: string; library: string | null; use: boolean; state: "planned" | "ordered" | "done" | "failed"; attempt: number; clip?: string | null; file?: string; usd?: number; error?: string | null };

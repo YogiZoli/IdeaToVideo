@@ -3,9 +3,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { recipeLines, costLine, blocker, queueOpen } from "../../app/src/lib/channels/channels.ts";
+import { recipeLines, costLine, blocker, queueOpen, recipeSide } from "../../app/src/lib/channels/channels.ts";
 import { MENUS, SETTINGS_PAGES, visibleMenus } from "../../app/src/lib/pages.ts";
-import { TABS } from "../../app/src/lib/tabs.ts";
+import { TABS, scriptTabs, tabStates, firstOpen, nextAfter } from "../../app/src/lib/tabs.ts";
 import { phaseText } from "../../app/src/lib/progressInfo.ts";
 
 const free = { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 };
@@ -39,6 +39,36 @@ test("what stops a video is said, with where to fix it", () => {
   assert.equal(blocker(free, {}, "gemini", "script"), null);
   assert.match(blocker({ ...free, voice: { provider: "elevenlabs", voice: "x" } }, { gemini: true }, "gemini", "idea").text, /ElevenLabs/);
   assert.match(blocker({ ...free, avatar: { on: true, lookId: "x" } }, { gemini: true }, "gemini", "idea").text, /HeyGen/);
+});
+
+test("notes and research need the AI, a finished script alone does not", () => {
+  assert.match(blocker(free, {}, "gemini", "notes").text, /Notes need your AI key/);
+  assert.match(blocker(free, {}, "gemini", "script", true).text, /Research needs your AI key/);
+  assert.equal(blocker(free, { gemini: true }, "gemini", "notes", true), null);
+});
+
+test("one recipe, either direction", () => {
+  const side = recipeSide({ ...free, directions: { recorded: { preset: "screen-share", recorded: { cutout: false, smoothCursor: true } } } }, "recorded");
+  assert.deepEqual([side.engine, side.preset, side.voice.provider], ["recorded", "screen-share", "recording"]);
+  const rec = { ...free, engine: "recorded", preset: "talking-head", voice: { provider: "recording", voice: "own" } };
+  assert.equal(recipeSide(rec, "script"), null, "never had a voice");
+  const back = recipeSide({ ...rec, directions: { script: { preset: "motion-frames", voice: free.voice, avatar: free.avatar, targetLengthMin: 5 } } }, "script");
+  assert.deepEqual([back.engine, back.voice.provider, back.targetLengthMin], ["script", "kokoro", 5]);
+});
+
+test("a channel's video: the Shot map after the Scenes, the Research first when it is on", () => {
+  assert.deepEqual(scriptTabs(false).map((t) => t.label), ["Script", "Voice and music", "Scenes", "Shot map", "Avatar", "Preview", "Your video", "Thumbnail"]);
+  assert.deepEqual(scriptTabs(true).map((t) => t.id).slice(0, 2), ["research", "script"]);
+  assert.deepEqual(scriptTabs(true).map((t) => t.n), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const gates = { script: { state: "approved" }, voice: { state: "approved" }, scenes: { state: "todo" }, avatar: { state: "todo" }, review: { state: "todo" } };
+  const list = scriptTabs(true);
+  assert.equal(firstOpen(gates, false, false, list, false), "research", "the brief waits for its click");
+  assert.equal(firstOpen(gates, false, false, list, true), "scenes");
+  assert.equal(tabStates(gates, false, false, false, list, true).research, "done");
+  assert.equal(tabStates({ ...gates, scenes: { state: "approved" } }, false, false, false, list, true).shots, "done");
+  assert.equal(nextAfter("scenes", false, list), "shots");
+  assert.equal(nextAfter("shots", false, list), "preview");
+  assert.equal(TABS.length, 7, "an older video keeps its tabs");
 });
 
 test("the queue counts the videos ready to make", () => {

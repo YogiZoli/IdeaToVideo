@@ -9,7 +9,7 @@
 //             (DECISIONS 131) until one is picked: it never blocks the video
 //   failed    the last attempt failed
 
-export type TabId = "recording" | "script" | "voice" | "scenes" | "avatar" | "preview" | "video" | "thumbnail";
+export type TabId = "research" | "recording" | "script" | "voice" | "scenes" | "shots" | "avatar" | "preview" | "video" | "thumbnail";
 export type TabState = "done" | "now" | "next" | "optional" | "failed";
 type Gates = Record<string, { state: string } | undefined>;
 
@@ -31,9 +31,22 @@ export const RECORDED_TABS: typeof TABS = [
   { id: "thumbnail", n: 4, label: "Thumbnail", gate: null, commands: ["thumbnail-make", "thumbnail-words"] },
 ];
 
-function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false): boolean {
+// A channel's script video (docs/BUILD_PLAN.md phase 3): the Shot map after the
+// Scenes, the Research first when this video has it on. An older video keeps TABS.
+const RESEARCH_TAB: (typeof TABS)[number] = { id: "research", n: 0, label: "Research", gate: null, commands: ["research-make"] };
+const SHOTS_TAB: (typeof TABS)[number] = { id: "shots", n: 0, label: "Shot map", gate: "scenes", commands: ["shot-map-make", "shot-flow-clip"] };
+export function scriptTabs(research: boolean): typeof TABS {
+  const list = TABS.flatMap((t) => (t.id === "scenes" ? [t, SHOTS_TAB] : [t]));
+  return (research ? [RESEARCH_TAB, ...list] : list).map((t, i) => ({ ...t, n: i + 1 }));
+}
+
+function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false, researchApproved = false): boolean {
   const g = (k: string) => gates[k]?.state;
   switch (id) {
+    case "research":
+      return researchApproved;
+    case "shots":
+      return g("scenes") === "approved";
     case "recording":
       return g("scenes") === "approved";
     case "thumbnail":
@@ -50,20 +63,20 @@ function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false
 }
 
 /** The tab where the work is. The avatar counts only with a HeyGen key. */
-function nowTab(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS): TabId | null {
+function nowTab(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS, researchApproved = false): TabId | null {
   for (const t of list) {
     if ((t.id === "avatar" && !hasHeygen) || t.id === "thumbnail") continue;
-    if (!isDone(t.id, gates, hasVideo)) return t.id;
+    if (!isDone(t.id, gates, hasVideo, false, researchApproved)) return t.id;
   }
   return null;
 }
 
-export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, hasThumbnail = false, list = TABS): Record<TabId, TabState> {
-  const now = nowTab(gates, hasVideo, hasHeygen, list);
+export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, hasThumbnail = false, list = TABS, researchApproved = false): Record<TabId, TabState> {
+  const now = nowTab(gates, hasVideo, hasHeygen, list, researchApproved);
   const out = {} as Record<TabId, TabState>;
   for (const t of list) {
     const gate = t.gate ? gates[t.gate]?.state : undefined;
-    if (isDone(t.id, gates, hasVideo, hasThumbnail)) out[t.id] = "done";
+    if (isDone(t.id, gates, hasVideo, hasThumbnail, researchApproved)) out[t.id] = "done";
     else if (gate === "failed") out[t.id] = "failed";
     else if (t.id === now) out[t.id] = "now";
     else out[t.id] = t.id === "avatar" || t.id === "thumbnail" ? "optional" : "next";
@@ -72,8 +85,8 @@ export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, h
 }
 
 /** The tab a ONE Video opens on: the step at hand, else the finished video. */
-export function firstOpen(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS): TabId {
-  return nowTab(gates, hasVideo, hasHeygen, list) ?? "video";
+export function firstOpen(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS, researchApproved = false): TabId {
+  return nowTab(gates, hasVideo, hasHeygen, list, researchApproved) ?? "video";
 }
 
 /** The tab after an approved step. The avatar only with a HeyGen key. */
