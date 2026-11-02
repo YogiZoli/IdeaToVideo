@@ -21,7 +21,8 @@
   import { narratorProvider } from "./catalog";
   import { setScreen, log } from "./logger";
   import { work, running, track, measure, startWork, pilots } from "./work.svelte";
-  import { TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import { TABS, RECORDED_TABS, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import RecordingTab from "./channels/RecordingTab.svelte";
   import { avatarLooks } from "./avatars";
   import { llmFor, describeLlm } from "./llm";
   import { ask } from "@tauri-apps/plugin-dialog";
@@ -56,6 +57,9 @@
   const hasHeygen = $derived(!!app.keys["heygen"]);
   const look = $derived(app.config?.brand?.preset ?? "blue-professional");
 
+  const isRecorded = $derived(data?.project.recipe?.engine === "recorded");
+  const tabList = $derived(isRecorded ? RECORDED_TABS : TABS);
+
   function show(id: TabId, why = "click") {
     if (active !== id) log("tab", { tab: id, why });
     active = id;
@@ -75,7 +79,7 @@
       if (first) {
         setScreen(`video/${name}`);
         log("video_state", { video: name, status: next.project.status, gates: states, autopilot: !!next.project.autopilot, hasVideo: !!next.latestVideo });
-        active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen);
+        active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen, next.project.recipe?.engine === "recorded" ? RECORDED_TABS : TABS);
         // a render that failed or was cut off before this view opened
         if (next.project.render?.state === "failed" && !renderError) renderError = next.project.render.error ?? "The last render did not finish.";
         // the app works ahead, for free (K10 b): the avatar list and its
@@ -86,8 +90,8 @@
         if (next.project.autopilotRun && !pilots[dir]) resumePilot = true;
       } else if (before && !pilot) {
         const done = (g: string, s: Record<string, string>) => s[g] === "approved" || (g === "avatar" && s[g] === "skipped");
-        for (const t of TABS) {
-          if (t.gate && t.id === active && done(t.gate, states) && !done(t.gate, before)) show(nextAfter(t.id, hasHeygen), "approved");
+        for (const t of tabList) {
+          if (t.gate && t.id === active && done(t.gate, states) && !done(t.gate, before)) show(nextAfter(t.id, hasHeygen, tabList), "approved");
         }
       }
       before = states;
@@ -97,7 +101,7 @@
   }
   load();
 
-  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, !!data.thumbnailChosen) : null);
+  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, !!data.thumbnailChosen, tabList) : null);
   // the percent of the job running for a tab, for its label
   function tabJob(cmds: string[]) {
     const c = running(dir, cmds);
@@ -126,7 +130,8 @@
     if (resumePilot && data && !anyJob && !pilots[dir]) {
       resumePilot = false;
       if (data.project.recipe) {
-        recipeRun();
+        if (data.project.recipe.engine === "recorded") recordedRun();
+        else recipeRun();
         return;
       }
       pilotNote = "Autopilot was cut off (the window reloaded or the app was closed), so it goes on from where it stopped. Stop any step to end it.";
@@ -333,6 +338,96 @@
     }
   }
 
+  // A Recorded video (runner/recorded, docs/BUILD_PLAN.md phase 2): the words, the
+  // cuts, the plan and what the pictures need, with the commands of the Recording
+  // tab, up to the existing Preview step, which waits for the user. A cut-off run
+  // goes on from where it stopped; what is made is never made again.
+  async function recordedRun() {
+    if (!data?.project.recipe || pilots[dir]) return;
+    const recipe = data.project.recipe;
+    pilotError = "";
+    pilotNote = "";
+    const gates = () => data!.project.gates;
+    const approved = (g: string) => gates()[g]?.state === "approved";
+    const made = (g: string) => gates()[g]?.state === "pending";
+    const approveGate = async (gate: string) => {
+      if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
+      await load();
+    };
+    const hasKey = (l: { provider: string }) => !!app.keys[l.provider];
+    setPilot("Starting");
+    try {
+      await runner("autopilot-mark", { projectDir: dir, on: true });
+      show("recording", "recorded");
+      if (!approved("script")) {
+        if (!made("script")) {
+          setPilot("Listening to the recording");
+          await runner("recorded-transcribe", { projectDir: dir });
+          await load();
+        }
+        await approveGate("script");
+      }
+      if (!approved("voice")) {
+        if (!made("voice")) {
+          setPilot("Cutting the recording");
+          await runner("recorded-apply-cuts", { projectDir: dir });
+          if (recipe.music.on) {
+            setPilot("Adding the music");
+            await runner("make-music", { projectDir: dir, music: { provider: recipe.music.source, mood: recipe.music.mood } });
+          }
+          await load();
+        }
+        await approveGate("voice");
+      }
+      if (!approved("scenes")) {
+        if (!made("scenes")) {
+          setPilot("Planning what is on screen");
+          const ai = llmFor(app.config, "scenes");
+          if (hasKey(ai)) await runner("recorded-plan", { projectDir: dir, llm: ai });
+          else await runner("recorded-plan-rule", { projectDir: dir });
+          await load();
+        }
+        // what the pictures need: the cursor, the person. Slow, so it runs once per plan
+        setPilot("Preparing the pictures");
+        await runner("recorded-prepare", { projectDir: dir });
+        await approveGate("scenes");
+      }
+      if (hasKey(llmFor(app.config, "texts"))) {
+        const has = await runner<{ packaging: unknown }>("packaging-state", { projectDir: dir });
+        if (!has.packaging) {
+          setPilot("Writing the title and the summary");
+          await runner("packaging-make", { projectDir: dir, llm: llmFor(app.config, "texts") }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
+        }
+      }
+      const avatar = gates().avatar?.state;
+      if (avatar !== "approved" && avatar !== "skipped") {
+        await runner("skip-gate", { projectDir: dir, gate: "avatar" });
+        await load();
+      }
+      if (!approved("review") && !made("review")) {
+        if (recipe.broll?.on) {
+          await findBroll(dir, llmFor(app.config, "scenes"), app.keys, setPilot).catch((e) => {
+            log("broll_engine_failed", { error: errorText(e) }, "warn");
+            pilotNote = `The B-roll search stopped: ${errorText(e)}. You can start it again on the Preview tab.`;
+          });
+        }
+        setPilot("Building the preview");
+        show("preview", "recorded");
+        await runner("build-video", { projectDir: dir, look });
+        await load();
+      }
+      await runner("autopilot-mark", { projectDir: dir, on: false });
+      show(approved("review") ? "video" : "preview", "recorded");
+      notifyDone("Your preview is ready", data?.project.title ?? "");
+    } catch (e) {
+      pilotError = `The video stopped: ${errorText(e)}`;
+      await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
+      await load().catch(() => {});
+    } finally {
+      setPilot("");
+    }
+  }
+
   // The render belongs to the ONE Video, not to a tab: started from the
   // Preview ("Approve and render") or from Your video, it goes on whichever
   // tab is open, and its error waits on Your video.
@@ -348,7 +443,7 @@
     }
     await load();
   }
-  const anyJob = $derived(!!running(dir, TABS.flatMap((t) => t.commands)));
+  const anyJob = $derived(!!running(dir, tabList.flatMap((t) => t.commands)));
 </script>
 
 <div class="page">
@@ -356,7 +451,9 @@
     <button type="button" class="ghost" onclick={back}>Back to the list</button>
     <h1 title={data?.project.title}>{data?.project.title ?? ""}</h1>
     {#if data}
-      {#if data.project.recipe}
+      {#if isRecorded}
+        <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => recordedRun()} title="Every step from the recording to the preview.">{pilot ? `${pilot}...` : "Make the video"}</button>
+      {:else if data.project.recipe}
         <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => recipeRun()} title="Every step of this channel's recipe, up to the preview.">{pilot ? `${pilot}...` : "Make the video"}</button>
       {:else}
         <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
@@ -368,8 +465,8 @@
   {#if !data}
     <div class="body">{#if error}<ErrorBox message={error} context={{ step: "load-project" }} />{:else}<p class="hint">Loading...</p>{/if}</div>
   {:else}
-    <nav class="tabs" aria-label="Steps">
-      {#each TABS as t (t.id)}
+    <nav class="tabs" aria-label="Steps" style="grid-template-columns: repeat({tabList.length}, minmax(0, 1fr))">
+      {#each tabList as t (t.id)}
         {@const st = states?.[t.id] ?? "next"}
         {@const pct = tabJob(t.commands)}
         <button type="button" class="tab {st}" class:open={active === t.id} aria-current={active === t.id ? "step" : undefined} onclick={() => show(t.id)}>
@@ -386,7 +483,9 @@
     {/if}
 
     <div class="body" bind:this={body}>
-      {#if active === "script"}
+      {#if active === "recording"}
+        <RecordingTab {dir} busy={!!pilot || anyJob} changed={load} redo={() => recordedRun()} />
+      {:else if active === "script"}
         <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
@@ -395,7 +494,7 @@
       {:else if active === "avatar"}
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}
-        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} />
+        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} recorded={isRecorded} />
       {:else if active === "thumbnail"}
         <ThumbnailTab {app} {dir} hasVideo={!!data.latestVideo} changed={load} goto={show} {openPage} />
       {:else}

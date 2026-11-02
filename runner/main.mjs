@@ -58,6 +58,7 @@ import { cardFromTokens } from "./brand/tokens.mjs";
 import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gates/script/dictionary.mjs";
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
+import * as recorded from "./recorded/index.mjs";
 import { friendlyMessage } from "./friendly.mjs";
 import { planAuto, findFree, findPixabay, finishFind, setPaidWanted, reviewState as brollReview, approvePaid } from "./broll/engine.mjs";
 import { balance as kieBalance } from "./generate/kie.mjs";
@@ -1254,7 +1255,8 @@ const commands = {
     try {
       // a channel video: every outside picture has a clear license, and is logged
       if (project.recipe && identityDir) logTableFootage({ projectDir, table: JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8")), clips: loadLibrary(identityDir).clips ?? [] });
-      const r = await timed("build", jsonCount(projectDir, "scenes.json", "scenes"), emit, () => buildAndReview(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
+      const make = project.recipe?.engine === "recorded" ? recorded.buildRecorded : buildAndReview;
+      const r = await timed("build", jsonCount(projectDir, "scenes.json", "scenes"), emit, () => make(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
       appendLog(projectDir, `review: done, ${r.scenes} scenes, ${r.seconds}s`);
@@ -1423,6 +1425,21 @@ const commands = {
     });
   },
   "queue-list": async ({ projectsDir }) => ({ queue: listQueue(projectsDir) }),
+
+  // ---- The Recorded engine (recorded/, docs/BUILD_PLAN.md phase 2) ----
+  "recorded-video-new": async ({ projectsDir, identityDir, identity, language = "en", files, title = "" }) => {
+    const recipe = normalizeRecipe(loadRecipe(identityDir) ?? defaultRecipe({}), { language });
+    if (recipe.engine !== "recorded") throw new Error("This channel's recipe makes videos from a script. Change the recipe to Recorded first.");
+    return recorded.newRecordedVideo({ projectsDir, identity, language, recipe, files, title });
+  },
+  "recorded-state": async ({ projectDir }) => recorded.recordedState(projectDir),
+  "recorded-transcribe": async ({ projectDir }) => logged(projectDir, "recorded transcribe", () => recorded.recordTranscript({ projectDir, onProgress: (p) => emit({ event: "progress", ...p }) })),
+  "recorded-cut-set": async ({ projectDir, id, on, keepPauses }) => recorded.setCut({ projectDir, id, on, keepPauses }),
+  "recorded-apply-cuts": async ({ projectDir }) => logged(projectDir, "recorded cuts", () => recorded.applyCuts({ projectDir, onProgress: (p) => emit({ event: "progress", ...p }) })),
+  "recorded-plan": async ({ projectDir, llm }) => logged(projectDir, "recorded plan", () => recorded.planVideo({ projectDir, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, onProgress: (p) => emit({ event: "progress", ...p }) })),
+  "recorded-plan-rule": async ({ projectDir }) => logged(projectDir, "recorded plan", () => recorded.planVideo({ projectDir, llm: null, onProgress: (p) => emit({ event: "progress", ...p }) })),
+  "recorded-plan-save": async ({ projectDir, chapters, bigWords }) => ({ plan: recorded.savePlan({ projectDir, chapters, bigWords }) }),
+  "recorded-prepare": async ({ projectDir }) => logged(projectDir, "recorded pictures", () => recorded.preparePictures({ projectDir, onProgress: (p) => emit({ event: "progress", ...p }) })),
 
   // The free voice's model: on this computer yet, and fetching it (once).
   "voice-model-status": async () => ({ ready: Object.keys(MODEL_FILES).every((f) => fs.existsSync(path.join(modelDir(), f))), bytes: MODEL_BYTES }),

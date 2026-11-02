@@ -41,6 +41,18 @@
       .catch((e) => (error = errorText(e)));
   });
 
+  // Engine and style belong together: a preset is one engine's.
+  function chooseEngine(e: "script" | "recorded") {
+    r.engine = e;
+    if (st.presets.find((p) => p.id === r.preset)?.engine !== e) r.preset = st.presets.find((p) => p.engine === e)?.id ?? r.preset;
+    if (e === "recorded") {
+      r.recorded ??= { cutout: false, smoothCursor: true };
+    } else if (r.voice.provider === "recording") {
+      r.voice = { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" };
+    }
+    sheet = "";
+  }
+
   function chooseKind(k: "kokoro" | "elevenlabs") {
     r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : { provider: "elevenlabs", voice: "" };
     sample = "";
@@ -101,8 +113,8 @@
   <div class="row">
     <span class="label">Engine</span>
     <div class="opts">
-      <label><input type="radio" name="engine" checked={r.engine === "script"} onchange={() => (r.engine = "script")} /> Script: idea or script in, video out</label>
-      <label class="off" title="Comes with the Recorded engine"><input type="radio" name="engine" disabled /> Recorded: not built yet</label>
+      <label><input type="radio" name="engine" checked={r.engine === "script"} onchange={() => chooseEngine("script")} /> Script: idea or script in, video out</label>
+      <label><input type="radio" name="engine" checked={r.engine === "recorded"} onchange={() => chooseEngine("recorded")} /> Recorded: your recording in, edited video out</label>
     </div>
   </div>
 
@@ -112,12 +124,13 @@
       <select id="rpreset" bind:value={r.preset} onchange={() => (sheet = "")}>
         {#each presetsOfEngine as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
       </select>
-      {#if preset}<p class="hint">{preset.description} {preset.templates.length} scene templates.</p>{/if}
+      {#if preset}<p class="hint">{preset.description}{r.engine === "script" ? ` ${preset.templates.length} scene templates.` : ""}</p>{/if}
       <button type="button" disabled={sheeting} onclick={showSheet}>{sheeting ? "Drawing the style sheet..." : "Show the style sheet"}</button>
       {#if sheet}<img class="sheet" src={sheet} alt="The style sheet of this preset" />{/if}
     </div>
   </div>
 
+  {#if r.engine === "script"}
   <div class="row">
     <span class="label">Voice</span>
     <div>
@@ -158,6 +171,26 @@
       {/if}
     </div>
   </div>
+  {/if}
+
+  {#if preset?.recorded?.cutout}
+    <div class="row">
+      <span class="label">Person cut-out</span>
+      <div>
+        <label><input type="checkbox" checked={r.recorded?.cutout === true} onchange={(e) => (r.recorded = { smoothCursor: true, ...r.recorded, cutout: e.currentTarget.checked })} /> A big word sits behind your head</label>
+        <p class="hint">A small Apache licensed model finds you in the picture, on this computer. It downloads once, about 26 MB, and takes a few seconds per big word.</p>
+      </div>
+    </div>
+  {/if}
+
+  {#if preset?.recorded?.zoom}
+    <div class="row">
+      <span class="label">Cursor</span>
+      <div>
+        <label><input type="checkbox" checked={r.recorded?.smoothCursor !== false} onchange={(e) => (r.recorded = { cutout: false, ...r.recorded, smoothCursor: e.currentTarget.checked })} /> Smooth cursor: the filmed one is painted out and drawn again</label>
+      </div>
+    </div>
+  {/if}
 
   <div class="row">
     <span class="label">Music</span>
@@ -179,6 +212,7 @@
     </div>
   </div>
 
+  {#if r.engine === "script" || preset?.recorded?.broll}
   <div class="row">
     <span class="label">B-roll</span>
     <div>
@@ -187,11 +221,14 @@
       {#if r.broll?.on}<PaidClips {app} />{/if}
     </div>
   </div>
+  {/if}
 
+  {#if r.engine === "script"}
   <div class="row">
     <label class="label" for="rlen">Length</label>
     <div class="inline"><input id="rlen" type="number" min="1" max="30" bind:value={r.targetLengthMin} /> minutes</div>
   </div>
+  {/if}
 
   {#if error}<ErrorBox message={error} context={{ step: "recipe" }} />{/if}
   <div class="actions">

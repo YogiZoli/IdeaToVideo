@@ -1,0 +1,98 @@
+{
+  "schema": "style-preset/1",
+  "id": "profile-silhouette",
+  "label": "Profile Silhouette",
+  "description": "A side-angle take becomes a dark silhouette with a thin rim light on a flat color background that changes at story beats. A front take supplies the voice.",
+  "engine": "recorded",
+  "tokens": {
+    "colors": {
+      "background": "#d9482b",
+      "text": "#fff4e0",
+      "muted": "#2a2320",
+      "primary": "#0a0b0e",
+      "secondary": "#fff4e0"
+    },
+    "fonts": {
+      "display": "Archivo Black",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    },
+    "texture": "none",
+    "beats": [
+      "#d9482b",
+      "#2a7f8e",
+      "#e8a33d",
+      "#3b3a6e",
+      "#b83a5e",
+      "#517a3f"
+    ]
+  },
+  "shotRules": {
+    "pacing": "calm",
+    "cutFrequency": "The background changes at story beats, on a sentence.",
+    "camera": "None. The silhouette stays where it was filmed.",
+    "characters": "One dark figure, side on, with a thin rim light.",
+    "sound": "No transition sounds, ever. The recording's own voice carries the video."
+  },
+  "recorded": {
+    "main": "camera",
+    "silhouette": true,
+    "beats": true,
+    "slots": [
+      {
+        "id": "camera",
+        "label": "Side-angle take",
+        "hint": "Filmed from the side, against anything: the background goes."
+      },
+      {
+        "id": "front",
+        "label": "Front take (the voice)",
+        "hint": "Gives the sound. Without it the side take's own sound is used.",
+        "optional": true
+      }
+    ]
+  },
+  "templates": [
+    {
+      "id": "silhouette",
+      "label": "Silhouette",
+      "when": "The whole video.",
+      "params": {
+        "figure": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:silhouette",
+          "vars": {
+            "figure": "$figure"
+          }
+        }
+      ]
+    },
+    {
+      "id": "color-beat",
+      "label": "Color beat",
+      "when": "A new part of the story.",
+      "params": {
+        "color": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:color-beat",
+          "vars": {
+            "color": "$color"
+          }
+        }
+      ]
+    }
+  ]
+}

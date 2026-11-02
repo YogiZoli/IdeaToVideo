@@ -1,0 +1,134 @@
+{
+  "schema": "style-preset/1",
+  "id": "screen-recording",
+  "label": "Screen Recording",
+  "description": "The screen is the main picture. The view zooms to clicks and follows the cursor, the cursor moves smoothly. Optional: a small face bubble from a separate camera file.",
+  "engine": "recorded",
+  "tokens": {
+    "colors": {
+      "background": "#12161f",
+      "text": "#ffffff",
+      "muted": "#a9b2c3",
+      "primary": "#4f8cff",
+      "secondary": "#ffc533"
+    },
+    "fonts": {
+      "display": "Archivo Black",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    },
+    "texture": "none"
+  },
+  "shotRules": {
+    "pacing": "balanced",
+    "cutFrequency": "The view moves with the clicks, never faster than the viewer can follow.",
+    "camera": "A zoom to every group of clicks, then back out to the whole screen.",
+    "characters": "At most the small face bubble.",
+    "sound": "No transition sounds, ever. The recording's own voice carries the video."
+  },
+  "recorded": {
+    "main": "screen",
+    "zoom": true,
+    "chapterTitles": true,
+    "bubble": true,
+    "slots": [
+      {
+        "id": "screen",
+        "label": "Screen file",
+        "hint": "The screen recording."
+      },
+      {
+        "id": "combined",
+        "label": "Or one combined file",
+        "hint": "One file with picture and sound."
+      },
+      {
+        "id": "camera",
+        "label": "Camera file (optional)",
+        "hint": "Gives the small face bubble.",
+        "optional": true
+      }
+    ]
+  },
+  "templates": [
+    {
+      "id": "zoom",
+      "label": "Zoom to a click",
+      "when": "A click or a stop of the cursor.",
+      "params": {
+        "target": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:zoom",
+          "vars": {
+            "target": "$target"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "label": "Smooth cursor",
+      "when": "Always, when the cursor can be followed.",
+      "params": {
+        "path": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:cursor",
+          "vars": {
+            "path": "$path"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter-title",
+      "label": "Chapter title",
+      "when": "Where a new part starts.",
+      "params": {
+        "title": {
+          "maxWords": 5,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:chapter-title",
+          "vars": {
+            "title": "$title"
+          }
+        }
+      ]
+    },
+    {
+      "id": "face-bubble",
+      "label": "Face bubble",
+      "when": "With a separate camera file, in a corner.",
+      "params": {
+        "corner": {
+          "maxWords": 1,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:face-bubble",
+          "vars": {
+            "corner": "$corner"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -34,7 +34,10 @@ export function checkPreset(p) {
   for (const r of RULES) if (!String(p?.shotRules?.[r] ?? "").trim()) issues.push(`shotRules.${r} is missing`);
   if (p?.shotRules?.pacing && !PACES[p.shotRules.pacing]) issues.push(`shotRules.pacing must be one of ${Object.keys(PACES).join(", ")}`);
   const list = p?.templates;
-  if (!Array.isArray(list) || list.length < TEMPLATES_MIN || list.length > TEMPLATES_MAX) issues.push(`a preset has ${TEMPLATES_MIN} to ${TEMPLATES_MAX} templates`);
+  // A recording brings its own picture: a Recorded preset names only what it adds to it.
+  const least = p?.engine === "recorded" ? 1 : TEMPLATES_MIN;
+  if (!Array.isArray(list) || list.length < least || list.length > TEMPLATES_MAX) issues.push(`a preset has ${least} to ${TEMPLATES_MAX} templates`);
+  if (p?.engine === "recorded" && !p?.recorded?.slots?.length) issues.push("a Recorded preset names its files (recorded.slots)");
   const seen = new Set();
   for (const t of Array.isArray(list) ? list : []) {
     const at = `template ${t?.id ?? "?"}`;
@@ -77,7 +80,7 @@ export function loadPreset(id, opts) {
 }
 
 /** What the recipe editor shows of a preset. */
-export const presetCard = (p) => ({ id: p.id, label: p.label, description: p.description, engine: p.engine, templates: p.templates.map((t) => ({ id: t.id, label: t.label })), shotRules: p.shotRules });
+export const presetCard = (p) => ({ id: p.id, label: p.label, description: p.description, engine: p.engine, templates: p.templates.map((t) => ({ id: t.id, label: t.label })), shotRules: p.shotRules, ...(p.recorded ? { recorded: p.recorded } : {}) });
 
 // The block's own text variables nobody fills would show its sample text, so a
 // pack block counts only when the template fills all of them.

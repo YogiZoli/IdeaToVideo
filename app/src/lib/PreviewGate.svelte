@@ -44,6 +44,7 @@
     goto,
     render,
     recipe = false,
+    recorded = false,
   }: {
     app: AppState;
     dir: string;
@@ -54,6 +55,7 @@
     goto: (t: TabId) => void;
     render: () => void;
     recipe?: boolean;
+    recorded?: boolean;
   } = $props();
 
   const COMMANDS = ["build-video", "visual-check", "refill-scene", "save-scenes"];
@@ -164,7 +166,7 @@
       setTimeout(() => grid?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
       visual = null;
       busy = false;
-      await visualCheck();
+      if (!recorded) await visualCheck();
     } catch (e) {
       error = errorText(e);
       await changed();
@@ -251,12 +253,15 @@
 <svelte:window onkeydown={onKey} />
 
 <section class="card">
-  <h2>5. Preview</h2>
+  <h2>{recorded ? 2 : 5}. Preview</h2>
   <p class="hint lead">A check before the render: the app builds your video and shows one picture per scene. The render takes minutes; a mistake is cheaper to catch here.</p>
 
   {#if !scenesApproved && !edited}
-    <Needs text="The preview is built from the approved scenes. Approve the scenes first." tab="scenes" {goto} />
+    <Needs text={recorded ? "The preview is built from the recording's plan. Finish the Recording tab first." : "The preview is built from the approved scenes. Approve the scenes first."} tab={recorded ? "recording" : "scenes"} {goto} />
   {:else}
+    {#if recorded}
+    <p class="hint">One picture for each stretch of about 8 seconds. The words, the cuts, the chapters and the big words change on 1. Recording.</p>
+    {:else}
     <details class="guide" open={!built}>
       <summary>How to change things before the render</summary>
       <ol>
@@ -266,6 +271,7 @@
         <li><b>Something else?</b> The spoken words: 1. Script. The voice or the music: 2. Voice and music. The avatar's place and size: 4. Avatar. Then come back here.</li>
       </ol>
     </details>
+    {/if}
 
     {#if job === "build-video"}<Progress command="build-video" project={dir} label={step || "Building the preview"} />{/if}
     {#if error}<ErrorBox message={error} context={{ step: "review" }} />{:else if gate?.state === "failed" && gate.error}<ErrorBox message={`Last attempt failed: ${gate.error}`} context={{ step: "review" }} />{/if}
@@ -284,7 +290,7 @@
           <p class="hint">Look at these yourself: {visual.stillFailing.map((x) => `scene ${x.scene} (${x.problem}${x.note ? `; ${x.note}` : ""})`).join(", ")}.</p>
         {/if}
       </div>
-    {:else if built && !locked}
+    {:else if built && !locked && !recorded}
       <p class="hint"><button type="button" class="link" onclick={visualCheck}>Let the AI check every picture</button> against what is said (you see the price first).</p>
     {/if}
 
@@ -303,9 +309,9 @@
 
     <div class="actionbar">
       {#if approved && !changes}
-        <span class="say"><b>Approved.</b> {rendering ? "The video is rendering on 6. Your video." : "Next: 6. Your video."}</span>
+        <span class="say"><b>Approved.</b> {rendering ? `The video is rendering on ${recorded ? 3 : 6}. Your video.` : `Next: ${recorded ? 3 : 6}. Your video.`}</span>
         <Advanced><button type="button" disabled={locked} onclick={build}>Build again</button></Advanced>
-        <button type="button" class="primary" onclick={() => goto("video")}>Go to 6. Your video</button>
+        <button type="button" class="primary" onclick={() => goto("video")}>Go to {recorded ? 3 : 6}. Your video</button>
       {:else if changes > 0 || (edited && stills.length > 0)}
         <span class="say">Your changes are saved. The preview shows them after the update.</span>
         <button type="button" class="primary" disabled={locked} onclick={build}>Update the preview</button>
@@ -335,7 +341,10 @@
       </figure>
       <aside>
         <div class="ahead"><b>Scene {stills[open].scene}</b><button type="button" class="ghost" onclick={() => (open = null)}>Close</button></div>
-        {#if openRow}
+        {#if recorded}
+          {#if openRow}<p class="said">"{openRow.said}"</p>{/if}
+          <p class="hint">What is said and what is on screen change on 1. Recording.</p>
+        {:else if openRow}
           <p class="said">"{openRow.said}"</p>
           <p class="hint">{openRow.label}{openRow.roleLabel ? `, ${openRow.roleLabel}` : ""}</p>
           {#if openRow.call}

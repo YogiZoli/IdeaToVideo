@@ -15,8 +15,8 @@ export const RECIPE_FILE = "recipe.json";
 export const RECIPE_SCHEMA = "channel-recipe/1";
 export const VOICE_KINDS = { kokoro: "Free voice on this computer (Kokoro)", elevenlabs: "My ElevenLabs voice" };
 export const MUSIC_SOURCES = { synth: "Made by code, free", own: "My own files" };
-// The engine that exists today. The Recorded engine is docs/BUILD_PLAN.md phase 7.
-export const ENGINES_READY = ["script"];
+export const ENGINES_READY = ["script", "recorded"];
+export const DEFAULT_RECORDED_PRESET = "talking-head";
 export const MUSIC_DIR = "music";
 const MUSIC_EXT = /\.(mp3|wav|m4a|aac|ogg|flac)$/i;
 
@@ -50,6 +50,21 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
   if (!ENGINES_READY.includes(r.engine)) throw new Error(`The ${r.engine} engine is not built yet. Choose Script.`);
   const preset = loadPreset(r.preset);
   if (preset.engine !== r.engine) throw new Error(`${preset.label} belongs to the ${preset.engine} engine.`);
+  // A recording has its own voice and its own length: only the look and the music are asked.
+  if (r.engine === "recorded") {
+    const source = MUSIC_SOURCES[r.music?.source] ? r.music.source : "synth";
+    return {
+      schema: RECIPE_SCHEMA,
+      engine: "recorded",
+      preset: preset.id,
+      voice: { provider: "recording", voice: "own" },
+      avatar: { on: false, lookId: null, engine: "avatar_iii", layout: "overlay" },
+      music: { on: Boolean(r.music?.on), source, mood: MOODS[r.music?.mood] ? r.music.mood : DEFAULT_MOOD },
+      broll: { on: r.broll?.on === true },
+      recorded: { cutout: r.recorded?.cutout === true, smoothCursor: r.recorded?.smoothCursor !== false },
+      targetLengthMin: Number(r.targetLengthMin) > 0 ? Number(r.targetLengthMin) : 8,
+    };
+  }
   const provider = r.voice?.provider;
   if (!VOICE_KINDS[provider]) throw new Error("Choose the free voice, or your ElevenLabs voice.");
   if (provider === "kokoro" && !String(language).toLowerCase().startsWith("en")) throw new Error("The free voice reads English only. For this channel's language choose your ElevenLabs voice.");

@@ -174,6 +174,17 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("assets-search", None),
     ("assets-add", None),
     ("assets-ledger", None),
+    // the Recorded engine: local work on the user's own files; only the plan
+    // can name an AI, and it has a rule that needs none
+    ("recorded-video-new", None),
+    ("recorded-state", None),
+    ("recorded-transcribe", None),
+    ("recorded-cut-set", None),
+    ("recorded-apply-cuts", None),
+    ("recorded-plan", Some(&["llm", "provider"])),
+    ("recorded-plan-rule", None),
+    ("recorded-plan-save", None),
+    ("recorded-prepare", None),
 ];
 
 /// Voices and music made on this computer: named in the request like a key
@@ -321,6 +332,7 @@ pub const STALL_SECS: u64 = 600;
 const LOCAL_WORK: &[&str] = &[
     "build-video", "check-video", "render-video", "avatar-layout", "brand-preview", "motion-preview", "set-music", "simple-scenes",
     "backup-project", "backup-all", "restore-project", "browser-ensure", "preset-stylesheet", "simple-template-scenes",
+    "recorded-transcribe", "recorded-apply-cuts", "recorded-prepare",
 ];
 
 /// Every process one runner run starts: Node and everything Node starts (the

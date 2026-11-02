@@ -9,7 +9,7 @@
 //             (DECISIONS 131) until one is picked: it never blocks the video
 //   failed    the last attempt failed
 
-export type TabId = "script" | "voice" | "scenes" | "avatar" | "preview" | "video" | "thumbnail";
+export type TabId = "recording" | "script" | "voice" | "scenes" | "avatar" | "preview" | "video" | "thumbnail";
 export type TabState = "done" | "now" | "next" | "optional" | "failed";
 type Gates = Record<string, { state: string } | undefined>;
 
@@ -23,9 +23,19 @@ export const TABS: { id: TabId; n: number; label: string; gate: string | null; c
   { id: "thumbnail", n: 7, label: "Thumbnail", gate: null, commands: ["thumbnail-make", "thumbnail-words"] },
 ];
 
+// A Recorded video (runner/recorded): one tab for the words, the cuts and the plan.
+export const RECORDED_TABS: typeof TABS = [
+  { id: "recording", n: 1, label: "Recording", gate: "scenes", commands: ["recorded-transcribe", "recorded-apply-cuts", "recorded-plan", "recorded-plan-rule", "recorded-prepare"] },
+  { id: "preview", n: 2, label: "Preview", gate: "review", commands: ["build-video"] },
+  { id: "video", n: 3, label: "Your video", gate: null, commands: ["render-video"] },
+  { id: "thumbnail", n: 4, label: "Thumbnail", gate: null, commands: ["thumbnail-make", "thumbnail-words"] },
+];
+
 function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false): boolean {
   const g = (k: string) => gates[k]?.state;
   switch (id) {
+    case "recording":
+      return g("scenes") === "approved";
     case "thumbnail":
       return hasThumbnail;
     case "avatar":
@@ -40,18 +50,18 @@ function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false
 }
 
 /** The tab where the work is. The avatar counts only with a HeyGen key. */
-function nowTab(gates: Gates, hasVideo: boolean, hasHeygen: boolean): TabId | null {
-  for (const t of TABS) {
+function nowTab(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS): TabId | null {
+  for (const t of list) {
     if ((t.id === "avatar" && !hasHeygen) || t.id === "thumbnail") continue;
     if (!isDone(t.id, gates, hasVideo)) return t.id;
   }
   return null;
 }
 
-export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, hasThumbnail = false): Record<TabId, TabState> {
-  const now = nowTab(gates, hasVideo, hasHeygen);
+export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, hasThumbnail = false, list = TABS): Record<TabId, TabState> {
+  const now = nowTab(gates, hasVideo, hasHeygen, list);
   const out = {} as Record<TabId, TabState>;
-  for (const t of TABS) {
+  for (const t of list) {
     const gate = t.gate ? gates[t.gate]?.state : undefined;
     if (isDone(t.id, gates, hasVideo, hasThumbnail)) out[t.id] = "done";
     else if (gate === "failed") out[t.id] = "failed";
@@ -62,20 +72,20 @@ export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, h
 }
 
 /** The tab a ONE Video opens on: the step at hand, else the finished video. */
-export function firstOpen(gates: Gates, hasVideo: boolean, hasHeygen: boolean): TabId {
-  return nowTab(gates, hasVideo, hasHeygen) ?? "video";
+export function firstOpen(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS): TabId {
+  return nowTab(gates, hasVideo, hasHeygen, list) ?? "video";
 }
 
 /** The tab after an approved step. The avatar only with a HeyGen key. */
-export function nextAfter(id: TabId, hasHeygen: boolean): TabId {
+export function nextAfter(id: TabId, hasHeygen: boolean, list = TABS): TabId {
   // nothing is approved on Your video or Thumbnail: they stay where they are
   if (id === "video" || id === "thumbnail") return id;
-  const i = TABS.findIndex((t) => t.id === id);
-  const next = TABS[Math.min(TABS.length - 1, i + 1)].id;
+  const i = list.findIndex((t) => t.id === id);
+  const next = list[Math.min(list.length - 1, i + 1)].id;
   return next === "avatar" && !hasHeygen ? "preview" : next;
 }
 
-export const tabLabel = (id: TabId) => {
-  const t = TABS.find((x) => x.id === id)!;
+export const tabLabel = (id: TabId, list = TABS) => {
+  const t = list.find((x) => x.id === id) ?? TABS.find((x) => x.id === id)!;
   return `${t.n}. ${t.label}`;
 };

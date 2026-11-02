@@ -2378,3 +2378,85 @@
     still, depth and render: 61 s. Kie AI: only the free balance call was made (80 credits).
     No paid call was made while building, and no real AI answered the plan or the frame
     check: stand-ins and the rule only.
+
+138. **The Recorded engine** (Zoltan, 2026-11-02, `docs/BUILD_PLAN.md` phase 2;
+    `runner/recorded/`). A camera file, a screen file, both, or one combined file in;
+    an edited video out through the same Preview, render, Publishing Card, Thumbnail and
+    publishing app. Own implementation: no third-party editing skill was opened.
+    - **Same gates, so the tail is untouched:** `script` is the words and the cut list,
+      `voice` is the cuts applied, `scenes` is the plan, `avatar` is skipped, `review` is
+      the composition. It writes the files the tail already reads (`words.json`,
+      `sentences.json`, `audio/vo_bgm.mp3`, `script.md` with chapter headings,
+      `scenes.json`), so the card's chapter times come from the real cut video. One tab,
+      Recording, stands for the first three gates; a script video keeps its seven tabs.
+    - **Inside the composition, not laid over it:** the canon (PIPELINE.md) says a
+      talking head's overlays are rendered with alpha and laid on the untouched recording.
+      Here the recording plays inside the composition, as the canon says for a screen
+      recording, because a big word must sit between the camera and the person cut-out and
+      B-roll must cover both. The camera is encoded once more for it. Speed: 40.8 s of
+      video in 95 s at draft quality on this computer.
+
+139. **The speech model: Whisper Base on the ONNX runtime the app already ships**
+    (`recorded/whisper.mjs`, MIT, 79 MB, downloaded once, pinned hashes). No new program
+    and no new package. `whisper.cpp` was rejected because it has no Mac binary.
+    - **Word times from the model's attention:** the same method as Whisper's own word
+      timestamps, a dynamic time warp through its cross attention, then snapped to the
+      sound. Against the transcript of a real clip the times sit within about 0.1 s.
+    - **The int8 encoder does not load:** ONNX Runtime 1.22 has no ConvInteger on the
+      CPU. The q4 encoder does (measured). 3 to 5 times faster than the sound on 8 cores.
+    - **One run lost its result** after the work was done: the step had finished, but the
+      process printed nothing more and gave no error. The likely cause is the model going
+      down with the process, so the sessions are now released first. 6 of 6 repeats since then
+      delivered. The cause itself was not proved.
+    - **"Checked against the video":** every word is snapped to the recording's own
+      sound. Then it counts the words on speech, the speech with a word on it, how far word
+      starts sit from where sound starts, and that no word runs past the file. The same
+      check runs again on the cut sound. A transcript that fails it never deletes sound it
+      cannot name, and the Recording tab says so.
+    - **Files that do not line up:** the file's own stream offset is applied, and a second
+      file is lined up by the loudness of its sound. Two separate takes do not match, so
+      they start together, and the tab says so.
+
+140. **What comes out** (`recorded/cuts.mjs`). Whole frames, so sound and picture are cut
+    at one moment, with a 6 ms fade at each join so a cut never clicks.
+    - **Silences:** a pause over 0.5 s becomes a short one; a sentence's end keeps a breath.
+    - **Filler words:** whole words only, per language. Whisper hides many "um"s, so a
+      prompt full of them keeps them in, and a sound with no word on it between two words
+      is cut too. "You know" and the like go only between commas.
+    - **Repeated takes:** the same words again within the next three phrases, with only
+      short remarks between. The last take that finishes its sentence stays; a last try that
+      stops short loses to the good one before it. A word said twice in a row goes once.
+    - **Nothing is lost:** every cut has a Put back on the Recording tab, and the steps run
+      again from the same words.
+
+141. **The four presets** (`runner/presets/talking-head`, `screen-recording`, `screen-share`,
+    `profile-silhouette`; `recorded/shots.mjs`, `compose.mjs`). No transition sound anywhere:
+    the composition's only audio is the recording's voice, with the recipe's music.
+    - **The AI only names chapters and picks words:** its answer is checked word by word,
+      repaired once, else a rule fills it. A dead AI still gives a video. Every entrance is
+      the exact start of the word it shows.
+    - **Talking head:** B-roll through the Phase 1b engine, unchanged. Big words carry their
+      own outline, because no contrast can be promised over a moving picture.
+    - **Screen share:** a change about every 8 s, always where a sentence starts, never one
+      layout twice, and a sentence that points ("click", "here") goes to the big screen. The
+      engine's lint refuses animated left, top, width and height, so both pictures move by
+      transforms and a clip path.
+    - **Person:** MODNet (Apache 2.0, 26 MB, on the same runtime). The int8 export has the
+      same ConvInteger problem, so the plain one. Masks at 15 frames a second, blended up by
+      ffmpeg; the cut-out and the silhouette are VP9 with alpha, which the engine renders
+      (checked by eye in a real render). Only the person is run through the model, and for a
+      big word only that word's seconds.
+    - **Cursor** (`recorded/cursor.mjs`): a recording holds no mouse data, so it is found
+      in the pixels. Spots where something keeps changing in place are ruled out, then a
+      small search over the whole recording follows the thing that travels. A click is a
+      stop with the screen answering next to it, after a quiet moment.
+    - **A wrong drawn cursor is worse than the filmed one:** on three real recordings the
+      tracker followed enough to zoom, but pages with their own animation fooled it at times.
+      So the original is painted out and redrawn smooth only when almost nothing else on the
+      screen travels; otherwise the filmed cursor stays, the view still zooms, and the tab says
+      so. When the cursor stands still, only its own pixels are patched, so what opens under it
+      stays live. The clean picture never takes the area around the cursor. Known limit: at one
+      stop of the test clip a sliver of the filmed cursor stayed visible next to the drawn one;
+      two other stops checked were clean. The recipe has a switch. This is
+      one of the two places where our code touches pixels (with the person masks).
+      Both prepare footage for the composition; HyperFrames still makes every frame.

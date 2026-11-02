@@ -39,7 +39,8 @@ test("the avatar rule is not a choice: avatar_iii, overlay", () => {
 });
 
 test("a recipe that cannot work says so", () => {
-  assert.throws(() => normalizeRecipe({ ...free, engine: "recorded" }), /not built yet/);
+  assert.throws(() => normalizeRecipe({ ...free, engine: "cinema" }), /not built yet/);
+  assert.throws(() => normalizeRecipe({ ...free, engine: "recorded" }), /belongs to the script engine/);
   assert.throws(() => normalizeRecipe({ ...free, preset: "nope" }), /no style preset/);
   assert.throws(() => normalizeRecipe({ ...free, voice: { provider: "gemini", voice: "Kore" } }), /free voice, or your ElevenLabs/);
   assert.throws(() => normalizeRecipe({ ...free, voice: { provider: "elevenlabs", voice: "" } }), /Choose which ElevenLabs/);

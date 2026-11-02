@@ -1,0 +1,110 @@
+{
+  "schema": "style-preset/1",
+  "id": "talking-head",
+  "label": "Talking Head",
+  "description": "Your face is the main picture. B-roll on the things you name, big words on screen, chapter titles. Optional: a person cut-out, so a big word can sit behind your head.",
+  "engine": "recorded",
+  "tokens": {
+    "colors": {
+      "background": "#101318",
+      "text": "#ffffff",
+      "muted": "#b6bcc8",
+      "primary": "#ffc533",
+      "secondary": "#38c6f4"
+    },
+    "fonts": {
+      "display": "Archivo Black",
+      "body": "Inter"
+    },
+    "shape": {
+      "corners": "medium",
+      "cards": "flat"
+    },
+    "texture": "none"
+  },
+  "shotRules": {
+    "pacing": "balanced",
+    "cutFrequency": "A new element on a word every 7 to 15 seconds. The face stays between them.",
+    "camera": "The recording itself, untouched.",
+    "characters": "The person speaking, nobody else.",
+    "sound": "No transition sounds, ever. The recording's own voice carries the video."
+  },
+  "recorded": {
+    "main": "camera",
+    "bigWords": true,
+    "chapterTitles": true,
+    "broll": true,
+    "cutout": true,
+    "slots": [
+      {
+        "id": "camera",
+        "label": "Camera file",
+        "hint": "You talking to the camera."
+      },
+      {
+        "id": "combined",
+        "label": "Or one combined file",
+        "hint": "One file with picture and sound."
+      }
+    ]
+  },
+  "templates": [
+    {
+      "id": "big-word",
+      "label": "Big word",
+      "when": "The word that carries a sentence, as it is said.",
+      "params": {
+        "text": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:big-word",
+          "vars": {
+            "text": "$text"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter-title",
+      "label": "Chapter title",
+      "when": "Where a new part starts.",
+      "params": {
+        "title": {
+          "maxWords": 5,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:chapter-title",
+          "vars": {
+            "title": "$title"
+          }
+        }
+      ]
+    },
+    {
+      "id": "broll",
+      "label": "B-roll",
+      "when": "A thing the speaker names and the viewer could see.",
+      "params": {
+        "query": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "recorded:broll",
+          "vars": {
+            "query": "$query"
+          }
+        }
+      ]
+    }
+  ]
+}
