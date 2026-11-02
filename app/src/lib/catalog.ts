@@ -91,6 +91,8 @@ export const PRESETS: { id: string; label: string }[] = [
 export const GEMINI_DEFAULT_VOICE = "Kore";
 export const GEMINI_VOICES = ["Kore", "Charon", "Puck", "Zephyr", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar", "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"];
 export const narratorProvider = (p: string | undefined) => (p === "edge-tts" || !p ? "gemini" : p);
+// The voice that runs on this computer has no key (runner/providers/tts/kokoro.mjs).
+export const voiceNeedsKey = (p: string | undefined) => narratorProvider(p) !== "kokoro";
 
 export function defaultVoice(lang: string | undefined): string {
   return LANGUAGES.find((l) => l.code === lang)?.voice ?? LANGUAGES[0].voice;

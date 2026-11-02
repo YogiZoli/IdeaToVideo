@@ -36,7 +36,7 @@ export type Config = {
   /** The Identity's name (setup and Settings edit it here). */
   name?: string;
   onboarded?: boolean;
-  ui?: { language: "en" };
+  ui?: { language: "en"; advanced?: boolean };
   llm: Llm;
   brand?: { preset?: string; logo?: string | null; overrides?: Record<string, string> };
   channel: {
@@ -50,7 +50,7 @@ export type Config = {
     /** The natural-voice pass after the script (DECISIONS 88), off by default. */
     humanize?: "off" | "light" | "strong";
   };
-  narrator: { provider: "edge-tts" | "elevenlabs" | "gemini"; voice?: string | null };
+  narrator: { provider: "edge-tts" | "elevenlabs" | "gemini" | "kokoro"; voice?: string | null };
   avatar?: { enabled: boolean; lookId?: string | null; engine?: "avatar_iii" | "avatar_iv" | "avatar_v"; style?: AvatarStyle; position?: AvatarPosition; size?: AvatarSize };
   research?: { vidiq: boolean };
   defaults?: { scriptTemplate?: "ownership"; autopilot?: boolean; targetLengthMin?: number };
@@ -64,7 +64,7 @@ export type AppConfig = {
   schema: 2;
   backup?: BackupSettings;
   onboarded?: boolean;
-  ui?: { language: "en" };
+  ui?: { language: "en"; advanced?: boolean };
   llm: Llm;
   projectsDir?: string | null;
   activeIdentity?: string | null;
@@ -97,7 +97,7 @@ export type Edition = { product: string; tier: "Solo" | "Agency"; identityLimit:
 export type KeySource = { app: boolean; identity: boolean };
 export type Job = { id: number; command: string; identity: string | null; identityName: string | null; project: string | null; state: "running" | "waiting" };
 
-export type AvatarStyle = "cutout" | "circle" | "card" | "full";
+export type AvatarStyle = "cutout" | "circle" | "card" | "full" | "overlay";
 export type AvatarPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 export type AvatarSize = "small" | "medium" | "large";
 export type AvatarLayout = { style: AvatarStyle; position: AvatarPosition; size: AvatarSize };
@@ -128,7 +128,7 @@ type RawState = Omit<AppState, "config">;
 const withConfig = (s: RawState): AppState => ({ ...s, config: s.app && s.identity ? effectiveConfig(s.app, s.identity) : null });
 
 export type Gate = { state: string; mode?: string; at?: string; error?: string; reason?: string };
-export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate>; series?: Series | null };
+export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate>; series?: Series | null; queue?: { batch: string; position: number; of: number } | null };
 
 export type KeyScope = "app" | "identity";
 

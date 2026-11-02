@@ -22,7 +22,9 @@ export const SEGMENTS = { open: { label: "Opening", scene: "first" }, close: { l
 // changeable per video. cutout = transparent background (HeyGen WebM), the
 // person only; circle and card crop the face out of a normal clip, so they
 // need no background removal and nothing is stretched; full = the whole frame.
-export const STYLES = ["cutout", "circle", "card", "full"];
+// overlay = the channel recipe's rule (docs/BUILD_PLAN.md): the transparent clip
+// laid over the frame 1:1, no mask, no resize, no new place.
+export const STYLES = ["cutout", "circle", "card", "full", "overlay"];
 export const POSITIONS = ["bottom-right", "bottom-left", "top-right", "top-left"];
 export const SIZES = ["small", "medium", "large"];
 export const DEFAULT_LAYOUT = { style: "cutout", position: "bottom-right", size: "medium" };
@@ -97,7 +99,8 @@ function writePending(projectDir, pending) {
 // Gate 5: make the clips. `which` = ["open", "close"] or one of them.
 export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", "close"], look, layout: wanted, engine: wantedEngine, lookEngines, env = process.env, fetchImpl = fetch, sleep, onProgress = () => {} }) {
   const layout = normalizeLayout(wanted);
-  let format = layout.style === "cutout" ? "webm" : "mp4";
+  const transparent = layout.style === "cutout" || layout.style === "overlay";
+  let format = transparent ? "webm" : "mp4";
   const pick = heygen.chooseEngine(wantedEngine, lookEngines);
   const engine = pick.engine;
   let note = pick.note;
@@ -131,6 +134,8 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
     try {
       id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", engine, fetchImpl }), retry);
     } catch (e) {
+      // the recipe's rule has no second way: a look without transparency is refused
+      if (layout.style === "overlay" && heygen.noMatting(e)) throw new Error("This avatar look has no transparent output at HeyGen, and the channel's recipe needs it. Choose another look in the recipe.");
       // an older look without background removal: a card instead, said plainly
       if (format !== "webm" || !heygen.noMatting(e)) throw e;
       format = "mp4";

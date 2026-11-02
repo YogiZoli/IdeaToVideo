@@ -16,7 +16,7 @@ type Gates = Record<string, { state: string } | undefined>;
 export const TABS: { id: TabId; n: number; label: string; gate: string | null; commands: string[] }[] = [
   { id: "script", n: 1, label: "Script", gate: "script", commands: ["write-script", "save-script"] },
   { id: "voice", n: 2, label: "Voice and music", gate: "voice", commands: ["make-voice", "make-music", "set-music"] },
-  { id: "scenes", n: 3, label: "Scenes", gate: "scenes", commands: ["make-scenes", "simple-scenes", "refill-scene", "save-scenes"] },
+  { id: "scenes", n: 3, label: "Scenes", gate: "scenes", commands: ["make-scenes", "simple-scenes", "make-template-scenes", "simple-template-scenes", "refill-scene", "save-scenes"] },
   { id: "avatar", n: 4, label: "Avatar", gate: "avatar", commands: ["make-avatar", "avatar-layout", "remove-avatar"] },
   { id: "preview", n: 5, label: "Preview", gate: "review", commands: ["build-video"] },
   { id: "video", n: 6, label: "Your video", gate: null, commands: ["render-video"] },

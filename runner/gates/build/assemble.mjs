@@ -388,6 +388,9 @@ const AVATAR_BOX = {
 
 export function avatarStyle(layout = {}, width = 1920, height = 1080) {
   const style = layout.style ?? "full";
+  // the clip as HeyGen made it, at its own size, from the corner: nothing cut,
+  // scaled or moved
+  if (style === "overlay") return "position:absolute;left:0;top:0;object-fit:none;z-index:5";
   if (style === "full" || !AVATAR_BOX[style]) return "position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:5";
   const box = AVATAR_BOX[style];
   const h = Math.round(height * (box.h[layout.size] ?? box.h.medium));

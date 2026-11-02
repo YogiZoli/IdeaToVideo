@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "node ../scripts/fetch-sidecars.mjs && npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "node ../scripts/fetch-sidecars.mjs && npm ci --prefix ../runner --no-audit --no-fund && npm run build",
+    "beforeBuildCommand": "node ../scripts/fetch-sidecars.mjs && npm ci --prefix ../runner --no-audit --no-fund && node ../scripts/prune-runner.mjs && npm run build",
     "frontendDist": "../build"
   },
   "app": {

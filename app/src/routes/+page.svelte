@@ -8,10 +8,10 @@
   import { installLogger, log, setScreen, setIdentity } from "$lib/logger";
   import { defaultConfig, cleanConfig } from "$lib/catalog";
   import { appFromConfig, identityFromConfig } from "$lib/identity";
-  import { IDENTITY_STEPS } from "$lib/steps";
+  import { IDENTITY_STEPS, QUICK_SETUP } from "$lib/steps";
   import { setKeySources, refreshKeySources } from "$lib/keystate.svelte";
   import { PRODUCT, ONE_VIDEO } from "$lib/edition";
-  import { MENUS, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
+  import { visibleMenus, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
   import Onboarding from "$lib/Onboarding.svelte";
   import Projects from "$lib/Projects.svelte";
   import ProjectView from "$lib/ProjectView.svelte";
@@ -19,6 +19,7 @@
   import IdentityMenu from "$lib/IdentityMenu.svelte";
   import Jobs from "$lib/Jobs.svelte";
   import Home from "$lib/Home.svelte";
+  import ChannelStudio from "$lib/channels/ChannelStudio.svelte";
   import "../app.css";
 
   let app = $state<AppState | null>(null);
@@ -69,6 +70,20 @@
     }
   }
   init();
+
+  // The Advanced toggle (docs/BUILD_PLAN.md): the wizards, the long setup and
+  // the old Home wait behind it, kept on this computer's settings.
+  const advanced = $derived(!!app?.app?.ui?.advanced);
+  let longSetup = $state(false);
+  async function setAdvanced(on: boolean) {
+    if (!app?.app) return;
+    try {
+      take(await saveSettings({ ...app.app, ui: { language: "en", ...(app.app.ui ?? {}), advanced: on } }, null));
+      if (!on && view === "settings" && menuOf(settingsPage) === "wizards") view = "home";
+    } catch (e) {
+      notice = errorText(e);
+    }
+  }
 
   // A new computer: settings and Identities from a backup folder.
   let restoring = $state(false);
@@ -183,7 +198,10 @@
       <button type="button" disabled={restoring} onclick={restoreFromBackup}>{restoring ? "Restoring..." : "Restore from a backup"}</button>
       {#if restoreError}<span class="bad">{restoreError}</span>{/if}
     </div>
-    <Onboarding bind:config={draft} bind:keys save={saveFirst} done={take} newIdentity />
+    {#key longSetup}
+      <Onboarding bind:config={draft} bind:keys only={longSetup ? undefined : QUICK_SETUP} save={saveFirst} done={take} newIdentity />
+    {/key}
+    <div class="restorebar"><button type="button" class="ghost" onclick={() => (longSetup = !longSetup)}>{longSetup ? "Short setup" : "Advanced: every setup step"}</button></div>
   </main>
 {:else}
   <main class="shell">
@@ -192,13 +210,14 @@
       <IdentityMenu
         {app}
         {choose}
-        {newIdentity}
+        newIdentity={advanced ? newIdentity : () => show("home")}
         duplicate={() => show("settings", "identity")}
         settings={() => show("settings", "identity")}
       />
-      {#each MENUS as m (m.id)}
+      {#each visibleMenus(advanced) as m (m.id)}
         <button type="button" class:active={current === m.id} onclick={() => menu(m.id)}>{m.title}</button>
       {/each}
+      <label class="advanced" title="The wizards, the long setup and the readiness list"><input type="checkbox" checked={advanced} onchange={(e) => setAdvanced(e.currentTarget.checked)} /> Advanced</label>
       <Jobs {openJob} />
     </nav>
     {#if notice}
@@ -229,7 +248,10 @@
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}
-        <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
+        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} />
+        {#if advanced}
+          <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
+        {/if}
       {/key}
     {:else}
       {#key app.identity.id}
@@ -264,6 +286,7 @@
   .name { display: inline-flex; align-items: center; gap: 10px; margin-right: 18px; font-weight: 700; font-size: var(--text-lg); }
   .name img { width: 26px; height: 26px; }
   .brandbar > button { border: none; background: none; padding: 6px 12px; }
+  .advanced { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted-foreground); padding: 0 8px; margin-left: 4px; cursor: pointer; }
   .brandbar > button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
   .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }

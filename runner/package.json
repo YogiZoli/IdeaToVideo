@@ -2,8 +2,10 @@
   "name": "ideatovideo-runner",
   "private": true,
   "type": "module",
-  "description": "The runner's own dependencies, bundled with the app (tauri.conf.json resources). Only the official Anthropic SDK for the native Claude connector (DECISIONS 89); every other provider goes through plain fetch.",
+  "description": "The runner's own dependencies, bundled with the app (tauri.conf.json resources). The official Anthropic SDK for the native Claude connector (DECISIONS 89), and the free local voice (DECISIONS 133): the ONNX runtime for the Kokoro model and the CMU pronouncing dictionary. Every other provider goes through plain fetch. onnxruntime-node stays at 1.22.0: newer versions crash on Windows 11 (measured 2026-11-02).",
   "dependencies": {
-    "@anthropic-ai/sdk": "0.131.0"
+    "@anthropic-ai/sdk": "0.131.0",
+    "cmu-pronouncing-dictionary": "3.0.0",
+    "onnxruntime-node": "1.22.0"
   }
 }

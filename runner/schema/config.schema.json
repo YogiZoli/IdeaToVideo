@@ -6,7 +6,7 @@
   "properties": {
     "schema": {"const": 2},
     "onboarded": {"type": "boolean"},
-    "ui": {"type": "object", "additionalProperties": false, "properties": {"language": {"enum": ["en"]}}},
+    "ui": {"type": "object", "additionalProperties": false, "properties": {"language": {"enum": ["en"]}, "advanced": {"type": "boolean"}}},
     "llm": {
       "type": "object",
       "required": ["provider", "model"],

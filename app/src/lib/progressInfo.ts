@@ -33,9 +33,14 @@ export function phaseText(command: string, step: string | undefined): string | n
     backup: "Copying files into the backup folder",
     retry: "The AI service did not answer, trying again",
     fallback: "The AI model is busy, switching to the other model",
+    "model-download": "Downloading the free voice, once",
+    ideas: "The AI is planning the week",
+    "batch-script": "The AI is writing the week's scripts",
     "broll-order": "Ordering the B-roll clips from HeyGen",
     "broll-clip": "HeyGen is making the B-roll clips",
   };
+  if (command === "make-template-scenes" && s === "planning") return "The AI is filling the scene templates";
+  if (command === "simple-template-scenes" && s === "planning") return "Planning the scenes by rule, no AI";
   if (command === "broll-plan" && s === "planning") return "The AI is choosing where B-roll clips go";
   if (command === "broll-make" && s === "broll-clip") return "Making the B-roll clips";
   if (table[s]) return table[s];

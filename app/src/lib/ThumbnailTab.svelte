@@ -26,7 +26,7 @@
     chosenFile: string | null;
     spentUsd: number;
     photos: { name: string; file: string }[];
-    models: { id: string; label: string; usdPerImage: number; test: boolean }[];
+    models: { id: string; label: string; usdPerImage: number; test: boolean; free?: boolean }[];
     title: string;
     hasVideo: boolean;
     maxWords: number;
@@ -51,6 +51,9 @@
   let drafts = $state<Record<number, string>>({});
 
   const isTest = $derived(st?.models.find((m) => m.id === model)?.test ?? false);
+  // the maker without AI: no key, no picture from Gemini
+  const isFree = $derived(st?.models.find((m) => m.id === model)?.free ?? false);
+  const noKeyNeeded = $derived(isTest || isFree);
   const hasKey = $derived(!!app.keys["gemini"]);
   const usd = (n: number) => `$${n.toFixed(2)}`;
 
@@ -83,7 +86,7 @@
     const s = p.progress;
     if (s.step === "ideas") step = "Writing the words and picture ideas...";
     if (s.step === "repairing") step = "Fixing the words (at most 4 per picture)...";
-    if (s.step === "picture") step = `${isTest ? "Making test picture" : "Gemini is drawing picture"} ${s.n} of ${s.of}...`;
+    if (s.step === "picture") step = `${noKeyNeeded ? "Making picture" : "Gemini is drawing picture"} ${s.n} of ${s.of}...`;
     if (s.step === "compose") step = `Putting the words on picture ${s.n} of ${s.of}...`;
     if (s.step === "retry") step = typeof s.message === "string" ? s.message : "Gemini is busy, trying again...";
   });
@@ -186,12 +189,12 @@
     {#if photoCount === 0 || withFace}
       <PhotosPanel compact changed={(n) => { photoCount = n; if (!n) withFace = false; }} />
     {/if}
-    {#if !isTest && !hasKey}
+    {#if !noKeyNeeded && !hasKey}
       <p class="warn">The thumbnails use your Gemini key, and none is saved. <button type="button" class="link" onclick={() => openPage?.("connections")}>Add it in Settings, Connections</button>. Picture models need billing turned on for the key in Google AI Studio.</p>
     {/if}
 
     <div class="bar">
-      <button type="button" class="primary" disabled={locked || !st.title || (!isTest && !hasKey) || (withFace && photoCount === 0)} onclick={() => make(null)}>{st.variants.length ? "Regenerate all 3" : "Make 3 thumbnails"}</button>
+      <button type="button" class="primary" disabled={locked || !st.title || (!noKeyNeeded && !hasKey) || (withFace && photoCount === 0)} onclick={() => make(null)}>{st.variants.length ? "Regenerate all 3" : "Make 3 thumbnails"}</button>
       {#if st.spentUsd > 0}<span class="hint">Spent on this video's thumbnails: about {usd(st.spentUsd)}</span>{/if}
     </div>
     {#if !st.title}<p class="warn">The video has no YouTube title yet. <button type="button" class="link" onclick={() => goto("script")}>Choose one on the Script tab</button>.</p>{/if}
@@ -219,7 +222,7 @@
               {#if v.test}<p class="hint">Test picture, not for a real video.</p>{/if}
               <div class="acts">
                 <button type="button" class:primary={!picked} disabled={locked} onclick={() => pick(v)}>{picked ? "Picked, pick again" : "Pick this one"}</button>
-                <button type="button" class="ghost" disabled={locked || (!isTest && !hasKey) || (withFace && photoCount === 0)} onclick={() => make([v.slot])}>Regenerate</button>
+                <button type="button" class="ghost" disabled={locked || (!noKeyNeeded && !hasKey) || (withFace && photoCount === 0)} onclick={() => make([v.slot])}>Regenerate</button>
               </div>
             </div>
           </li>

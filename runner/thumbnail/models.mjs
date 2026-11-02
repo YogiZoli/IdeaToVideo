@@ -9,6 +9,9 @@
 export const MODELS = {
   "gemini-nano-banana-2.1": { label: "Nano Banana 2.1 (standard)", usdPerImage: 0.0336, inPerMillion: 1.5 },
   "gemini-3-pro-image": { label: "Nano Banana Pro (sharper faces and detail, about 4 times the price)", usdPerImage: 0.134, inPerMillion: 2 },
+  // no AI picture and no key: the Brand's colours behind the words, the words
+  // from the title (docs/BUILD_PLAN.md: 0 USD per video)
+  brand: { label: "Brand colours and the title's words (free, no AI)", usdPerImage: 0, inPerMillion: 0, free: true },
   test: { label: "Test pictures (free, placeholder)", usdPerImage: 0, inPerMillion: 0, test: true },
 };
 export const DEFAULT_MODEL = "gemini-nano-banana-2.1";
@@ -23,4 +26,4 @@ export function modelOf(id) {
   return { id: id ?? DEFAULT_MODEL, ...m };
 }
 
-export const modelChoices = () => Object.entries(MODELS).map(([id, m]) => ({ id, label: m.label, usdPerImage: m.usdPerImage, test: !!m.test }));
+export const modelChoices = () => Object.entries(MODELS).map(([id, m]) => ({ id, label: m.label, usdPerImage: m.usdPerImage, test: !!m.test, free: !!m.free }));

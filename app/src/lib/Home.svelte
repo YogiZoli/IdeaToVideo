@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import type { AppState, CtaState, ProjectSummary } from "./api";
   import { runner } from "./api";
-  import { LLM_PROVIDERS, narratorProvider } from "./catalog";
+  import { LLM_PROVIDERS, narratorProvider, voiceNeedsKey } from "./catalog";
   import { ONE_VIDEO } from "./edition";
   import { setScreen } from "./logger";
   import type { PageId } from "./pages";
@@ -37,12 +37,12 @@
   const config = $derived(app.config!);
   const llm = $derived(LLM_PROVIDERS.find((p) => p.id === config.llm.provider) ?? LLM_PROVIDERS[0]);
   const voice = $derived(narratorProvider(config.narrator?.provider));
-  const voiceLabel = $derived(voice === "elevenlabs" ? "ElevenLabs" : "Gemini");
+  const voiceLabel = $derived(voice === "elevenlabs" ? "ElevenLabs" : voice === "kokoro" ? "The free voice, no key" : "Gemini");
   const ch = $derived(config.channel ?? {});
 
   const needed = $derived<Row[]>([
     { id: "ai", label: "AI key", detail: `${llm.label}, for the scripts and the scene plans.`, ready: !!app.keys[config.llm.provider], action: "Connections", go: () => goto("connections") },
-    { id: "voice", label: "Voice key", detail: `${voiceLabel}, for the narrator.`, ready: !!app.keys[voice], action: "Connections", go: () => goto("connections") },
+    { id: "voice", label: "Voice key", detail: `${voiceLabel}, for the narrator.`, ready: !voiceNeedsKey(voice) || !!app.keys[voice], action: "Connections", go: () => goto("connections") },
     { id: "identity", label: "Identity", detail: `${app.identity?.name}: ${ch.audience?.trim() ? "audience and channel set." : "who the videos are for is not set yet."}`, ready: !!app.identity && !!ch.audience?.trim(), action: "Channel & Audience", go: () => goto("channel") },
   ]);
 

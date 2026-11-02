@@ -17,6 +17,8 @@ const ORDER = ["script", "voice", "scenes", "avatar", "review"];
 const stage = Number(q.get("stage") ?? 3);
 const slow = Number(q.get("slow") ?? 2500);
 const project = { id: "p", title: "How to turn viewers into subscribers with one simple question", status: "Scened", language: "en", gates: Object.fromEntries(ORDER.map((g, i) => [g, { state: i < stage ? (g === "avatar" ? "skipped" : "approved") : "todo" }])) };
+// ?run=1: a channel video whose run just started (ProjectView recipeRun)
+if (q.get("run")) Object.assign(project, { autopilotRun: { at: "2026-11-02T10:00:00Z" }, recipe: { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 } });
 let video = stage >= 6 ? { file: "/preview/motion.mp4", seconds: 128, renderSeconds: 417, chapters: "0:00 Intro\n0:35 The mistake", srt: "x.srt", publishFile: "x.publish.json", comments: "GUIDE", youtube: null } : null;
 const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.state !== "todo";
 const listeners = {};
@@ -151,6 +153,25 @@ const replies = {
   "youtube-texts": { titles: ["Turn viewers into subscribers with one question", "The one question that grows your channel", "Stop asking for subs: do this instead"], title: "", summary: "You learn why asking for a subscription fails, and the one-word question that turns viewers into subscribers.", description: "You learn why asking for a subscription fails.\n\nGUIDE: the one-page checklist\n\n0:00 Intro\n0:35 The mistake\n", tags: ["youtube growth", "get subscribers", "call to action"] },
   "build-video": { scenes: 1, seconds: 5, stills: [] },
   "validate-config": { errors: [] },
+  "channel-state": {
+    recipe: { schema: "channel-recipe/1", engine: "script", preset: "motion-frames", voice: q.get("recipe") === "eleven" ? { provider: "elevenlabs", voice: "v1", name: "My voice" } : { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 },
+    saved: !q.get("newrecipe"),
+    presets: [{ id: "motion-frames", label: "Motion Frames", description: "The motion graphics this app already makes.", engine: "script", templates: Array.from({ length: 13 }, (_, i) => ({ id: `t${i}`, label: `T${i}` })), shotRules: {} }],
+    voiceKinds: { kokoro: "Free voice on this computer (Kokoro)", elevenlabs: "My ElevenLabs voice" },
+    musicSources: { synth: "Made by code, free", own: "My own files" },
+    moods: ["calm", "warm", "dark", "bright"],
+    ownMusic: [],
+    musicDir: "C:/identity/music",
+    freeVoices: [{ id: "am_michael", name: "Michael", gender: "male" }, { id: "af_heart", name: "Heart", gender: "female" }],
+    queue: q.get("queue") ? [1, 2, 3].map((n) => ({ dir: `C:/P/q${n}`, id: `q${n}`, title: `Queued video number ${n}`, status: n === 3 ? "Idea" : "Scripted", script: n === 3 ? "failed" : "pending", error: n === 3 ? "The AI said no." : null, running: false, batch: "b", position: n, of: 7 })) : [],
+    week: 7,
+  },
+  "recipe-save": { recipe: { engine: "script" } },
+  "week-batch": { written: 7, failed: 0, videos: [] },
+  "queue-list": { queue: [] },
+  "channel-video-new": { id: "new", dir: "C:/P/new" },
+  "autopilot-mark": { autopilotRun: true },
+  "assets-search": { hits: [], failed: [] },
   "test-llm": { ok: true, message: "The key works." },
   "test-service": { ok: true, message: "The key works." },
   "backup-estimate": { projects: 6, levels: { 1: 60000, 2: 9000000, 3: 9100000, 4: 75000000 } },
@@ -231,6 +252,8 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "write-script" || args.command === "save-script") { setState("script", "pending", args.command === "save-script" ? "custom" : "recommended"); return { words: 318 }; }
         if (args.command === "make-voice") { setState("voice", "pending"); return { info: { seconds: 128, voLufs: -16, finalLufs: -14, musicGainDb: null, music: null, words: 318 } }; }
         if (args.command === "make-scenes" && q.get("aifail")) { setState("scenes", "failed"); throw "Gemini is overloaded or having problems right now (HTTP 503). Try again in a few minutes, or pick another model in Settings."; }
+        if (args.command === "make-template-scenes" || args.command === "simple-template-scenes") setState("scenes", "pending", "recommended");
+        if (args.command === "autopilot-mark") { if (args.request.on) project.autopilotRun = { at: "now" }; else delete project.autopilotRun; }
         if (args.command === "make-scenes" || args.command === "simple-scenes") setState("scenes", "pending", args.command === "simple-scenes" ? "default" : "recommended");
         if (args.command === "refill-scene" || args.command === "save-scenes") { setState("scenes", "pending", "custom"); project.gates.review = { state: "todo" }; }
         if (args.command === "build-video") { project.gates.review = { state: "pending" }; }

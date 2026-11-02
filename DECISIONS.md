@@ -2239,3 +2239,100 @@
       `scripts/app/tabs.test.mjs`, Rust `photos_are_numbered_capped_and_
       removed_by_name_only`, e2e 10 thumbnail steps with the real engine
       (54/54). No paid call was made while building.
+
+## 2026-11-02
+
+132. **Channels: one locked recipe per channel, one start screen** (Zoltan,
+    2026-11-02, `docs/BUILD_PLAN.md`, phase 1). A channel is an Identity plus
+    `<identity>/recipe.json` (`runner/channels/recipe.mjs`): engine, style
+    preset, voice, avatar on or off, music on or off, target length. Asked
+    once. The word on the new screen is "channel"; the Identity menu keeps its
+    word (DECISIONS 119). Each video copies the recipe into its project.json,
+    so a later change never touches a video under way.
+    - **Home is now the channel screen** (`channels/ChannelStudio.svelte`):
+      pick a channel, the recipe, idea or script in. The run
+      (`ProjectView recipeRun`) uses the same commands as the tabs and stops
+      at the existing Preview step. Render, card, Thumbnail and Send to
+      Publishing are untouched.
+    - **An existing channel keeps what it has:** the recipe starts from its
+      Identity (Zoltan's ElevenLabs clone, avatar and length), only a new
+      channel starts on the free voice. Zoltan, 2026-11-02, mid-build:
+      ElevenLabs stays his voice; Kokoro stays as an extra option because it
+      was already built.
+    - **Advanced toggle** in the top bar (`ui.advanced` in config.json): the
+      Wizards menu, the readiness Home, and the long setup and New Identity
+      wizards wait behind it. Nothing was deleted. The first setup without it
+      asks for the AI key and a name.
+    - **A pasted script needs no AI:** it is cut into parts of about 120 words
+      unless it has its own `##` headings.
+    - **Avatar rule:** the recipe forces `avatar_iii` and the new layout style
+      `overlay`: transparent WebM, no mask, resize or new place, and no
+      fallback to a card. Not tried against HeyGen yet (it costs credits).
+
+133. **The free voice: Kokoro directly on the ONNX runtime, own pronunciation**
+    (`providers/tts/kokoro.mjs`, `g2p.mjs`). The usual package `kokoro-js` was
+    rejected: it brings `phonemizer`, a wrapper around espeak-ng, which is GPL.
+    Instead: `onnxruntime-node` (MIT) and the CMU dictionary (BSD), own mapping
+    to the model's phonemes, own number reading. English only, American voices.
+    - **Word timings come from the speech model:** the timestamped export
+      returns each phoneme's duration. The first version used the raw values
+      and drifted 0.2 s late in a long sentence, measured against the audio's
+      energy. The model rounds each duration (at least 1) before it makes the
+      sound; rounding the same way adds up exactly (102 of 102 units).
+    - **No Whisper yet:** ElevenLabs keeps its own character timings, which
+      come with its audio. Phase 7 is the first to need a local transcriber.
+    - **onnxruntime-node stays at 1.22.0:** 1.31.1 crashes with a segmentation
+      fault on this Windows 11 when it creates a session (measured).
+    - **`scripts/prune-runner.mjs`** drops other platforms and DirectML, which
+      is Microsoft's license: from 294 MB to 21 MB. The model (86 MB) is
+      downloaded once on first use and checked against a pinned hash.
+    - **Speed:** about 1.8 times the audio's length on this 8 core machine, so
+      an 8 minute video reads for about 15 minutes.
+    - **Music by code** (`providers/music/synth.mjs`): a four chord pad that
+      loops without a seam, four moods, seeded per video. A recipe can also take
+      files from the channel's `music/` folder. Nothing is downloaded.
+
+134. **The preset engine** (`runner/presets/`, `gates/scenes/templates.mjs`). A
+    preset is a folder with `preset.json`: tokens, 8 to 15 templates, shot rules,
+    checked by `checkPreset`. Its style sheet PNG is rendered from the tokens
+    through the engine's own snapshot.
+    - **The LLM only fills templates:** at most 24 sentences per call, a
+      prompt under 5000 characters. Every answer is walked sentence by sentence
+      and mended by rule; over a third mended means one more ask. A part the
+      AI cannot answer is planned by rule, so the plan never fails on the AI.
+    - **A number the sentence does not say never reaches the screen.**
+    - **Preset 1, Motion Frames:** 13 templates, each naming the channel's own
+      zg-frames block first and a bundled component second. Same build, same
+      Brand and Motion profile as before. This reverses a part of DECISIONS 130
+      for channel videos: the blocks are planned again when the channel has the
+      pack. The Scenes tab's catalog plan is unchanged.
+    - **Found by looking at every template's picture:** `highlighter` has a
+      fixed second line, `rail` lands its last stop after any scene over 4.2 s;
+      both are left out, the canon is not changed. A pack made before
+      `window.ITV_ICONS` drew empty circles: `fitPackBlock` now makes the same
+      one-line change in the build copy. Pack files stay untouched.
+
+135. **The asset license module** (`runner/assets/`). `refusal()` is the one
+    check: an allowed source, a CC0 or PD license that source can give, source
+    URL, author and date, and no words pointing to a person. Every external
+    asset of a channel video goes into its `assets_license.json` (in the backup,
+    level 1); a clip without proof (Pixabay, Unsplash) stops the channel video's
+    build with a sentence. Searches read the license again from each answer.
+    Identity, Footage has the panel. Wikimedia Commons answered live (12 hits).
+    On 2026-11-02 Openverse's own server gave a 504 in a browser too, and the
+    Library of Congress puts a Cloudflare bot check in front of its JSON, which
+    the app does not try to get past: the search says it did not answer and
+    shows the others. Those two are tested against stand-ins only.
+
+136. **Week batch** (`runner/channels/batch.mjs`): one AI call for 7 ideas, then
+    7 scripts through the same gate as a single video, each queued
+    (`project.queue`). A failed script stays in the queue and stops nothing. No
+    voice, no render, nothing published. On the channel screen each row has
+    Make the video. A channel video's Thumbnail starts on a new free maker
+    (Brand gradient, the title's words, no key).
+
+    Tests: Node 393 of 396 (the one red is `traffic-card.test.mjs`, red on main
+    before; 2 live tests skipped), Rust 49, UI check 0 errors, e2e 54/54, the
+    new `scripts/phase2/channel-e2e.mjs` 29/29. No paid call was made while building, and
+    no real AI answered the template planner yet: it was tested with stand-in
+    answers, and by rule through a real render.

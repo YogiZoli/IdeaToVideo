@@ -1,10 +1,41 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-10-29 (thumbnails, DECISIONS 131)
+Frissítve: 2026-11-02 (channels and presets, DECISIONS 132 to 136)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-02, channels and presets, DECISIONS 132 to 136)
+
+**The plan is `docs/BUILD_PLAN.md`. Every session reads it first and does only
+the next "todo" phase. Phase 1 is done, Phase 2 is next.**
+
+- **Home is the channel screen:** pick a channel, its locked recipe, idea or
+  script in, video out, stopping at the Preview. Advanced toggle in the top bar:
+  the wizards are behind it, nothing was deleted.
+- **Preset engine:** `runner/presets/`. Preset 1, Motion Frames: 13 templates,
+  the channel's zg-frames blocks first, bundled components second. The LLM only
+  fills templates; a dead AI still gives a video.
+- **Free voice:** Kokoro on this computer, word times from the model itself.
+  An option: Zoltan's channels keep his ElevenLabs clone. Music by code.
+- **Asset license module:** `runner/assets/`, `assets_license.json` per video.
+- **Week batch:** 7 scripts in one run, queued on the channel screen.
+- Branch `channel-presets`, **not committed**. Tests: Node 393 of 396 (the one
+  red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped),
+  Rust 49, UI check 0 errors, e2e 54/54, channel e2e 29/29 with the real voice
+  and render.
+- Local installer built 2026-11-02 16:46 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`
+  (109 MiB). No public installer, no GitHub Actions.
+
+**Not tried yet:** a real AI on the template planner (stand-in answers and the
+rule-based plan through a real render only); the `overlay` avatar against HeyGen
+(costs credits); Openverse live (its server gave a 504 that day). The Library
+of Congress search is blocked by a Cloudflare bot check; Wikimedia Commons works.
+
+**Next:** Zoltan tries one video on the local installer and decides the open
+licence table in `docs/BUILD_PLAN.md`. Then Phase 2, Archive Collage.
 
 ## Now (2026-10-29, thumbnails, DECISIONS 131)
 

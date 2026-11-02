@@ -146,7 +146,27 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("thumbnail-make", Some(&["service"])),
     ("thumbnail-words", None),
     ("thumbnail-pick", None),
+    // Channel recipes and the preset engine (docs/BUILD_PLAN.md): files and
+    // local work, except what names an AI below
+    ("channel-state", None),
+    ("recipe-save", None),
+    ("preset-stylesheet", None),
+    ("channel-video-new", None),
+    ("make-template-scenes", Some(&["llm", "provider"])),
+    ("simple-template-scenes", None),
+    ("week-batch", Some(&["llm", "provider"])),
+    ("queue-list", None),
+    ("voice-model-status", None),
+    ("voice-model-ensure", None),
+    // the free images and the license ledger: no key, no paid service
+    ("assets-search", None),
+    ("assets-add", None),
+    ("assets-ledger", None),
 ];
+
+/// Voices and music made on this computer: named in the request like a key
+/// holder, but they have no key.
+const NO_KEY: &[&str] = &["kokoro", "synth", "own"];
 
 pub fn check_command(command: &str) -> Result<Option<&'static [&'static str]>, String> {
     COMMANDS
@@ -164,6 +184,9 @@ pub fn key_name_for(command: &str, request: &Value) -> Result<Option<String>, St
         v = v.get(*p).ok_or_else(|| format!("{command}: missing {}", path.join(".")))?;
     }
     let name = v.as_str().ok_or_else(|| format!("{command}: {} must be a string", path.join(".")))?;
+    if NO_KEY.contains(&name) {
+        return Ok(None);
+    }
     crate::keys::check_name(name)?;
     Ok(Some(name.to_string()))
 }
@@ -285,7 +308,7 @@ pub const STALL_SECS: u64 = 600;
 /// The steps that do their work on this computer.
 const LOCAL_WORK: &[&str] = &[
     "build-video", "check-video", "render-video", "avatar-layout", "brand-preview", "motion-preview", "set-music", "simple-scenes",
-    "backup-project", "backup-all", "restore-project", "browser-ensure",
+    "backup-project", "backup-all", "restore-project", "browser-ensure", "preset-stylesheet", "simple-template-scenes",
 ];
 
 /// Every process one runner run starts: Node and everything Node starts (the
@@ -635,6 +658,9 @@ mod tests {
         assert_eq!(key_name_for("write-script", &json!({"llm": {"provider": "claude"}})).unwrap().as_deref(), Some("claude"));
         assert_eq!(key_name_for("test-service", &json!({"service": "heygen"})).unwrap().as_deref(), Some("heygen"));
         assert!(key_name_for("test-llm", &json!({"provider": "github"})).is_err());
+        // what runs on this computer needs no key
+        assert_eq!(key_name_for("make-voice", &json!({"narrator": {"provider": "kokoro"}})).unwrap(), None);
+        assert_eq!(key_name_for("make-music", &json!({"music": {"provider": "synth"}})).unwrap(), None);
         assert!(key_name_for("write-script", &json!({})).is_err());
         assert!(key_name_for("test-llm", &json!({"provider": 5})).is_err());
     }

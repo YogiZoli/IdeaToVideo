@@ -123,6 +123,10 @@ const r3 = (x) => Math.round(x * 1000) / 1000;
 // the Brand, the Identity's colours and display font over the pack's tokens.
 export function fitPackBlock(html, { fontface = "", seconds, drawn, theme = null, family = null, icons = null }) {
   let out = html;
+  // a pack made before window.ITV_ICONS (scripts/make-pack.mjs) draws nothing
+  // for an icon outside its own set: the same one-line change, here, in the
+  // build copy only (the pack's files stay untouched)
+  out = out.replace(/var p = P\[e\.dataset\.icon\];/, "var p = P[e.dataset.icon] || (window.ITV_ICONS || {})[e.dataset.icon];");
   // icons an icon variable names beyond the block's own set (window.ITV_ICONS)
   if (icons && Object.keys(icons).length) out = out.replace(/<script>/, `<script>window.ITV_ICONS = Object.assign(window.ITV_ICONS || {}, ${JSON.stringify(icons)});</script>
 <script>`);

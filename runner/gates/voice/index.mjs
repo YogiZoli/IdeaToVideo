@@ -17,10 +17,12 @@ import { createHash } from "node:crypto";
 import { narrationFromMarkdown, wordCount, speakable } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
+import * as kokoro from "../../providers/tts/kokoro.mjs";
+import { synthLoop } from "../../providers/music/synth.mjs";
 import { joinBlocks, mix, duration, clipAudio, silence } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
 
-export const VOICE_PROVIDERS = { elevenlabs, gemini };
+export const VOICE_PROVIDERS = { elevenlabs, gemini, kokoro };
 // The ElevenLabs models gate 2 offers. Eleven v4 (2026-09-28) is the default
 // since 2026-10-06 (Zoltan: clearly better, Hungarian works); Multilingual v2
 // stays for a voice that sounds better with it.
@@ -117,6 +119,8 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
 }
 
 const round3 = (x) => Math.round(x * 1000) / 1000;
+// every video its own voicing of the same chords, and the same one when made again
+const seedOf = (projectDir) => createHash("sha256").update(path.basename(projectDir)).digest().readUInt32LE(0);
 
 // The comment-call segments and the end-screen tail (docs/wizards/cta.md,
 // DECISIONS 78), as extra pieces between the narration blocks: a segment's
@@ -219,6 +223,13 @@ export async function setMusic({ projectDir, music, env = process.env, onProgres
     bgm = musicPath(projectDir, music.path);
     source = "file";
     label = path.basename(bgm);
+  } else if (music?.kind === "synth") {
+    // made by code, free (providers/music/synth.mjs); the mix loops it to length
+    for (const f of fs.readdirSync(audioDir)) if (f.startsWith("music.")) fs.rmSync(path.join(audioDir, f), { force: true });
+    bgm = path.join(audioDir, "music.wav");
+    fs.writeFileSync(bgm, synthLoop({ mood: music.mood, seed: seedOf(projectDir) }));
+    source = "synth";
+    label = "Made by code";
   } else if (music?.kind !== "none") {
     throw new Error("Choose your own music file, or no music.");
   }
