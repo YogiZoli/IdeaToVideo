@@ -1,14 +1,28 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-02 (B-roll engine, DECISIONS 137)
+Frissítve: 2026-11-02 (phases 1 and 1b merged into main, new phase order)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-02, B-roll engine, DECISIONS 137)
+## Now (2026-11-02, merge and new phase order)
 
-**Phase 1b of `docs/BUILD_PLAN.md` is done. Phase 2, Archive Collage, is next.**
+- **`broll-engine` is merged into `main`**, which brings Phase 1 (`channel-presets`) too.
+  No PR. `engine/node_modules/` and `itv-local-build.log` are ignored by the new root
+  `.gitignore`.
+- **A push to `main` starts no GitHub Actions:** `.github/workflows/build.yml` runs only on
+  `pull_request` and `workflow_dispatch`, and no PR is open. Never open a PR, a PR starts it.
+- **`docs/BUILD_PLAN.md` has the new order:** 2 Recorded engine, 3 Direction, Research and
+  Shot map, 4 3D Explainer, 5 Stick World, 6 Archive Collage, 7 Night Case File, 8 Soft Clay
+  Chronicle. New clean room rules: no source that asks for attribution, nothing about sources
+  in the YouTube description, never "Vox" or any other brand name.
+
+**Next:** Phase 2, the Recorded engine.
+
+## Earlier (2026-11-02, B-roll engine, DECISIONS 137)
+
+**Phase 1b of `docs/BUILD_PLAN.md` is done.**
 
 - **Engine:** `runner/broll/engine.mjs`. For each stretch the cheapest source that
   fits: public domain film (Prelinger, NASA, Wikimedia Commons), a free still moved
@@ -30,7 +44,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 **Not tried yet:** a real paid clip; a real AI on the plan and the frame check (stand-ins
 and the rule through a real render only).
 
-**Next:** Zoltan turns B-roll on for one channel and tries one video. Then Phase 2.
+**Next:** Zoltan turns B-roll on for one channel and tries one video.
 
 ## Earlier (2026-11-02, channels and presets, DECISIONS 132 to 136)
 

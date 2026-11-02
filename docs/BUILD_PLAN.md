@@ -17,7 +17,8 @@ everything that exists, never rebuild what is already there.
   including the editor and faceless skills in Zoltan's `.claude\skills` folder
   and any "Vox" files in Downloads.
 - Own preset names and own color palettes. No brand names, channel names or
-  trademarks anywhere in the app or the output.
+  trademarks anywhere in the app or the output. Never use "Vox" or any other
+  brand name in the app, titles or descriptions.
 - Fonts: OFL licensed only, bundled with the app.
 - Bundled models and libraries: MIT, Apache 2.0, BSD or OFL only. No GPL, no
   non-commercial licenses.
@@ -28,6 +29,9 @@ everything that exists, never rebuild what is already there.
   federal government works. Maps: Natural Earth, bundled.
 - Two named exceptions to CC0 or PD: Pixabay (logged as "free license, not CC0")
   and Kie AI outputs (logged with model and prompt). No Pexels anywhere.
+- Never use a source that requires attribution or a credit line. Sources that ask
+  for attribution are rejected. Nothing about sources ever goes into the YouTube
+  description.
 - Every external asset, from any source, is logged in the project's
   `assets_license.json`: source URL or model name, license or terms, author,
   prompt (for AI), cost, date. Anything else without a clear license is rejected.
@@ -135,7 +139,89 @@ the engine (about 70 s a clip on this computer), never a frame engine of our own
 **Where it runs:** the recipe's new B-roll switch (a new channel: on; a recipe locked
 before this phase keeps what it had: off), between the scene plan and the build.
 
-### Phase 2: Preset "Archive Collage" (documentary collage explainer)
+### Phase 2: Recorded engine
+
+Status: todo
+
+Own implementation, never read or copy third-party editing skills. Input: a camera
+file, a screen file, both, or one combined file. Local transcription with word
+timestamps, checked against the video. Cut silences, filler words and repeated takes
+(keep the last good take). Presets:
+
+- Talking head: my face is the main picture; B-roll from the Phase 1b engine on things
+  I name; big words on screen; chapter titles; optional person cut-out so a big word
+  can sit behind my head (Apache or MIT licensed segmentation model).
+- Screen recording: the screen is the main picture; zoom to clicks and cursor, smooth
+  cursor; optional small face bubble from a separate camera file.
+- Screen share: camera and screen files; layout switches between full face, split, and
+  big screen with a small face, about every 8 seconds, timed to my sentences.
+- Profile Silhouette: a side-angle take turned into a dark silhouette with a thin rim
+  light on a flat color background that changes at story beats; a front take supplies
+  the voice.
+
+No transition sounds. Output goes into the same preview step and publishing tail
+(Publishing Card with chapter timestamps from the real final length, Thumbnail Maker,
+PDT export).
+
+### Phase 3: Direction, Research and Shot map
+
+Status: todo
+
+**Start screen, three choices with per-channel defaults in the recipe:**
+
+1. Direction: "Script to video" or "Edit a recording" (Recorded engine).
+2. Text (Script to video only): empty means I give only a topic or idea. If I paste
+   text, I mark it "Finished script, use as is" or "Notes, turn into a script" (typical:
+   a cleaned transcript from my phone app). Notes mode keeps my ideas, opinions, stories
+   and way of speaking, reorganized into the channel's script structure, and never adds
+   claims I did not make unless research is on.
+3. Research: on or off. Web research with the configured LLM (free Gemini with Google
+   Search grounding where available). Output a research brief: key facts, numbers,
+   dates, 3 to 8 sources. With my notes: check my claims, flag errors, add missing
+   facts. The brief is shown and editable before the script; one click continues.
+   Sources go into the Publishing Card for my own checking only.
+
+**Not in this phase, on purpose:** no audio upload, no inbox folder, no memo-as-narration.
+
+**Week batch** works with every mode (7 pasted notes give 7 scripts).
+
+**Shot map, a new stage after voice:** split sentences into shots, pin every element's
+entrance to the exact word where it is spoken (word timestamps), choose graphic or
+B-roll per shot, camera move, shot length, transitions, and mark hero moments. My
+existing per-sentence HyperFrames catalog block choices stay as overrides; the shot map
+fills everything else.
+
+**Hero moments are fully automatic, cheapest first, within the existing budget rules:**
+free sources (Public Domain, Pixabay, local 2.5D parallax), then a Kie AI image animated
+with local 2.5D parallax, then Kie AI video only if the channel budget allows. Add the
+"Kie AI image plus local 2.5D parallax" tier to the B-roll engine.
+
+**Optional manual fallback, off by default:** a "Google Flow" slot. When I switch it on
+for a shot, ITV writes a ready Flow prompt with a copy button and the exact clip length;
+I drop the mp4 back into that shot. Log it as "Google Flow (Veo), own generation".
+
+**Pipeline order:** Direction, Research (optional), Script, Voice with word timestamps,
+Shot map, Preview and approval (shows paid costs), B-roll and assets, Render, Publishing
+Card, Thumbnail, PDT export.
+
+### Phase 4: Preset "3D Explainer" (one strange question per video)
+
+Status: todo
+
+Simple 3D scenes rendered with three.js inside the composition: soft-shaded
+objects, cutaway views, scale comparisons, bright clean materials, smooth camera
+moves.
+
+### Phase 5: Preset "Stick World" (what-if stories)
+
+Status: todo
+
+Light plain background, black stick figures, the hero marked by one
+accent-colored item of clothing. Camera nearly still. Characters blink every
+3.5 to 4 seconds, feet stay planted when walking. One short sentence per shot,
+the narrator talks to "you". Big readable text for key numbers.
+
+### Phase 6: Preset "Archive Collage" (documentary collage explainer)
 
 Status: todo
 
@@ -149,16 +235,7 @@ with slight overshoot, staggered entrances, ticking counters, underline swipes,
 one slow camera drift per scene, and a rare "alert" beat where the whole frame
 floods to the accent color.
 
-### Phase 3: Preset "Stick World" (what-if stories)
-
-Status: todo
-
-Light plain background, black stick figures, the hero marked by one
-accent-colored item of clothing. Camera nearly still. Characters blink every
-3.5 to 4 seconds, feet stay planted when walking. One short sentence per shot,
-the narrator talks to "you". Big readable text for key numbers.
-
-### Phase 4: Preset "Night Case File" (true story documentary)
+### Phase 7: Preset "Night Case File" (true story documentary)
 
 Status: todo
 
@@ -168,39 +245,13 @@ are implied by light flashes and sound. Date and place stamps, evidence board
 scenes. Scripts are fact-checked and a sources list goes into the Publishing
 Card.
 
-### Phase 5: Preset "3D Explainer" (one strange question per video)
-
-Status: todo
-
-Simple 3D scenes rendered with three.js inside the composition: soft-shaded
-objects, cutaway views, scale comparisons, bright clean materials, smooth camera
-moves.
-
-### Phase 6: Preset "Soft Clay Chronicle" (warm history documentary)
+### Phase 8: Preset "Soft Clay Chronicle" (warm history documentary)
 
 Status: todo
 
 three.js scenes with a matte, hand-made clay look: rounded faceless figures,
 subtle fingerprint texture, warm lamp light, old map table surfaces, a soft glow
 on the object the story is about, a small date label in a corner.
-
-### Phase 7: Recorded engine
-
-Status: todo
-
-Zoltan drops a finished recording. Local transcription with timestamps (checked
-against the video), cut silences, filler words and repeated takes, then apply a
-recorded preset:
-
-- "Talking head documentary": B-roll from the allowed image sources, big words,
-  chapter titles.
-- "Screen share": layout switches between full face, split and big screen about
-  every 8 seconds, zoom on clicks.
-- "Profile Silhouette": side-angle take turned into a dark silhouette with rim
-  light on a flat color background that changes at story beats, using a local
-  Apache or MIT licensed person segmentation model.
-
-Output goes into the same publishing tail. No transition sounds.
 
 ## Open decisions for Zoltan (found in Phase 1, nothing changed yet)
 
@@ -213,9 +264,9 @@ avoids them where it can; the rest waits for his decision.
 | FFmpeg, the BtbN GPL build (libx264) | no GPL | Shipped next to the app, run as a separate program. Without GPL means another H.264 encoder (OpenH264 or the graphics card), a change to every render. |
 | GSAP, its own "no charge" license | MIT, Apache, BSD or OFL only | The engine needs it. docs/gsap-license-question.md has the earlier decision. |
 | libvips through sharp (LGPL), inside the engine | MIT, Apache, BSD or OFL only | Comes with HyperFrames, not used by ITV directly. |
-| Non-OFL fonts | OFL only | library/fonts.json records no license per font. Not audited yet. Phase 2 must list only OFL fonts in its tokens. |
-| The registry component `vox-annotate` | no brand names | Status "on" in library/catalog.json, so the catalog plan (Advanced) can still pick it. No preset template uses it. |
-| Unsplash, HeyGen AI B-roll, ElevenLabs Music | allowed sources, music, 0 USD | Still in the Advanced paths. A channel video's build refuses Unsplash; HeyGen clips are logged with model and prompt. Pixabay and Kie AI are allowed now (Phase 1b). |
+| Non-OFL fonts | OFL only | library/fonts.json records no license per font. Not audited yet. Every new preset must list only OFL fonts in its tokens. |
+| The registry component `vox-annotate` | never "Vox" or any other brand name in the app | Status "on" in library/catalog.json, so the catalog plan (Advanced) can still pick it and its title shows there. No preset template uses it. |
+| Unsplash, HeyGen AI B-roll, ElevenLabs Music | allowed sources, no attribution, music, 0 USD | Still in the Advanced paths. Unsplash's API terms ask for a credit to the photographer, so the new attribution rule rejects it for channel videos. A channel video's build refuses Unsplash; HeyGen clips are logged with model and prompt. Pixabay and Kie AI are allowed now (Phase 1b). |
 | Kie AI's terms say nothing about who owns the output | clean licensing | Only the product page says "Fully licensed for business use". See Phase 1b: ask Kie AI in writing before a paid clip goes into a monetized video. |
 | Prelinger and other old film can show real people | never a recognizable real person | Filtered by words, and with an AI key the AI looks at the frame. Without a key no old film is used. The Preview tab still asks Zoltan to look at each clip. |
 | Gemini thumbnail pictures | 0 USD | Still a choice on the Thumbnail tab, with its price. Channel videos start on the free maker. |
@@ -225,7 +276,7 @@ Other findings:
 - The Library of Congress puts a Cloudflare bot check in front of its JSON, so
   the app's search gets a 403 and says so. Decide whether to keep it as a source
   (its images often sit on Wikimedia Commons too). Openverse's server gave a 504
-  on 2026-11-02 in a browser too: try it again before Phase 2 relies on it.
+  on 2026-11-02 in a browser too: try it again before a preset relies on it.
 
 - The block `rail` in Zoltan's zg-frames library lands its last stop after the
   scene ends in any scene over 4.2 s (`autoRail`: 1.5 x length minus 2.1). The
@@ -235,13 +286,13 @@ Other findings:
 - Preset 1 uses the zg-frames blocks when the channel has the pack, which
   DECISIONS 130 had stopped planning. The Scenes tab's catalog plan is unchanged.
 
-## What Phase 2 and later reuse
+## What later phases reuse
 
 - A preset is one folder: `runner/presets/<id>/preset.json`, checked by
   `checkPreset`. The contract is in `runner/presets/index.mjs`.
 - `use` names what draws a template: a bundled component, or `<pack>:<block>`.
   New hand-drawn templates should ship as a block pack (`runner/packs/`), which
-  already has variables, roles and a build path. Phase 2 needs to let a preset
+  already has variables, roles and a build path. The first style preset (Phase 4) needs to let a preset
   bring its own pack from its folder (today `registerPacks` reads the Identity's).
 - `ruleParams` in `runner/gates/scenes/templates.mjs` knows the Motion Frames
   template ids. A new preset adds its own rules there or names rule-fillable ids.
@@ -249,10 +300,9 @@ Other findings:
   `finishFind`, `approvePaid` in `runner/broll/engine.mjs` need only sentences,
   scene rows and an Identity. A preset that must not have B-roll: the recipe's switch.
 - Whisper is not in the app yet. Kokoro gives word times itself and ElevenLabs
-  gives them with its audio, so Phase 7 is the first to need a local transcriber.
-- Publishing Card sources (Phase 4): `video-publishing-card/1` takes optional blocks.
+  gives them with its audio, so Phase 2 is the first to need a local transcriber.
+- Publishing Card sources (Phase 3 and Phase 7): `video-publishing-card/1` takes optional blocks.
 
 ## Next step
 
-Phase 2: Preset "Archive Collage". First, Zoltan's decisions on the table above
-if he has made them.
+Phase 2: Recorded engine.
