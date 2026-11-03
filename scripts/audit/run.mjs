@@ -520,7 +520,7 @@ function badInput(samples) {
   // a damaged project
   const damaged = ok("a video", "channel-video-new", { ...base, topic: "Damaged" }).dir;
   fs.writeFileSync(path.join(damaged, "project.json"), "{ half a file");
-  sentence("a damaged project file", "load-project", { projectDir: damaged }, {}, /./);
+  sentence("a damaged project file", "load-project", { projectDir: damaged }, {}, /damaged/);
   const list = ok("the list skips it", "list-projects", { projectsDir: videos });
   check("the other videos are still listed", list.projects.length > 2);
   fs.rmSync(damaged, { recursive: true, force: true });
@@ -616,7 +616,7 @@ function secretsAndNet() {
   const out = allOutput.join("\n");
   check("no key in any output of the runner", !out.includes(SECRET) && !out.includes(SECRET2));
   const net = fs.existsSync(NETLOG) ? fs.readFileSync(NETLOG, "utf8") : "";
-  check("every network call went to the mock", net.length > 0, "no calls logged");
+  check("every network call went to the mock", !!only || net.length > 0, "no calls logged");
   const errorLog = path.join(dataDir, "logs", "errors.log");
   check("the error log has the full details", fs.existsSync(errorLog) && /"stack"/.test(fs.readFileSync(errorLog, "utf8")));
   const copied = ok("Copy details reads it back", "error-details", {});

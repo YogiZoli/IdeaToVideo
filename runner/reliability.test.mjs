@@ -274,7 +274,7 @@ test("render browser missing and no internet: a sentence", async () => {
 
 // ---- the Health check ------------------------------------------------------------------------------
 test("health: names what to fix, spends nothing, and a key is only a yes or no", async () => {
-  const env = { ITV_DATA_DIR: tmp("health"), ITV_ENGINE_DIR: tmp("noengine"), HYPERFRAMES_FFMPEG_PATH: "/no/ffmpeg", HYPERFRAMES_FFPROBE_PATH: "/no/ffprobe" };
+  const env = { ITV_DATA_DIR: tmp("health"), ITV_ENGINE_DIR: tmp("noengine"), HYPERFRAMES_FFMPEG_PATH: "/no/ffmpeg", HYPERFRAMES_FFPROBE_PATH: "/no/ffprobe", ITV_LIBRARY_DIR: tmp("nolibrary") };
   let calls = 0;
   const down = async () => {
     calls++;
@@ -286,6 +286,8 @@ test("health: names what to fix, spends nothing, and a key is only a yes or no",
   assert.equal(item("ffmpeg").state, "fix");
   assert.match(item("ffmpeg").fix, /Reinstall/);
   assert.equal(item("engine").state, "fix");
+  assert.equal(item("fonts").state, "fix");
+  assert.match(item("fonts").fix, /Reinstall/);
   assert.equal(item("ai").state, "ok");
   assert.equal(item("heygen").state, "note");
   assert.equal(item("voice-model").state, "fix");

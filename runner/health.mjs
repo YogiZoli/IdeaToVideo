@@ -70,9 +70,9 @@ function checkModel(id, label, here, online, why) {
   return note(id, label, `${why} It downloads once, the first time it is needed.`);
 }
 
-function checkLibrary() {
+function checkLibrary(env) {
   try {
-    const fonts = path.join(libraryDir(), "fonts");
+    const fonts = path.join(libraryDir(env), "fonts");
     const count = fs.existsSync(fonts) ? fs.readdirSync(fonts).length : 0;
     if (!count) return bad("fonts", "Fonts and scene library", "The fonts are missing, so videos cannot be built. Reinstall the app.");
     return ok("fonts", "Fonts and scene library");
@@ -115,7 +115,7 @@ export async function healthCheck({ projectsDir = null, keys = null, internet = 
     ...checkFfmpeg(env),
     ...checkEngine(env),
     checkBrowser(env, online),
-    checkLibrary(),
+    checkLibrary(env),
     checkModel("voice-model", "Free voice", Object.keys(MODEL_FILES).every((f) => fs.existsSync(path.join(modelDir(env), f))), online, "The free voice runs on this computer."),
     checkModel("speech-model", "Speech model", Object.keys(WHISPER_FILES).every((f) => fs.existsSync(path.join(whisperDir(env), f))), online, "Recordings are turned into words on this computer."),
     checkModel("depth-model", "Depth model", fs.existsSync(depthModelFile(env)), online, "Stills get their 2.5D move on this computer."),

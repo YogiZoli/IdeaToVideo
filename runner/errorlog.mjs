@@ -17,7 +17,7 @@ export function logError({ command, message, error, secrets = [], env = process.
   try {
     const file = errorLogFile(env);
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    if (fs.existsSync(file) && fs.statSync(file).size > LIMIT) fs.renameSync(file, `${file}.old`);
+    if (fs.existsSync(file) && fs.statSync(file).size > LIMIT) fs.renameSync(file, file.replace(/.log$/, ".old.log"));
     fs.appendFileSync(file, JSON.stringify(entry) + "\n");
   } catch {
     // a full or locked disk must not hide the error itself

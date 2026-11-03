@@ -77,7 +77,7 @@ pub fn export(src: &Sources, out: &Path) -> Result<usize, String> {
 
     if let Some(logs) = src.logs {
         let mut days: Vec<PathBuf> = fs::read_dir(logs)
-            .map(|r| r.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "jsonl")).collect())
+            .map(|r| r.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "jsonl" || x == "log")).collect())
             .unwrap_or_default();
         days.sort();
         for p in days.iter().rev().take(LOG_DAYS) {

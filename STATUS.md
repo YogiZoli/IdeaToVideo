@@ -1,12 +1,30 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-03 (Soft Clay Chronicle preset, DECISIONS 161 to 163)
+Frissítve: 2026-11-03 (reliability audit, DECISIONS 164 to 167)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-03, Soft Clay Chronicle, DECISIONS 161 to 163)
+## Now (2026-11-03, reliability audit, DECISIONS 164 to 167)
+
+**The audit is done: `docs/AUDIT_REPORT.md` has what was found, fixed and left open. Phase 9, the macOS build, is still next, and it needs a Mac.**
+
+- **Nothing stops a video for lack of a service any more.** AI text: the configured model, any other saved key, then offline mode, where you write or paste the script and the rest runs on this computer. Paid services that fail or have no budget are skipped, a free one is used, and the Preview tab has a new box "What this video did differently".
+- **New: Health check** (Settings, Health check, and silently at startup): keys, models, ffmpeg, engine, fonts, disk, internet. Each OK, or what to fix.
+- **Errors:** one plain sentence, with Copy details; everything else in `<app data>/logs/errors.log`.
+- **Stop:** every job in the top bar's Jobs list has one. **Freezes:** 23 slow Tauri commands left the window's thread.
+- **Your call:** one of Claude's choices overrules DECISIONS 160: no AI no longer stops Night Case File, the card says `unchecked` instead (DECISIONS 165). Tell me if a fact-checked style should rather refuse. The licence table in `docs/BUILD_PLAN.md` still waits for you (GPL FFmpeg, GSAP, libvips); fonts and the brand title are closed there.
+- **The hole in offline mode:** a channel not in English has no free voice, so without ElevenLabs it stops at the voice with a sentence.
+- Tests: `npm run audit`, new, one command, 0 USD, real network blocked: 916 of 916 checks, 13 real renders, 51 minutes, in folders with spaces and Hungarian accents. Node 661 of 663 (2 live tests skipped, the old red `traffic-card.test.mjs` was the test's own fault and is fixed), Rust 50, UI check 0 errors.
+- Merged into `main` from branch `reliability-audit` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
+- `CLAUDE.md` is new in the repo root: what ITV is, the folder map, every rule, how to build.
+
+**Not tried yet:** no real AI, ElevenLabs, HeyGen, Kie AI or Pixabay answered in the audit, only mocks of their failures. The stages ran through the runner's commands in the app's order, not by clicking; the new fallbacks inside `ProjectView.svelte` are type-checked, not clicked. A really full disk. A Mac.
+
+**Next:** Zoltan tries the installer with no key and with a wrong key on one channel (one pasted script, one topic). Then Phase 9 in a new chat, on a Mac.
+
+## Earlier (2026-11-03, Soft Clay Chronicle, DECISIONS 161 to 163)
 
 **Phase 8 of `docs/BUILD_PLAN.md` is done. Phase 9, the macOS build, is next, and it needs a Mac.**
 

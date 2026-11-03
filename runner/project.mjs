@@ -58,7 +58,13 @@ export function createProject({ projectsDir, title, language = "en", brief = nul
 }
 
 export function loadProject(dir) {
-  const project = JSON.parse(fs.readFileSync(path.join(dir, "project.json"), "utf8"));
+  let project;
+  try {
+    project = JSON.parse(fs.readFileSync(path.join(dir, "project.json"), "utf8"));
+  } catch (e) {
+    if (e.code) throw e;
+    throw new Error(`project.json is not valid: ${e.message}`);
+  }
   const errors = validate(project, loadSchema("project"));
   if (errors.length) throw new Error(`project.json is not valid: ${errors.slice(0, 5).join("; ")}`);
   return project;

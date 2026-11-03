@@ -824,6 +824,8 @@ const commands = {
     appendLog(projectDir, `broll engine: paid clips approved at ${Number(quotedUsd).toFixed(2)} USD with ${settings.paid.model} ${settings.paid.quality}`);
     const r = await logged(projectDir, "broll engine: paid clips", () => timed("broll-make", 1, emit, () => approvePaid({ projectDir, identityDir, apiKey: key(), settings, quotedUsd, onProgress: (p) => emit({ event: "progress", ...p }) })));
     previewStale(projectDir);
+    // what failed goes back to its free picture (approvePaid), and the Preview says so
+    if (r.failed?.length) addNote(projectDir, "paid", `${r.failed.length} paid clip${r.failed.length === 1 ? "" : "s"} did not work, so the free picture stays there: ${friendlyMessage(r.failed[0].error)}`);
     return { ...brollReview({ projectDir, identityDir, settings }), made: r.made, failed: r.failed };
   },
   "kie-balance": async () => ({ account: await kieBalance({ apiKey: key() }) }),

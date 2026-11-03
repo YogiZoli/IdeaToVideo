@@ -96,8 +96,8 @@ Tests, one at a time from the repo root:
 
 ```text
 npm test                    all Node tests, about a minute
-npm run audit:quick         every engine and preset and failure case, no renders, about 15 minutes, 0 USD
-npm run audit               the same with real renders, about 30 minutes, 0 USD
+npm run audit:quick         every engine and preset and failure case, no renders, about 30 minutes, 0 USD
+npm run audit               the same with real renders, about an hour, 0 USD
 node scripts/phase2/channel-e2e.mjs --work <dir>     one real run of a channel video
 ```
 
