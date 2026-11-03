@@ -19,6 +19,9 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - Tests: `npm run audit`, new, one command, 0 USD, real network blocked: 916 of 916 checks, 13 real renders, 51 minutes, in folders with spaces and Hungarian accents. Node 661 of 663 (2 live tests skipped, the old red `traffic-card.test.mjs` was the test's own fault and is fixed), Rust 50, UI check 0 errors.
 - Merged into `main` from branch `reliability-audit` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
 - `CLAUDE.md` is new in the repo root: what ITV is, the folder map, every rule, how to build.
+- Local installer built 2026-11-03 19:57 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The installed copy's own node, runner and engine, with no key: the Health check, a draft by hand, the free voice standing in for ElevenLabs with its note, a real render (17.6 s of video in 41 s) and the card. The app was opened, its silent Health check logged 0 problems. No screen was clicked in the installed window.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch (about 15 minutes).
 
 **Not tried yet:** no real AI, ElevenLabs, HeyGen, Kie AI or Pixabay answered in the audit, only mocks of their failures. The stages ran through the runner's commands in the app's order, not by clicking; the new fallbacks inside `ProjectView.svelte` are type-checked, not clicked. A really full disk. A Mac.
 

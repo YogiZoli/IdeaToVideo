@@ -92,8 +92,8 @@ spaces and Hungarian accents in their names on purpose.
 ### 10. Finish
 - [x] CLAUDE.md in the repo root
 - [x] This report: found, fixed, open
-- [ ] Commit, merge into main, push if no Actions run, no PR
-- [ ] STATUS.md updated, old build outputs cleaned, installer built, app opened
+- [x] Commit, merge into main, push if no Actions run (`build.yml` has no push trigger), no PR
+- [x] STATUS.md updated, old build outputs cleaned, installer built, app opened
 
 ## Found and fixed
 
