@@ -228,7 +228,7 @@ moves.
 
 Status: done (2026-11-03, DECISIONS 152 to 154). Not tried yet: a real AI on the plan and on the
 script's short "you" sentences (the rule and a pasted script only), Hungarian on this preset, a video
-over a minute and a half. A sentence under 2 seconds shares a shot with the next one (DECISIONS 153).
+over 61 seconds. A sentence under 2 seconds shares a shot with the next one (DECISIONS 153).
 
 Light plain background, black stick figures, the hero marked by one
 accent-colored item of clothing. Camera nearly still. Characters blink every
