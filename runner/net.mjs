@@ -35,6 +35,15 @@ export function retrying(fetchImpl = fetch, { tries = TRIES, sleep = defaultSlee
   };
 }
 
+/** The answer as JSON. A proxy or a captive portal can answer 200 with a web page: that is a sentence. */
+export async function readJson(res, label) {
+  try {
+    return await res.json();
+  } catch {
+    throw new Error(`${label} answered with something the app could not read. Try again later, or check your connection.`);
+  }
+}
+
 /**
  * A timeout for a big download: it does not limit the whole download, only how long
  * nothing arrives. touch() on every piece, done() at the end.

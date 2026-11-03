@@ -96,7 +96,7 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
   const checked = briefForCard(loadBrief(projectDir));
   // a style that promises a fact-check says so on the card when there is none to show
   const presetId = loadProject(projectDir).recipe?.preset;
-  const promised = presetId ? loadPreset(presetId).factChecked === true : false;
+  const promised = loadBrief(projectDir)?.offline === true || (presetId ? loadPreset(presetId).factChecked === true : false);
   const research = checked ? { researchSources: checked } : promised ? { researchSources: { grounded: false, sources: [], flags: [], unchecked: true } } : {};
   return {
     schema: CARD_SCHEMA,

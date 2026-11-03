@@ -175,6 +175,7 @@ test("friendly: what only a program can read becomes one sentence", () => {
     ["The render failed: frame 12 ffmpeg exited 1", /The render stopped/],
     ["ffmpeg failed (1): Invalid data", /Check that the file plays/],
     ["spawn UNKNOWN", /would not start/],
+    ["Could not reach Claude: request ended without sending any chunks", /^Could not reach Claude\. The internet/],
     ["The render browser could not be downloaded. Check the internet connection and press the button again; nothing is lost. Details: ERR_X at y.js:1:2", /^The render browser could not be downloaded\. Check the internet connection and press the button again; nothing is lost\.$/],
     ["", /without saying why/],
     [undefined, /without saying why/],
@@ -182,6 +183,19 @@ test("friendly: what only a program can read becomes one sentence", () => {
     ["Error: boom\n    at x (y.js:1:2)", /inside the app/],
   ];
   for (const [raw, want] of cases) assert.match(friendlyMessage(raw), want, String(raw));
+});
+
+test("friendly: our own error types never show their name", () => {
+  assert.equal(friendlyMessage(new LlmError("Gemini rejected the API key. Check it in Settings.")), "Gemini rejected the API key. Check it in Settings.");
+  class BusyError extends Error {
+    constructor(m) {
+      super(m);
+      this.name = "BusyError";
+    }
+  }
+  assert.equal(friendlyMessage(new BusyError("HeyGen is busy. Try again later.")), "HeyGen is busy. Try again later.");
+  assert.match(friendlyMessage(new TypeError("x is not a function")), /inside the app/);
+  assert.match(friendlyMessage(new DOMException("timed", "TimeoutError")), /did not answer in time/);
 });
 
 test("friendly: our own sentence stays, and a program's words inside it go", () => {

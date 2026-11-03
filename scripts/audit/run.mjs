@@ -52,7 +52,7 @@ function start(name) {
 }
 
 // One plain sentence: no stack, no code, no raw JSON, no key.
-const NOT_PLAIN = /\n\s+at\s|\bat .+:\d+:\d+|^(Type|Reference|Syntax|Range)?Error\b|\bE[A-Z]{3,}\b|ERR_|fetch failed|undefined|\[object|unknown error|\{"|mock \d{3}.*\{/;
+const NOT_PLAIN = /\n\s+at\s|\bat .+:\d+:\d+|\b\w*Error\b:|^(Type|Reference|Syntax|Range)?Error\b|Connection error|without sending|\bE[A-Z]{3,}\b|ERR_|fetch failed|undefined|\[object|unknown error|\{"|mock \d{3}.*\{/;
 const isPlain = (m) => typeof m === "string" && m.length > 15 && m.length < 700 && !NOT_PLAIN.test(m) && !m.includes(SECRET) && !m.includes(SECRET2);
 
 // ---- the runner, as the app starts it --------------------------------------------------
@@ -182,6 +182,12 @@ function scriptEngine(preset, { render = true, broll = false } = {}) {
   const { identity, videos } = channel(preset, "script");
   const v = ok(`${preset}: a pasted script`, "channel-video-new", { projectsDir: videos, identityDir: identity, identity: "audit", language: "en", text: SCRIPT, textKind: "finished", research: false });
   const projectDir = v.dir;
+  // a style that promises a fact-check, with no AI: the empty brief, one click, the card says so
+  const factChecked = JSON.parse(fs.readFileSync(path.join(ROOT, "runner", "presets", preset, "preset.json"), "utf8")).factChecked === true;
+  if (factChecked) {
+    ok(`${preset}: research with no AI`, "research-offline", { projectDir });
+    ok(`${preset}: one click goes on`, "research-approve", { projectDir });
+  }
   const voice = ok(`${preset}: the free voice`, "make-voice", { projectDir, identityDir: identity, narrator: { provider: "kokoro", voice: "am_michael" }, music: null });
   check(`${preset}: words have times`, voice.info?.sentences >= 3, JSON.stringify(voice.info ?? {}).slice(0, 200));
   ok(`${preset}: music by code`, "make-music", { projectDir, identityDir: identity, music: { provider: "synth", mood: "calm" } });
@@ -202,6 +208,7 @@ function scriptEngine(preset, { render = true, broll = false } = {}) {
   ok(`${preset}: preview approved`, "approve-gate", { projectDir, gate: "review" });
   const made = ok(`${preset}: render`, "render-video", { projectDir, identityDir: identity, quality: "draft" });
   finished(preset, projectDir, identity, made);
+  if (factChecked) check(`${preset}: the card says unchecked`, JSON.parse(fs.readFileSync(made.file.replace(/\.mp4$/, ".card.json"), "utf8")).researchSources?.unchecked === true);
   return { projectDir, identity, videos, made };
 }
 // The tail every video shares: the file, the card, the license ledger, the free thumbnail, the PDT export.

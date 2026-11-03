@@ -8,7 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { chat, searchChat, canSearch, extractJson } from "../providers/llm.mjs";
+import { chat, searchChat, canSearch, extractJson, LlmError } from "../providers/llm.mjs";
 
 export const BRIEF_SCHEMA = "itv-research/1";
 export const BRIEF_FILE = "research.json";
@@ -140,7 +140,7 @@ export async function makeBrief({ llm, topic = "", text = "", language = "en", c
     if (sources.length < MIN_SOURCES) warnings.push(`Only ${sources.length} of at least ${MIN_SOURCES} sources were found.`);
     return { schema: BRIEF_SCHEMA, state: "pending", topic: line(topic, 300), language, checkedText: !!text, grounded, provider: llm.provider, model: llm.model ?? null, queries: got.queries.slice(0, 12), at: now.toISOString(), ...body, sources, warnings };
   }
-  throw new Error("The AI gave no usable research brief. Press Research again.");
+  throw new LlmError("The AI gave no usable research brief. Press Research again.", { offline: true });
 }
 
 /** No AI could research: an empty brief that says so. One click goes on, and the card says unchecked. */

@@ -97,7 +97,7 @@ export async function newRecordedVideo({ projectsDir, identity, language = "en",
   if (problem) throw new Error(problem);
   const probes = {};
   for (const [slot, file] of Object.entries(clean)) {
-    if (!fs.existsSync(file)) throw new Error(`This file is not there any more: ${file}`);
+    if (!fs.existsSync(file)) throw new Error(`This file is not there any more: ${file}. Choose it again.`);
     probes[slot] = await probeMedia(file, env);
   }
   for (const [slot, role] of Object.entries(pictureRoles(preset, clean))) if (!probes[role]?.hasVideo) throw new Error(`The ${slot} file has no picture: ${clean[role]}`);

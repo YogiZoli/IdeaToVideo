@@ -4,7 +4,7 @@
 // searches, each one reads the license again from the answer and drops whatever
 // the license module refuses.
 
-import { retrying } from "../net.mjs";
+import { retrying, readJson } from "../net.mjs";
 import { refusal, looksLikePerson } from "./license.mjs";
 import { commonsLicense, nasaHit } from "./sources.mjs";
 
@@ -23,7 +23,7 @@ async function getJson(url, { fetchImpl = fetch, label }) {
     throw new Error(`Could not reach ${label}: ${e.message}`);
   }
   if (!res.ok) throw new Error(`${label} answered with HTTP ${res.status}. Try again later.`);
-  return res.json();
+  return readJson(res, label);
 }
 
 // ---- Prelinger Archives --------------------------------------------------------------

@@ -5,7 +5,7 @@
 // hotlinked), and the search shows where the pictures come from (the UI).
 // The key goes only in the request address, and never into a message.
 
-import { retrying } from "../net.mjs";
+import { retrying, readJson } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -64,7 +64,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
   if (res.status === 429) throw new Error("Pixabay asks to slow down. Wait a minute and search again.");
   if (res.status === 400 || res.status === 401 || res.status === 403) throw new Error("Pixabay did not accept the key. Check it in Settings, Connections.");
   if (!res.ok) throw new Error(`Pixabay answered with HTTP ${res.status}. Try again later.`);
-  const body = await res.json();
+  const body = await readJson(res, "Pixabay");
   const hits = (body.hits ?? []).map((h) => shapeHit(kind, h)).filter(Boolean);
   if (cached) {
     fs.mkdirSync(cacheDir, { recursive: true });

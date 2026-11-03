@@ -4,6 +4,7 @@
 // reference photos, when the face is on, go in as image blocks next to the
 // text. The answer is a JPEG, 16:9, 1K.
 
+import { readJson } from "../net.mjs";
 import { redact } from "../providers/llm.mjs";
 import { BusyError, patiently, busyStatus } from "../providers/retry.mjs";
 
@@ -51,7 +52,7 @@ async function once({ apiKey, fetchImpl, body }) {
     if (busyStatus(res.status)) throw new BusyError(`Gemini answered with HTTP ${res.status}${why}. The app kept trying for about three minutes. Try again later.`, { status: res.status });
     throw new Error(`Gemini answered with HTTP ${res.status}${why}.`);
   }
-  const data = imageOf(await res.json());
+  const data = imageOf(await readJson(res, "Gemini"));
   if (!data) throw new Error("Gemini made no picture. It may have refused the description or the photo. Try again, or try with no face.");
   return Buffer.from(data, "base64");
 }

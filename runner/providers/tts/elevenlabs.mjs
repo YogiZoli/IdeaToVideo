@@ -4,7 +4,7 @@
 //   speak        one block of text -> mp3 bytes + word timings
 // The key only ever goes into the request header, never into a message.
 
-import { retrying } from "../../net.mjs";
+import { retrying, readJson } from "../../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -36,7 +36,7 @@ async function call(path, { apiKey, fetchImpl = fetch, method = "GET", body, tim
   } catch (e) {
     throw new BusyError(`Could not reach ElevenLabs: ${redact(e.message, apiKey)}`);
   }
-  if (res.ok) return res.json();
+  if (res.ok) return readJson(res, "ElevenLabs");
   const text = redact(await res.text().catch(() => ""), apiKey);
   let reason = "";
   try {

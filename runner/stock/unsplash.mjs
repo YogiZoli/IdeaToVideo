@@ -12,7 +12,7 @@
 // Demo mode allows 50 requests an hour, so searches are cached for an hour
 // and the rate limit gets a plain message.
 
-import { retrying } from "../net.mjs";
+import { retrying, readJson } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -98,7 +98,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
   const params = new URLSearchParams({ query, per_page: "18", orientation: "landscape", content_filter: "high" });
   const res = await get(`${API}/search/photos?${params}`, apiKey, fetchImpl, "");
   if (!res.ok) throw new Error(failure(res));
-  const body = await res.json();
+  const body = await readJson(res, "Unsplash");
   const hits = (body.results ?? []).map(shapeHit).filter(Boolean);
   if (cached) {
     fs.mkdirSync(cacheDir, { recursive: true });

@@ -13,11 +13,13 @@ const MEMORY = /ENOMEM|out of memory|allocation failed|heap limit/i;
 const DAMAGED = /project\.json is not valid|refusing to save an invalid project\.json/i;
 // what only a program should read: a stack, a JavaScript error, a system code
 const RAW = /^(Type|Reference|Range|Syntax|Assertion|Eval|URI)?Error\b|\n\s+at\s|\bat .+:\d+:\d+|Cannot read propert|Cannot set propert|is not a function|is not defined|is not iterable|is not a constructor|Unexpected token|Unexpected end of|JSON at position|undefined \(reading|null \(reading|\bERR_[A-Z_]+\b|\bE[A-Z]{3,}\b:|\[object Object\]|^undefined$|^null$/;
+const JS_ERROR = /^(Type|Reference|Range|Syntax|Assertion|Eval|URI|Timeout)Error$/;
 const AGAIN = "Press the button again; if it happens again, use Copy details and send them.";
 const MAX = 500;
 
 export function friendlyMessage(error) {
-  const raw = typeof error === "string" ? error : `${error?.name && error.name !== "Error" ? `${error.name}: ` : ""}${error?.message ?? error ?? ""}`;
+  // the name counts only for what JavaScript itself throws; our own errors are sentences
+  const raw = typeof error === "string" ? error : `${JS_ERROR.test(error?.name ?? "") ? `${error.name}: ` : ""}${error?.message ?? error ?? ""}`;
   // what follows "Details:" is the engine's own output, for the log file
   const m = raw.replace(/^\s*(Uncaught\s+)?Error:\s*/, "").replace(/\s*Details:[\s\S]*$/, "").replace(/: fetch failed\./, ": no connection.").trim();
   // a sentence that already says what to do about the connection
@@ -33,7 +35,8 @@ export function friendlyMessage(error) {
     const who = /Could not (?:reach|download) ([^:(]+)/.exec(m)?.[1]?.trim();
     return `${who ? `${who} did` : "The service did"} not answer in time. Check the internet connection and press the button again; nothing is lost.`;
   }
-  if (NETWORK.test(m)) {
+  // whatever else a connection library says after this is for the log file
+  if (NETWORK.test(m) || /^Could not reach [^:]+:/.test(m)) {
     const who = /Could not reach ([^:]+):/.exec(m)?.[1];
     return `${who ? `Could not reach ${who}. ` : ""}The internet connection may be down, or the service cannot be reached right now. Check the connection and press the button again; nothing is lost.`;
   }

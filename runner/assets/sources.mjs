@@ -3,7 +3,7 @@
 // only, reads the license again from the answer, and drops whatever the
 // license module refuses. Nothing is trusted from the search filter alone.
 
-import { retrying } from "../net.mjs";
+import { retrying, readJson } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -22,7 +22,7 @@ async function getJson(url, { fetchImpl = fetch, label }) {
     throw new Error(`Could not reach ${label}: ${e.message}`);
   }
   if (!res.ok) throw new Error(`${label} answered with HTTP ${res.status}. Try again later.`);
-  return res.json();
+  return readJson(res, label);
 }
 
 const keep = (hits) => hits.filter((h) => !refusal(h));
