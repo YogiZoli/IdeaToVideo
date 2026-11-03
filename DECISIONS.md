@@ -2678,5 +2678,5 @@
 
     Tests: Node 590 of 593 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors.
     Rust was not touched and its tests were not run again. New `scripts/phase2/collage-e2e.mjs` 51/51 with the real free voice
-    and real renders, one video by rule and one with every template once, each looked at frame by frame. A real AI was
+    and real renders, one video by rule and one with every template once, each looked at frame by frame; Motion Frames' channel e2e 56/56. A real AI was
     not used. Longest video tried: 69 s.

@@ -24,7 +24,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **The AI only fills templates and names things.** A dead AI still gets a varied video by rule.
 - **Speed:** 69 s of video renders in about 160 to 230 s (draft quality), slower than Stick World.
 - Tests: Node 590 of 593 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check
-  0 errors, new `scripts/phase2/collage-e2e.mjs` 51/51 with the real free voice and real renders. Rust not touched, not run again.
+  0 errors, new `scripts/phase2/collage-e2e.mjs` 51/51 with the real free voice and real renders, Motion Frames' channel e2e 56/56. Rust not touched, not run again.
 - Merged into `main` from branch `preset-archive-collage` and pushed. No PR, no GitHub Actions run (`build.yml` runs only
   on a PR or by hand).
 - Local installer built 2026-11-03 13:35 and installed over the old app:
