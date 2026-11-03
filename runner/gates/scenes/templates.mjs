@@ -15,6 +15,7 @@ import { paceOf } from "./roles.mjs";
 import { callSentences, checkScenes, joinShort, isSoft, gapsOf, writeTable, audioLength, readScript, clean, withCalls, sentenceSections, MAX_WORDS, MIN_SECONDS } from "./index.mjs";
 import { callLine, simplePlan } from "./simple.mjs";
 import { recordHistory } from "./history.mjs";
+import { CLOCK, DATE, YEAR, whenIn } from "./when.mjs";
 import { resolveTemplates } from "../../presets/index.mjs";
 import { estimateUsd, tokensOf } from "../../providers/prices.mjs";
 
@@ -22,6 +23,8 @@ import { estimateUsd, tokensOf } from "../../providers/prices.mjs";
 export const PART_SENTENCES = 24;
 // More of a part's scenes than this mended by rule: the AI is asked once more.
 const ASK_AGAIN_SHARE = 0.34;
+
+export { whenIn };
 
 const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ %$.,:-]+/gu, " ").split(/\s+/).map((w) => w.replace(/^[.,:-]+|[.,:-]+$/g, "")).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;
@@ -117,21 +120,6 @@ function offScreen(template, params) {
     delete out[id];
   }
   return out;
-}
-
-// When a sentence says it happened, as it should stand on a stamp: a date, else a time, else a year.
-const MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December|január|február|március|április|május|június|július|augusztus|szeptember|október|november|december";
-const DATE = new RegExp(`\\b(?:(?:${MONTHS})\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:of\\s+)?(?:${MONTHS})(?:,?\\s+\\d{4})?|\\d{4}\\.?\\s+(?:${MONTHS})\\s+\\d{1,2})`, "iu");
-const CLOCK = /\b(\d{1,2})(?::(\d{2}))?\s?([ap])\.?m\b\.?/i;
-const YEAR = /\b(?:in|since|by|until|from|year|around|early|late|after|before|of)\s+(1[0-9]{3}|20[0-9]{2})\b|\b(1[0-9]{3}|20[0-9]{2})(?:-ban|-ben|-ig|-től|-tól|-as|-es)/i;
-export function whenIn(text) {
-  const said = String(text);
-  const date = DATE.exec(said);
-  if (date) return { text: date[0].replace(/\s+/g, " ").replace(/,/g, "").trim(), raw: date[0] };
-  const clock = CLOCK.exec(said);
-  if (clock) return { text: `${clock[1]}${clock[2] ? `:${clock[2]}` : ""} ${clock[3].toUpperCase()}M`, raw: clock[0] };
-  const year = YEAR.exec(said);
-  return year ? { text: year[1] ?? year[2], raw: year[1] ?? year[2] } : null;
 }
 
 // The sentence without what the stamp already says, so the line under it adds something.
@@ -274,6 +262,8 @@ function ownRule(template, said) {
     case "talk": {
       if (!/\b(say|says|said|ask|asks|asked|tell|tells|told|shout|shouts|shouted)\b|mond|kérdez/i.test(said)) return null;
       const quoted = /["“„]([^"”]+)["”]/.exec(said)?.[1];
+      // a preset may want real speech only: "nobody asked" is not two people talking
+      if (template.params.said.quoted && !quoted) return null;
       return { said: headlineOf(quoted ?? said, 6), object: objectFor(said, objects) };
     }
     case "year": {
@@ -309,11 +299,18 @@ function ownRule(template, said) {
     case "board": {
       const items = listIn(said);
       if (!items) return null;
-      return Object.fromEntries(items.map((x, i) => [`item${i + 1}`, x]));
+      const things = template.params?.object1 ? items.map((x, i) => [`object${i + 1}`, objectFor(x, objects)]) : [];
+      return Object.fromEntries([...items.map((x, i) => [`item${i + 1}`, x]), ...things]);
     }
     case "evidence":
       if (!/\b(evidence|clue|clues|found|discovered|fingerprints?|footprints?|receipts?|photographs?|photos?|recordings?|tapes?|notebook|diary)\b|bizonyíték|nyom\b|találta|találtak/i.test(said)) return null;
       return { line: lineOf(template, said), object: objectFor(said, objects) };
+    case "relic": {
+      const named = objectsIn(said, objects)[0];
+      // a number the voice says is the point of a sentence that has one
+      if (!named || /\d/.test(said) || !/\b(found|discovered|unearthed|treasure|treasured|relic|artifact|artefact|kept|buried|preserved|survived|invented|built|made|carved|forged|printed)\b|találta|találtak|kincs|épít|feltal/i.test(said)) return null;
+      return { line: lineOf(template, said), object: named.object.id };
+    }
     case "room":
       if (!/\b(room|house|home|apartment|flat|office|kitchen|bedroom|hotel|inside|upstairs|basement)\b|szoba|lakás|házban|iroda/i.test(said)) return null;
       return { line: lineOf(template, said), object: objectFor(said, objects) };
@@ -373,7 +370,7 @@ function ruleWords(template, sentences) {
     case "question":
       return /\?/.test(said) ? { question: upTo(0, 6).join(" ") } : null;
     case "number": {
-      const n = numberIn(said.replace(DATE, " ").replace(CLOCK, " ").replace(/\b\d{1,2}:\d{2}\b/g, " "));
+      const n = numberIn(said.replace(DATE, " ").replace(CLOCK, " ").replace(YEAR, " ").replace(/\b\d{1,2}:\d{2}\b/g, " "));
       return n && n.after !== "%" ? { value: n.value, before: n.before, after: n.after } : null;
     }
     case "percent": {

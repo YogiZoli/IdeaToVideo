@@ -1,12 +1,44 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-03 (Night Case File preset, DECISIONS 158 to 160)
+Frissítve: 2026-11-03 (Soft Clay Chronicle preset, DECISIONS 161 to 163)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-03, Night Case File, DECISIONS 158 to 160)
+## Now (2026-11-03, Soft Clay Chronicle, DECISIONS 161 to 163)
+
+**Phase 8 of `docs/BUILD_PLAN.md` is done. Phase 9, the macOS build, is next, and it needs a Mac.**
+
+- **Where to find it:** a channel's recipe, Style: Soft Clay Chronicle. Choosing it turns B-roll off, research on and the music warm; all three switches stay.
+- **What it makes:** warm history documentaries in matte clay. Rounded faceless figures told apart by what they wear, things with a faint fingerprint texture, one warm lamp over
+  a table with a real old map on paper, a soft glow on the thing the story is about. 15 scene templates, 42 things drawn by code, three.js. Nothing is downloaded when a video is
+  made and nothing is paid. Its own colors and the OFL fonts Playfair Display and Source Serif 4.
+- **The small date label:** the last date the voice has said, in the top left corner. It stands still across cuts. The build fills it, so the AI is never asked and it cannot say a date the voice did not.
+- **Your call, Claude chose (DECISIONS 161 and 162):**
+  - No percent template, the 15 places went to history's needs (year, journey, map, two people talking, the thing on a cloth). A percentage stands in the words.
+  - Research is on by default here, but can be turned off. Unlike Night Case File, this style does not promise a fact-check.
+- **The AI only fills templates.** A dead AI still gets a varied plan, though a line cut by rule can read oddly ("Most people in the town never", "a rich king built").
+- **Speed:** 62 s of video renders in about 140 s (draft quality), 27 MB.
+- **Also fixed, every preset:** a year is no longer read as a plain number ("In 1761" could become a giant 1,761).
+- Tests: Node 637 of 640 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors, new `scripts/phase2/clay-e2e.mjs` 51/51 with the real free voice and
+  real renders, 3D Explainer's e2e 21/21 (its shared code changed; its picture looks the same on a contact sheet) and Motion Frames' channel e2e 56/56. Rust not touched, not run again.
+- Merged into `main` from branch `preset-soft-clay` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
+- Local installer built 2026-11-03 16:46 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The installed copy's own node, runner and engine offered the style and rendered a real
+  Soft Clay video (41/41 steps, 62 s of video in 136 s). The app was opened. The style list was not clicked in the installed window (screen access was declined this session).
+- Samples: `C:/Users/gdp/Videos/IdeaToVideo-mintak/2026-11-03_soft-clay_minden-sablon.mp4` (every template once) and
+  `2026-11-03_soft-clay_szabaly-alapjan.mp4` (planned by rule, no AI). Draft quality. The story in them is invented, as a test.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch (about 15 minutes).
+
+**Not tried yet:** a real AI on the plan, the brief and the script (rule and a pasted script only), so Google Search grounding has still not run against the real service; Hungarian on
+this preset (only finding things and dates is tested); a video over 63 s; nobody has listened to the warm music under this picture.
+
+**Next:** Phase 9 (macOS build) in a new chat, on a Mac with Claude Code, no CI. It cannot be done on this Windows computer. Zoltan's own tries are still open: one piece of history on
+Soft Clay Chronicle, one true story on Night Case File, one explainer on Archive Collage, one what-if story on Stick World, one strange question on 3D Explainer, and Phase 3's
+(one topic with research, one set of notes, one recording).
+
+## Earlier (2026-11-03, Night Case File, DECISIONS 158 to 160)
 
 **Phase 7 of `docs/BUILD_PLAN.md` is done. Phase 8, Soft Clay Chronicle, is next.**
 

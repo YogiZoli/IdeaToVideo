@@ -438,11 +438,17 @@
     return renderer;
   }
 
-  function Stage(c, seed) {
+  // `dress`: another preset's lights and floor (Soft Clay Chronicle), instead of these.
+  function Stage(c, seed, dress, view) {
     this.c = c;
+    this.seed = seed;
     this.scene = new T.Scene();
     this.camera = new T.PerspectiveCamera(32, WIDTH / HEIGHT, 0.1, 400);
     this.side = seed % 2 ? 1 : -1;
+    if (dress) {
+      dress(this, view);
+      return;
+    }
     var sky = new T.HemisphereLight(0xffffff, 0xd9dfec, 1.55);
     this.scene.add(sky);
     var key = new T.DirectionalLight(0xfff6ea, 2.3);
@@ -518,8 +524,8 @@
   var live = [];
   function draw(view, t) {
     if (!view.stage) {
-      view.stage = new Stage(colorsOf(view.root), hash(view.kind + JSON.stringify(view.vars)));
-      view.update = KINDS[view.kind].build(view.stage, view.vars, view.D, view);
+      view.stage = new Stage(colorsOf(view.root), hash(view.kind + JSON.stringify(view.vars)), view.spec.dress, view);
+      view.update = view.spec.kinds[view.kind].build(view.stage, view.vars, view.D, view);
       view.canvas.width = WIDTH;
       view.canvas.height = HEIGHT;
       view.ctx = view.canvas.getContext("2d");
@@ -1035,16 +1041,25 @@
     }
     return Object.assign({}, given, own);
   }
-  function block(root, kind, given) {
-    style();
+  // `spec`: what differs between presets drawn here. kinds: the scene kinds. style: puts the CSS on
+  // the page. host: the class of the block's root. dress: lights and floor. always: words on every scene.
+  function blockOf(spec) {
+    return function (root, kind, given) {
+      return block(spec, root, kind, given);
+    };
+  }
+  function block(spec, root, kind, given) {
+    spec.style();
+    var KINDS = spec.kinds;
     var clip = root.querySelector("[data-scene-dur]");
     var vars = valuesOf(root, given);
     var D = Math.max(0.1, parseFloat(clip.getAttribute("data-scene-dur")) || 4);
-    var view = { root: root, canvas: root.querySelector("canvas"), kind: kind, vars: vars, D: D, stage: null, words: clip };
-    var host = root.querySelector(".x3d-root");
+    var view = { root: root, canvas: root.querySelector("canvas"), kind: kind, vars: vars, D: D, stage: null, words: clip, spec: spec };
+    var host = root.querySelector(spec.host);
     if (KINDS[kind].flood && host) host.classList.add("flood");
     var tl = gsap.timeline({ paused: true });
     KINDS[kind].words(view, tl, vars);
+    if (spec.always) spec.always(view, tl, vars);
     // Every frame of this scene goes through this one value (see the top of this file).
     var value = 0;
     var proxy = {
@@ -1071,5 +1086,9 @@
     return tl;
   }
 
-  w.ITV3D = { block: block, OBJECTS: Object.keys(OBJ) };
+  w.ITV3D = {
+    block: blockOf({ kinds: KINDS, style: style, host: ".x3d-root" }),
+    OBJECTS: Object.keys(OBJ),
+    kit: { WIDTH: WIDTH, HEIGHT: HEIGHT, clamp: clamp, mix: mix, smooth: smooth, pop: pop, hash: hash, seeded: seeded, ball: ball, tube: tube, lathe: lathe, size: size, gl: gl, blockOf: blockOf },
+  };
 })(window, document);

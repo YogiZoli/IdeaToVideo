@@ -1,0 +1,624 @@
+{
+  "schema": "itv-pack/1",
+  "id": "soft-clay",
+  "name": "Soft Clay Chronicle",
+  "look": "own",
+  "camera": "One slow 3D move, its own",
+  "runtime": [
+    "three"
+  ],
+  "script": [
+    "../../archive-collage/pack/shared/map-data.js",
+    "../../explainer-3d/pack/shared/world3d.js",
+    "shared/clay.js"
+  ],
+  "dateLabel": true,
+  "blocks": [
+    {
+      "id": "title",
+      "role": "opening",
+      "label": "One thing in the lamp's glow",
+      "what": "The first scene: what the video is about, with the thing it is about.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "kicker",
+          "type": "string",
+          "label": "Kicker",
+          "default": "",
+          "optional": true,
+          "maxWords": 4
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "chapter",
+      "role": "opening",
+      "label": "The lamp comes up on a book",
+      "what": "The start of a new part of the story.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "statement",
+      "role": "statement",
+      "label": "A thing and two notes",
+      "what": "A plain claim: the first line sets it up, the second lands it.",
+      "variables": [
+        {
+          "id": "line1",
+          "type": "string",
+          "label": "Line 1",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "line2",
+          "type": "string",
+          "label": "Line 2",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "word",
+      "role": "emphasis",
+      "label": "One large word",
+      "what": "One word is the whole point.",
+      "variables": [
+        {
+          "id": "word",
+          "type": "string",
+          "label": "Word",
+          "default": "",
+          "maxWords": 2
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "highlight",
+      "role": "emphasis",
+      "label": "A note with one word marked",
+      "what": "A short line with one key word to mark.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "mark",
+          "type": "string",
+          "label": "Mark",
+          "default": "",
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "question",
+      "role": "statement",
+      "label": "Somebody wonders",
+      "what": "The narration asks the viewer something.",
+      "variables": [
+        {
+          "id": "question",
+          "type": "string",
+          "label": "Question",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "number",
+      "role": "proof",
+      "label": "A number and a pile",
+      "what": "The narration says a number and it matters; the thing is what is counted.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "before",
+          "type": "string",
+          "label": "Before",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "after",
+          "type": "string",
+          "label": "After",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "year",
+      "role": "detail",
+      "label": "A year, large",
+      "what": "The narration says the year something happened.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 8
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "route",
+      "role": "relation",
+      "label": "A journey across the map",
+      "what": "Somebody or something travels between two places the narration names.",
+      "variables": [
+        {
+          "id": "fromPlace",
+          "type": "string",
+          "label": "From Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "toPlace",
+          "type": "string",
+          "label": "To Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "fromLabel",
+          "type": "string",
+          "label": "From Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "toLabel",
+          "type": "string",
+          "label": "To Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "map",
+      "role": "detail",
+      "label": "A pin in the old map",
+      "what": "The narration names one country or big city.",
+      "variables": [
+        {
+          "id": "place",
+          "type": "string",
+          "label": "Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "label",
+          "type": "string",
+          "label": "Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "talk",
+      "role": "detail",
+      "label": "Two people talking",
+      "what": "Somebody says or asks something.",
+      "variables": [
+        {
+          "id": "said",
+          "type": "string",
+          "label": "Said",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "versus",
+      "role": "contrast",
+      "label": "Two sides on round bases",
+      "what": "This or that, before and after, one side against another.",
+      "variables": [
+        {
+          "id": "left",
+          "type": "string",
+          "label": "Left",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "right",
+          "type": "string",
+          "label": "Right",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "leftObject",
+          "type": "string",
+          "label": "Left Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "rightObject",
+          "type": "string",
+          "label": "Right Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "cause",
+      "role": "relation",
+      "label": "One thing leads to another",
+      "what": "One thing causes or leads to another.",
+      "variables": [
+        {
+          "id": "from",
+          "type": "string",
+          "label": "From",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "to",
+          "type": "string",
+          "label": "To",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "fromObject",
+          "type": "string",
+          "label": "From Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "toObject",
+          "type": "string",
+          "label": "To Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "board",
+      "role": "process",
+      "label": "Things in a row",
+      "what": "Three or four things that belong together, in the order the narration says them.",
+      "variables": [
+        {
+          "id": "item1",
+          "type": "string",
+          "label": "Item 1",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item2",
+          "type": "string",
+          "label": "Item 2",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item3",
+          "type": "string",
+          "label": "Item 3",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item4",
+          "type": "string",
+          "label": "Item 4",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "object1",
+          "type": "string",
+          "label": "Object 1",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "object2",
+          "type": "string",
+          "label": "Object 2",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "object3",
+          "type": "string",
+          "label": "Object 3",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "object4",
+          "type": "string",
+          "label": "Object 4",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "relic",
+      "role": "detail",
+      "label": "The thing on a cloth",
+      "what": "One thing that was found, made or kept: the thing the story is about, alone in the light.",
+      "variables": [
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "scroll",
+          "optional": true
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "label": "Date",
+          "default": "",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    }
+  ]
+}

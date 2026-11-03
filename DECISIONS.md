@@ -2720,3 +2720,25 @@
     Tests: Node 615 of 618 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors. Rust was not touched and its
     tests were not run again. New `scripts/phase2/nightfile-e2e.mjs` 65/65 with the real free voice and real renders, one video by rule and one with every
     template once, looked at on contact sheets; Motion Frames' channel e2e 56/56. A real AI was not used. Longest video tried: 60 s.
+
+161. **The Soft Clay Chronicle preset** (Zoltan, 2026-11-03, `docs/BUILD_PLAN.md` phase 8; `runner/presets/soft-clay/`). 15 templates, 42 things,
+    warm history documentaries. All drawing is own code in `pack/shared/clay.js`, on three.js: no model files, no image files, no new library, no third-party
+    skill opened. Its own colors and the OFL fonts Playfair Display and Source Serif 4. B-roll off, research on and warm music when this style is chosen; all three switches stay.
+    - **Built on the 3D Explainer's `world3d.js`,** the same one file, loaded before `clay.js`. It now gives out `kit` (its one renderer, numbers, text sizing) and
+      `blockOf`: a block is the same seek-safe `p` value and scene release with another preset's kinds, lights and floor. The 3D Explainer's own code path is the same: its e2e was run again and its contact sheet looked at.
+    - **The maps are Archive Collage's own file and list,** by relative paths, no second copy. The table is a real map on old paper on wood, on every scene; a map scene paints its own, with the country marked.
+    - **The clay look without a shader of our own:** each shape is pushed around by noise that depends only on position, so seams never crack, its normals are welded across seams, its color varies by a few percent, and one bump map holds thumb dents and fingerprints. Matte: roughness 0.84.
+    - **The light:** one warm spotlight with a soft edge, a low warm fill, fog into a dark room. The first try was too bright and yellow and was changed after seeing frames.
+    - **The glow on what the story is about:** a warm point light, a halo behind it, its own clay lit a little from inside. It breathes slowly, from `t` alone, and comes up with the thing, never before it.
+    - **Figures are faceless,** told apart only by what they wear (king, queen, soldier, sailor, farmer, scholar). No weapon is among the things.
+    - **Limit:** no `percent` template, the 15 went to history's needs. A percentage on a rule-made scene stands in the words; an AI can use `number` with `%`.
+
+162. **The small date label is the build's, not the plan's** (Claude's choice, can be overruled). `carriedDates` in the new `runner/gates/scenes/when.mjs` reads what the voice has said, and `assemble.mjs` gives it to every scene of a pack with `dateLabel: true`.
+    So the AI is never asked, the prompt stays small, the Shot map never pins it, a block chosen by hand has it too, and a date cannot be one the voice did not say.
+    - **It carries the last date said,** so it stands still across cuts, with no entrance. It starts empty. A time of day is never on it. The `year` template, which shows the year large, leaves it out.
+    - **`whenIn` moved** from `templates.mjs` to `when.mjs`, so that the build can read it without an import cycle. `templates.mjs` still exports it.
+
+163. **Small changes to shared rules.** The number rule no longer takes a year as a number ("In 1761" could become a giant 1,761 when the year template had just run, on any preset). `board` gives each item its own thing when the template has `object1`. `talk` asks for quote marks when its parameter says `quoted` ("nobody asked" is not two people talking; Stick World is unchanged). New rule `relic`: a thing the sentence names, found, made or kept, and no number in the sentence.
+
+    Tests: Node 637 of 640 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors. Rust was not touched and its
+    tests were not run again. New `scripts/phase2/clay-e2e.mjs` 51/51 with the real free voice and real renders, one video by rule and one with every template once, looked at on contact sheets and close up; 3D Explainer's e2e 21/21 and Motion Frames' channel e2e 56/56. A real AI was not used. Longest video tried: 62 s.

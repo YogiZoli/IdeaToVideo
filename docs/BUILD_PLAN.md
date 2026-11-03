@@ -265,7 +265,8 @@ Card.
 
 ### Phase 8: Preset "Soft Clay Chronicle" (warm history documentary)
 
-Status: todo
+Status: done (2026-11-03, DECISIONS 161 to 163). Not tried yet: a real AI on the plan, on the brief and on the script (the rule and a pasted
+script only), Hungarian on this preset (only the finding of things and dates is tested), a video over 63 seconds.
 
 three.js scenes with a matte, hand-made clay look: rounded faceless figures,
 subtle fingerprint texture, warm lamp light, old map table surfaces, a soft glow
@@ -331,6 +332,8 @@ Other findings:
 - Paper, torn edges, halftone cutouts and maps on a 2D canvas: `runner/presets/archive-collage/pack/shared/collage.js`.
   `sticker` turns any gray drawing into print dots with a keyline; `cameraAt` and `layerAt` give each layer its own
   move, and the paper is one picture behind every canvas, so a cut never shows an empty frame.
+- Another look on the 3D renderer: `ITV3D.kit.blockOf({ kinds, style, host, dress, always })` in `world3d.js`, as `pack/shared/clay.js` does. List `world3d.js` before your file in `script`.
+- A small label that follows what the voice said: `dateLabel` on a pack and `carriedDates` in `runner/gates/scenes/when.mjs`; `extra` on a block in `make-*-blocks.mjs` names a value only the build fills.
 - Maps (Night Case File's places too): `pack/shared/map-data.js` and `places.json`, written by `scripts/make-map.mjs` from
   Natural Earth. A template parameter of type `place` takes a name the maps have (`placesIn`, `cleanParams`); the list
   never goes into a prompt. A pack's `script` can be a list of files.
@@ -369,9 +372,7 @@ Other findings:
 
 ## Next step
 
-Phase 8: Preset "Soft Clay Chronicle". Start from `world3d.js` (3D Explainer) as the list above says. First, Zoltan tries Phase 7 on the
-installer: a channel on Night Case File, one documented true story with research on, up to the render, and a look at the sources on the
-Publishing Card. Phases 3 to 6 too if he has not yet (one topic with research, one set of notes, one real recording, one strange question,
-one what-if story, one explainer with real places), and his decisions on the table above if he has made them. Still open in that table's
-spirit: Google's terms on showing Search Suggestions (DECISIONS 143), the Z-Image picture size (DECISIONS 146), and whether captions on
-Night Case File should hide forbidden words (DECISIONS 159).
+Phase 9: macOS build, done on a Mac with Claude Code, no CI. It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
+Chronicle, one piece of history with research on, up to the render. Phases 3 to 7 too if he has not yet (one topic with research, one set of notes, one real recording, one strange
+question, one what-if story, one explainer with real places, one true story), and his decisions on the table above if he has made them. Still open in that table's spirit: Google's
+terms on showing Search Suggestions (DECISIONS 143), the Z-Image picture size (DECISIONS 146), whether captions on Night Case File should hide forbidden words (DECISIONS 159).

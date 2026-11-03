@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id":"value","type":"number","label":"Value","default":0},{"id":"before","type":"string","label":"Before","default":""},{"id":"after","type":"string","label":"After","default":""},{"id":"object","type":"string","label":"Object","default":"scroll"},{"id":"date","type":"string","label":"Date","default":""}]'>
+<head><meta charset="UTF-8"/></head>
+<body>
+<template>
+<div id="root" data-composition-id="clay-number" data-width="1920" data-height="1080" data-start="0" data-duration="600">
+<div class="clay-root">
+<canvas class="clay-view" width="1" height="1"></canvas>
+<section class="clip clay-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+window.__timelines["clay-number"] = ITVClay.block(document.getElementById("root"), "number", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
+</script>
+</div>
+</template>
+</body>
+</html>

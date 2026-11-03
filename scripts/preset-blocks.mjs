@@ -17,15 +17,18 @@ export const place = (required = true) => ({ type: "place", required });
 const label = (id) => id.replace(/([A-Z0-9])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 
 // `neutral`: the object a block shows when nothing is named, the first of the preset's list.
-export const variablesOf = (b, neutral) =>
-  Object.entries(b.params).map(([id, p]) => ({
+// `extra`: a value the build gives the block, never the AI: not one of the template's parameters.
+export const variablesOf = (b, neutral) => [
+  ...Object.entries(b.params).map(([id, p]) => ({
     id,
     type: p.type === "number" ? "number" : "string",
     label: label(id),
     default: p.type === "number" ? 0 : p.type === "object" ? neutral : "",
     ...(p.required && p.type !== "object" && p.type !== "place" ? {} : { optional: true }),
     ...(p.maxWords ? { maxWords: p.maxWords } : {}),
-  }));
+  })),
+  ...(b.extra ?? []),
+];
 
 // `prefix`: the block's composition and class names. `api`: what the shared code calls itself.
 export function blockHtml(b, { prefix, api, neutral }) {
@@ -54,7 +57,7 @@ window.__timelines["${comp}"] = ${api}.block(document.getElementById("root"), "$
 
 // Writes pack/pack.json, pack/blocks/<id>.html and the templates of preset.json (its tokens,
 // rules and objects stay). `blocks` is the list, `html` makes one block's file.
-export function writePack({ dir, pack, name, camera, runtime = [], script, blocks, neutral, html }) {
+export function writePack({ dir, pack, name, camera, runtime = [], script, blocks, neutral, html, dateLabel = false }) {
   fs.mkdirSync(path.join(dir, "pack", "blocks"), { recursive: true });
   for (const b of blocks) fs.writeFileSync(path.join(dir, "pack", "blocks", `${b.id}.html`), html(b));
   const manifest = {
@@ -65,6 +68,7 @@ export function writePack({ dir, pack, name, camera, runtime = [], script, block
     camera,
     runtime,
     script,
+    ...(dateLabel ? { dateLabel: true } : {}),
     blocks: blocks.map((b) => ({ id: b.id, role: b.role, label: b.label, what: b.when, variables: variablesOf(b, neutral), seconds: 5, ...(b.sound ? { sound: b.sound } : {}) })),
   };
   fs.writeFileSync(path.join(dir, "pack", "pack.json"), JSON.stringify(manifest, null, 2) + "\n");

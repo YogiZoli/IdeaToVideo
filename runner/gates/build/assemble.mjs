@@ -50,6 +50,7 @@ import { pickIcons, withSketch, findIcon } from "../../icons/index.mjs";
 import { adaptCaption, loadCaption } from "../../captions/index.mjs";
 import { spokenTimes, withSpoken } from "./spoken.mjs";
 import { isPackComponent, loadPackBlock, fitPackBlock } from "../../packs/index.mjs";
+import { carriedDates } from "../scenes/when.mjs";
 // the icon names a pack block has built in (scripts/make-pack.mjs ICON_NAMES)
 const PACK_ICON_NAMES = new Set(["comment", "client", "script", "voice", "visuals", "face", "check", "cross", "clock", "money", "place", "title", "caption", "globe", "spark", "lock", "branch", "funnel", "cycle", "gauge", "quote", "question", "warn", "heart", "code", "grid", "mail", "tag", "bang", "query", "dash", "paint"]);
 
@@ -687,6 +688,10 @@ export async function assemble(projectDir, { env = process.env, total, language,
   if (total === undefined) total = await duration(path.join(projectDir, "audio", "vo_bgm.mp3"), env);
   total = Math.round(total * 1000) / 1000;
   const times = sceneTimes(scenes, sentences, total);
+  // A preset's small date label says the last date the voice has said, on any row of any plan.
+  carriedDates(scenes, sentences).forEach((date, n) => {
+    if (date && components.get(scenes[n].component)?.pack?.builtin?.dateLabel) scenes[n].vars = { ...(scenes[n].vars ?? {}), date };
+  });
   // List items appear when the voice says them (their `cues`), not all at once.
   const spoken = readWords(projectDir);
   scenes.forEach((sc, n) => {
