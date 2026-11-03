@@ -1673,7 +1673,9 @@ async function main() {
   const name = process.argv[2];
   const cmd = commands[name];
   if (!cmd) {
-    emit({ event: "error", message: `Unknown command: ${name}. Known: ${Object.keys(commands).join(", ")}` });
+    process.stderr.write(`Unknown command: ${name}
+`);
+    emit({ event: "error", message: "The app asked for a step this version does not have. Reinstall the app; nothing is lost." });
     return 2;
   }
   let req = {};

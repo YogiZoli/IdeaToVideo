@@ -89,7 +89,7 @@ fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));
     }
-    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, engine, data })
+    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, engine, data, other_ai: None })
 }
 
 fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String> {

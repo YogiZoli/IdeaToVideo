@@ -63,10 +63,10 @@
 
 <section class="card">
   <div class="head">
-    <h2>Health check</h2>
+    <h2>What the app needs</h2>
     <button type="button" disabled={checking} onclick={check}>{checking ? "Checking..." : "Check again"}</button>
   </div>
-  <p class="hint">What the app needs on this computer. {at ? `Checked at ${at}.` : ""} It also runs silently when the app starts, and only speaks up when something must be fixed.</p>
+  <p class="hint">On this computer. {at ? `Checked at ${at}.` : ""} It also runs silently when the app starts, and only speaks up when something must be fixed.</p>
   {#if error}<ErrorBox message={error} context={{ step: "health-check" }} />{/if}
   {#if items}
     <ul class="items">

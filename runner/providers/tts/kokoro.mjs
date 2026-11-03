@@ -104,7 +104,7 @@ export async function fetchFile({ url, sha, out, fetchImpl, label, onProgress, w
     if (!failed) break;
     fs.rmSync(tmp, { force: true });
     if (failed.final || failed.code === "ENOSPC" || /disk space/.test(failed.message)) throw failed;
-    if (attempt >= 3) throw new Error(say(failed.name === "TimeoutError" ? "nothing arrived for a minute" : failed.message));
+    if (attempt >= 3) throw new Error(say(failed.name === "TimeoutError" ? "nothing arrived for a minute" : /^HTTP/.test(failed.message) ? failed.message : "no connection"));
     onProgress({ step: "model-download", file: label, percent: 0 });
     await new Promise((r) => setTimeout(r, 2000 * attempt));
   }

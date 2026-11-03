@@ -294,7 +294,19 @@ window.__TAURI_INTERNALS__ = {
       case "run_runner":
         if (typeof args.request.projectDir !== "undefined" && typeof args.request.projectDir !== "string") throw "projectDir must be a string";
         if (args.command in LONG) await longJob(args.command, args.request);
-        if (args.command === "load-project") return { project, brief: null, scriptMarkdown: ORDER.indexOf("script") < stage || project.gates.script.state !== "todo" ? "## Opening\nYou want to start a channel.\n\n## Main part\nAsk one question.\n" : null, latestVideo: video, stills: stillsList(), voiceInfo: project.gates.voice.state !== "todo" ? { seconds: 128, voLufs: -16, finalLufs: -14, musicGainDb: -18, music: "music.mp3", words: 318 } : null, calls: null };
+        if (args.command === "health-check") return { at: new Date().toISOString(), online: !q.get("sick"), problems: q.get("sick") ? 2 : 0, items: [
+          { id: "ai", label: "AI text", state: "ok", detail: "Gemini" },
+          { id: "heygen", label: "HeyGen", state: "note", fix: "No key. Videos are made without an avatar." },
+          { id: "ffmpeg", label: "ffmpeg", state: q.get("sick") ? "fix" : "ok", fix: "ffmpeg is missing, so no video can be made. Reinstall the app." },
+          { id: "engine", label: "Video engine", state: "ok", detail: "HyperFrames 0.8.181" },
+          { id: "voice-model", label: "Free voice", state: "ok" },
+          { id: "speech-model", label: "Speech model", state: "note", fix: "Recordings are turned into words on this computer. It downloads once, the first time it is needed." },
+          { id: "disk-projects", label: "Disk space, your videos", state: q.get("sick") ? "fix" : "ok", detail: "36.0 GB free", fix: "Only 0.4 GB free, too little for a render. Free up some space." },
+          { id: "internet", label: "Internet", state: "ok" },
+        ] };
+        if (args.command === "error-details") return { file: "C:/Users/me/AppData/Local/app.ideatovideo.desktop/logs/errors.log", entry: { at: "2026-11-03T20:00:00Z", command: "render-video", message: "A sentence.", raw: "ENOSPC: no space left", stack: "Error: ENOSPC" } };
+        if (args.command === "project-note" || args.command === "script-offline" || args.command === "research-offline") return {};
+        if (args.command === "load-project") return { project: q.get("notes") ? { ...project, notes: [{ kind: "voice", text: "The free voice on this computer read the narration, because ElevenLabs did not work: ElevenLabs rejected the API key." }, { kind: "avatar", text: "This video has no avatar: no HeyGen key is set." }] } : project, brief: null, scriptMarkdown: ORDER.indexOf("script") < stage || project.gates.script.state !== "todo" ? "## Opening\nYou want to start a channel.\n\n## Main part\nAsk one question.\n" : null, latestVideo: video, stills: stillsList(), voiceInfo: project.gates.voice.state !== "todo" ? { seconds: 128, voLufs: -16, finalLufs: -14, musicGainDb: -18, music: "music.mp3", words: 318 } : null, calls: null };
         if (args.command === "approve-gate") { setState(args.request.gate, "approved", project.gates[args.request.gate]?.mode); return { gate: project.gates[args.request.gate] }; }
         if (args.command === "skip-gate") { setState("avatar", "skipped"); return { gate: project.gates.avatar }; }
         if (args.command === "write-script" || args.command === "save-script") { setState("script", "pending", args.command === "save-script" ? "custom" : "recommended"); return { words: 318 }; }

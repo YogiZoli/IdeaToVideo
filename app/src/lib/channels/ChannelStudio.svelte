@@ -11,6 +11,8 @@
   import { open as pickFile } from "@tauri-apps/plugin-dialog";
   import { filesMissing } from "./recorded";
   import ErrorBox from "../ErrorBox.svelte";
+  import Progress from "../Progress.svelte";
+  import { running, startWork } from "../work.svelte";
   import RecipeEditor from "./RecipeEditor.svelte";
   import type { AppState } from "../api";
   import { runner, errorText, onProgress, saveSettings } from "../api";
@@ -24,6 +26,7 @@
   let { app, choose, saved, openProject, goto }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void } = $props();
 
   setScreen("channel");
+  startWork();
 
   let st = $state<ChannelState | null>(null);
   let error = $state("");
@@ -151,6 +154,7 @@
   let batching = $state(false);
   let batchStep = $state("");
   let batchNote = $state("");
+  const batchJob = $derived(running(null, ["week-batch", "week-batch-local"]));
   const unlisten = onProgress((p) => {
     if (p.command !== "week-batch" && p.command !== "week-batch-local") return;
     const s = p.progress as { step?: string; n?: number; of?: number; title?: string; message?: string };
@@ -301,6 +305,7 @@
       <input bind:value={theme} disabled={batching || !!pasted.trim()} aria-label="Theme of the week" placeholder="This week's theme (optional)" />
       <textarea rows="3" bind:value={pasted} disabled={batching} aria-label="Pasted texts" placeholder="Or paste up to 7 texts here, with a line of --- between them."></textarea>
       {#if batchStep}<p class="busy" role="status">{batchStep}</p>{/if}
+      {#if batchJob}<Progress command={batchJob} label={batchStep || "Week batch"} reveal={false} />{/if}
       {#if batchNote}<p class="good">{batchNote}</p>{/if}
       {#if st.queue.length}
         <ol class="queue">

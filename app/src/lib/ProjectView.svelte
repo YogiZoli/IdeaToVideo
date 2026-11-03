@@ -22,6 +22,7 @@
   import { setScreen, log } from "./logger";
   import { work, running, track, measure, startWork, pilots } from "./work.svelte";
   import { TABS, RECORDED_TABS, scriptTabs, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import Progress from "./Progress.svelte";
   import RecordingTab from "./channels/RecordingTab.svelte";
   import ResearchTab from "./channels/ResearchTab.svelte";
   import ShotMapTab from "./channels/ShotMapTab.svelte";
@@ -525,6 +526,9 @@
     await load();
   }
   const anyJob = $derived(!!running(dir, tabList.flatMap((t) => t.commands)));
+  // Steps whose tab has no bar of its own: this one has the percent and the Stop.
+  const BARLESS = ["recorded-transcribe", "recorded-apply-cuts", "recorded-plan", "recorded-plan-rule", "recorded-prepare", "shot-map-make", "shot-flow-clip", "make-template-scenes", "simple-template-scenes", "broll-auto-plan", "broll-auto-plan-rule", "broll-auto-find", "broll-auto-find-checked", "broll-auto-pixabay", "broll-auto-finish"];
+  const barless = $derived(active === "preview" ? null : running(dir, BARLESS));
 </script>
 
 <div class="page">
@@ -560,6 +564,7 @@
     {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
     {#if pilotNote && pilot}<p class="note">{pilotNote}</p>{/if}
     {#if offlineNote && !pilot}<p class="note">{offlineNote}</p>{/if}
+    {#if barless}<Progress command={barless} project={dir} label={pilot || "Working"} reveal={false} />{/if}
     {#if data.project.render?.state === "failed" && !running(dir, ["render-video"]) && active !== "video"}
       <p class="note">The last render did not finish: {data.project.render.error ?? "no reason given"} <button type="button" class="link" onclick={() => show("video", "render-failed")}>Open Your video</button></p>
     {/if}

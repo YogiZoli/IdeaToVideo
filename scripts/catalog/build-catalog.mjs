@@ -78,7 +78,7 @@ export function buildCatalog({ results, notes, items, commit }) {
     components[name] = {
       status: off ? "off" : "on",
       ...(off ? { off } : {}),
-      title: item.title ?? name,
+      title: n.title ?? item.title ?? name,
       label: n.label ?? item.title ?? name,
       role: n.role ?? "statement",
       shows: n.shows ?? item.description,

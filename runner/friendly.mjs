@@ -18,13 +18,15 @@ const MAX = 500;
 
 export function friendlyMessage(error) {
   const raw = typeof error === "string" ? error : `${error?.name && error.name !== "Error" ? `${error.name}: ` : ""}${error?.message ?? error ?? ""}`;
-  const m = raw.replace(/^\s*(Uncaught\s+)?Error:\s*/, "").trim();
+  // what follows "Details:" is the engine's own output, for the log file
+  const m = raw.replace(/^\s*(Uncaught\s+)?Error:\s*/, "").replace(/\s*Details:[\s\S]*$/, "").replace(/: fetch failed\./, ": no connection.").trim();
   // a sentence that already says what to do about the connection
   const said = /internet connection/i.test(m) && !RAW.test(m);
   if (!m) return `This step stopped without saying why. ${AGAIN}`;
   if (FULL.test(m)) return "The disk is full, so this step could not finish. Free up some space and press the button again; nothing is lost.";
   if (MEMORY.test(m)) return "This computer ran out of memory in this step. Close other programs and press the button again; nothing is lost.";
   if (LONG_PATH.test(m)) return "A file path is too long for this computer. Choose a shorter projects folder in Settings and press the button again.";
+  if (/spawn.*(UNKNOWN|ENOENT|EACCES|EPERM|EINVAL)|spawn UNKNOWN/.test(m)) return "A program the app needs would not start. Check that your antivirus has not blocked it, or reinstall the app; the Health check in Settings shows which one.";
   if (DAMAGED.test(m)) return "This video's project file is damaged, so it cannot be opened. Restore it from a backup in Settings, or start the video again.";
   if (said) return m;
   if (TIMEOUT.test(m)) {

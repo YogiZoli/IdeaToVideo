@@ -269,7 +269,9 @@ async function chatOnce({ provider, apiKey, model, effort = null, messages, json
       continue;
     }
     if (res.ok) {
-      const data = await res.json();
+      // a proxy or a captive portal can answer 200 with a web page
+      const data = await res.json().catch(() => null);
+      if (!data) throw new LlmError(`${p.label} answered with something that is not an AI answer. Try again, or check your connection.`, { status: 200 });
       const text = data?.choices?.[0]?.message?.content;
       if (!allowEmpty && (typeof text !== "string" || text.trim() === "")) throw new LlmError(`${p.label} returned an empty answer.`);
       return text;
@@ -313,7 +315,7 @@ async function searchOnce({ provider, apiKey, model, messages, temperature = 0.2
       continue;
     }
     if (res.ok) {
-      const c = (await res.json())?.candidates?.[0];
+      const c = (await res.json().catch(() => null))?.candidates?.[0];
       const text = (c?.content?.parts ?? []).map((x) => x.text ?? "").join("");
       if (!text.trim()) throw new LlmError(`${p.label} returned an empty answer.`);
       const g = c.groundingMetadata ?? {};

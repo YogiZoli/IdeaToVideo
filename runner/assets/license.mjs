@@ -21,6 +21,7 @@ export const LICENSES = {
   pixabay: "Free license, not CC0 (Pixabay Content License)",
   "kie-terms": "Kie AI terms of use (AI output, see docs/BUILD_PLAN.md)",
   "heygen-terms": "HeyGen terms of use (AI output)",
+  "gemini-terms": "Google Gemini terms of use (AI output)",
   "own-generation": "Google Flow (Veo), own generation",
 };
 
@@ -49,6 +50,8 @@ export const SOURCES = {
   pixabay: { label: "Pixabay", licenses: ["pixabay"], hosts: ["pixabay.com"] },
   kie: { label: "Kie AI", licenses: ["kie-terms"], ai: true },
   heygen: { label: "HeyGen", licenses: ["heygen-terms"], ai: true },
+  // a thumbnail's picture, on the Thumbnail tab's paid choice
+  gemini: { label: "Gemini", licenses: ["gemini-terms"], ai: true },
   // the manual slot of a shot (docs/BUILD_PLAN.md phase 3): the user's own clip
   flow: { label: "Google Flow (Veo), own generation", licenses: ["own-generation"], ai: true },
 };
