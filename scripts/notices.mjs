@@ -83,6 +83,8 @@ ${Object.entries(library.licenses?.fonts ?? {}).map(([f, l]) => `  - \`${f}\`: $
   GreenSock's standard "no charge" license (gsap.com/standard-license).
 - **three.js** (npm \`three\` ${engine.find((r) => r.name === "three")?.version ?? ""}), draws the 3D scenes of the presets that have them. MIT License,
   in \`engine/node_modules/three/LICENSE\`. Only its one build file ships.
+- **Natural Earth** (naturalearthdata.com), public domain. The countries and cities on the maps of Archive Collage, simplified,
+  in \`runner/presets/archive-collage\`.
 - **Fonts**: ${library.fonts} font families from fontsource, SIL Open Font License 1.1.
   Each font's license is in \`library/fonts/<font>/LICENSE\`.
 - **Icons** for the whiteboard scenes: ${icons.map((f) => `${f.label} ${f.version} (${f.license})`).join(", ")}.

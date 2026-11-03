@@ -82,7 +82,7 @@ import { runWeekBatch, listQueue, WEEK } from "./channels/batch.mjs";
 import { MOODS } from "./providers/music/synth.mjs";
 import { ensureModel, modelDir, MODEL_BYTES, MODEL_FILES, DEFAULT_VOICE } from "./providers/tts/kokoro.mjs";
 import { searchAll, addFreeImage, cachePreview as cacheFreePreview } from "./assets/sources.mjs";
-import { readLedger, logTableFootage } from "./assets/license.mjs";
+import { readLedger, logAsset, logTableFootage } from "./assets/license.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
@@ -1296,6 +1296,8 @@ const commands = {
     try {
       // a channel video: every outside picture has a clear license, and is logged
       if (project.recipe && identityDir) logTableFootage({ projectDir, table: JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8")), clips: loadLibrary(identityDir).clips ?? [] });
+      // what a preset bundles from outside is in every video made with it
+      if (project.recipe?.preset) for (const asset of loadPreset(project.recipe.preset).assets ?? []) logAsset(projectDir, asset);
       const make = project.recipe?.engine === "recorded" ? recorded.buildRecorded : buildAndReview;
       const r = await timed("build", jsonCount(projectDir, "scenes.json", "scenes"), emit, () => make(projectDir, { language: project.language, title: project.title, look, onProgress: (p) => emit({ event: "progress", ...p }) }));
       project = setGate(loadProject(projectDir), "review", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });

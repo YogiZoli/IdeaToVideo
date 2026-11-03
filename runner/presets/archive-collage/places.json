@@ -1,0 +1,3756 @@
+[
+ {
+  "id": "abidjan",
+  "name": "Abidjan",
+  "kind": "city",
+  "words": [
+   "Abidjan"
+  ]
+ },
+ {
+  "id": "abu-dhabi",
+  "name": "Abu Dhabi",
+  "kind": "city",
+  "words": [
+   "Abu Dhabi"
+  ]
+ },
+ {
+  "id": "abuja",
+  "name": "Abuja",
+  "kind": "city",
+  "words": [
+   "Abuja"
+  ]
+ },
+ {
+  "id": "accra",
+  "name": "Accra",
+  "kind": "city",
+  "words": [
+   "Accra"
+  ]
+ },
+ {
+  "id": "addis-ababa",
+  "name": "Addis Ababa",
+  "kind": "city",
+  "words": [
+   "Addis Ababa"
+  ]
+ },
+ {
+  "id": "afghanistan",
+  "name": "Afghanistan",
+  "kind": "country",
+  "words": [
+   "Afghanistan",
+   "Afganisztán"
+  ]
+ },
+ {
+  "id": "aland",
+  "name": "Åland",
+  "kind": "country",
+  "words": [
+   "Åland"
+  ]
+ },
+ {
+  "id": "albania",
+  "name": "Albania",
+  "kind": "country",
+  "words": [
+   "Albania",
+   "Albánia"
+  ]
+ },
+ {
+  "id": "algeria",
+  "name": "Algeria",
+  "kind": "country",
+  "words": [
+   "Algeria",
+   "Algéria"
+  ]
+ },
+ {
+  "id": "algiers",
+  "name": "Algiers",
+  "kind": "city",
+  "words": [
+   "Algiers"
+  ]
+ },
+ {
+  "id": "amman",
+  "name": "Amman",
+  "kind": "city",
+  "words": [
+   "Amman"
+  ]
+ },
+ {
+  "id": "amsterdam",
+  "name": "Amsterdam",
+  "kind": "city",
+  "words": [
+   "Amsterdam"
+  ]
+ },
+ {
+  "id": "andorra",
+  "name": "Andorra",
+  "kind": "country",
+  "words": [
+   "Andorra"
+  ]
+ },
+ {
+  "id": "angola",
+  "name": "Angola",
+  "kind": "country",
+  "words": [
+   "Angola"
+  ]
+ },
+ {
+  "id": "ankara",
+  "name": "Ankara",
+  "kind": "city",
+  "words": [
+   "Ankara"
+  ]
+ },
+ {
+  "id": "antananarivo",
+  "name": "Antananarivo",
+  "kind": "city",
+  "words": [
+   "Antananarivo"
+  ]
+ },
+ {
+  "id": "antigua-and-barb",
+  "name": "Antigua and Barb.",
+  "kind": "country",
+  "words": [
+   "Antigua and Barb.",
+   "Antigua and Barbuda",
+   "Antigua és Barbuda"
+  ]
+ },
+ {
+  "id": "apia",
+  "name": "Apia",
+  "kind": "city",
+  "words": [
+   "Apia"
+  ]
+ },
+ {
+  "id": "argentina",
+  "name": "Argentina",
+  "kind": "country",
+  "words": [
+   "Argentina",
+   "Argentína"
+  ]
+ },
+ {
+  "id": "armenia",
+  "name": "Armenia",
+  "kind": "country",
+  "words": [
+   "Armenia",
+   "Örményország"
+  ]
+ },
+ {
+  "id": "aruba",
+  "name": "Aruba",
+  "kind": "country",
+  "words": [
+   "Aruba"
+  ]
+ },
+ {
+  "id": "ashgabat",
+  "name": "Ashgabat",
+  "kind": "city",
+  "words": [
+   "Ashgabat"
+  ]
+ },
+ {
+  "id": "asmara",
+  "name": "Asmara",
+  "kind": "city",
+  "words": [
+   "Asmara"
+  ]
+ },
+ {
+  "id": "asuncion",
+  "name": "Asunción",
+  "kind": "city",
+  "words": [
+   "Asunción",
+   "Asuncion"
+  ]
+ },
+ {
+  "id": "athens",
+  "name": "Athens",
+  "kind": "city",
+  "words": [
+   "Athens",
+   "Athén"
+  ]
+ },
+ {
+  "id": "atlanta",
+  "name": "Atlanta",
+  "kind": "city",
+  "words": [
+   "Atlanta"
+  ]
+ },
+ {
+  "id": "auckland",
+  "name": "Auckland",
+  "kind": "city",
+  "words": [
+   "Auckland"
+  ]
+ },
+ {
+  "id": "australia",
+  "name": "Australia",
+  "kind": "country",
+  "words": [
+   "Australia",
+   "Ausztrália"
+  ]
+ },
+ {
+  "id": "austria",
+  "name": "Austria",
+  "kind": "country",
+  "words": [
+   "Austria",
+   "Ausztria"
+  ]
+ },
+ {
+  "id": "azerbaijan",
+  "name": "Azerbaijan",
+  "kind": "country",
+  "words": [
+   "Azerbaijan",
+   "Azerbajdzsán"
+  ]
+ },
+ {
+  "id": "baghdad",
+  "name": "Baghdad",
+  "kind": "city",
+  "words": [
+   "Baghdad"
+  ]
+ },
+ {
+  "id": "baguio",
+  "name": "Baguio",
+  "kind": "city",
+  "words": []
+ },
+ {
+  "id": "bahamas",
+  "name": "Bahamas",
+  "kind": "country",
+  "words": [
+   "Bahamas",
+   "The Bahamas",
+   "Bahama-szigetek"
+  ]
+ },
+ {
+  "id": "bahrain",
+  "name": "Bahrain",
+  "kind": "country",
+  "words": [
+   "Bahrain",
+   "Bahrein"
+  ]
+ },
+ {
+  "id": "baku",
+  "name": "Baku",
+  "kind": "city",
+  "words": [
+   "Baku"
+  ]
+ },
+ {
+  "id": "bamako",
+  "name": "Bamako",
+  "kind": "city",
+  "words": [
+   "Bamako"
+  ]
+ },
+ {
+  "id": "bandar-seri-begawan",
+  "name": "Bandar Seri Begawan",
+  "kind": "city",
+  "words": [
+   "Bandar Seri Begawan"
+  ]
+ },
+ {
+  "id": "bangkok",
+  "name": "Bangkok",
+  "kind": "city",
+  "words": [
+   "Bangkok"
+  ]
+ },
+ {
+  "id": "bangladesh",
+  "name": "Bangladesh",
+  "kind": "country",
+  "words": [
+   "Bangladesh",
+   "Banglades"
+  ]
+ },
+ {
+  "id": "bangui",
+  "name": "Bangui",
+  "kind": "city",
+  "words": [
+   "Bangui"
+  ]
+ },
+ {
+  "id": "banjul",
+  "name": "Banjul",
+  "kind": "city",
+  "words": [
+   "Banjul"
+  ]
+ },
+ {
+  "id": "barbados",
+  "name": "Barbados",
+  "kind": "country",
+  "words": [
+   "Barbados"
+  ]
+ },
+ {
+  "id": "basseterre",
+  "name": "Basseterre",
+  "kind": "city",
+  "words": [
+   "Basseterre"
+  ]
+ },
+ {
+  "id": "beijing",
+  "name": "Beijing",
+  "kind": "city",
+  "words": [
+   "Beijing",
+   "Peking"
+  ]
+ },
+ {
+  "id": "beirut",
+  "name": "Beirut",
+  "kind": "city",
+  "words": [
+   "Beirut"
+  ]
+ },
+ {
+  "id": "belarus",
+  "name": "Belarus",
+  "kind": "country",
+  "words": [
+   "Belarus",
+   "Fehéroroszország"
+  ]
+ },
+ {
+  "id": "belgium",
+  "name": "Belgium",
+  "kind": "country",
+  "words": [
+   "Belgium"
+  ]
+ },
+ {
+  "id": "belgrade",
+  "name": "Belgrade",
+  "kind": "city",
+  "words": [
+   "Belgrade"
+  ]
+ },
+ {
+  "id": "belize",
+  "name": "Belize",
+  "kind": "country",
+  "words": [
+   "Belize"
+  ]
+ },
+ {
+  "id": "belmopan",
+  "name": "Belmopan",
+  "kind": "city",
+  "words": [
+   "Belmopan"
+  ]
+ },
+ {
+  "id": "bengaluru",
+  "name": "Bengaluru",
+  "kind": "city",
+  "words": [
+   "Bengaluru"
+  ]
+ },
+ {
+  "id": "benin",
+  "name": "Benin",
+  "kind": "country",
+  "words": [
+   "Benin"
+  ]
+ },
+ {
+  "id": "berlin",
+  "name": "Berlin",
+  "kind": "city",
+  "words": [
+   "Berlin"
+  ]
+ },
+ {
+  "id": "bern",
+  "name": "Bern",
+  "kind": "city",
+  "words": []
+ },
+ {
+  "id": "bhutan",
+  "name": "Bhutan",
+  "kind": "country",
+  "words": [
+   "Bhutan",
+   "Bhután"
+  ]
+ },
+ {
+  "id": "bir-lehlou",
+  "name": "Bir Lehlou",
+  "kind": "city",
+  "words": [
+   "Bir Lehlou"
+  ]
+ },
+ {
+  "id": "bishkek",
+  "name": "Bishkek",
+  "kind": "city",
+  "words": [
+   "Bishkek"
+  ]
+ },
+ {
+  "id": "bissau",
+  "name": "Bissau",
+  "kind": "city",
+  "words": [
+   "Bissau"
+  ]
+ },
+ {
+  "id": "bloemfontein",
+  "name": "Bloemfontein",
+  "kind": "city",
+  "words": [
+   "Bloemfontein"
+  ]
+ },
+ {
+  "id": "bogota",
+  "name": "Bogota",
+  "kind": "city",
+  "words": [
+   "Bogota"
+  ]
+ },
+ {
+  "id": "bolivia",
+  "name": "Bolivia",
+  "kind": "country",
+  "words": [
+   "Bolivia",
+   "Bolívia"
+  ]
+ },
+ {
+  "id": "bosnia-and-herz",
+  "name": "Bosnia and Herz.",
+  "kind": "country",
+  "words": [
+   "Bosnia and Herz.",
+   "Bosnia and Herzegovina",
+   "Bosznia-Hercegovina"
+  ]
+ },
+ {
+  "id": "botswana",
+  "name": "Botswana",
+  "kind": "country",
+  "words": [
+   "Botswana"
+  ]
+ },
+ {
+  "id": "br-indian-ocean-ter",
+  "name": "Br. Indian Ocean Ter.",
+  "kind": "country",
+  "words": [
+   "Br. Indian Ocean Ter.",
+   "British Indian Ocean Territory",
+   "Brit Indiai-óceáni Terület"
+  ]
+ },
+ {
+  "id": "brasilia",
+  "name": "Brasília",
+  "kind": "city",
+  "words": [
+   "Brasília",
+   "Brasilia"
+  ]
+ },
+ {
+  "id": "bratislava",
+  "name": "Bratislava",
+  "kind": "city",
+  "words": [
+   "Bratislava"
+  ]
+ },
+ {
+  "id": "brazil",
+  "name": "Brazil",
+  "kind": "country",
+  "words": [
+   "Brazil",
+   "Brazília"
+  ]
+ },
+ {
+  "id": "brazzaville",
+  "name": "Brazzaville",
+  "kind": "city",
+  "words": [
+   "Brazzaville"
+  ]
+ },
+ {
+  "id": "bridgetown",
+  "name": "Bridgetown",
+  "kind": "city",
+  "words": [
+   "Bridgetown"
+  ]
+ },
+ {
+  "id": "brunei",
+  "name": "Brunei",
+  "kind": "country",
+  "words": [
+   "Brunei"
+  ]
+ },
+ {
+  "id": "brussels",
+  "name": "Brussels",
+  "kind": "city",
+  "words": [
+   "Brussels"
+  ]
+ },
+ {
+  "id": "bucharest",
+  "name": "Bucharest",
+  "kind": "city",
+  "words": [
+   "Bucharest"
+  ]
+ },
+ {
+  "id": "budapest",
+  "name": "Budapest",
+  "kind": "city",
+  "words": [
+   "Budapest"
+  ]
+ },
+ {
+  "id": "buenos-aires",
+  "name": "Buenos Aires",
+  "kind": "city",
+  "words": [
+   "Buenos Aires"
+  ]
+ },
+ {
+  "id": "bujumbura",
+  "name": "Bujumbura",
+  "kind": "city",
+  "words": [
+   "Bujumbura"
+  ]
+ },
+ {
+  "id": "bulgaria",
+  "name": "Bulgaria",
+  "kind": "country",
+  "words": [
+   "Bulgaria",
+   "Bulgária"
+  ]
+ },
+ {
+  "id": "burkina-faso",
+  "name": "Burkina Faso",
+  "kind": "country",
+  "words": [
+   "Burkina Faso"
+  ]
+ },
+ {
+  "id": "burundi",
+  "name": "Burundi",
+  "kind": "country",
+  "words": [
+   "Burundi"
+  ]
+ },
+ {
+  "id": "cabo-verde",
+  "name": "Cabo Verde",
+  "kind": "country",
+  "words": [
+   "Cabo Verde",
+   "Cape Verde",
+   "Zöld-foki Köztársaság"
+  ]
+ },
+ {
+  "id": "cairo",
+  "name": "Cairo",
+  "kind": "city",
+  "words": [
+   "Cairo",
+   "Kairó"
+  ]
+ },
+ {
+  "id": "cambodia",
+  "name": "Cambodia",
+  "kind": "country",
+  "words": [
+   "Cambodia",
+   "Kambodzsa"
+  ]
+ },
+ {
+  "id": "cameroon",
+  "name": "Cameroon",
+  "kind": "country",
+  "words": [
+   "Cameroon",
+   "Kamerun"
+  ]
+ },
+ {
+  "id": "canada",
+  "name": "Canada",
+  "kind": "country",
+  "words": [
+   "Canada",
+   "Kanada"
+  ]
+ },
+ {
+  "id": "canberra",
+  "name": "Canberra",
+  "kind": "city",
+  "words": [
+   "Canberra"
+  ]
+ },
+ {
+  "id": "cape-town",
+  "name": "Cape Town",
+  "kind": "city",
+  "words": [
+   "Cape Town"
+  ]
+ },
+ {
+  "id": "caracas",
+  "name": "Caracas",
+  "kind": "city",
+  "words": [
+   "Caracas"
+  ]
+ },
+ {
+  "id": "casablanca",
+  "name": "Casablanca",
+  "kind": "city",
+  "words": [
+   "Casablanca"
+  ]
+ },
+ {
+  "id": "castries",
+  "name": "Castries",
+  "kind": "city",
+  "words": []
+ },
+ {
+  "id": "central-african-rep",
+  "name": "Central African Rep.",
+  "kind": "country",
+  "words": [
+   "Central African Rep.",
+   "Central African Republic",
+   "Közép-afrikai Köztársaság"
+  ]
+ },
+ {
+  "id": "chad",
+  "name": "Chad",
+  "kind": "country",
+  "words": []
+ },
+ {
+  "id": "chengdu",
+  "name": "Chengdu",
+  "kind": "city",
+  "words": [
+   "Chengdu"
+  ]
+ },
+ {
+  "id": "chicago",
+  "name": "Chicago",
+  "kind": "city",
+  "words": [
+   "Chicago"
+  ]
+ },
+ {
+  "id": "chile",
+  "name": "Chile",
+  "kind": "country",
+  "words": [
+   "Chile"
+  ]
+ },
+ {
+  "id": "china",
+  "name": "China",
+  "kind": "country",
+  "words": [
+   "China",
+   "People's Republic of China",
+   "Kína"
+  ]
+ },
+ {
+  "id": "chisinau",
+  "name": "Chișinău",
+  "kind": "city",
+  "words": [
+   "Chișinău",
+   "Chisinau"
+  ]
+ },
+ {
+  "id": "colombia",
+  "name": "Colombia",
+  "kind": "country",
+  "words": [
+   "Colombia",
+   "Kolumbia"
+  ]
+ },
+ {
+  "id": "colombo",
+  "name": "Colombo",
+  "kind": "city",
+  "words": [
+   "Colombo"
+  ]
+ },
+ {
+  "id": "comoros",
+  "name": "Comoros",
+  "kind": "country",
+  "words": [
+   "Comoros",
+   "Comore-szigetek"
+  ]
+ },
+ {
+  "id": "conakry",
+  "name": "Conakry",
+  "kind": "city",
+  "words": [
+   "Conakry"
+  ]
+ },
+ {
+  "id": "congo",
+  "name": "Congo",
+  "kind": "country",
+  "words": [
+   "Congo",
+   "Republic of the Congo",
+   "Kongói Köztársaság"
+  ]
+ },
+ {
+  "id": "costa-rica",
+  "name": "Costa Rica",
+  "kind": "country",
+  "words": [
+   "Costa Rica"
+  ]
+ },
+ {
+  "id": "cote-d-ivoire",
+  "name": "Côte d'Ivoire",
+  "kind": "country",
+  "words": [
+   "Côte d'Ivoire",
+   "Ivory Coast",
+   "Elefántcsontpart"
+  ]
+ },
+ {
+  "id": "cotonou",
+  "name": "Cotonou",
+  "kind": "city",
+  "words": [
+   "Cotonou"
+  ]
+ },
+ {
+  "id": "croatia",
+  "name": "Croatia",
+  "kind": "country",
+  "words": [
+   "Croatia",
+   "Horvátország"
+  ]
+ },
+ {
+  "id": "curacao",
+  "name": "Curaçao",
+  "kind": "country",
+  "words": [
+   "Curaçao"
+  ]
+ },
+ {
+  "id": "cyprus",
+  "name": "Cyprus",
+  "kind": "country",
+  "words": [
+   "Cyprus",
+   "Ciprus"
+  ]
+ },
+ {
+  "id": "czechia",
+  "name": "Czechia",
+  "kind": "country",
+  "words": [
+   "Czechia",
+   "Czech Republic",
+   "Csehország"
+  ]
+ },
+ {
+  "id": "dakar",
+  "name": "Dakar",
+  "kind": "city",
+  "words": [
+   "Dakar"
+  ]
+ },
+ {
+  "id": "damascus",
+  "name": "Damascus",
+  "kind": "city",
+  "words": [
+   "Damascus"
+  ]
+ },
+ {
+  "id": "dar-es-salaam",
+  "name": "Dar es Salaam",
+  "kind": "city",
+  "words": [
+   "Dar es Salaam"
+  ]
+ },
+ {
+  "id": "dem-rep-congo",
+  "name": "Dem. Rep. Congo",
+  "kind": "country",
+  "words": [
+   "Dem. Rep. Congo",
+   "Democratic Republic of the Congo",
+   "Kongói Demokratikus Köztársaság"
+  ]
+ },
+ {
+  "id": "denmark",
+  "name": "Denmark",
+  "kind": "country",
+  "words": [
+   "Denmark",
+   "Dánia"
+  ]
+ },
+ {
+  "id": "denver",
+  "name": "Denver",
+  "kind": "city",
+  "words": [
+   "Denver"
+  ]
+ },
+ {
+  "id": "dhaka",
+  "name": "Dhaka",
+  "kind": "city",
+  "words": [
+   "Dhaka"
+  ]
+ },
+ {
+  "id": "dili",
+  "name": "Dili",
+  "kind": "city",
+  "words": [
+   "Dili"
+  ]
+ },
+ {
+  "id": "djibouti",
+  "name": "Djibouti",
+  "kind": "country",
+  "words": [
+   "Djibouti",
+   "Dzsibuti"
+  ]
+ },
+ {
+  "id": "dodoma",
+  "name": "Dodoma",
+  "kind": "city",
+  "words": [
+   "Dodoma"
+  ]
+ },
+ {
+  "id": "doha",
+  "name": "Doha",
+  "kind": "city",
+  "words": [
+   "Doha"
+  ]
+ },
+ {
+  "id": "dominica",
+  "name": "Dominica",
+  "kind": "country",
+  "words": [
+   "Dominica",
+   "Dominikai Közösség"
+  ]
+ },
+ {
+  "id": "dominican-rep",
+  "name": "Dominican Rep.",
+  "kind": "country",
+  "words": [
+   "Dominican Rep.",
+   "Dominican Republic",
+   "Dominikai Köztársaság"
+  ]
+ },
+ {
+  "id": "dubai",
+  "name": "Dubai",
+  "kind": "city",
+  "words": [
+   "Dubai"
+  ]
+ },
+ {
+  "id": "dublin",
+  "name": "Dublin",
+  "kind": "city",
+  "words": [
+   "Dublin"
+  ]
+ },
+ {
+  "id": "dushanbe",
+  "name": "Dushanbe",
+  "kind": "city",
+  "words": [
+   "Dushanbe"
+  ]
+ },
+ {
+  "id": "ecuador",
+  "name": "Ecuador",
+  "kind": "country",
+  "words": [
+   "Ecuador"
+  ]
+ },
+ {
+  "id": "egypt",
+  "name": "Egypt",
+  "kind": "country",
+  "words": [
+   "Egypt",
+   "Egyiptom"
+  ]
+ },
+ {
+  "id": "el-salvador",
+  "name": "El Salvador",
+  "kind": "country",
+  "words": [
+   "El Salvador",
+   "Salvador"
+  ]
+ },
+ {
+  "id": "eq-guinea",
+  "name": "Eq. Guinea",
+  "kind": "country",
+  "words": [
+   "Eq. Guinea",
+   "Equatorial Guinea",
+   "Egyenlítői-Guinea"
+  ]
+ },
+ {
+  "id": "eritrea",
+  "name": "Eritrea",
+  "kind": "country",
+  "words": [
+   "Eritrea"
+  ]
+ },
+ {
+  "id": "estonia",
+  "name": "Estonia",
+  "kind": "country",
+  "words": [
+   "Estonia",
+   "Észtország"
+  ]
+ },
+ {
+  "id": "eswatini",
+  "name": "eSwatini",
+  "kind": "country",
+  "words": [
+   "Eswatini",
+   "Szváziföld"
+  ]
+ },
+ {
+  "id": "ethiopia",
+  "name": "Ethiopia",
+  "kind": "country",
+  "words": [
+   "Ethiopia",
+   "Etiópia"
+  ]
+ },
+ {
+  "id": "falkland-is",
+  "name": "Falkland Is.",
+  "kind": "country",
+  "words": [
+   "Falkland Is.",
+   "Falkland Islands",
+   "Falkland-szigetek"
+  ]
+ },
+ {
+  "id": "fiji",
+  "name": "Fiji",
+  "kind": "country",
+  "words": [
+   "Fiji",
+   "Fidzsi-szigetek"
+  ]
+ },
+ {
+  "id": "finland",
+  "name": "Finland",
+  "kind": "country",
+  "words": [
+   "Finland",
+   "Finnország"
+  ]
+ },
+ {
+  "id": "france",
+  "name": "France",
+  "kind": "country",
+  "words": [
+   "France",
+   "Franciaország"
+  ]
+ },
+ {
+  "id": "freetown",
+  "name": "Freetown",
+  "kind": "city",
+  "words": [
+   "Freetown"
+  ]
+ },
+ {
+  "id": "funafuti",
+  "name": "Funafuti",
+  "kind": "city",
+  "words": [
+   "Funafuti"
+  ]
+ },
+ {
+  "id": "gabon",
+  "name": "Gabon",
+  "kind": "country",
+  "words": [
+   "Gabon"
+  ]
+ },
+ {
+  "id": "gaborone",
+  "name": "Gaborone",
+  "kind": "city",
+  "words": [
+   "Gaborone"
+  ]
+ },
+ {
+  "id": "gambia",
+  "name": "Gambia",
+  "kind": "country",
+  "words": [
+   "Gambia",
+   "The Gambia"
+  ]
+ },
+ {
+  "id": "geneva",
+  "name": "Geneva",
+  "kind": "city",
+  "words": [
+   "Geneva"
+  ]
+ },
+ {
+  "id": "georgetown",
+  "name": "Georgetown",
+  "kind": "city",
+  "words": []
+ },
+ {
+  "id": "georgia",
+  "name": "Georgia",
+  "kind": "country",
+  "words": []
+ },
+ {
+  "id": "germany",
+  "name": "Germany",
+  "kind": "country",
+  "words": [
+   "Germany",
+   "Németország"
+  ]
+ },
+ {
+  "id": "ghana",
+  "name": "Ghana",
+  "kind": "country",
+  "words": [
+   "Ghana",
+   "Ghána"
+  ]
+ },
+ {
+  "id": "greece",
+  "name": "Greece",
+  "kind": "country",
+  "words": [
+   "Greece",
+   "Görögország"
+  ]
+ },
+ {
+  "id": "greenland",
+  "name": "Greenland",
+  "kind": "country",
+  "words": [
+   "Greenland",
+   "Grönland"
+  ]
+ },
+ {
+  "id": "grenada",
+  "name": "Grenada",
+  "kind": "country",
+  "words": [
+   "Grenada"
+  ]
+ },
+ {
+  "id": "guatemala",
+  "name": "Guatemala",
+  "kind": "country",
+  "words": [
+   "Guatemala"
+  ]
+ },
+ {
+  "id": "guatemala-city",
+  "name": "Guatemala City",
+  "kind": "city",
+  "words": [
+   "Guatemala City",
+   "Guatemala"
+  ]
+ },
+ {
+  "id": "guernsey",
+  "name": "Guernsey",
+  "kind": "country",
+  "words": [
+   "Guernsey",
+   "Guernsey Bailiffség"
+  ]
+ },
+ {
+  "id": "guinea",
+  "name": "Guinea",
+  "kind": "country",
+  "words": []
+ },
+ {
+  "id": "guinea-bissau",
+  "name": "Guinea-Bissau",
+  "kind": "country",
+  "words": [
+   "Guinea-Bissau",
+   "Bissau-Guinea"
+  ]
+ },
+ {
+  "id": "guyana",
+  "name": "Guyana",
+  "kind": "country",
+  "words": [
+   "Guyana"
+  ]
+ },
+ {
+  "id": "haiti",
+  "name": "Haiti",
+  "kind": "country",
+  "words": [
+   "Haiti"
+  ]
+ },
+ {
+  "id": "hanoi",
+  "name": "Hanoi",
+  "kind": "city",
+  "words": [
+   "Hanoi"
+  ]
+ },
+ {
+  "id": "harare",
+  "name": "Harare",
+  "kind": "city",
+  "words": [
+   "Harare"
+  ]
+ },
+ {
+  "id": "hargeisa",
+  "name": "Hargeisa",
+  "kind": "city",
+  "words": [
+   "Hargeisa",
+   "Hargeysa"
+  ]
+ },
+ {
+  "id": "havana",
+  "name": "Havana",
+  "kind": "city",
+  "words": [
+   "Havana"
+  ]
+ },
+ {
+  "id": "helsinki",
+  "name": "Helsinki",
+  "kind": "city",
+  "words": [
+   "Helsinki"
+  ]
+ },
+ {
+  "id": "honduras",
+  "name": "Honduras",
+  "kind": "country",
+  "words": [
+   "Honduras"
+  ]
+ },
+ {
+  "id": "hong-kong",
+  "name": "Hong Kong",
+  "kind": "country",
+  "words": [
+   "Hong Kong",
+   "Hongkong"
+  ]
+ },
+ {
+  "id": "honiara",
+  "name": "Honiara",
+  "kind": "city",
+  "words": [
+   "Honiara"
+  ]
+ },
+ {
+  "id": "houston",
+  "name": "Houston",
+  "kind": "city",
+  "words": [
+   "Houston"
+  ]
+ },
+ {
+  "id": "hungary",
+  "name": "Hungary",
+  "kind": "country",
+  "words": [
+   "Hungary",
+   "Magyarország"
+  ]
+ },
+ {
+  "id": "iceland",
+  "name": "Iceland",
+  "kind": "country",
+  "words": [
+   "Iceland",
+   "Izland"
+  ]
+ },
+ {
+  "id": "india",
+  "name": "India",
+  "kind": "country",
+  "words": [
+   "India"
+  ]
+ },
+ {
+  "id": "indonesia",
+  "name": "Indonesia",
+  "kind": "country",
+  "words": [
+   "Indonesia",
+   "Indonézia"
+  ]
+ },
+ {
+  "id": "iran",
+  "name": "Iran",
+  "kind": "country",
+  "words": [
+   "Iran",
+   "Irán"
+  ]
+ },
+ {
+  "id": "iraq",
+  "name": "Iraq",
+  "kind": "country",
+  "words": [
+   "Iraq",
+   "Irak"
+  ]
+ },
+ {
+  "id": "ireland",
+  "name": "Ireland",
+  "kind": "country",
+  "words": [
+   "Ireland",
+   "Írország"
+  ]
+ },
+ {
+  "id": "islamabad",
+  "name": "Islamabad",
+  "kind": "city",
+  "words": [
+   "Islamabad"
+  ]
+ },
+ {
+  "id": "isle-of-man",
+  "name": "Isle of Man",
+  "kind": "country",
+  "words": [
+   "Isle of Man"
+  ]
+ },
+ {
+  "id": "israel",
+  "name": "Israel",
+  "kind": "country",
+  "words": [
+   "Israel",
+   "Izrael"
+  ]
+ },
+ {
+  "id": "istanbul",
+  "name": "Istanbul",
+  "kind": "city",
+  "words": [
+   "Istanbul",
+   "Isztambul"
+  ]
+ },
+ {
+  "id": "italy",
+  "name": "Italy",
+  "kind": "country",
+  "words": [
+   "Italy",
+   "Olaszország"
+  ]
+ },
+ {
+  "id": "jakarta",
+  "name": "Jakarta",
+  "kind": "city",
+  "words": [
+   "Jakarta"
+  ]
+ },
+ {
+  "id": "jamaica",
+  "name": "Jamaica",
+  "kind": "country",
+  "words": [
+   "Jamaica"
+  ]
+ },
+ {
+  "id": "japan",
+  "name": "Japan",
+  "kind": "country",
+  "words": [
+   "Japan",
+   "Japán"
+  ]
+ },
+ {
+  "id": "jersey",
+  "name": "Jersey",
+  "kind": "country",
+  "words": [
+   "Jersey"
+  ]
+ },
+ {
+  "id": "jerusalem",
+  "name": "Jerusalem",
+  "kind": "city",
+  "words": [
+   "Jerusalem"
+  ]
+ },
+ {
+  "id": "johannesburg",
+  "name": "Johannesburg",
+  "kind": "city",
+  "words": [
+   "Johannesburg"
+  ]
+ },
+ {
+  "id": "jordan",
+  "name": "Jordan",
+  "kind": "country",
+  "words": []
+ },
+ {
+  "id": "juba",
+  "name": "Juba",
+  "kind": "city",
+  "words": [
+   "Juba"
+  ]
+ },
+ {
+  "id": "k-benhavn",
+  "name": "København",
+  "kind": "city",
+  "words": [
+   "København",
+   "Kobenhavn"
+  ]
+ },
+ {
+  "id": "kabul",
+  "name": "Kabul",
+  "kind": "city",
+  "words": [
+   "Kabul"
+  ]
+ },
+ {
+  "id": "kampala",
+  "name": "Kampala",
+  "kind": "city",
+  "words": [
+   "Kampala"
+  ]
+ },
+ {
+  "id": "kathmandu",
+  "name": "Kathmandu",
+  "kind": "city",
+  "words": [
+   "Kathmandu"
+  ]
+ },
+ {
+  "id": "kenya",
+  "name": "Kenya",
+  "kind": "country",
+  "words": [
+   "Kenya"
+  ]
+ },
+ {
+  "id": "khartoum",
+  "name": "Khartoum",
+  "kind": "city",
+  "words": [
+   "Khartoum"
+  ]
+ },
+ {
+  "id": "kigali",
+  "name": "Kigali",
+  "kind": "city",
+  "words": [
+   "Kigali"
+  ]
+ },
+ {
+  "id": "kingston",
+  "name": "Kingston",
+  "kind": "city",
+  "words": [
+   "Kingston"
+  ]
+ },
+ {
+  "id": "kingstown",
+  "name": "Kingstown",
+  "kind": "city",
+  "words": []
+ },
+ {
+  "id": "kinshasa",
+  "name": "Kinshasa",
+  "kind": "city",
+  "words": [
+   "Kinshasa"
+  ]
+ },
+ {
+  "id": "kiribati",
+  "name": "Kiribati",
+  "kind": "country",
+  "words": [
+   "Kiribati"
+  ]
+ },
+ {
+  "id": "kolkata",
+  "name": "Kolkata",
+  "kind": "city",
+  "words": [
+   "Kolkata"
+  ]
+ },
+ {
+  "id": "kosovo",
+  "name": "Kosovo",
+  "kind": "country",
+  "words": [
+   "Kosovo",
+   "Koszovó"
+  ]
+ },
+ {
+  "id": "kuala-lumpur",
+  "name": "Kuala Lumpur",
+  "kind": "city",
+  "words": [
+   "Kuala Lumpur"
+  ]
+ },
+ {
+  "id": "kuwait",
+  "name": "Kuwait",
+  "kind": "country",
+  "words": [
+   "Kuwait",
+   "Kuvait"
+  ]
+ },
+ {
+  "id": "kuwait-city",
+  "name": "Kuwait City",
+  "kind": "city",
+  "words": [
+   "Kuwait City"
+  ]
+ },
+ {
+  "id": "kyiv",
+  "name": "Kyiv",
+  "kind": "city",
+  "words": [
+   "Kyiv",
+   "Kiev"
+  ]
+ },
+ {
+  "id": "kyoto",
+  "name": "Kyoto",
+  "kind": "city",
+  "words": [
+   "Kyoto"
+  ]
+ },
+ {
+  "id": "kyrgyzstan",
+  "name": "Kyrgyzstan",
+  "kind": "country",
+  "words": [
+   "Kyrgyzstan",
+   "Kirgizisztán"
+  ]
+ },
+ {
+  "id": "la-paz",
+  "name": "La Paz",
+  "kind": "city",
+  "words": [
+   "La Paz"
+  ]
+ },
+ {
+  "id": "laayoune",
+  "name": "Laayoune",
+  "kind": "city",
+  "words": [
+   "Laayoune"
+  ]
+ },
+ {
+  "id": "lagos",
+  "name": "Lagos",
+  "kind": "city",
+  "words": [
+   "Lagos"
+  ]
+ },
+ {
+  "id": "laos",
+  "name": "Laos",
+  "kind": "country",
+  "words": [
+   "Laos",
+   "Laosz"
+  ]
+ },
+ {
+  "id": "latvia",
+  "name": "Latvia",
+  "kind": "country",
+  "words": [
+   "Latvia",
+   "Lettország"
+  ]
+ },
+ {
+  "id": "lebanon",
+  "name": "Lebanon",
+  "kind": "country",
+  "words": [
+   "Lebanon",
+   "Libanon"
+  ]
+ },
+ {
+  "id": "lesotho",
+  "name": "Lesotho",
+  "kind": "country",
+  "words": [
+   "Lesotho"
+  ]
+ },
+ {
+  "id": "liberia",
+  "name": "Liberia",
+  "kind": "country",
+  "words": [
+   "Liberia",
+   "Libéria"
+  ]
+ },
+ {
+  "id": "libreville",
+  "name": "Libreville",
+  "kind": "city",
+  "words": [
+   "Libreville"
+  ]
+ },
+ {
+  "id": "libya",
+  "name": "Libya",
+  "kind": "country",
+  "words": [
+   "Libya",
+   "Líbia"
+  ]
+ },
+ {
+  "id": "liechtenstein",
+  "name": "Liechtenstein",
+  "kind": "country",
+  "words": [
+   "Liechtenstein"
+  ]
+ },
+ {
+  "id": "lilongwe",
+  "name": "Lilongwe",
+  "kind": "city",
+  "words": [
+   "Lilongwe"
+  ]
+ },
+ {
+  "id": "lima",
+  "name": "Lima",
+  "kind": "city",
+  "words": [
+   "Lima"
+  ]
+ },
+ {
+  "id": "lisbon",
+  "name": "Lisbon",
+  "kind": "city",
+  "words": [
+   "Lisbon"
+  ]
+ },
+ {
+  "id": "lithuania",
+  "name": "Lithuania",
+  "kind": "country",
+  "words": [
+   "Lithuania",
+   "Litvánia"
+  ]
+ },
+ {
+  "id": "ljubljana",
+  "name": "Ljubljana",
+  "kind": "city",
+  "words": [
+   "Ljubljana"
+  ]
+ },
+ {
+  "id": "lobamba",
+  "name": "Lobamba",
+  "kind": "city",
+  "words": []
+ },
+ {
+  "id": "lome",
+  "name": "Lomé",
+  "kind": "city",
+  "words": [
+   "Lomé",
+   "Lome"
+  ]
+ },
+ {
+  "id": "london",
+  "name": "London",
+  "kind": "city",
+  "words": [
+   "London"
+  ]
+ },
+ {
+  "id": "los-angeles",
+  "name": "Los Angeles",
+  "kind": "city",
+  "words": [
+   "Los Angeles"
+  ]
+ },
+ {
+  "id": "luanda",
+  "name": "Luanda",
+  "kind": "city",
+  "words": [
+   "Luanda"
+  ]
+ },
+ {
+  "id": "lusaka",
+  "name": "Lusaka",
+  "kind": "city",
+  "words": [
+   "Lusaka"
+  ]
+ },
+ {
+  "id": "luxembourg",
+  "name": "Luxembourg",
+  "kind": "country",
+  "words": [
+   "Luxembourg",
+   "Luxemburg"
+  ]
+ },
+ {
+  "id": "macao",
+  "name": "Macao",
+  "kind": "country",
+  "words": [
+   "Macao",
+   "Macau",
+   "Makaó"
+  ]
+ },
+ {
+  "id": "madagascar",
+  "name": "Madagascar",
+  "kind": "country",
+  "words": [
+   "Madagascar",
+   "Madagaszkár"
+  ]
+ },
+ {
+  "id": "madrid",
+  "name": "Madrid",
+  "kind": "city",
+  "words": [
+   "Madrid"
+  ]
+ },
+ {
+  "id": "majuro",
+  "name": "Majuro",
+  "kind": "city",
+  "words": [
+   "Majuro"
+  ]
+ },
+ {
+  "id": "malabo",
+  "name": "Malabo",
+  "kind": "city",
+  "words": [
+   "Malabo"
+  ]
+ },
+ {
+  "id": "malawi",
+  "name": "Malawi",
+  "kind": "country",
+  "words": [
+   "Malawi"
+  ]
+ },
+ {
+  "id": "malaysia",
+  "name": "Malaysia",
+  "kind": "country",
+  "words": [
+   "Malaysia",
+   "Malajzia"
+  ]
+ },
+ {
+  "id": "maldives",
+  "name": "Maldives",
+  "kind": "country",
+  "words": [
+   "Maldives",
+   "Maldív-szigetek"
+  ]
+ },
+ {
+  "id": "male",
+  "name": "Malé",
+  "kind": "city",
+  "words": [
+   "Malé",
+   "Male"
+  ]
+ },
+ {
+  "id": "mali",
+  "name": "Mali",
+  "kind": "country",
+  "words": [
+   "Mali"
+  ]
+ },
+ {
+  "id": "malta",
+  "name": "Malta",
+  "kind": "country",
+  "words": [
+   "Malta",
+   "Málta"
+  ]
+ },
+ {
+  "id": "managua",
+  "name": "Managua",
+  "kind": "city",
+  "words": [
+   "Managua"
+  ]
+ },
+ {
+  "id": "manama",
+  "name": "Manama",
+  "kind": "city",
+  "words": [
+   "Manama"
+  ]
+ },
+ {
+  "id": "manila",
+  "name": "Manila",
+  "kind": "city",
+  "words": [
+   "Manila"
+  ]
+ },
+ {
+  "id": "maputo",
+  "name": "Maputo",
+  "kind": "city",
+  "words": [
+   "Maputo"
+  ]
+ },
+ {
+  "id": "marshall-is",
+  "name": "Marshall Is.",
+  "kind": "country",
+  "words": [
+   "Marshall Is.",
+   "Marshall Islands",
+   "Marshall-szigetek"
+  ]
+ },
+ {
+  "id": "maseru",
+  "name": "Maseru",
+  "kind": "city",
+  "words": [
+   "Maseru"
+  ]
+ },
+ {
+  "id": "mauritania",
+  "name": "Mauritania",
+  "kind": "country",
+  "words": [
+   "Mauritania",
+   "Mauritánia"
+  ]
+ },
+ {
+  "id": "mauritius",
+  "name": "Mauritius",
+  "kind": "country",
+  "words": [
+   "Mauritius"
+  ]
+ },
+ {
+  "id": "mbabane",
+  "name": "Mbabane",
+  "kind": "city",
+  "words": [
+   "Mbabane"
+  ]
+ },
+ {
+  "id": "melbourne",
+  "name": "Melbourne",
+  "kind": "city",
+  "words": [
+   "Melbourne"
+  ]
+ },
+ {
+  "id": "melekeok",
+  "name": "Melekeok",
+  "kind": "city",
+  "words": [
+   "Melekeok"
+  ]
+ },
+ {
+  "id": "mexico",
+  "name": "Mexico",
+  "kind": "country",
+  "words": [
+   "Mexico",
+   "Mexikó"
+  ]
+ },
+ {
+  "id": "mexico-city",
+  "name": "Mexico City",
+  "kind": "city",
+  "words": [
+   "Mexico City"
+  ]
+ },
+ {
+  "id": "miami",
+  "name": "Miami",
+  "kind": "city",
+  "words": [
+   "Miami"
+  ]
+ },
+ {
+  "id": "micronesia",
+  "name": "Micronesia",
+  "kind": "country",
+  "words": [
+   "Micronesia",
+   "Federated States of Micronesia",
+   "Mikronéziai Szövetségi Államok"
+  ]
+ },
+ {
+  "id": "minsk",
+  "name": "Minsk",
+  "kind": "city",
+  "words": [
+   "Minsk"
+  ]
+ },
+ {
+  "id": "mogadishu",
+  "name": "Mogadishu",
+  "kind": "city",
+  "words": [
+   "Mogadishu"
+  ]
+ },
+ {
+  "id": "moldova",
+  "name": "Moldova",
+  "kind": "country",
+  "words": [
+   "Moldova"
+  ]
+ },
+ {
+  "id": "monaco",
+  "name": "Monaco",
+  "kind": "country",
+  "words": [
+   "Monaco"
+  ]
+ },
+ {
+  "id": "mongolia",
+  "name": "Mongolia",
+  "kind": "country",
+  "words": [
+   "Mongolia",
+   "Mongólia"
+  ]
+ },
+ {
+  "id": "monrovia",
+  "name": "Monrovia",
+  "kind": "city",
+  "words": [
+   "Monrovia"
+  ]
+ },
+ {
+  "id": "montenegro",
+  "name": "Montenegro",
+  "kind": "country",
+  "words": [
+   "Montenegro",
+   "Montenegró"
+  ]
+ },
+ {
+  "id": "monterrey",
+  "name": "Monterrey",
+  "kind": "city",
+  "words": [
+   "Monterrey"
+  ]
+ },
+ {
+  "id": "montevideo",
+  "name": "Montevideo",
+  "kind": "city",
+  "words": [
+   "Montevideo"
+  ]
+ },
+ {
+  "id": "morocco",
+  "name": "Morocco",
+  "kind": "country",
+  "words": [
+   "Morocco",
+   "Marokkó"
+  ]
+ },
+ {
+  "id": "moroni",
+  "name": "Moroni",
+  "kind": "city",
+  "words": [
+   "Moroni"
+  ]
+ },
+ {
+  "id": "moscow",
+  "name": "Moscow",
+  "kind": "city",
+  "words": [
+   "Moscow",
+   "Moszkva"
+  ]
+ },
+ {
+  "id": "mozambique",
+  "name": "Mozambique",
+  "kind": "country",
+  "words": [
+   "Mozambique",
+   "Mozambik"
+  ]
+ },
+ {
+  "id": "mumbai",
+  "name": "Mumbai",
+  "kind": "city",
+  "words": [
+   "Mumbai"
+  ]
+ },
+ {
+  "id": "muscat",
+  "name": "Muscat",
+  "kind": "city",
+  "words": [
+   "Muscat"
+  ]
+ },
+ {
+  "id": "myanmar",
+  "name": "Myanmar",
+  "kind": "country",
+  "words": [
+   "Myanmar",
+   "Mianmar"
+  ]
+ },
+ {
+  "id": "n-cyprus",
+  "name": "N. Cyprus",
+  "kind": "country",
+  "words": [
+   "N. Cyprus",
+   "Turkish Republic of Northern Cyprus",
+   "Észak-Ciprus"
+  ]
+ },
+ {
+  "id": "n-djamena",
+  "name": "N'Djamena",
+  "kind": "city",
+  "words": [
+   "N'Djamena",
+   "Ndjamena"
+  ]
+ },
+ {
+  "id": "nairobi",
+  "name": "Nairobi",
+  "kind": "city",
+  "words": [
+   "Nairobi"
+  ]
+ },
+ {
+  "id": "namibia",
+  "name": "Namibia",
+  "kind": "country",
+  "words": [
+   "Namibia",
+   "Namíbia"
+  ]
+ },
+ {
+  "id": "nassau",
+  "name": "Nassau",
+  "kind": "city",
+  "words": [
+   "Nassau"
+  ]
+ },
+ {
+  "id": "nauru",
+  "name": "Nauru",
+  "kind": "country",
+  "words": [
+   "Nauru"
+  ]
+ },
+ {
+  "id": "naypyidaw",
+  "name": "Naypyidaw",
+  "kind": "city",
+  "words": [
+   "Naypyidaw"
+  ]
+ },
+ {
+  "id": "nepal",
+  "name": "Nepal",
+  "kind": "country",
+  "words": [
+   "Nepal",
+   "Nepál"
+  ]
+ },
+ {
+  "id": "netherlands",
+  "name": "Netherlands",
+  "kind": "country",
+  "words": [
+   "Netherlands",
+   "Holland",
+   "Hollandia"
+  ]
+ },
+ {
+  "id": "new-delhi",
+  "name": "New Delhi",
+  "kind": "city",
+  "words": [
+   "New Delhi"
+  ]
+ },
+ {
+  "id": "new-york",
+  "name": "New York",
+  "kind": "city",
+  "words": [
+   "New York"
+  ]
+ },
+ {
+  "id": "new-zealand",
+  "name": "New Zealand",
+  "kind": "country",
+  "words": [
+   "New Zealand",
+   "Új-Zéland"
+  ]
+ },
+ {
+  "id": "niamey",
+  "name": "Niamey",
+  "kind": "city",
+  "words": [
+   "Niamey"
+  ]
+ },
+ {
+  "id": "nicaragua",
+  "name": "Nicaragua",
+  "kind": "country",
+  "words": [
+   "Nicaragua"
+  ]
+ },
+ {
+  "id": "nicosia",
+  "name": "Nicosia",
+  "kind": "city",
+  "words": [
+   "Nicosia"
+  ]
+ },
+ {
+  "id": "niger",
+  "name": "Niger",
+  "kind": "country",
+  "words": [
+   "Niger"
+  ]
+ },
+ {
+  "id": "nigeria",
+  "name": "Nigeria",
+  "kind": "country",
+  "words": [
+   "Nigeria",
+   "Nigéria"
+  ]
+ },
+ {
+  "id": "north-korea",
+  "name": "North Korea",
+  "kind": "country",
+  "words": [
+   "North Korea",
+   "Észak-Korea"
+  ]
+ },
+ {
+  "id": "north-macedonia",
+  "name": "North Macedonia",
+  "kind": "country",
+  "words": [
+   "North Macedonia",
+   "Észak-Macedónia"
+  ]
+ },
+ {
+  "id": "norway",
+  "name": "Norway",
+  "kind": "country",
+  "words": [
+   "Norway",
+   "Norvégia"
+  ]
+ },
+ {
+  "id": "nouakchott",
+  "name": "Nouakchott",
+  "kind": "city",
+  "words": [
+   "Nouakchott"
+  ]
+ },
+ {
+  "id": "nuku-alofa",
+  "name": "Nuku'alofa",
+  "kind": "city",
+  "words": [
+   "Nuku'alofa",
+   "Nukualofa"
+  ]
+ },
+ {
+  "id": "nur-sultan",
+  "name": "Nur-Sultan",
+  "kind": "city",
+  "words": [
+   "Nur-Sultan",
+   "Astana"
+  ]
+ },
+ {
+  "id": "oman",
+  "name": "Oman",
+  "kind": "country",
+  "words": [
+   "Oman",
+   "Omán"
+  ]
+ },
+ {
+  "id": "osaka",
+  "name": "Ōsaka",
+  "kind": "city",
+  "words": [
+   "Ōsaka",
+   "Osaka"
+  ]
+ },
+ {
+  "id": "oslo",
+  "name": "Oslo",
+  "kind": "city",
+  "words": [
+   "Oslo"
+  ]
+ },
+ {
+  "id": "ottawa",
+  "name": "Ottawa",
+  "kind": "city",
+  "words": [
+   "Ottawa"
+  ]
+ },
+ {
+  "id": "ouagadougou",
+  "name": "Ouagadougou",
+  "kind": "city",
+  "words": [
+   "Ouagadougou"
+  ]
+ },
+ {
+  "id": "pakistan",
+  "name": "Pakistan",
+  "kind": "country",
+  "words": [
+   "Pakistan",
+   "Pakisztán"
+  ]
+ },
+ {
+  "id": "palau",
+  "name": "Palau",
+  "kind": "country",
+  "words": [
+   "Palau"
+  ]
+ },
+ {
+  "id": "palikir",
+  "name": "Palikir",
+  "kind": "city",
+  "words": [
+   "Palikir"
+  ]
+ },
+ {
+  "id": "panama",
+  "name": "Panama",
+  "kind": "country",
+  "words": [
+   "Panama"
+  ]
+ },
+ {
+  "id": "panama-city",
+  "name": "Panama City",
+  "kind": "city",
+  "words": [
+   "Panama City"
+  ]
+ },
+ {
+  "id": "papua-new-guinea",
+  "name": "Papua New Guinea",
+  "kind": "country",
+  "words": [
+   "Papua New Guinea",
+   "Pápua Új-Guinea"
+  ]
+ },
+ {
+  "id": "paraguay",
+  "name": "Paraguay",
+  "kind": "country",
+  "words": [
+   "Paraguay"
+  ]
+ },
+ {
+  "id": "paramaribo",
+  "name": "Paramaribo",
+  "kind": "city",
+  "words": [
+   "Paramaribo"
+  ]
+ },
+ {
+  "id": "paris",
+  "name": "Paris",
+  "kind": "city",
+  "words": [
+   "Paris",
+   "Párizs"
+  ]
+ },
+ {
+  "id": "peru",
+  "name": "Peru",
+  "kind": "country",
+  "words": [
+   "Peru"
+  ]
+ },
+ {
+  "id": "philippines",
+  "name": "Philippines",
+  "kind": "country",
+  "words": [
+   "Philippines",
+   "Fülöp-szigetek"
+  ]
+ },
+ {
+  "id": "phnom-penh",
+  "name": "Phnom Penh",
+  "kind": "city",
+  "words": [
+   "Phnom Penh"
+  ]
+ },
+ {
+  "id": "podgorica",
+  "name": "Podgorica",
+  "kind": "city",
+  "words": [
+   "Podgorica"
+  ]
+ },
+ {
+  "id": "poland",
+  "name": "Poland",
+  "kind": "country",
+  "words": [
+   "Poland",
+   "Lengyelország"
+  ]
+ },
+ {
+  "id": "port-au-prince",
+  "name": "Port-au-Prince",
+  "kind": "city",
+  "words": [
+   "Port-au-Prince"
+  ]
+ },
+ {
+  "id": "port-louis",
+  "name": "Port Louis",
+  "kind": "city",
+  "words": [
+   "Port Louis"
+  ]
+ },
+ {
+  "id": "port-moresby",
+  "name": "Port Moresby",
+  "kind": "city",
+  "words": [
+   "Port Moresby"
+  ]
+ },
+ {
+  "id": "port-of-spain",
+  "name": "Port-of-Spain",
+  "kind": "city",
+  "words": [
+   "Port-of-Spain"
+  ]
+ },
+ {
+  "id": "port-vila",
+  "name": "Port Vila",
+  "kind": "city",
+  "words": [
+   "Port Vila"
+  ]
+ },
+ {
+  "id": "porto-novo",
+  "name": "Porto-Novo",
+  "kind": "city",
+  "words": [
+   "Porto-Novo"
+  ]
+ },
+ {
+  "id": "portugal",
+  "name": "Portugal",
+  "kind": "country",
+  "words": [
+   "Portugal",
+   "Portugália"
+  ]
+ },
+ {
+  "id": "prague",
+  "name": "Prague",
+  "kind": "city",
+  "words": [
+   "Prague",
+   "Prága"
+  ]
+ },
+ {
+  "id": "praia",
+  "name": "Praia",
+  "kind": "city",
+  "words": [
+   "Praia"
+  ]
+ },
+ {
+  "id": "pretoria",
+  "name": "Pretoria",
+  "kind": "city",
+  "words": [
+   "Pretoria"
+  ]
+ },
+ {
+  "id": "pristina",
+  "name": "Pristina",
+  "kind": "city",
+  "words": [
+   "Pristina"
+  ]
+ },
+ {
+  "id": "putrajaya",
+  "name": "Putrajaya",
+  "kind": "city",
+  "words": [
+   "Putrajaya"
+  ]
+ },
+ {
+  "id": "pyongyang",
+  "name": "Pyongyang",
+  "kind": "city",
+  "words": [
+   "Pyongyang"
+  ]
+ },
+ {
+  "id": "qatar",
+  "name": "Qatar",
+  "kind": "country",
+  "words": [
+   "Qatar",
+   "Katar"
+  ]
+ },
+ {
+  "id": "quito",
+  "name": "Quito",
+  "kind": "city",
+  "words": [
+   "Quito"
+  ]
+ },
+ {
+  "id": "rabat",
+  "name": "Rabat",
+  "kind": "city",
+  "words": [
+   "Rabat"
+  ]
+ },
+ {
+  "id": "reykjavik",
+  "name": "Reykjavík",
+  "kind": "city",
+  "words": [
+   "Reykjavík",
+   "Reykjavik"
+  ]
+ },
+ {
+  "id": "riga",
+  "name": "Riga",
+  "kind": "city",
+  "words": [
+   "Riga"
+  ]
+ },
+ {
+  "id": "rio-de-janeiro",
+  "name": "Rio de Janeiro",
+  "kind": "city",
+  "words": [
+   "Rio de Janeiro"
+  ]
+ },
+ {
+  "id": "riyadh",
+  "name": "Riyadh",
+  "kind": "city",
+  "words": [
+   "Riyadh"
+  ]
+ },
+ {
+  "id": "romania",
+  "name": "Romania",
+  "kind": "country",
+  "words": [
+   "Romania",
+   "Románia"
+  ]
+ },
+ {
+  "id": "rome",
+  "name": "Rome",
+  "kind": "city",
+  "words": [
+   "Rome",
+   "Róma"
+  ]
+ },
+ {
+  "id": "roseau",
+  "name": "Roseau",
+  "kind": "city",
+  "words": [
+   "Roseau"
+  ]
+ },
+ {
+  "id": "russia",
+  "name": "Russia",
+  "kind": "country",
+  "words": [
+   "Russia",
+   "Soviet Union",
+   "Szovjetunió",
+   "Oroszország"
+  ]
+ },
+ {
+  "id": "rwanda",
+  "name": "Rwanda",
+  "kind": "country",
+  "words": [
+   "Rwanda",
+   "Ruanda"
+  ]
+ },
+ {
+  "id": "s-sudan",
+  "name": "S. Sudan",
+  "kind": "country",
+  "words": [
+   "S. Sudan",
+   "South Sudan",
+   "Dél-Szudán"
+  ]
+ },
+ {
+  "id": "saint-george-s",
+  "name": "Saint George's",
+  "kind": "city",
+  "words": [
+   "Saint George's"
+  ]
+ },
+ {
+  "id": "saint-john-s",
+  "name": "Saint John's",
+  "kind": "city",
+  "words": [
+   "Saint John's"
+  ]
+ },
+ {
+  "id": "saint-lucia",
+  "name": "Saint Lucia",
+  "kind": "country",
+  "words": [
+   "Saint Lucia"
+  ]
+ },
+ {
+  "id": "samoa",
+  "name": "Samoa",
+  "kind": "country",
+  "words": [
+   "Samoa",
+   "Szamoa"
+  ]
+ },
+ {
+  "id": "san-francisco",
+  "name": "San Francisco",
+  "kind": "city",
+  "words": [
+   "San Francisco"
+  ]
+ },
+ {
+  "id": "san-jose",
+  "name": "San José",
+  "kind": "city",
+  "words": [
+   "San José",
+   "San Jose"
+  ]
+ },
+ {
+  "id": "san-marino",
+  "name": "San Marino",
+  "kind": "country",
+  "words": [
+   "San Marino"
+  ]
+ },
+ {
+  "id": "san-salvador",
+  "name": "San Salvador",
+  "kind": "city",
+  "words": [
+   "San Salvador"
+  ]
+ },
+ {
+  "id": "sanaa",
+  "name": "Sanaa",
+  "kind": "city",
+  "words": [
+   "Sanaa"
+  ]
+ },
+ {
+  "id": "santiago",
+  "name": "Santiago",
+  "kind": "city",
+  "words": [
+   "Santiago"
+  ]
+ },
+ {
+  "id": "santo-domingo",
+  "name": "Santo Domingo",
+  "kind": "city",
+  "words": [
+   "Santo Domingo"
+  ]
+ },
+ {
+  "id": "sao-paulo",
+  "name": "São Paulo",
+  "kind": "city",
+  "words": [
+   "São Paulo",
+   "Sao Paulo"
+  ]
+ },
+ {
+  "id": "sao-tome",
+  "name": "São Tomé",
+  "kind": "city",
+  "words": [
+   "São Tomé",
+   "Sao Tome"
+  ]
+ },
+ {
+  "id": "sao-tome-and-principe",
+  "name": "São Tomé and Principe",
+  "kind": "country",
+  "words": [
+   "São Tomé and Principe",
+   "São Tomé and Príncipe",
+   "São Tomé és Príncipe"
+  ]
+ },
+ {
+  "id": "sarajevo",
+  "name": "Sarajevo",
+  "kind": "city",
+  "words": [
+   "Sarajevo"
+  ]
+ },
+ {
+  "id": "saudi-arabia",
+  "name": "Saudi Arabia",
+  "kind": "country",
+  "words": [
+   "Saudi Arabia",
+   "Szaúd-Arábia"
+  ]
+ },
+ {
+  "id": "senegal",
+  "name": "Senegal",
+  "kind": "country",
+  "words": [
+   "Senegal",
+   "Szenegál"
+  ]
+ },
+ {
+  "id": "seoul",
+  "name": "Seoul",
+  "kind": "city",
+  "words": [
+   "Seoul"
+  ]
+ },
+ {
+  "id": "serbia",
+  "name": "Serbia",
+  "kind": "country",
+  "words": [
+   "Serbia",
+   "Szerbia"
+  ]
+ },
+ {
+  "id": "seychelles",
+  "name": "Seychelles",
+  "kind": "country",
+  "words": [
+   "Seychelles",
+   "Seychelle-szigetek"
+  ]
+ },
+ {
+  "id": "shanghai",
+  "name": "Shanghai",
+  "kind": "city",
+  "words": [
+   "Shanghai"
+  ]
+ },
+ {
+  "id": "sierra-leone",
+  "name": "Sierra Leone",
+  "kind": "country",
+  "words": [
+   "Sierra Leone"
+  ]
+ },
+ {
+  "id": "singapore",
+  "name": "Singapore",
+  "kind": "country",
+  "words": [
+   "Singapore",
+   "Szingapúr"
+  ]
+ },
+ {
+  "id": "sint-maarten",
+  "name": "Sint Maarten",
+  "kind": "country",
+  "words": [
+   "Sint Maarten"
+  ]
+ },
+ {
+  "id": "skopje",
+  "name": "Skopje",
+  "kind": "city",
+  "words": [
+   "Skopje"
+  ]
+ },
+ {
+  "id": "slovakia",
+  "name": "Slovakia",
+  "kind": "country",
+  "words": [
+   "Slovakia",
+   "Szlovákia"
+  ]
+ },
+ {
+  "id": "slovenia",
+  "name": "Slovenia",
+  "kind": "country",
+  "words": [
+   "Slovenia",
+   "Szlovénia"
+  ]
+ },
+ {
+  "id": "sofia",
+  "name": "Sofia",
+  "kind": "city",
+  "words": [
+   "Sofia"
+  ]
+ },
+ {
+  "id": "solomon-is",
+  "name": "Solomon Is.",
+  "kind": "country",
+  "words": [
+   "Solomon Is.",
+   "Solomon Islands",
+   "Salamon-szigetek"
+  ]
+ },
+ {
+  "id": "somalia",
+  "name": "Somalia",
+  "kind": "country",
+  "words": [
+   "Somalia",
+   "Szomália"
+  ]
+ },
+ {
+  "id": "somaliland",
+  "name": "Somaliland",
+  "kind": "country",
+  "words": [
+   "Somaliland",
+   "Szomáliföld"
+  ]
+ },
+ {
+  "id": "south-africa",
+  "name": "South Africa",
+  "kind": "country",
+  "words": [
+   "South Africa",
+   "Dél-afrikai Köztársaság"
+  ]
+ },
+ {
+  "id": "south-korea",
+  "name": "South Korea",
+  "kind": "country",
+  "words": [
+   "South Korea",
+   "Dél-Korea"
+  ]
+ },
+ {
+  "id": "spain",
+  "name": "Spain",
+  "kind": "country",
+  "words": [
+   "Spain",
+   "Spanyolország"
+  ]
+ },
+ {
+  "id": "sri-jayawardenepura-kotte",
+  "name": "Sri Jayawardenepura Kotte",
+  "kind": "city",
+  "words": [
+   "Sri Jayawardenepura Kotte",
+   "Sri Jawewardenepura Kotte"
+  ]
+ },
+ {
+  "id": "sri-lanka",
+  "name": "Sri Lanka",
+  "kind": "country",
+  "words": [
+   "Sri Lanka",
+   "Srí Lanka"
+  ]
+ },
+ {
+  "id": "st-kitts-and-nevis",
+  "name": "St. Kitts and Nevis",
+  "kind": "country",
+  "words": [
+   "St. Kitts and Nevis",
+   "Saint Kitts and Nevis",
+   "Saint Kitts és Nevis"
+  ]
+ },
+ {
+  "id": "st-vin-and-gren",
+  "name": "St. Vin. and Gren.",
+  "kind": "country",
+  "words": [
+   "St. Vin. and Gren.",
+   "Saint Vincent and the Grenadines",
+   "Saint Vincent és a Grenadine-szigetek"
+  ]
+ },
+ {
+  "id": "stockholm",
+  "name": "Stockholm",
+  "kind": "city",
+  "words": [
+   "Stockholm"
+  ]
+ },
+ {
+  "id": "sucre",
+  "name": "Sucre",
+  "kind": "city",
+  "words": [
+   "Sucre"
+  ]
+ },
+ {
+  "id": "sudan",
+  "name": "Sudan",
+  "kind": "country",
+  "words": [
+   "Sudan",
+   "Szudán"
+  ]
+ },
+ {
+  "id": "suriname",
+  "name": "Suriname",
+  "kind": "country",
+  "words": [
+   "Suriname"
+  ]
+ },
+ {
+  "id": "suva",
+  "name": "Suva",
+  "kind": "city",
+  "words": [
+   "Suva"
+  ]
+ },
+ {
+  "id": "sweden",
+  "name": "Sweden",
+  "kind": "country",
+  "words": [
+   "Sweden",
+   "Svédország"
+  ]
+ },
+ {
+  "id": "switzerland",
+  "name": "Switzerland",
+  "kind": "country",
+  "words": [
+   "Switzerland",
+   "Svájc"
+  ]
+ },
+ {
+  "id": "sydney",
+  "name": "Sydney",
+  "kind": "city",
+  "words": [
+   "Sydney"
+  ]
+ },
+ {
+  "id": "syria",
+  "name": "Syria",
+  "kind": "country",
+  "words": [
+   "Syria",
+   "Szíria"
+  ]
+ },
+ {
+  "id": "taipei",
+  "name": "Taipei",
+  "kind": "city",
+  "words": [
+   "Taipei"
+  ]
+ },
+ {
+  "id": "taiwan",
+  "name": "Taiwan",
+  "kind": "country",
+  "words": [
+   "Taiwan",
+   "Kínai Köztársaság"
+  ]
+ },
+ {
+  "id": "tajikistan",
+  "name": "Tajikistan",
+  "kind": "country",
+  "words": [
+   "Tajikistan",
+   "Tádzsikisztán"
+  ]
+ },
+ {
+  "id": "tallinn",
+  "name": "Tallinn",
+  "kind": "city",
+  "words": [
+   "Tallinn"
+  ]
+ },
+ {
+  "id": "tanzania",
+  "name": "Tanzania",
+  "kind": "country",
+  "words": [
+   "Tanzania",
+   "Tanzánia"
+  ]
+ },
+ {
+  "id": "tarawa",
+  "name": "Tarawa",
+  "kind": "city",
+  "words": [
+   "Tarawa"
+  ]
+ },
+ {
+  "id": "tashkent",
+  "name": "Tashkent",
+  "kind": "city",
+  "words": [
+   "Tashkent"
+  ]
+ },
+ {
+  "id": "tbilisi",
+  "name": "Tbilisi",
+  "kind": "city",
+  "words": [
+   "Tbilisi"
+  ]
+ },
+ {
+  "id": "tegucigalpa",
+  "name": "Tegucigalpa",
+  "kind": "city",
+  "words": [
+   "Tegucigalpa"
+  ]
+ },
+ {
+  "id": "tehran",
+  "name": "Tehran",
+  "kind": "city",
+  "words": [
+   "Tehran"
+  ]
+ },
+ {
+  "id": "tel-aviv",
+  "name": "Tel Aviv",
+  "kind": "city",
+  "words": [
+   "Tel Aviv",
+   "Tel Aviv-Yafo"
+  ]
+ },
+ {
+  "id": "thailand",
+  "name": "Thailand",
+  "kind": "country",
+  "words": [
+   "Thailand",
+   "Thaiföld"
+  ]
+ },
+ {
+  "id": "the-hague",
+  "name": "The Hague",
+  "kind": "city",
+  "words": [
+   "The Hague"
+  ]
+ },
+ {
+  "id": "thimphu",
+  "name": "Thimphu",
+  "kind": "city",
+  "words": [
+   "Thimphu"
+  ]
+ },
+ {
+  "id": "timor-leste",
+  "name": "Timor-Leste",
+  "kind": "country",
+  "words": [
+   "Timor-Leste",
+   "East Timor",
+   "Kelet-Timor"
+  ]
+ },
+ {
+  "id": "tirana",
+  "name": "Tirana",
+  "kind": "city",
+  "words": [
+   "Tirana"
+  ]
+ },
+ {
+  "id": "togo",
+  "name": "Togo",
+  "kind": "country",
+  "words": [
+   "Togo"
+  ]
+ },
+ {
+  "id": "tokyo",
+  "name": "Tokyo",
+  "kind": "city",
+  "words": [
+   "Tokyo",
+   "Tokió"
+  ]
+ },
+ {
+  "id": "tonga",
+  "name": "Tonga",
+  "kind": "country",
+  "words": [
+   "Tonga"
+  ]
+ },
+ {
+  "id": "toronto",
+  "name": "Toronto",
+  "kind": "city",
+  "words": [
+   "Toronto"
+  ]
+ },
+ {
+  "id": "trinidad-and-tobago",
+  "name": "Trinidad and Tobago",
+  "kind": "country",
+  "words": [
+   "Trinidad and Tobago",
+   "Trinidad és Tobago"
+  ]
+ },
+ {
+  "id": "tripoli",
+  "name": "Tripoli",
+  "kind": "city",
+  "words": [
+   "Tripoli"
+  ]
+ },
+ {
+  "id": "tunis",
+  "name": "Tunis",
+  "kind": "city",
+  "words": [
+   "Tunis"
+  ]
+ },
+ {
+  "id": "tunisia",
+  "name": "Tunisia",
+  "kind": "country",
+  "words": [
+   "Tunisia",
+   "Tunézia"
+  ]
+ },
+ {
+  "id": "turkey",
+  "name": "Turkey",
+  "kind": "country",
+  "words": [
+   "Turkey",
+   "Törökország"
+  ]
+ },
+ {
+  "id": "turkmenistan",
+  "name": "Turkmenistan",
+  "kind": "country",
+  "words": [
+   "Turkmenistan",
+   "Türkmenisztán"
+  ]
+ },
+ {
+  "id": "tuvalu",
+  "name": "Tuvalu",
+  "kind": "country",
+  "words": [
+   "Tuvalu"
+  ]
+ },
+ {
+  "id": "uganda",
+  "name": "Uganda",
+  "kind": "country",
+  "words": [
+   "Uganda"
+  ]
+ },
+ {
+  "id": "ukraine",
+  "name": "Ukraine",
+  "kind": "country",
+  "words": [
+   "Ukraine",
+   "Ukrajna"
+  ]
+ },
+ {
+  "id": "ulaanbaatar",
+  "name": "Ulaanbaatar",
+  "kind": "city",
+  "words": [
+   "Ulaanbaatar"
+  ]
+ },
+ {
+  "id": "united-arab-emirates",
+  "name": "United Arab Emirates",
+  "kind": "country",
+  "words": [
+   "United Arab Emirates",
+   "Egyesült Arab Emírségek"
+  ]
+ },
+ {
+  "id": "united-kingdom",
+  "name": "United Kingdom",
+  "kind": "country",
+  "words": [
+   "United Kingdom",
+   "Britain",
+   "Great Britain",
+   "England",
+   "Scotland",
+   "Wales",
+   "Nagy-Britannia",
+   "Anglia",
+   "Egyesült Királyság"
+  ]
+ },
+ {
+  "id": "united-states-of-america",
+  "name": "United States of America",
+  "kind": "country",
+  "words": [
+   "United States of America",
+   "United States",
+   "USA",
+   "America",
+   "Amerika",
+   "Egyesült Államok",
+   "Amerikai Egyesült Államok"
+  ]
+ },
+ {
+  "id": "uruguay",
+  "name": "Uruguay",
+  "kind": "country",
+  "words": [
+   "Uruguay"
+  ]
+ },
+ {
+  "id": "urumqi",
+  "name": "Ürümqi",
+  "kind": "city",
+  "words": [
+   "Ürümqi",
+   "Urumqi"
+  ]
+ },
+ {
+  "id": "uzbekistan",
+  "name": "Uzbekistan",
+  "kind": "country",
+  "words": [
+   "Uzbekistan",
+   "Üzbegisztán"
+  ]
+ },
+ {
+  "id": "vaduz",
+  "name": "Vaduz",
+  "kind": "city",
+  "words": [
+   "Vaduz"
+  ]
+ },
+ {
+  "id": "valletta",
+  "name": "Valletta",
+  "kind": "city",
+  "words": [
+   "Valletta"
+  ]
+ },
+ {
+  "id": "valparaiso",
+  "name": "Valparaíso",
+  "kind": "city",
+  "words": [
+   "Valparaíso",
+   "Valparaiso"
+  ]
+ },
+ {
+  "id": "vancouver",
+  "name": "Vancouver",
+  "kind": "city",
+  "words": [
+   "Vancouver"
+  ]
+ },
+ {
+  "id": "vanuatu",
+  "name": "Vanuatu",
+  "kind": "country",
+  "words": [
+   "Vanuatu"
+  ]
+ },
+ {
+  "id": "vatican",
+  "name": "Vatican",
+  "kind": "country",
+  "words": [
+   "Vatican",
+   "Vatican City",
+   "Vatikán"
+  ]
+ },
+ {
+  "id": "vatican-city",
+  "name": "Vatican City",
+  "kind": "city",
+  "words": [
+   "Vatican City"
+  ]
+ },
+ {
+  "id": "venezuela",
+  "name": "Venezuela",
+  "kind": "country",
+  "words": [
+   "Venezuela"
+  ]
+ },
+ {
+  "id": "victoria",
+  "name": "Victoria",
+  "kind": "city",
+  "words": [
+   "Victoria"
+  ]
+ },
+ {
+  "id": "vienna",
+  "name": "Vienna",
+  "kind": "city",
+  "words": [
+   "Vienna",
+   "Bécs"
+  ]
+ },
+ {
+  "id": "vientiane",
+  "name": "Vientiane",
+  "kind": "city",
+  "words": [
+   "Vientiane"
+  ]
+ },
+ {
+  "id": "vietnam",
+  "name": "Vietnam",
+  "kind": "country",
+  "words": [
+   "Vietnam",
+   "Vietnám"
+  ]
+ },
+ {
+  "id": "vilnius",
+  "name": "Vilnius",
+  "kind": "city",
+  "words": [
+   "Vilnius"
+  ]
+ },
+ {
+  "id": "warsaw",
+  "name": "Warsaw",
+  "kind": "city",
+  "words": [
+   "Warsaw",
+   "Varsó"
+  ]
+ },
+ {
+  "id": "washington-d-c",
+  "name": "Washington,  D.C.",
+  "kind": "city",
+  "words": [
+   "Washington,  D.C.",
+   "Washington, D.C."
+  ]
+ },
+ {
+  "id": "wellington",
+  "name": "Wellington",
+  "kind": "city",
+  "words": [
+   "Wellington"
+  ]
+ },
+ {
+  "id": "windhoek",
+  "name": "Windhoek",
+  "kind": "city",
+  "words": [
+   "Windhoek"
+  ]
+ },
+ {
+  "id": "yamoussoukro",
+  "name": "Yamoussoukro",
+  "kind": "city",
+  "words": [
+   "Yamoussoukro"
+  ]
+ },
+ {
+  "id": "yangon",
+  "name": "Yangon",
+  "kind": "city",
+  "words": [
+   "Yangon",
+   "Rangoon"
+  ]
+ },
+ {
+  "id": "yaounde",
+  "name": "Yaoundé",
+  "kind": "city",
+  "words": [
+   "Yaoundé",
+   "Yaounde"
+  ]
+ },
+ {
+  "id": "yemen",
+  "name": "Yemen",
+  "kind": "country",
+  "words": [
+   "Yemen",
+   "Jemen"
+  ]
+ },
+ {
+  "id": "yerevan",
+  "name": "Yerevan",
+  "kind": "city",
+  "words": [
+   "Yerevan"
+  ]
+ },
+ {
+  "id": "zagreb",
+  "name": "Zagreb",
+  "kind": "city",
+  "words": [
+   "Zagreb"
+  ]
+ },
+ {
+  "id": "zambia",
+  "name": "Zambia",
+  "kind": "country",
+  "words": [
+   "Zambia"
+  ]
+ },
+ {
+  "id": "zimbabwe",
+  "name": "Zimbabwe",
+  "kind": "country",
+  "words": [
+   "Zimbabwe"
+  ]
+ }
+]

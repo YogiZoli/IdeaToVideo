@@ -1,0 +1,469 @@
+{
+  "schema": "itv-pack/1",
+  "id": "archive-collage",
+  "name": "Archive Collage",
+  "look": "own",
+  "camera": "One slow drift, layers in parallax",
+  "runtime": [],
+  "script": [
+    "shared/map-data.js",
+    "shared/collage.js"
+  ],
+  "blocks": [
+    {
+      "id": "title",
+      "role": "opening",
+      "label": "Torn headline and cutout",
+      "what": "The first scene: the video's question or claim, with a cutout of what it is about.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 8
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        },
+        {
+          "id": "kicker",
+          "type": "string",
+          "label": "Kicker",
+          "default": "",
+          "optional": true,
+          "maxWords": 4
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "chapter",
+      "role": "opening",
+      "label": "A new sheet",
+      "what": "The start of a new part of the story.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "statement",
+      "role": "statement",
+      "label": "Two torn strips",
+      "what": "A plain claim: the first strip sets it up, the second lands it.",
+      "variables": [
+        {
+          "id": "line1",
+          "type": "string",
+          "label": "Line 1",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "line2",
+          "type": "string",
+          "label": "Line 2",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "word",
+      "role": "emphasis",
+      "label": "One huge word",
+      "what": "One word is the whole point.",
+      "variables": [
+        {
+          "id": "word",
+          "type": "string",
+          "label": "Word",
+          "default": "",
+          "maxWords": 2
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "highlight",
+      "role": "emphasis",
+      "label": "Underline swipe",
+      "what": "A short line with one key word to underline.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "mark",
+          "type": "string",
+          "label": "Mark",
+          "default": "",
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "question",
+      "role": "statement",
+      "label": "A question on the desk",
+      "what": "The narration asks the viewer something.",
+      "variables": [
+        {
+          "id": "question",
+          "type": "string",
+          "label": "Question",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "versus",
+      "role": "contrast",
+      "label": "Torn in two",
+      "what": "This or that, before and after, two sides.",
+      "variables": [
+        {
+          "id": "left",
+          "type": "string",
+          "label": "Left",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "right",
+          "type": "string",
+          "label": "Right",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "leftObject",
+          "type": "string",
+          "label": "Left Object",
+          "default": "figure",
+          "optional": true
+        },
+        {
+          "id": "rightObject",
+          "type": "string",
+          "label": "Right Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "cause",
+      "role": "relation",
+      "label": "A leads to B",
+      "what": "One thing causes or leads to another.",
+      "variables": [
+        {
+          "id": "from",
+          "type": "string",
+          "label": "From",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "to",
+          "type": "string",
+          "label": "To",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "fromObject",
+          "type": "string",
+          "label": "From Object",
+          "default": "figure",
+          "optional": true
+        },
+        {
+          "id": "toObject",
+          "type": "string",
+          "label": "To Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "year",
+      "role": "detail",
+      "label": "A date stamp",
+      "what": "The narration says the year something happened.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "route",
+      "role": "relation",
+      "label": "A route on the map",
+      "what": "Something moves between two places the narration names: a route line on the map.",
+      "variables": [
+        {
+          "id": "fromPlace",
+          "type": "string",
+          "label": "From Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "toPlace",
+          "type": "string",
+          "label": "To Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "fromLabel",
+          "type": "string",
+          "label": "From Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "toLabel",
+          "type": "string",
+          "label": "To Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 6
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "map",
+      "role": "detail",
+      "label": "A pin on the map",
+      "what": "The narration names one place: a pin on the map.",
+      "variables": [
+        {
+          "id": "place",
+          "type": "string",
+          "label": "Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "label",
+          "type": "string",
+          "label": "Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 6
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "number",
+      "role": "proof",
+      "label": "A giant number",
+      "what": "The narration says a number and it matters: it ticks up, huge.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "before",
+          "type": "string",
+          "label": "Before",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "after",
+          "type": "string",
+          "label": "After",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "percent",
+      "role": "proof",
+      "label": "A share of a disc",
+      "what": "The narration says a percentage.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "path",
+      "role": "process",
+      "label": "Four stops",
+      "what": "Exactly four steps in order, joined by one line.",
+      "variables": [
+        {
+          "id": "step1",
+          "type": "string",
+          "label": "Step 1",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step2",
+          "type": "string",
+          "label": "Step 2",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step3",
+          "type": "string",
+          "label": "Step 3",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step4",
+          "type": "string",
+          "label": "Step 4",
+          "default": "",
+          "maxWords": 3
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "alert",
+      "role": "emphasis",
+      "label": "The alert",
+      "what": "Rarely, at the one moment of crisis: the whole frame floods with the accent color.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "figure",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    }
+  ]
+}

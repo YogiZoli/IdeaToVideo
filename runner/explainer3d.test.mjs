@@ -92,7 +92,7 @@ test("a preset's pack is never offered to another channel's plan", async () => {
   assert.ok(!names.some((n) => n.startsWith("explainer-3d:")));
   const id = fs.mkdtempSync(path.join(os.tmpdir(), "itv-3d-"));
   assert.deepEqual(listPacks(id), [], "it is not one of the channel's imported packs");
-  assert.equal(builtinPacks()[0].id, "explainer-3d");
+  assert.ok(builtinPacks().some((p) => p.id === "explainer-3d"));
   assert.equal(loadPackBlock("explainer-3d:word", id).pack.id, "explainer-3d");
   fs.rmSync(id, { recursive: true, force: true });
 });

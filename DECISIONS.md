@@ -2637,3 +2637,46 @@
     errors. Rust was not touched and its tests were not run again. New `scripts/phase2/stickworld-e2e.mjs` 45/45 with the
     real free voice and real renders, one video by rule and one with every template once, each looked at frame by frame;
     Motion Frames' channel e2e 56/56. A real AI was not used. Longest video tried: 61 s.
+
+155. **The Archive Collage preset** (Zoltan, 2026-11-03, `docs/BUILD_PLAN.md` phase 6; `runner/presets/archive-collage/`).
+    15 templates, documentary collage explainers. All drawing is own code in `pack/shared/collage.js`, on a 2D canvas: no
+    image files, no new library, no third-party skill opened. Its own colors, one hot accent for strokes, underlines and
+    arrows, one teal used only on the date stamp, and the fonts Archivo Black and Newsreader (OFL, both with latin-ext, from
+    the fonts the app already ships). B-roll off when this style is chosen; the switch stays.
+    - **HyperFrames still makes every frame,** the same way as Stick World: a paused timeline, one tween, any seek gives
+      the same picture. What is costly (the paper, a cutout's dots, a map) is made once from a seed and kept.
+    - **The cutouts are drawn by code, 32 things and generic faceless figures, not photos** (Claude's choice, can be
+      overruled). The plan says "halftone black-and-white cutouts", and a code-drawn gray shape turned into print dots is
+      that with no license question and no real person. Real Public Domain photos through the same dots would be a later
+      addition: `sticker` takes any gray picture.
+    - **Parallax is real:** six depths (paper, back sheet, map, cutout, words, front scraps) under one camera, and the
+      DOM layers move with the same numbers as the canvas. One slow drift per scene, seeded, so it differs from scene to scene.
+    - **The paper is a picture behind the canvas** and not drawn on it, because a scene draws nothing at exactly its first
+      frame (DECISIONS 151). So a cut shows paper, never an empty frame. Seen in the real video, frame by frame around cuts.
+    - **Print grain is one still layer,** on top of everything, the same on every frame. It costs file size: the draft of 69 s is
+      about 85 MB. Open for Zoltan if that is too much.
+
+156. **Maps from Natural Earth, bundled** (public domain, release 5.1.2, `scripts/make-map.mjs`). 242 countries at 1:50m,
+    simplified, and 236 cities: 262 KB on the page, nothing downloaded when a video is made. In `THIRD-PARTY-NOTICES.md`, and in
+    every video's `assets_license.json` through the new `assets` list of `preset.json`, never in a YouTube description.
+    - **A new parameter type, `place`.** The list of 444 names is never in the prompt, so the prompt stays small: the AI
+      names a place, and a name the maps do not have becomes the one the sentence says, else another template.
+    - **`placesIn` needs the capital letter,** so "turkey" and "reading" are not places, and takes Hungarian endings
+      (Párizsban, Angliából). Words that are mostly not a place (Man, Chad, Jordan, Georgia, Guinea) are left out of the
+      rule; the AI can still name them.
+    - **The marked country is ink dots and never the accent,** which the plan keeps for strokes: the pin and the route line.
+    - **The view fits a country's biggest piece,** so France is France, not its overseas parts.
+
+157. **The rare alert, and small changes to shared code.** `rare: { every: 16 }` on a template, and `spaceRare` over the whole
+    plan: at most one flood per 16 scenes. A rule never picks it for one sentence. After the parts are planned it gives one to a
+    scene whose words say crisis, collapse, crash or the like, over any picture but the title. An AI's extra ones become
+    the rule's choice.
+    - **New rules:** year (in, since, by... plus a year; a bare 1859 ships is a number), route (two places), map (one place), alert.
+    - **`headlineOf` and rule-cut lines** no longer stop on when, if, through and the like, on presets with objects. Motion
+      Frames has no objects and is unchanged. Stick World and 3D Explainer get the better cut.
+    - **A pack's `script` can be a list,** and `explainer3d.test.mjs` no longer assumes its pack is the first built-in.
+
+    Tests: Node 590 of 593 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors.
+    Rust was not touched and its tests were not run again. New `scripts/phase2/collage-e2e.mjs` 51/51 with the real free voice
+    and real renders, one video by rule and one with every template once, each looked at frame by frame. A real AI was
+    not used. Longest video tried: 69 s.
