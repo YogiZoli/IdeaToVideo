@@ -14,7 +14,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **New: Health check** (Settings, Health check, and silently at startup): keys, models, ffmpeg, engine, fonts, disk, internet. Each OK, or what to fix.
 - **Errors:** one plain sentence, with Copy details; everything else in `<app data>/logs/errors.log`.
 - **Stop:** every job in the top bar's Jobs list has one. **Freezes:** 23 slow Tauri commands left the window's thread.
-- **Your call:** one of Claude's choices overrules DECISIONS 160: no AI no longer stops Night Case File, the card says `unchecked` instead (DECISIONS 165). Tell me if a fact-checked style should rather refuse. The licence table in `docs/BUILD_PLAN.md` still waits for you (GPL FFmpeg, GSAP, libvips); fonts and the brand title are closed there.
+- **Decided by Zoltan:** no AI no longer stops Night Case File, the card says `unchecked` instead (DECISIONS 165, which changes 160). **Your call:** the licence table in `docs/BUILD_PLAN.md` still waits for you (GPL FFmpeg, GSAP, libvips); fonts and the brand title are closed there.
 - **The hole in offline mode:** a channel not in English has no free voice, so without ElevenLabs it stops at the voice with a sentence.
 - Tests: `npm run audit`, new, one command, 0 USD, real network blocked: 916 of 916 checks, 13 real renders, 51 minutes, in folders with spaces and Hungarian accents. Node 661 of 663 (2 live tests skipped, the old red `traffic-card.test.mjs` was the test's own fault and is fixed), Rust 50, UI check 0 errors.
 - Merged into `main` from branch `reliability-audit` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
