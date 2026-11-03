@@ -10,21 +10,15 @@
 //                                                     drawing is in shared/world3d.js
 // runner/presets/explainer-3d/preset.json             templates (tokens, rules, objects stay)
 //
-// A block's script runs inside the runtime's scope: this mount's own document and timeline
-// registry, also when the same block is mounted many times. So those two calls stay here,
-// in the block, and never move into the shared code, which sees the plain page.
+// How a pack is written, and why a block keeps its two calls: scripts/preset-blocks.mjs.
 
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { blockHtml as html, number, object, text, writePack } from "./preset-blocks.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIR = path.join(ROOT, "runner", "presets", "explainer-3d");
 const PACK = "explainer-3d";
-
-const text = (maxWords, required = true) => ({ maxWords, required });
-const object = (required = true) => ({ type: "object", required });
-const number = () => ({ type: "number", required: true, said: true });
 
 // id, what it is, when it fits, its role, its parameters; `first`: a rule tries it first.
 export const BLOCKS = [
@@ -44,65 +38,10 @@ export const BLOCKS = [
   { id: "shelf", label: "Four things", role: "list", when: "Exactly four things that belong together.", params: { item1: text(3), item2: text(3), item3: text(3), item4: text(3), object1: object(), object2: object(), object3: object(), object4: object() } },
 ];
 
-const label = (id) => id.replace(/([A-Z0-9])/g, " $1").replace(/^./, (c) => c.toUpperCase());
-const variablesOf = (b) =>
-  Object.entries(b.params).map(([id, p]) => ({
-    id,
-    type: p.type === "number" ? "number" : "string",
-    label: label(id),
-    default: p.type === "number" ? 0 : p.type === "object" ? "orb" : "",
-    ...(p.required && p.type !== "object" ? {} : { optional: true }),
-    ...(p.maxWords ? { maxWords: p.maxWords } : {}),
-  }));
-
-export function blockHtml(b) {
-  const comp = `x3d-${b.id}`;
-  const vars = JSON.stringify(variablesOf(b).map(({ id, type, label: l, default: def }) => ({ id, type, label: l, default: def })));
-  return `<!doctype html>
-<html lang="en" data-resolution="landscape" data-composition-variables='${vars}'>
-<head><meta charset="UTF-8"/></head>
-<body>
-<template>
-<div id="root" data-composition-id="${comp}" data-width="1920" data-height="1080" data-start="0" data-duration="600">
-<div class="x3d-root">
-<canvas class="x3d-view" width="1" height="1"></canvas>
-<section class="clip x3d-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
-</div>
-<script>
-window.__timelines = window.__timelines || {};
-window.__timelines["${comp}"] = ITV3D.block(document.getElementById("root"), "${b.id}", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
-</script>
-</div>
-</template>
-</body>
-</html>
-`;
-}
+export const blockHtml = (b) => html(b, { prefix: "x3d", api: "ITV3D", neutral: "orb" });
 
 function main() {
-  fs.mkdirSync(path.join(DIR, "pack", "blocks"), { recursive: true });
-  for (const b of BLOCKS) fs.writeFileSync(path.join(DIR, "pack", "blocks", `${b.id}.html`), blockHtml(b));
-  const manifest = {
-    schema: "itv-pack/1",
-    id: PACK,
-    name: "3D Explainer",
-    look: "own",
-    runtime: ["three"],
-    script: "shared/world3d.js",
-    blocks: BLOCKS.map((b) => ({ id: b.id, role: b.role, label: b.label, what: b.when, variables: variablesOf(b), seconds: 5 })),
-  };
-  fs.writeFileSync(path.join(DIR, "pack", "pack.json"), JSON.stringify(manifest, null, 2) + "\n");
-  const preset = JSON.parse(fs.readFileSync(path.join(DIR, "preset.json"), "utf8"));
-  preset.templates = BLOCKS.map((b) => ({
-    id: b.id,
-    label: b.label,
-    when: b.when,
-    ...(b.first ? { ruleFirst: true } : {}),
-    params: b.params,
-    use: [{ component: `${PACK}:${b.id}`, vars: Object.fromEntries(Object.keys(b.params).map((p) => [p, `$${p}`])) }],
-  }));
-  fs.writeFileSync(path.join(DIR, "preset.json"), JSON.stringify(preset, null, 2) + "\n");
-  console.log(`${BLOCKS.length} blocks written to ${DIR}`);
+  writePack({ dir: DIR, pack: PACK, name: "3D Explainer", camera: "3D move, its own", runtime: ["three"], script: "shared/world3d.js", blocks: BLOCKS, neutral: "orb", html: blockHtml });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

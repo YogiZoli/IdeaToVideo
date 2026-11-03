@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id":"value","type":"number","label":"Value","default":0},{"id":"before","type":"string","label":"Before","default":""},{"id":"after","type":"string","label":"After","default":""}]'>
+<head><meta charset="UTF-8"/></head>
+<body>
+<template>
+<div id="root" data-composition-id="stk-number" data-width="1920" data-height="1080" data-start="0" data-duration="600">
+<div class="stk-root">
+<canvas class="stk-view" width="1" height="1"></canvas>
+<section class="clip stk-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+window.__timelines["stk-number"] = ITVStick.block(document.getElementById("root"), "number", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
+</script>
+</div>
+</template>
+</body>
+</html>

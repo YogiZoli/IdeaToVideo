@@ -226,7 +226,9 @@ moves.
 
 ### Phase 5: Preset "Stick World" (what-if stories)
 
-Status: todo
+Status: done (2026-11-03, DECISIONS 152 to 154). Not tried yet: a real AI on the plan and on the
+script's short "you" sentences (the rule and a pasted script only), Hungarian on this preset, a video
+over a minute and a half. A sentence under 2 seconds shares a shot with the next one (DECISIONS 153).
 
 Light plain background, black stick figures, the hero marked by one
 accent-colored item of clothing. Camera nearly still. Characters blink every
@@ -312,14 +314,20 @@ Other findings:
   in `pack.json` put libraries and shared code on the root page (`packScripts`).
 - A preset with its own palette: tokens without `from: "brand"`. `presetLook` gives the build those
   colors and fonts, plain cuts and no 2D camera; the channel's captions stay.
-- `scripts/make-3d-blocks.mjs` writes a pack's thin blocks, manifest and templates from one list, so
-  they cannot disagree. Phases 5 to 8 can copy it, or make it take a preset id.
+- `scripts/preset-blocks.mjs` writes a pack's thin blocks, manifest and templates from one list, so they
+  cannot disagree. A preset needs only a short file with its list, as `make-stick-blocks.mjs`. A pack's
+  `camera` is what the Shot map tab says about its camera.
 - Drawing in 3D (Phase 8 too): `runner/presets/explainer-3d/pack/shared/world3d.js`. One renderer per
   page, each scene copies its frame to its own canvas, every frame comes from one tween's value, so
-  any seek gives the same picture. Same for any canvas drawing by code (Stick World, Archive Collage).
+  any seek gives the same picture.
+- Drawing on a 2D canvas (Archive Collage, Night Case File): `runner/presets/stick-world/pack/shared/stick.js`.
+  The same one tween and scene eviction, no three.js. Its `figure` draws a jointed person, `gait` and `route`
+  walk with planted feet from the distance alone, `eyesAt` blinks on the video's own clock (the host's
+  `data-start`). Faces are two eyes at most.
 - `ruleParams` in `runner/gates/scenes/templates.mjs` knows the shared template ids (title, chapter,
   statement, word, highlight, question, number, percent), whatever preset they are in. A preset adds
-  its own rule in `ownRule`, and `ruleFirst` on a template makes a rule try it before the rotation.
+  its own rule in `ownRule`, and `ruleFirst` on a template makes a rule try it before the rotation, in the
+  order of the template list. A preset's block may state a word limit over the general 6 (`checkScenes`).
 - A template parameter of type `object` picks from the preset's `objects` list: the AI names one, a
   rule finds it in the sentence, anything else falls back to the list's first, neutral one.
 - `scriptNote` and `ideaNote` in `preset.json`: the shape of a preset's videos, told to the script
@@ -343,8 +351,8 @@ Other findings:
 
 ## Next step
 
-Phase 5: Preset "Stick World". First, Zoltan tries Phase 4 on the installer: a channel on 3D Explainer,
-one strange question, up to the render; and Phase 3 if he has not yet (one topic with research on, one
-set of notes, one real recording); and his decisions on the table above if he has made them. New in that
-table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143) and the Z-Image picture size
-(DECISIONS 146).
+Phase 6: Preset "Archive Collage". First, Zoltan tries Phase 5 on the installer: a channel on Stick World, one
+what-if story, up to the render. Phases 3 and 4 too if he has not yet (one topic with research on, one set of
+notes, one real recording, one strange question), and his decisions on the table above if he has made them.
+Still open in that table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143) and the Z-Image
+picture size (DECISIONS 146).
