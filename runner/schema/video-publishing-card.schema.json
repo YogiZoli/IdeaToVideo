@@ -301,6 +301,7 @@
       "required": ["grounded", "sources", "flags"],
       "properties": {
         "grounded": { "type": "boolean" },
+        "unchecked": { "type": "boolean", "description": "The video's style promises a fact-check, and this video has no sources to show." },
         "sources": {
           "type": "array",
           "items": { "type": "object", "required": ["title", "url"], "properties": { "title": { "type": "string" }, "url": { "type": "string" } } }

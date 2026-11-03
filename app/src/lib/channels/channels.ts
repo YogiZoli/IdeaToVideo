@@ -56,7 +56,7 @@ export type Shot = {
   flow: { on: boolean; prompt: string; seconds: number; clip: string | null; name: string | null; short: boolean } | null;
 };
 export type ShotMap = { shots: Shot[]; warning: string | null; summary: { shots: number; broll: number; hero: number; overrides: number; elements: number; onTheirWord: number; withBlock: number } | null };
-export type PresetCard = { id: string; label: string; description: string; engine: string; templates: { id: string; label: string }[]; shotRules: Record<string, string>; recorded?: { slots: { id: string; label: string; hint?: string; optional?: boolean }[]; broll?: boolean; cutout?: boolean; zoom?: boolean }; defaults?: { broll?: boolean } };
+export type PresetCard = { id: string; label: string; description: string; engine: string; templates: { id: string; label: string }[]; shotRules: Record<string, string>; recorded?: { slots: { id: string; label: string; hint?: string; optional?: boolean }[]; broll?: boolean; cutout?: boolean; zoom?: boolean }; defaults?: { broll?: boolean; research?: boolean; mood?: string }; factChecked?: boolean };
 export type QueueItem = { dir: string; id: string; title: string; status: string; script: string; error: string | null; running: boolean; batch: string; position: number; of: number; angle?: string; research?: string | null };
 export type FreeVoice = { id: string; name: string; gender: string | null };
 export type ChannelState = {
@@ -130,11 +130,11 @@ export function costLine(r: Recipe, aiProvider: string): string {
 }
 
 /** Can this channel make a video right now, or the sentence why not. */
-export function blocker(r: Recipe, keys: Record<string, boolean>, aiProvider: string, mode: "idea" | "script" | "notes", research = false): { text: string; connections: boolean } | null {
+export function blocker(r: Recipe, keys: Record<string, boolean>, aiProvider: string, mode: "idea" | "script" | "notes", research = false, factChecked = false): { text: string; connections: boolean } | null {
   if (r.engine === "recorded") return null;
   if (mode === "idea" && !keys[aiProvider]) return { text: "An idea needs your AI key, to write the script. Add it first, or paste your own script.", connections: true };
   if (mode === "notes" && !keys[aiProvider]) return { text: "Notes need your AI key, to turn them into a script. Add it first, or mark the text as a finished script.", connections: true };
-  if (research && !keys[aiProvider]) return { text: "Research needs your AI key. Add it first, or turn research off.", connections: true };
+  if (research && !keys[aiProvider]) return { text: factChecked ? "This style fact-checks every script, which needs your AI key. Add it first." : "Research needs your AI key. Add it first, or turn research off.", connections: true };
   if (r.voice.provider === "elevenlabs" && !keys["elevenlabs"]) return { text: "This channel's voice needs your ElevenLabs key.", connections: true };
   if (r.avatar.on && !keys["heygen"]) return { text: "This channel's avatar needs your HeyGen key.", connections: true };
   return null;

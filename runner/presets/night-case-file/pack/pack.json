@@ -1,0 +1,454 @@
+{
+  "schema": "itv-pack/1",
+  "id": "night-case-file",
+  "name": "Night Case File",
+  "look": "own",
+  "camera": "One slow push, layers in parallax",
+  "runtime": [],
+  "script": [
+    "../../archive-collage/pack/shared/map-data.js",
+    "shared/nightfile.js"
+  ],
+  "blocks": [
+    {
+      "id": "title",
+      "role": "opening",
+      "label": "A figure under a street light",
+      "what": "The first scene: the video's question or claim.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 8
+        },
+        {
+          "id": "kicker",
+          "type": "string",
+          "label": "Kicker",
+          "default": "",
+          "optional": true,
+          "maxWords": 4
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "chapter",
+      "role": "opening",
+      "label": "A folder and a flashlight",
+      "what": "The start of a new part of the story.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "statement",
+      "role": "statement",
+      "label": "Two lines in a dark room",
+      "what": "A plain claim: the first line sets it up, the second lands it.",
+      "variables": [
+        {
+          "id": "line1",
+          "type": "string",
+          "label": "Line 1",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "line2",
+          "type": "string",
+          "label": "Line 2",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "word",
+      "role": "emphasis",
+      "label": "One word like a lit sign",
+      "what": "One word is the whole point.",
+      "variables": [
+        {
+          "id": "word",
+          "type": "string",
+          "label": "Word",
+          "default": "",
+          "maxWords": 2
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "highlight",
+      "role": "emphasis",
+      "label": "A line with one word marked",
+      "what": "A short line with one key word to underline.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "mark",
+          "type": "string",
+          "label": "Mark",
+          "default": "",
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "flash",
+      "role": "emphasis",
+      "label": "A light flash and a sound",
+      "what": "Something violent or sudden happens. Nothing is shown: only windows flash in the dark and a dull sound is heard. Never name a weapon or an injury in its line.",
+      "variables": [
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        }
+      ],
+      "seconds": 5,
+      "sound": {
+        "kind": "hit",
+        "at": 0.5
+      }
+    },
+    {
+      "id": "question",
+      "role": "statement",
+      "label": "Somebody in a lit doorway",
+      "what": "The narration asks the viewer something.",
+      "variables": [
+        {
+          "id": "question",
+          "type": "string",
+          "label": "Question",
+          "default": "",
+          "maxWords": 6
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "stamp",
+      "role": "detail",
+      "label": "A date and place stamp",
+      "what": "The narration says when something happened: a date, a year or a time, and where if it says so.",
+      "variables": [
+        {
+          "id": "when",
+          "type": "string",
+          "label": "When",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "where",
+          "type": "string",
+          "label": "Where",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 8
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "route",
+      "role": "relation",
+      "label": "A route on the dark map",
+      "what": "Somebody or something moves between two places the narration names.",
+      "variables": [
+        {
+          "id": "fromPlace",
+          "type": "string",
+          "label": "From Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "toPlace",
+          "type": "string",
+          "label": "To Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "fromLabel",
+          "type": "string",
+          "label": "From Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "toLabel",
+          "type": "string",
+          "label": "To Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "map",
+      "role": "detail",
+      "label": "A pin on the dark map",
+      "what": "The narration names one country or big city.",
+      "variables": [
+        {
+          "id": "place",
+          "type": "string",
+          "label": "Place",
+          "default": "",
+          "optional": true
+        },
+        {
+          "id": "label",
+          "type": "string",
+          "label": "Label",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "board",
+      "role": "process",
+      "label": "The evidence board",
+      "what": "Three or four clues, people or facts that belong together: cards pinned to a board, one string joining them.",
+      "variables": [
+        {
+          "id": "item1",
+          "type": "string",
+          "label": "Item 1",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item2",
+          "type": "string",
+          "label": "Item 2",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item3",
+          "type": "string",
+          "label": "Item 3",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "item4",
+          "type": "string",
+          "label": "Item 4",
+          "default": "",
+          "optional": true,
+          "maxWords": 3
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "evidence",
+      "role": "detail",
+      "label": "One thing under a lamp",
+      "what": "One thing that was found or that matters: it lies on a table in a pool of light.",
+      "variables": [
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 6
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "number",
+      "role": "proof",
+      "label": "A number that glows",
+      "what": "The narration says a number and it matters.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "before",
+          "type": "string",
+          "label": "Before",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "after",
+          "type": "string",
+          "label": "After",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "street",
+      "role": "detail",
+      "label": "Somebody walks at night",
+      "what": "The story is outside: a street, a road, a car, a night.",
+      "variables": [
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "room",
+      "role": "detail",
+      "label": "Somebody crosses a room",
+      "what": "The story is inside a house, a room or an office.",
+      "variables": [
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "folder",
+          "optional": true
+        },
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "optional": true,
+          "maxWords": 9
+        }
+      ],
+      "seconds": 5
+    }
+  ]
+}

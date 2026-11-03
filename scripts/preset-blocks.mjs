@@ -65,7 +65,7 @@ export function writePack({ dir, pack, name, camera, runtime = [], script, block
     camera,
     runtime,
     script,
-    blocks: blocks.map((b) => ({ id: b.id, role: b.role, label: b.label, what: b.when, variables: variablesOf(b, neutral), seconds: 5 })),
+    blocks: blocks.map((b) => ({ id: b.id, role: b.role, label: b.label, what: b.when, variables: variablesOf(b, neutral), seconds: 5, ...(b.sound ? { sound: b.sound } : {}) })),
   };
   fs.writeFileSync(path.join(dir, "pack", "pack.json"), JSON.stringify(manifest, null, 2) + "\n");
   const preset = JSON.parse(fs.readFileSync(path.join(dir, "preset.json"), "utf8"));
@@ -75,6 +75,7 @@ export function writePack({ dir, pack, name, camera, runtime = [], script, block
     when: b.when,
     ...(b.first ? { ruleFirst: true } : {}),
     ...(b.rare ? { rare: b.rare } : {}),
+    ...(b.fallback ? { fallback: true } : {}),
     params: b.params,
     use: [{ component: `${pack}:${b.id}`, vars: Object.fromEntries(Object.keys(b.params).map((p) => [p, `$${p}`])) }],
   }));

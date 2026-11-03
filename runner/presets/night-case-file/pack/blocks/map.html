@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id":"place","type":"string","label":"Place","default":""},{"id":"label","type":"string","label":"Label","default":""},{"id":"line","type":"string","label":"Line","default":""}]'>
+<head><meta charset="UTF-8"/></head>
+<body>
+<template>
+<div id="root" data-composition-id="nf-map" data-width="1920" data-height="1080" data-start="0" data-duration="600">
+<div class="nf-root">
+<canvas class="nf-view" width="1" height="1"></canvas>
+<section class="clip nf-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+window.__timelines["nf-map"] = ITVNight.block(document.getElementById("root"), "map", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
+</script>
+</div>
+</template>
+</body>
+</html>

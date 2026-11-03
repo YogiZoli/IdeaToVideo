@@ -85,7 +85,7 @@ export function loadPreset(id, opts) {
 }
 
 /** What the recipe editor shows of a preset. */
-export const presetCard = (p) => ({ id: p.id, label: p.label, description: p.description, engine: p.engine, templates: p.templates.map((t) => ({ id: t.id, label: t.label })), shotRules: p.shotRules, ...(p.recorded ? { recorded: p.recorded } : {}), ...(p.defaults ? { defaults: p.defaults } : {}) });
+export const presetCard = (p) => ({ id: p.id, label: p.label, description: p.description, engine: p.engine, templates: p.templates.map((t) => ({ id: t.id, label: t.label })), shotRules: p.shotRules, ...(p.recorded ? { recorded: p.recorded } : {}), ...(p.defaults ? { defaults: p.defaults } : {}), ...(p.factChecked ? { factChecked: true } : {}) });
 
 /**
  * The look of a build on this preset. A preset that says tokens.from "brand" (Motion
@@ -125,6 +125,6 @@ export function resolveTemplates(preset, { off = [], env = process.env } = {}) {
     const use = t.use.find((u) => !off.includes(u.component) && usable(u));
     if (!use) return [];
     const variables = PACK_COMPONENTS.get(use.component)?.variables ?? loadComponent(use.component, { env }).item.variables ?? [];
-    return [{ ...t, ...(preset.objects ? { objects: preset.objects } : {}), ...(preset.places ? { places: preset.places } : {}), draw: { ...use, types: Object.fromEntries(variables.map((v) => [v.id, v.type])) } }];
+    return [{ ...t, ...(preset.objects ? { objects: preset.objects } : {}), ...(preset.places ? { places: preset.places } : {}), ...(preset.never ? { never: preset.never } : {}), draw: { ...use, types: Object.fromEntries(variables.map((v) => [v.id, v.type])) } }];
   });
 }

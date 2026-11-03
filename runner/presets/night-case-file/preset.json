@@ -1,0 +1,870 @@
+{
+  "schema": "style-preset/1",
+  "id": "night-case-file",
+  "label": "Night Case File",
+  "description": "A true story documentary at night. Dark blue-black scenes, faceless figures glowing in one color, rooms and streets built from simple shapes, date and place stamps, an evidence board. Nothing violent is ever shown: a light flashes and a sound is heard. Scripts are fact-checked, and the sources go into the Publishing Card.",
+  "engine": "script",
+  "factChecked": true,
+  "scriptNote": "A true story told in the order it happened, using only facts the research supports. Say the date and the place of each event, and the key numbers in digits. Write sentences of 8 to 16 words, one fact per sentence, because each one gets its own shot. Never describe a weapon, blood or how anyone was hurt: say only that something happened, and move on. Call people by their role, and never describe a real person's looks. If a fact is uncertain, say that it is.",
+  "ideaNote": "Each video tells one true story, a documented case or event, in the order it happened, with its dates and places.",
+  "defaults": {
+    "broll": false,
+    "research": true,
+    "mood": "dark"
+  },
+  "never": {
+    "words": [
+      "gun",
+      "guns",
+      "gunshot",
+      "gunshots",
+      "gunfire",
+      "gunman",
+      "rifle",
+      "rifles",
+      "pistol",
+      "pistols",
+      "revolver",
+      "shotgun",
+      "bullet",
+      "bullets",
+      "knife",
+      "knives",
+      "blade",
+      "dagger",
+      "sword",
+      "axe",
+      "hammer",
+      "bomb",
+      "bombs",
+      "grenade",
+      "weapon",
+      "weapons",
+      "blood",
+      "bloody",
+      "bleeding",
+      "bled",
+      "corpse",
+      "corpses",
+      "body",
+      "bodies",
+      "wound",
+      "wounds",
+      "wounded",
+      "injury",
+      "injuries",
+      "kill",
+      "kills",
+      "killed",
+      "killer",
+      "killers",
+      "killing",
+      "murder",
+      "murders",
+      "murdered",
+      "murderer",
+      "stab",
+      "stabs",
+      "stabbed",
+      "stabbing",
+      "shot",
+      "shoot",
+      "shoots",
+      "shooting",
+      "shooter",
+      "strangle",
+      "strangled",
+      "beat",
+      "beaten",
+      "beating",
+      "torture",
+      "tortured",
+      "rape",
+      "raped",
+      "assault",
+      "assaulted",
+      "attacked",
+      "attacker",
+      "massacre",
+      "dead",
+      "death",
+      "deaths",
+      "die",
+      "died",
+      "dying",
+      "suicide",
+      "kés",
+      "kést",
+      "késsel",
+      "vér",
+      "vért",
+      "vérrel",
+      "holttest",
+      "holttestet",
+      "lőtt",
+      "lelőtte",
+      "lövés",
+      "lövést",
+      "megölte",
+      "megölték",
+      "ölte",
+      "halott",
+      "halál",
+      "halála",
+      "meghalt"
+    ],
+    "stems": [
+      "fegyver",
+      "pisztoly",
+      "puská",
+      "gyilkos",
+      "meggyilk",
+      "késel",
+      "véres",
+      "golyó"
+    ]
+  },
+  "tokens": {
+    "appearance": "dark",
+    "colors": {
+      "background": "#070b14",
+      "surface": "#0e1522",
+      "border": "#24324a",
+      "text": "#e8edf6",
+      "muted": "#7e8ea8",
+      "primary": "#ffb02e",
+      "secondary": "#c9d3e3",
+      "tertiary": "#7e8ea8"
+    },
+    "fonts": {
+      "display": "Bebas Neue",
+      "body": "IBM Plex Mono"
+    },
+    "shape": {
+      "corners": "none",
+      "cards": "flat"
+    },
+    "texture": "night, a faint film grain"
+  },
+  "shotRules": {
+    "pacing": "fast",
+    "cutFrequency": "One fact per shot: a new shot on every sentence, plain cuts.",
+    "camera": "One slow push per scene, the street or room behind moves less than what is in front. The scene owns it, not the channel's Motion profile.",
+    "characters": "Faceless figures glowing in one accent color, drawn by code. Never a recognizable real person. Never a weapon, blood or violence: an event is implied by a light flash and a sound.",
+    "sound": "No transition sounds. Under a light flash, one dull distant sound made by code. The narration carries the video, the music sits under it."
+  },
+  "assets": [
+    {
+      "title": "Natural Earth 1:50m countries and 1:110m populated places, simplified",
+      "source": "natural-earth",
+      "sourceUrl": "https://www.naturalearthdata.com/",
+      "license": "pd",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "author": "Natural Earth",
+      "date": "2026-11-03"
+    }
+  ],
+  "objects": [
+    {
+      "id": "folder",
+      "words": [
+        "case",
+        "file",
+        "files",
+        "report",
+        "reports",
+        "investigation",
+        "police",
+        "detective",
+        "detectives",
+        "court",
+        "trial",
+        "akta",
+        "ügy",
+        "nyomozás",
+        "rendőrség"
+      ]
+    },
+    {
+      "id": "figure",
+      "words": [
+        "man",
+        "woman",
+        "person",
+        "witness",
+        "witnesses",
+        "suspect",
+        "suspects",
+        "stranger",
+        "neighbor",
+        "neighbour",
+        "férfi",
+        "nő",
+        "tanú",
+        "gyanúsított"
+      ]
+    },
+    {
+      "id": "house",
+      "words": [
+        "house",
+        "houses",
+        "home",
+        "farmhouse",
+        "cabin",
+        "ház",
+        "otthon"
+      ]
+    },
+    {
+      "id": "car",
+      "words": [
+        "car",
+        "cars",
+        "truck",
+        "van",
+        "taxi",
+        "vehicle",
+        "autó",
+        "kocsi",
+        "teherautó"
+      ]
+    },
+    {
+      "id": "door",
+      "words": [
+        "door",
+        "doors",
+        "entrance",
+        "ajtó"
+      ]
+    },
+    {
+      "id": "window",
+      "words": [
+        "window",
+        "windows",
+        "ablak"
+      ]
+    },
+    {
+      "id": "phone",
+      "words": [
+        "phone",
+        "phones",
+        "call",
+        "calls",
+        "telephone",
+        "voicemail",
+        "telefon",
+        "hívás"
+      ]
+    },
+    {
+      "id": "letter",
+      "words": [
+        "letter",
+        "letters",
+        "note",
+        "notes",
+        "envelope",
+        "message",
+        "levél",
+        "üzenet"
+      ]
+    },
+    {
+      "id": "key",
+      "words": [
+        "key",
+        "keys",
+        "lock",
+        "locked",
+        "kulcs"
+      ]
+    },
+    {
+      "id": "clock",
+      "words": [
+        "clock",
+        "hour",
+        "hours",
+        "minute",
+        "minutes",
+        "midnight",
+        "time",
+        "óra",
+        "éjfél"
+      ]
+    },
+    {
+      "id": "bag",
+      "words": [
+        "bag",
+        "bags",
+        "suitcase",
+        "backpack",
+        "luggage",
+        "táska",
+        "bőrönd"
+      ]
+    },
+    {
+      "id": "camera",
+      "words": [
+        "camera",
+        "cameras",
+        "footage",
+        "cctv",
+        "kamera",
+        "felvétel"
+      ]
+    },
+    {
+      "id": "photo",
+      "words": [
+        "photo",
+        "photos",
+        "photograph",
+        "photographs",
+        "picture",
+        "pictures",
+        "fotó",
+        "kép"
+      ]
+    },
+    {
+      "id": "fingerprint",
+      "words": [
+        "fingerprint",
+        "fingerprints",
+        "dna",
+        "ujjlenyomat"
+      ]
+    },
+    {
+      "id": "footprint",
+      "words": [
+        "footprint",
+        "footprints",
+        "tracks",
+        "boot",
+        "boots",
+        "lábnyom"
+      ]
+    },
+    {
+      "id": "tape",
+      "words": [
+        "tape",
+        "tapes",
+        "recording",
+        "recordings",
+        "cassette",
+        "hangfelvétel"
+      ]
+    },
+    {
+      "id": "notebook",
+      "words": [
+        "notebook",
+        "diary",
+        "journal",
+        "ledger",
+        "record",
+        "records",
+        "napló",
+        "jegyzet"
+      ]
+    },
+    {
+      "id": "lamp",
+      "words": [
+        "lamp",
+        "light",
+        "lights",
+        "lámpa",
+        "fény"
+      ]
+    },
+    {
+      "id": "money",
+      "words": [
+        "money",
+        "cash",
+        "dollars",
+        "euros",
+        "ransom",
+        "bank",
+        "pénz"
+      ]
+    },
+    {
+      "id": "boat",
+      "words": [
+        "boat",
+        "boats",
+        "ship",
+        "ships",
+        "ferry",
+        "yacht",
+        "hajó"
+      ]
+    },
+    {
+      "id": "computer",
+      "words": [
+        "computer",
+        "computers",
+        "laptop",
+        "email",
+        "emails",
+        "internet",
+        "számítógép"
+      ]
+    },
+    {
+      "id": "ticket",
+      "words": [
+        "ticket",
+        "tickets",
+        "receipt",
+        "receipts",
+        "passport",
+        "jegy",
+        "számla"
+      ]
+    }
+  ],
+  "places": "../archive-collage/places.json",
+  "templates": [
+    {
+      "id": "title",
+      "label": "A figure under a street light",
+      "when": "The first scene: the video's question or claim.",
+      "params": {
+        "headline": {
+          "maxWords": 8,
+          "required": true
+        },
+        "kicker": {
+          "maxWords": 4,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:title",
+          "vars": {
+            "headline": "$headline",
+            "kicker": "$kicker"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter",
+      "label": "A folder and a flashlight",
+      "when": "The start of a new part of the story.",
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:chapter",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "statement",
+      "label": "Two lines in a dark room",
+      "when": "A plain claim: the first line sets it up, the second lands it.",
+      "params": {
+        "line1": {
+          "maxWords": 5,
+          "required": true
+        },
+        "line2": {
+          "maxWords": 4,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:statement",
+          "vars": {
+            "line1": "$line1",
+            "line2": "$line2",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "word",
+      "label": "One word like a lit sign",
+      "when": "One word is the whole point.",
+      "params": {
+        "word": {
+          "maxWords": 2,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:word",
+          "vars": {
+            "word": "$word",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "highlight",
+      "label": "A line with one word marked",
+      "when": "A short line with one key word to underline.",
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "mark": {
+          "maxWords": 1,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:highlight",
+          "vars": {
+            "line": "$line",
+            "mark": "$mark",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "flash",
+      "label": "A light flash and a sound",
+      "when": "Something violent or sudden happens. Nothing is shown: only windows flash in the dark and a dull sound is heard. Never name a weapon or an injury in its line.",
+      "ruleFirst": true,
+      "fallback": true,
+      "params": {
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:flash",
+          "vars": {
+            "object": "$object",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "Somebody in a lit doorway",
+      "when": "The narration asks the viewer something.",
+      "ruleFirst": true,
+      "params": {
+        "question": {
+          "maxWords": 6,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:question",
+          "vars": {
+            "question": "$question"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stamp",
+      "label": "A date and place stamp",
+      "when": "The narration says when something happened: a date, a year or a time, and where if it says so.",
+      "ruleFirst": true,
+      "params": {
+        "when": {
+          "maxWords": 4,
+          "required": true,
+          "said": true
+        },
+        "where": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 8,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:stamp",
+          "vars": {
+            "when": "$when",
+            "where": "$where",
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "route",
+      "label": "A route on the dark map",
+      "when": "Somebody or something moves between two places the narration names.",
+      "ruleFirst": true,
+      "params": {
+        "fromPlace": {
+          "type": "place",
+          "required": true
+        },
+        "toPlace": {
+          "type": "place",
+          "required": true
+        },
+        "fromLabel": {
+          "maxWords": 3,
+          "required": false
+        },
+        "toLabel": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:route",
+          "vars": {
+            "fromPlace": "$fromPlace",
+            "toPlace": "$toPlace",
+            "fromLabel": "$fromLabel",
+            "toLabel": "$toLabel",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "label": "A pin on the dark map",
+      "when": "The narration names one country or big city.",
+      "ruleFirst": true,
+      "params": {
+        "place": {
+          "type": "place",
+          "required": true
+        },
+        "label": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:map",
+          "vars": {
+            "place": "$place",
+            "label": "$label",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "board",
+      "label": "The evidence board",
+      "when": "Three or four clues, people or facts that belong together: cards pinned to a board, one string joining them.",
+      "ruleFirst": true,
+      "params": {
+        "item1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item4": {
+          "maxWords": 3,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:board",
+          "vars": {
+            "item1": "$item1",
+            "item2": "$item2",
+            "item3": "$item3",
+            "item4": "$item4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "label": "One thing under a lamp",
+      "when": "One thing that was found or that matters: it lies on a table in a pool of light.",
+      "ruleFirst": true,
+      "params": {
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "line": {
+          "maxWords": 6,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:evidence",
+          "vars": {
+            "object": "$object",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "number",
+      "label": "A number that glows",
+      "when": "The narration says a number and it matters.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "before": {
+          "maxWords": 1,
+          "required": false
+        },
+        "after": {
+          "maxWords": 1,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:number",
+          "vars": {
+            "value": "$value",
+            "before": "$before",
+            "after": "$after",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "street",
+      "label": "Somebody walks at night",
+      "when": "The story is outside: a street, a road, a car, a night.",
+      "ruleFirst": true,
+      "params": {
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:street",
+          "vars": {
+            "object": "$object",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "room",
+      "label": "Somebody crosses a room",
+      "when": "The story is inside a house, a room or an office.",
+      "ruleFirst": true,
+      "fallback": true,
+      "params": {
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "night-case-file:room",
+          "vars": {
+            "object": "$object",
+            "line": "$line"
+          }
+        }
+      ]
+    }
+  ]
+}

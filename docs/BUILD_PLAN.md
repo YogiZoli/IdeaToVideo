@@ -253,7 +253,9 @@ floods to the accent color.
 
 ### Phase 7: Preset "Night Case File" (true story documentary)
 
-Status: todo
+Status: done (2026-11-03, DECISIONS 158 to 160). Not tried yet: a real AI on the plan, on the brief and on the
+script (the rule, a pasted script and a stand-in brief only), Hungarian on this preset (only the finding of forbidden
+words is tested), a video over 60 seconds. Captions, if a channel has them on, still show what the voice says (DECISIONS 159).
 
 Dark blue-black scenes, faceless figures glowing in one accent color, rooms and
 streets built from simple shapes. Never show weapons, blood or violence: events
@@ -332,6 +334,12 @@ Other findings:
 - Maps (Night Case File's places too): `pack/shared/map-data.js` and `places.json`, written by `scripts/make-map.mjs` from
   Natural Earth. A template parameter of type `place` takes a name the maps have (`placesIn`, `cleanParams`); the list
   never goes into a prompt. A pack's `script` can be a list of files.
+- Words that never go on screen: `never` in `preset.json` (`neverIn`, `offScreen`). A required text with one sends the rule to
+  another template; `fallback: true` on a template means it needs no words, so a sentence always has a picture.
+- A sound made by code on a scene: `sound: { kind, at }` on a block (`soundPlan` in `assemble.mjs`, `synthHit` in `synth.mjs`).
+- A promise of fact-checking: `factChecked: true` in `preset.json`. Research stays on, the card says so when it has no sources.
+- `defaults.research` and `defaults.mood` in `preset.json`: what the recipe editor sets when this style is chosen.
+- A date, a time or a year in a sentence: `whenIn`. A text parameter with `said: true` must have only digits the voice says.
 - `rare: { every: N }` on a template: `spaceRare` keeps it N scenes apart over the whole plan.
 - `assets` in `preset.json`: what a preset bundles from outside, logged in every video's `assets_license.json` at the build.
 - `ruleParams` in `runner/gates/scenes/templates.mjs` knows the shared template ids (title, chapter,
@@ -361,8 +369,9 @@ Other findings:
 
 ## Next step
 
-Phase 7: Preset "Night Case File". First, Zoltan tries Phase 6 on the installer: a channel on Archive Collage, one
-explainer with real places, years and numbers, up to the render. Phases 3, 4 and 5 too if he has not yet (one topic with
-research on, one set of notes, one real recording, one strange question, one what-if story), and his decisions on the table
-above if he has made them. Still open in that table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143)
-and the Z-Image picture size (DECISIONS 146).
+Phase 8: Preset "Soft Clay Chronicle". Start from `world3d.js` (3D Explainer) as the list above says. First, Zoltan tries Phase 7 on the
+installer: a channel on Night Case File, one documented true story with research on, up to the render, and a look at the sources on the
+Publishing Card. Phases 3 to 6 too if he has not yet (one topic with research, one set of notes, one real recording, one strange question,
+one what-if story, one explainer with real places), and his decisions on the table above if he has made them. Still open in that table's
+spirit: Google's terms on showing Search Suggestions (DECISIONS 143), the Z-Image picture size (DECISIONS 146), and whether captions on
+Night Case File should hide forbidden words (DECISIONS 159).

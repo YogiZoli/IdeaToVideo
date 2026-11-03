@@ -71,6 +71,8 @@
     sheet = "";
     const wants = st.presets.find((p) => p.id === r.preset)?.defaults;
     if (wants?.broll !== undefined && r.broll) r.broll.on = wants.broll;
+    if (wants?.research !== undefined) r.start = { text: "notes", ...r.start, research: wants.research };
+    if (wants?.mood && r.music) r.music.mood = wants.mood;
   }
 
   function chooseKind(k: "kokoro" | "elevenlabs") {
@@ -258,7 +260,7 @@
         <label><input type="radio" name="stext" checked={r.start?.text !== "finished"} onchange={() => (r.start = { research: false, ...r.start, text: "notes" })} /> A pasted text is notes: turn it into a script</label>
         <label><input type="radio" name="stext" checked={r.start?.text === "finished"} onchange={() => (r.start = { research: false, ...r.start, text: "finished" })} /> A pasted text is a finished script: use it as it is</label>
       </div>
-      <label><input type="checkbox" checked={r.start?.research === true} onchange={(e) => (r.start = { text: "notes", ...r.start, research: e.currentTarget.checked })} /> Research on</label>
+      <label><input type="checkbox" checked={r.start?.research === true || !!preset?.factChecked} disabled={!!preset?.factChecked} onchange={(e) => (r.start = { text: "notes", ...r.start, research: e.currentTarget.checked })} /> Research on{preset?.factChecked ? ", always: this style's scripts are fact-checked" : ""}</label>
       <p class="hint">What the start screen begins with. You can change both for one video there.</p>
     </div>
   </div>
