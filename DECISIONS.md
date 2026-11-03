@@ -2595,3 +2595,45 @@
     errors. Rust was not touched and its tests were not run again. New `scripts/phase2/explainer3d-e2e.mjs` 42/42 with the
     real free voice and real renders: one video by rule, one with every template once, each looked at frame by frame.
     A real AI was not used: the plan was tested by rule and with stand-in answers. Longest video tried: 43 s.
+
+152. **The Stick World preset** (Zoltan, 2026-11-03, `docs/BUILD_PLAN.md` phase 5; `runner/presets/stick-world/`).
+    14 templates, what-if stories told to "you". All drawing is own code in `pack/shared/stick.js`, lines and circles
+    on a 2D canvas: no image files, no new library, nothing downloaded, no third-party skill opened. 28 things drawn by
+    code; the first, `none`, leaves the figure alone. Colors are its own, the fonts are Rubik and Quicksand (OFL, both
+    with latin-ext, from the fonts the app already ships). B-roll off when this style is chosen; the switch stays.
+    - **HyperFrames still makes every frame,** the same way as the 3D Explainer: a paused timeline, one tween, any seek
+      gives the same picture. Not a frame engine of our own.
+    - **The hero:** one accent-colored item of clothing, a scarf (Claude's choice, can be overruled). Nothing else
+      drawn uses the accent; on screen only the underline of a marked word does.
+    - **A blink every 3.5 to 4 seconds on the video's own clock,** read from the host's `data-start`, and not on the
+      shot's. A clock per shot would have blinked more often across cuts. Each figure has its own times. Seen in the
+      real render: the eyes shut at the frame the code computes. A shot shorter than the gap can have no blink.
+      **Eyes are the whole face,** because a blink needs them. The 100 tiny people have none.
+    - **Feet stay planted because they are a function of the distance walked** (`gait`): one foot moves at a time and
+      the other stays exactly where it landed. Legs are solved to reach the feet, never the other way round. Tested for
+      every quarter pixel of a walk, and seen frame by frame in the render. A walk is a whole number of steps, at most 3
+      a second, so a short shot gets a short walk ending beside the thing.
+    - **Nearly still:** a push in of 1.6% over the shot, nothing else, plain cuts.
+    - **A number:** 1 to 9 shows exactly that many people, more is a row of 13 with the number on screen. **A percent:**
+      100 people, as many in ink as the voice says. Same honesty as DECISIONS 150.
+    - `scripts/preset-blocks.mjs` is what make-3d-blocks had, shared. The 3D pack's files came out the same, plus its
+      `camera` line, which the Shot map tab read from a fixed text before.
+
+153. **One short sentence per shot, and where the app's floor limits it.** Pace "fast", and the script writer is told
+    to write sentences of 6 to 12 words. **A shot still lasts at least 2 seconds** (`MIN_SECONDS`, for every preset, not
+    changed), so a sentence shorter than that shares a shot with its neighbour. The first test script, with sentences
+    like "Go home.", gave 11 shots for 21 sentences; sentences of the told length gave 21 for 21. Open for Zoltan if he
+    wants real one-second shots: that means lowering the floor for this preset.
+
+154. **What a rule fills on this preset, and three small changes to shared code.** New rules: thought (imagine, wish,
+    wonder), talk (says, asks, tells; a quoted line wins), walk (walk, run, go, leave). They come after versus and cause,
+    because in the first test "You run, but..." and a following "because" became one more walk.
+    - **`capFor`:** on a preset with objects, a line it must cut no longer stops on a word that needs the next one.
+    - **`toScene` and `checkScenes`:** a preset's own block may state a limit over the general 6 words. A what-if
+      question needs it: the title may have 8. The general limit is unchanged for every other component.
+    - **The Shot map's camera text** comes from the pack's manifest (`camera`).
+
+    Tests: Node 567 of 570 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0
+    errors. Rust was not touched and its tests were not run again. New `scripts/phase2/stickworld-e2e.mjs` 45/45 with the
+    real free voice and real renders, one video by rule and one with every template once, each looked at frame by frame;
+    Motion Frames' channel e2e 56/56. A real AI was not used. Longest video tried: 61 s.

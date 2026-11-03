@@ -1,0 +1,397 @@
+{
+  "schema": "itv-pack/1",
+  "id": "stick-world",
+  "name": "Stick World",
+  "look": "own",
+  "camera": "Nearly still",
+  "runtime": [],
+  "script": "shared/stick.js",
+  "blocks": [
+    {
+      "id": "title",
+      "role": "opening",
+      "label": "The question and you",
+      "what": "The first scene: the video's what-if question, with you standing by the thing it is about.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 8
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        },
+        {
+          "id": "kicker",
+          "type": "string",
+          "label": "Kicker",
+          "default": "",
+          "optional": true,
+          "maxWords": 4
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "chapter",
+      "role": "opening",
+      "label": "You walk into a new part",
+      "what": "The start of a new part of the story.",
+      "variables": [
+        {
+          "id": "headline",
+          "type": "string",
+          "label": "Headline",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "statement",
+      "role": "statement",
+      "label": "You and two lines",
+      "what": "A plain claim: the first line sets it up, the second lands it.",
+      "variables": [
+        {
+          "id": "line1",
+          "type": "string",
+          "label": "Line 1",
+          "default": "",
+          "maxWords": 5
+        },
+        {
+          "id": "line2",
+          "type": "string",
+          "label": "Line 2",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "word",
+      "role": "emphasis",
+      "label": "One huge word",
+      "what": "One word is the whole point, and you throw your arms up.",
+      "variables": [
+        {
+          "id": "word",
+          "type": "string",
+          "label": "Word",
+          "default": "",
+          "maxWords": 2
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "highlight",
+      "role": "emphasis",
+      "label": "Marked line",
+      "what": "A short line with one key word to mark.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "mark",
+          "type": "string",
+          "label": "Mark",
+          "default": "",
+          "maxWords": 1
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "question",
+      "role": "statement",
+      "label": "You shrug",
+      "what": "The narration asks the viewer something.",
+      "variables": [
+        {
+          "id": "question",
+          "type": "string",
+          "label": "Question",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "versus",
+      "role": "contrast",
+      "label": "You and them",
+      "what": "This or that, before and after, you and someone else.",
+      "variables": [
+        {
+          "id": "left",
+          "type": "string",
+          "label": "Left",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "right",
+          "type": "string",
+          "label": "Right",
+          "default": "",
+          "maxWords": 4
+        },
+        {
+          "id": "leftObject",
+          "type": "string",
+          "label": "Left Object",
+          "default": "none",
+          "optional": true
+        },
+        {
+          "id": "rightObject",
+          "type": "string",
+          "label": "Right Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "cause",
+      "role": "relation",
+      "label": "A leads to B",
+      "what": "One thing causes or leads to another.",
+      "variables": [
+        {
+          "id": "from",
+          "type": "string",
+          "label": "From",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "to",
+          "type": "string",
+          "label": "To",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "fromObject",
+          "type": "string",
+          "label": "From Object",
+          "default": "none",
+          "optional": true
+        },
+        {
+          "id": "toObject",
+          "type": "string",
+          "label": "To Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "thought",
+      "role": "detail",
+      "label": "A thought cloud",
+      "what": "You imagine, wish or wonder about something: it floats in a cloud.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "talk",
+      "role": "relation",
+      "label": "Two people talk",
+      "what": "Someone says, asks or tells something: it is in your speech bubble.",
+      "variables": [
+        {
+          "id": "said",
+          "type": "string",
+          "label": "Said",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "walk",
+      "role": "statement",
+      "label": "You walk to it",
+      "what": "You go somewhere: you walk across the frame to the thing.",
+      "variables": [
+        {
+          "id": "line",
+          "type": "string",
+          "label": "Line",
+          "default": "",
+          "maxWords": 6
+        },
+        {
+          "id": "object",
+          "type": "string",
+          "label": "Object",
+          "default": "none",
+          "optional": true
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "number",
+      "role": "proof",
+      "label": "A big number and people",
+      "what": "The narration says a number and it matters. Under 10 shows exactly that many people.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        },
+        {
+          "id": "before",
+          "type": "string",
+          "label": "Before",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        },
+        {
+          "id": "after",
+          "type": "string",
+          "label": "After",
+          "default": "",
+          "optional": true,
+          "maxWords": 1
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "percent",
+      "role": "proof",
+      "label": "100 people, some marked",
+      "what": "The narration says a percentage.",
+      "variables": [
+        {
+          "id": "value",
+          "type": "number",
+          "label": "Value",
+          "default": 0
+        }
+      ],
+      "seconds": 5
+    },
+    {
+      "id": "path",
+      "role": "process",
+      "label": "Four stops",
+      "what": "Exactly four steps in order: you walk past four signs.",
+      "variables": [
+        {
+          "id": "step1",
+          "type": "string",
+          "label": "Step 1",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step2",
+          "type": "string",
+          "label": "Step 2",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step3",
+          "type": "string",
+          "label": "Step 3",
+          "default": "",
+          "maxWords": 3
+        },
+        {
+          "id": "step4",
+          "type": "string",
+          "label": "Step 4",
+          "default": "",
+          "maxWords": 3
+        }
+      ],
+      "seconds": 5
+    }
+  ]
+}

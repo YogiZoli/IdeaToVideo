@@ -1,0 +1,707 @@
+{
+  "schema": "style-preset/1",
+  "id": "stick-world",
+  "label": "Stick World",
+  "description": "What-if stories told to you. Black stick figures on a light plain background, you are the one with the colored scarf. A nearly still camera, one short sentence per shot, big readable numbers.",
+  "engine": "script",
+  "scriptNote": "A what-if story that happens to the viewer. Talk to the viewer as you, and tell it in order, one thing after another. Write short sentences of 6 to 12 words, one thought per sentence, because each one gets its own shot and a shot lasts at least 2 seconds. Say the key numbers in digits.",
+  "ideaNote": "Each video is one what-if story that happens to the viewer, the kind that starts with what if you.",
+  "defaults": {
+    "broll": false
+  },
+  "tokens": {
+    "appearance": "light",
+    "colors": {
+      "background": "#f6f4ee",
+      "surface": "#ffffff",
+      "border": "#d9d5ca",
+      "text": "#141414",
+      "muted": "#6a675f",
+      "primary": "#e0332e",
+      "secondary": "#141414",
+      "tertiary": "#6a675f"
+    },
+    "fonts": {
+      "display": "Rubik",
+      "body": "Quicksand"
+    },
+    "shape": {
+      "corners": "large",
+      "cards": "flat"
+    },
+    "texture": "none"
+  },
+  "shotRules": {
+    "pacing": "fast",
+    "cutFrequency": "One short sentence per shot: a new shot on every sentence.",
+    "camera": "Nearly still: a push in of under 2% over the shot, nothing else. The scene owns it, not the channel's Motion profile.",
+    "characters": "Black stick figures drawn by code. The hero, you, wears one accent-colored scarf. They blink every 3.5 to 4 seconds and their feet stay planted when they walk.",
+    "sound": "No transition sounds. The narration carries the video, the music sits under it."
+  },
+  "objects": [
+    {
+      "id": "none",
+      "words": []
+    },
+    {
+      "id": "box",
+      "words": [
+        "box",
+        "boxes",
+        "crate",
+        "package",
+        "doboz"
+      ]
+    },
+    {
+      "id": "house",
+      "words": [
+        "house",
+        "houses",
+        "home",
+        "building",
+        "ház",
+        "otthon"
+      ]
+    },
+    {
+      "id": "door",
+      "words": [
+        "door",
+        "doors",
+        "ajtó"
+      ]
+    },
+    {
+      "id": "tree",
+      "words": [
+        "tree",
+        "trees",
+        "forest",
+        "fa",
+        "erdő"
+      ]
+    },
+    {
+      "id": "car",
+      "words": [
+        "car",
+        "cars",
+        "taxi",
+        "truck",
+        "autó"
+      ]
+    },
+    {
+      "id": "phone",
+      "words": [
+        "phone",
+        "phones",
+        "smartphone",
+        "telefon"
+      ]
+    },
+    {
+      "id": "bed",
+      "words": [
+        "bed",
+        "beds",
+        "sleep",
+        "asleep",
+        "ágy",
+        "alszol"
+      ]
+    },
+    {
+      "id": "table",
+      "words": [
+        "table",
+        "tables",
+        "desk",
+        "dinner",
+        "asztal"
+      ]
+    },
+    {
+      "id": "chair",
+      "words": [
+        "chair",
+        "chairs",
+        "seat",
+        "szék"
+      ]
+    },
+    {
+      "id": "clock",
+      "words": [
+        "clock",
+        "clocks",
+        "hour",
+        "hours",
+        "minute",
+        "minutes",
+        "óra"
+      ]
+    },
+    {
+      "id": "coins",
+      "words": [
+        "money",
+        "coin",
+        "coins",
+        "dollar",
+        "dollars",
+        "cash",
+        "pénz"
+      ]
+    },
+    {
+      "id": "rocket",
+      "words": [
+        "rocket",
+        "rockets",
+        "spaceship",
+        "rakéta"
+      ]
+    },
+    {
+      "id": "boat",
+      "words": [
+        "boat",
+        "boats",
+        "ship",
+        "ships",
+        "hajó"
+      ]
+    },
+    {
+      "id": "mountain",
+      "words": [
+        "mountain",
+        "mountains",
+        "hill",
+        "hills",
+        "hegy"
+      ]
+    },
+    {
+      "id": "sun",
+      "words": [
+        "sun",
+        "sunlight",
+        "summer"
+      ]
+    },
+    {
+      "id": "moon",
+      "words": [
+        "moon",
+        "night",
+        "éjszaka"
+      ]
+    },
+    {
+      "id": "planet",
+      "words": [
+        "planet",
+        "planets",
+        "earth",
+        "world",
+        "bolygó",
+        "föld"
+      ]
+    },
+    {
+      "id": "cloud",
+      "words": [
+        "cloud",
+        "clouds",
+        "rain",
+        "storm",
+        "felhő",
+        "eső"
+      ]
+    },
+    {
+      "id": "book",
+      "words": [
+        "book",
+        "books",
+        "school",
+        "könyv",
+        "iskola"
+      ]
+    },
+    {
+      "id": "apple",
+      "words": [
+        "apple",
+        "apples",
+        "food",
+        "eat",
+        "meal",
+        "alma",
+        "étel"
+      ]
+    },
+    {
+      "id": "dog",
+      "words": [
+        "dog",
+        "dogs",
+        "pet",
+        "kutya"
+      ]
+    },
+    {
+      "id": "bottle",
+      "words": [
+        "bottle",
+        "bottles",
+        "water",
+        "drink",
+        "víz",
+        "üveg"
+      ]
+    },
+    {
+      "id": "ladder",
+      "words": [
+        "ladder",
+        "ladders",
+        "climb",
+        "létra"
+      ]
+    },
+    {
+      "id": "computer",
+      "words": [
+        "computer",
+        "computers",
+        "laptop",
+        "screen",
+        "internet",
+        "számítógép"
+      ]
+    },
+    {
+      "id": "bag",
+      "words": [
+        "bag",
+        "bags",
+        "backpack",
+        "suitcase",
+        "táska"
+      ]
+    },
+    {
+      "id": "lamp",
+      "words": [
+        "lamp",
+        "lamps",
+        "light",
+        "idea",
+        "lámpa"
+      ]
+    },
+    {
+      "id": "bridge",
+      "words": [
+        "bridge",
+        "bridges",
+        "híd"
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "id": "title",
+      "label": "The question and you",
+      "when": "The first scene: the video's what-if question, with you standing by the thing it is about.",
+      "params": {
+        "headline": {
+          "maxWords": 8,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        },
+        "kicker": {
+          "maxWords": 4,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:title",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object",
+            "kicker": "$kicker"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter",
+      "label": "You walk into a new part",
+      "when": "The start of a new part of the story.",
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:chapter",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "statement",
+      "label": "You and two lines",
+      "when": "A plain claim: the first line sets it up, the second lands it.",
+      "params": {
+        "line1": {
+          "maxWords": 5,
+          "required": true
+        },
+        "line2": {
+          "maxWords": 4,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:statement",
+          "vars": {
+            "line1": "$line1",
+            "line2": "$line2",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "word",
+      "label": "One huge word",
+      "when": "One word is the whole point, and you throw your arms up.",
+      "params": {
+        "word": {
+          "maxWords": 2,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:word",
+          "vars": {
+            "word": "$word",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "highlight",
+      "label": "Marked line",
+      "when": "A short line with one key word to mark.",
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "mark": {
+          "maxWords": 1,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:highlight",
+          "vars": {
+            "line": "$line",
+            "mark": "$mark",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "You shrug",
+      "when": "The narration asks the viewer something.",
+      "ruleFirst": true,
+      "params": {
+        "question": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:question",
+          "vars": {
+            "question": "$question",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "versus",
+      "label": "You and them",
+      "when": "This or that, before and after, you and someone else.",
+      "ruleFirst": true,
+      "params": {
+        "left": {
+          "maxWords": 4,
+          "required": true
+        },
+        "right": {
+          "maxWords": 4,
+          "required": true
+        },
+        "leftObject": {
+          "type": "object",
+          "required": false
+        },
+        "rightObject": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:versus",
+          "vars": {
+            "left": "$left",
+            "right": "$right",
+            "leftObject": "$leftObject",
+            "rightObject": "$rightObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cause",
+      "label": "A leads to B",
+      "when": "One thing causes or leads to another.",
+      "ruleFirst": true,
+      "params": {
+        "from": {
+          "maxWords": 3,
+          "required": true
+        },
+        "to": {
+          "maxWords": 3,
+          "required": true
+        },
+        "fromObject": {
+          "type": "object",
+          "required": false
+        },
+        "toObject": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:cause",
+          "vars": {
+            "from": "$from",
+            "to": "$to",
+            "fromObject": "$fromObject",
+            "toObject": "$toObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "thought",
+      "label": "A thought cloud",
+      "when": "You imagine, wish or wonder about something: it floats in a cloud.",
+      "ruleFirst": true,
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:thought",
+          "vars": {
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "talk",
+      "label": "Two people talk",
+      "when": "Someone says, asks or tells something: it is in your speech bubble.",
+      "ruleFirst": true,
+      "params": {
+        "said": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:talk",
+          "vars": {
+            "said": "$said",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "walk",
+      "label": "You walk to it",
+      "when": "You go somewhere: you walk across the frame to the thing.",
+      "ruleFirst": true,
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:walk",
+          "vars": {
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "number",
+      "label": "A big number and people",
+      "when": "The narration says a number and it matters. Under 10 shows exactly that many people.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "before": {
+          "maxWords": 1,
+          "required": false
+        },
+        "after": {
+          "maxWords": 1,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:number",
+          "vars": {
+            "value": "$value",
+            "before": "$before",
+            "after": "$after"
+          }
+        }
+      ]
+    },
+    {
+      "id": "percent",
+      "label": "100 people, some marked",
+      "when": "The narration says a percentage.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:percent",
+          "vars": {
+            "value": "$value"
+          }
+        }
+      ]
+    },
+    {
+      "id": "path",
+      "label": "Four stops",
+      "when": "Exactly four steps in order: you walk past four signs.",
+      "params": {
+        "step1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step4": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "stick-world:path",
+          "vars": {
+            "step1": "$step1",
+            "step2": "$step2",
+            "step3": "$step3",
+            "step4": "$step4"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -28,7 +28,8 @@ const lengthOf = (s) => s.dur ?? s.end - s.start;
 const cap = (text, max) => wordsOf(text).slice(0, max).join(" ");
 // A preset that asks a question on screen keeps its question mark, when the whole text fits.
 const capFor = (template, text, max) => {
-  const out = cap(text, max);
+  // and a line it has to cut does not stop on a word that needs the next one
+  const out = template?.objects && wordsOf(text).length > max ? headlineOf(text, max) : cap(text, max);
   return template?.objects && out && /\?\s*$/.test(String(text)) && wordsOf(text).length <= max ? `${out}?` : out;
 };
 const longest = (ws) => ws.reduce((best, w) => (w.length > best.length ? w : best), "");
@@ -159,6 +160,17 @@ function ownRule(template, said) {
       const [fromObject, toObject] = reversed ? sideObjects(m.right, m.left, said, objects) : sideObjects(m.left, m.right, said, objects);
       return { from, to, fromObject, toObject };
     }
+    case "thought":
+      if (!/\b(imagine|imagines|think|thinks|thought|dream|dreams|wish|wishes|wonder|wonders)\b|képzel|gondol/i.test(said)) return null;
+      return { line: headlineOf(said, 6), object: objectFor(said, objects) };
+    case "talk": {
+      if (!/\b(say|says|said|ask|asks|asked|tell|tells|told|shout|shouts|shouted)\b|mond|kérdez/i.test(said)) return null;
+      const quoted = /["“„]([^"”]+)["”]/.exec(said)?.[1];
+      return { said: headlineOf(quoted ?? said, 6), object: objectFor(said, objects) };
+    }
+    case "walk":
+      if (!/\b(walk|walks|walked|walking|run|runs|ran|running|leave|leaves|go|goes|went|arrive|arrives|arrived|sétál|mész|elindul)\b/i.test(said)) return null;
+      return { line: headlineOf(said, 6), object: objectFor(said, objects) };
     default:
       return null;
   }
@@ -262,7 +274,8 @@ export function toScene(template, params, { from, to }) {
     if (template.draw.types?.[id] === "number") {
       if (value.trim() && Number.isFinite(Number(value))) vars[id] = Number(value);
     } else if (list) vars[id] = value;
-    else if (value.trim()) vars[id] = capFor(template, value, MAX_WORDS);
+    // a preset with its own pack states each limit, the others share one
+    else if (value.trim()) vars[id] = capFor(template, value, (template.objects && template.params?.[id]?.maxWords) || MAX_WORDS);
   }
   return { from, ...(to !== from ? { to } : {}), component: template.draw.component, vars, template: template.id };
 }

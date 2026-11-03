@@ -3,6 +3,7 @@
   "id": "explainer-3d",
   "name": "3D Explainer",
   "look": "own",
+  "camera": "3D move, its own",
   "runtime": [
     "three"
   ],

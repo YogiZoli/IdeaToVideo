@@ -234,7 +234,7 @@ export async function registerPacks(identityDir, { hasFootage = false } = {}) {
   for (const p of builtinPacks()) {
     for (const b of p.blocks) {
       const text = b.variables.filter((v) => v.type === "string" && !v.optional);
-      PACK_COMPONENTS.set(`${p.id}:${b.id}`, { role: b.role, label: `${b.label} (${p.name})`, mainVar: text[0]?.id ?? null, words: Object.fromEntries(b.variables.filter((v) => v.maxWords).map((v) => [v.id, v.maxWords])), description: b.what ?? "", variables: b.variables, pack: true, presetOnly: true, camera: "3D move, its own" });
+      PACK_COMPONENTS.set(`${p.id}:${b.id}`, { role: b.role, label: `${b.label} (${p.name})`, mainVar: text[0]?.id ?? null, words: Object.fromEntries(b.variables.filter((v) => v.maxWords).map((v) => [v.id, v.maxWords])), description: b.what ?? "", variables: b.variables, pack: true, presetOnly: true, camera: p.camera ?? "Its own" });
     }
   }
   if (!identityDir) return PACK_COMPONENTS.size;

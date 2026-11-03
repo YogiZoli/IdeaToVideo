@@ -1,14 +1,50 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-03 (3D Explainer preset, DECISIONS 148 to 151)
+Frissítve: 2026-11-03 (Stick World preset, DECISIONS 152 to 154)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-03, 3D Explainer, DECISIONS 148 to 151)
+## Now (2026-11-03, Stick World, DECISIONS 152 to 154)
 
-**Phase 4 of `docs/BUILD_PLAN.md` is done. Phase 5, Stick World, is next.**
+**Phase 5 of `docs/BUILD_PLAN.md` is done. Phase 6, Archive Collage, is next.**
+
+- **Where to find it:** a channel's recipe, Style: Stick World. Choosing it turns B-roll off; the switch stays.
+- **What it makes:** what-if stories told to "you". Black stick figures on a light plain background, you are the one
+  with the red scarf. 14 scene templates, 28 things drawn by code: thought cloud, two people talking, you walk to the
+  thing, four signs in a row, you and them, A leads to B, a big number with exactly that many people, 100 people with
+  the percentage marked. Nothing is downloaded and nothing is paid. Its own colors and the OFL fonts Rubik and Quicksand.
+- **As the plan asks:** a blink every 3.5 to 4 seconds on the video's clock, feet that stay planted when walking, a
+  camera that moves under 2% per shot. The blink and the feet were tested and also seen in the rendered frames.
+- **One limit, your call:** a shot lasts at least 2 seconds, so a sentence under that shares a shot with the next one.
+  The script writer is told to write 6 to 12 words, which gave 21 shots for 21 sentences (DECISIONS 153).
+- **The AI only fills templates and names things.** A dead AI still gets a varied video by rule.
+- **Speed:** 61 s of video renders in about 110 s (draft quality).
+- Tests: Node 567 of 570 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check
+  0 errors, new `scripts/phase2/stickworld-e2e.mjs` 45/45 with the real free voice and real renders, Motion Frames'
+  channel e2e 56/56. Rust not touched, not run again.
+- Merged into `main` from branch `preset-stick-world` and pushed. No PR, no GitHub Actions run (`build.yml` runs only
+  on a PR or by hand).
+- Local installer built 2026-11-03 12:22 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (109 MiB). The installed copy's own node,
+  runner and engine rendered a real Stick World video (37/37 steps, 61 s of video in 124 s). The style list was not
+  clicked in the installed window (screen access was declined this session); the installed runner does offer it.
+- Samples: `C:/Users/gdp/Videos/IdeaToVideo-mintak/2026-11-03_stick-world_minden-sablon.mp4` (every template once) and
+  `2026-11-03_stick-world_szabaly-alapjan.mp4` (planned by rule, no AI). Draft quality.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch
+  (about 20 minutes; this one took about 20).
+
+**Not tried yet:** a real AI on the plan and on the script's short "you" sentences (rule and a pasted script only);
+Hungarian on this preset (the fonts have the letters, a rule-made video finds fewer things there); a video over 61 s.
+
+**Next:** in a new chat, Phase 6 (Archive Collage). `docs/BUILD_PLAN.md`, "What later phases reuse", says what to start
+from. Zoltan's own tries are still open: one what-if story on Stick World, one strange question on 3D Explainer, and
+Phase 3's (one topic with research, one set of notes, one recording).
+
+## Earlier (2026-11-03, 3D Explainer, DECISIONS 148 to 151)
+
+**Phase 4 of `docs/BUILD_PLAN.md` is done.**
 
 - **Where to find it:** a channel's recipe, Style: 3D Explainer. Choosing it turns B-roll off; the switch stays.
 - **What it makes:** one strange question per video. 14 scene templates, 38 objects drawn by code: cutaway view,

@@ -193,7 +193,9 @@ export function checkScenes(answer, { sentences, total, env = process.env, off =
     }
     for (const id of HIDDEN_VARS) if (id in vars) issues.push(`${at}: do not set ${id}`);
     for (const l of onScreen(sc.component, vars, listIds(item))) {
-      if (l.item ? words(l.text) > 3 : words(l.text) > MAX_WORDS) issues.push(`${at}: ${l.id} "${l.text}" is too long (at most ${l.item ? 3 : MAX_WORDS} words)`);
+      // a preset's own block states its limit: a what-if question can need more than the general one
+      const most = l.item ? 3 : (componentMeta(sc.component).presetOnly && componentMeta(sc.component).words?.[l.id]) || MAX_WORDS;
+      if (words(l.text) > most) issues.push(`${at}: ${l.id} "${l.text}" is too long (at most ${most} words)`);
     }
     if (componentMeta(sc.component).realOnly) warnings.push(`Scene ${i + 1}: ${componentMeta(sc.component).label} shows a real person, record or quote. Check that it is real.`);
     for (const [id, max] of Object.entries(componentMeta(sc.component).words ?? {})) {
