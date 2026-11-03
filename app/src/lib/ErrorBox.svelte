@@ -4,6 +4,7 @@
   import { getVersion } from "@tauri-apps/api/app";
   import { detailLine, errorCode, type ErrorContext } from "./errors";
   import { log } from "./logger";
+  import { runner } from "./api";
 
   let { message, context = {} }: { message: string; context?: ErrorContext } = $props();
 
@@ -19,9 +20,17 @@
     log("error_shown", { message, code: errorCode(message), context }, calm ? "info" : "error");
   });
 
+  // the sentence, the code line and the full details from the log file
   async function copy() {
+    let more = "";
     try {
-      await navigator.clipboard.writeText(`${message}\n${detail}`);
+      const r = await runner<{ file: string; entry: unknown }>("error-details", {});
+      more = `\n\nThe log file: ${r.file}\nThe last error in it:\n${JSON.stringify(r.entry, null, 2)}`;
+    } catch {
+      // the sentence and the code still go on the clipboard
+    }
+    try {
+      await navigator.clipboard.writeText(`${message}\n${detail}${more}`);
       copied = true;
       setTimeout(() => (copied = false), 1500);
     } catch {

@@ -4,7 +4,7 @@
   // and the Jobs list. "New Identity" runs the setup's Identity steps
   // (docs/identity.md 7).
   import { open } from "@tauri-apps/plugin-dialog";
-  import { appState, saveSettings, setActiveIdentity, restoreSettings, errorText, type AppState, type Config, type Job } from "$lib/api";
+  import { appState, saveSettings, setActiveIdentity, restoreSettings, errorText, runner, type AppState, type Config, type Job } from "$lib/api";
   import { installLogger, log, setScreen, setIdentity } from "$lib/logger";
   import { defaultConfig, cleanConfig } from "$lib/catalog";
   import { appFromConfig, identityFromConfig } from "$lib/identity";
@@ -48,6 +48,19 @@
     }
   }
 
+  // The Health check at startup: silent unless something must be fixed. A problem with
+  // the check itself is only a log line, it must never get in the way of the app.
+  let healthIssues = $state(0);
+  async function silentHealth(s: AppState) {
+    try {
+      const r = await runner<{ problems: number; items: { id: string; state: string }[] }>("health-check", { projectsDir: s.projectsDir, keys: s.keys });
+      healthIssues = r.problems;
+      log("health_check", { problems: r.problems, fix: r.items.filter((i) => i.state === "fix").map((i) => i.id) }, r.problems ? "warn" : "info");
+    } catch (e) {
+      log("health_check_failed", { error: errorText(e) }, "warn");
+    }
+  }
+
   installLogger();
   async function init() {
     try {
@@ -64,6 +77,7 @@
         version: s.version,
       });
       if (!s.app?.onboarded || !s.identity) setScreen("setup");
+      else silentHealth(s);
     } catch (e) {
       fatal = errorText(e);
       log("fatal", { message: fatal }, "error");
@@ -222,6 +236,9 @@
     </nav>
     {#if notice}
       <div class="notice"><span>{notice}</span><button type="button" class="ghost" onclick={() => (notice = "")}>Close</button></div>
+    {/if}
+    {#if healthIssues}
+      <div class="notice"><span>{healthIssues === 1 ? "One thing the app needs is not right." : `${healthIssues} things the app needs are not right.`}</span><button type="button" class="ghost" onclick={() => { healthIssues = 0; goto("health"); }}>Open Health check</button></div>
     {/if}
     <div class="view">
     <!-- A page that breaks while it draws never leaves a blank window: the

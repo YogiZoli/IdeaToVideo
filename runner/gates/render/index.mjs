@@ -39,6 +39,17 @@ export function stamp(d = new Date()) {
 // of its own (<tmp>/itv-r/<id>) and the finished MP4 is copied into out/.
 export function renderTemp(env = process.env) {
   const root = env.ITV_RENDER_TMP || path.join(os.tmpdir(), "itv-r");
+  // what a closed app or a stopped render left behind: only older ones, another
+  // render may be running right now
+  try {
+    const old = Date.now() - 24 * 3600 * 1000;
+    for (const name of fs.readdirSync(root)) {
+      const p = path.join(root, name);
+      if (fs.statSync(p).mtimeMs < old) fs.rmSync(p, { recursive: true, force: true });
+    }
+  } catch {
+    // no such folder yet, or something still locked: the next render tries again
+  }
   const dir = path.join(root, randomBytes(4).toString("hex"));
   fs.mkdirSync(dir, { recursive: true });
   return dir;
@@ -72,7 +83,11 @@ export async function renderVideo(projectDir, { env = process.env, quality = "st
     });
     fs.writeFileSync(path.join(build, "render.log"), r.tail + "\n");
     if (r.code !== 0 || !fs.existsSync(tmpFile)) throw new Error(`The render failed: ${r.tail.split("\n").slice(-4).join(" ")}`);
-    fs.copyFileSync(tmpFile, file);
+    // copied under another name first: the app closed during the copy never leaves
+    // half a video that looks finished (latestVideo reads only video-*.mp4)
+    const part = `${file}.part`;
+    fs.copyFileSync(tmpFile, part);
+    fs.renameSync(part, file);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

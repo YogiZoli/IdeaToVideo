@@ -22,15 +22,15 @@ test("the App's pages hold only the App's AI step", () => {
   assert.ok(SETTINGS_PAGES.some((p) => p.scope === "identity" && p.steps.includes("name")));
 });
 
-test("the top menu (DECISIONS 119): five menus, at most six pages each, every old page kept", () => {
+test("the top menu (DECISIONS 119): five menus, at most seven pages each, every old page kept", () => {
   assert.deepEqual(MENUS.map((m) => m.title), ["Home", "Videos", "Wizards", "Identity", "Settings"]);
   for (const m of ["wizards", "identity", "settings"]) {
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
-    assert.ok(n >= 1 && n <= 6, `${m}: ${n} pages`);
+    assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
   }
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Brand", "Motion", "Scenes", "Playlist Planner"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Voice & Avatar", "Footage", "Dictionary", "Resources", "Manage Identity"]);
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["General", "Connections", "Import & Export", "Folders", "Backup", "Plan"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["General", "Connections", "Import & Export", "Folders", "Backup", "Plan", "Health check"]);
   // the pages before: app-ai, identity-ai and publishing are now Connections
   for (const id of ["folders", "backup", "plan", "general", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "research", "connections", "transfer"]) {
     assert.ok(SETTINGS_PAGES.some((p) => p.id === id), id);

@@ -23,6 +23,7 @@
   import Onboarding from "./Onboarding.svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import BackupSettings from "./BackupSettings.svelte";
+  import HealthCheck from "./HealthCheck.svelte";
   import LogCard from "./LogCard.svelte";
   import BrandWizard from "./brand/BrandWizard.svelte";
   import BrandMini from "./brand/BrandMini.svelte";
@@ -270,7 +271,7 @@
         <p class="for">{page.scope === "app" ? "For the whole app, every Identity" : `For: ${app.identity?.name}`}</p>
         <h1>{page.title}</h1>
       </div>
-      {#if !["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner"].includes(pageId)}
+      {#if !["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner", "health"].includes(pageId)}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
@@ -284,7 +285,9 @@
       </div>
     {/if}
 
-    {#if pageId === "connections"}
+    {#if pageId === "health"}
+      <HealthCheck {app} goto={(id) => openPage(id)} />
+    {:else if pageId === "connections"}
       <section class="card">
         <h2>AI</h2>
         <p class="hint">The AI that writes the scripts, plans the scenes and the small texts, for every Identity.</p>

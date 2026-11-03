@@ -10,10 +10,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { testKey, PROVIDERS, onLlmEvent } from "./providers/llm.mjs";
+import { testKey, PROVIDERS, onLlmEvent, setOtherKeys, LlmError } from "./providers/llm.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
-import { createProject, loadProject, saveProject, recoverInterrupted, setGate, readBrief, appendLog, writeJson, writeAtomic } from "./project.mjs";
+import { createProject, loadProject, saveProject, recoverInterrupted, setGate, readBrief, appendLog, addNote, writeJson, writeAtomic } from "./project.mjs";
 import { writeScript } from "./gates/script/index.mjs";
 import { suggestChannel } from "./gates/channel/index.mjs";
 import { toolsStatus, ensureBrowser, dataDir } from "./tools.mjs";
@@ -60,6 +60,9 @@ import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
 import * as recorded from "./recorded/index.mjs";
 import { friendlyMessage } from "./friendly.mjs";
+import { logError, lastError } from "./errorlog.mjs";
+import { ensureRoom, ensureRenderRoom, ROOM_FOR_BUILD, ROOM_FOR_VOICE } from "./disk.mjs";
+import { healthCheck } from "./health.mjs";
 import { planAuto, findFree, findPixabay, finishFind, setPaidWanted, reviewState as brollReview, approvePaid } from "./broll/engine.mjs";
 import { balance as kieBalance } from "./generate/kie.mjs";
 import { planBroll, estimateBroll, makeBroll, updateItem as updateBroll, againItem as againBroll, removeItem as removeBroll, attach as attachBroll, loadPlan as loadBrollPlan, usesGenerated } from "./broll/index.mjs";
@@ -75,8 +78,8 @@ import { listPresets, loadPreset, presetCard, presetLook } from "./presets/index
 import { renderStylesheet, tokensFor } from "./presets/stylesheet.mjs";
 import { makeTemplateScenes } from "./gates/scenes/templates.mjs";
 import { defaultRecipe, loadRecipe, saveRecipe, normalizeRecipe, recipeFor, cleanStart, ownMusic, musicDir, VOICE_KINDS, MUSIC_SOURCES } from "./channels/recipe.mjs";
-import { newScriptVideo, notesOf, splitPasted } from "./channels/start.mjs";
-import { makeBrief, loadBrief, saveBrief, approveBrief, cleanEdit, briefForScript } from "./research/index.mjs";
+import { newScriptVideo, notesOf, splitPasted, offlineDraft, WRITE_HERE } from "./channels/start.mjs";
+import { makeBrief, loadBrief, saveBrief, approveBrief, cleanEdit, briefForScript, offlineBrief } from "./research/index.mjs";
 import { makeShotMap, shotMapView, writeShotMap, setFlow, addFlowClip } from "./shots/index.mjs";
 import { runWeekBatch, listQueue, WEEK } from "./channels/batch.mjs";
 import { MOODS } from "./providers/music/synth.mjs";
@@ -84,6 +87,10 @@ import { ensureModel, modelDir, MODEL_BYTES, MODEL_FILES, DEFAULT_VOICE } from "
 import { searchAll, addFreeImage, cachePreview as cacheFreePreview } from "./assets/sources.mjs";
 import { readLedger, logAsset, logTableFootage } from "./assets/license.mjs";
 import { backupProject, backupAll, estimate as backupEstimate, listBackups, restoreProject, readRecord as backupRecord, setLevel as setBackupLevel } from "./backup.mjs";
+
+// A service that did not do the job (no key, a refused key, no credit, down, no
+// connection), not a script or a file the free tool would fail on too.
+const serviceFailed = (e) => !/script|sentence|nothing to read|no narration|ffmpeg|disk/i.test(String(e?.message));
 
 // Rough size of the narration, before the voice exists: sentences in script.md.
 function sentenceCount(projectDir) {
@@ -142,9 +149,26 @@ function heartbeat() {
   }, 5000);
   t.unref();
 }
-// LLM retries and model switches become progress lines (the app logs them).
-onLlmEvent((e) => emit({ event: "progress", ...e }));
-const key = () => process.env.STUDIO_API_KEY || "";
+// LLM retries and model switches become progress lines (the app logs them). Another
+// key doing the work is also a note on the video, written when the command ends.
+const aiNotes = [];
+onLlmEvent((e) => {
+  if (e.step === "ai-used") aiNotes.push(`${e.firstLabel} did not answer, so ${e.label} did this step.`);
+  emit({ event: "progress", ...e });
+});
+// The keys leave the environment at once: a child process (ffmpeg, the render) has no use for them.
+const apiKey = process.env.STUDIO_API_KEY || "";
+delete process.env.STUDIO_API_KEY;
+const secrets = [apiKey];
+try {
+  const others = JSON.parse(process.env.ITV_LLM_FALLBACK || "[]");
+  setOtherKeys(others);
+  secrets.push(...others.map((k) => k.apiKey));
+} catch {
+  setOtherKeys([]);
+}
+delete process.env.ITV_LLM_FALLBACK;
+const key = () => apiKey;
 
 // The look of a build, from the Identity's Brand Identity Card. The Rust core
 // sets identityDir (the ONE Video's own Identity) on every request; without
@@ -431,7 +455,8 @@ async function weekBatch({ projectsDir, identityDir, identity, llm = null, chann
   const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
   const texts = splitPasted(pasted);
   const preset = loadPreset(recipe.preset);
-  if (preset.factChecked && !llm) throw new Error(`${preset.label} fact-checks every script, which needs your AI key. Add it in Settings, Connections.`);
+  // no AI: pasted texts still make their videos by hand; only ideas out of nothing need one
+  if (!llm && !texts.length) throw new Error("A week of ideas needs an AI. Add a key in Settings, Connections, or paste your texts with a line of --- between them.");
   research = research || preset.factChecked === true;
   const avoid = fs.existsSync(projectsDir) ? fs.readdirSync(projectsDir).flatMap((n) => { try { return [loadProject(path.join(projectsDir, n)).title]; } catch { return []; } }) : [];
   const firstWords = (t) => t.replace(/\s+/g, " ").trim().split(" ").slice(0, 8).join(" ").replace(/[.,:;!?]+$/, "");
@@ -448,11 +473,21 @@ async function weekBatch({ projectsDir, identityDir, identity, llm = null, chann
     create: ({ title, idea, queue }) => newScriptVideo({ projectsDir, identity, language, recipe, topic: idea.text ? "" : title, text: idea.text ?? "", textKind, research, queue, title }),
     write: async ({ dir, idea }) => {
       if (research) {
-        await commands["research-make"]({ projectDir: dir, llm, channel });
+        if (llm) await commands["research-make"]({ projectDir: dir, llm, channel });
+        else await commands["research-offline"]({ projectDir: dir });
         return;
       }
       if (idea.text && textKind === "finished") return;
-      await writeScriptGate({ projectDir: dir, identityDir, llm, channel, input: { topic: idea.angle ? `${idea.title}. ${idea.angle}` : idea.title, targetLengthMin: recipe.targetLengthMin } });
+      if (!llm) {
+        await commands["script-offline"]({ projectDir: dir, reason: "no AI key is set" });
+        return;
+      }
+      try {
+        await writeScriptGate({ projectDir: dir, identityDir, llm, channel, input: { topic: idea.angle ? `${idea.title}. ${idea.angle}` : idea.title, targetLengthMin: recipe.targetLengthMin } });
+      } catch (e) {
+        if (!e?.offline) throw e;
+        await commands["script-offline"]({ projectDir: dir, reason: e.message });
+      }
     },
   });
 }
@@ -979,16 +1014,31 @@ const commands = {
     saveProject(projectDir, project);
     appendLog(projectDir, `voice: ${narrator?.provider}/${narrator?.voice ?? "?"}${music ? `, music ${music}` : ""}`);
     try {
-      const info = await timed("voice", sentenceCount(projectDir), emit, () =>
-        makeVoice({
-          projectDir,
-          narrator,
-          apiKey: key(),
-          music: musicPath(projectDir, music),
-          language: project.language,
-          onProgress: (p) => emit({ event: "progress", ...p }),
-        }),
-      );
+      ensureRoom(projectDir, ROOM_FOR_VOICE, "the narration");
+      const read = (who) =>
+        timed("voice", sentenceCount(projectDir), emit, () =>
+          makeVoice({
+            projectDir,
+            narrator: who,
+            apiKey: key(),
+            music: musicPath(projectDir, music),
+            language: project.language,
+            onProgress: (p) => emit({ event: "progress", ...p }),
+          }),
+        );
+      let info;
+      try {
+        info = await read(narrator);
+      } catch (e) {
+        // a paid voice that fails or has no budget: the free voice reads it, and the
+        // Preview says so. It reads English only (DECISIONS 133): another language stops here.
+        if (narrator?.provider === "kokoro" || !String(project.language).toLowerCase().startsWith("en") || !serviceFailed(e)) throw e;
+        appendLog(projectDir, `voice: ${narrator?.provider} failed, ${e.message}; the free voice reads it`);
+        addNote(projectDir, "voice", `The free voice on this computer read the narration, because ${narrator?.provider === "gemini" ? "Gemini" : "ElevenLabs"} did not work: ${friendlyMessage(e)}`);
+        emit({ event: "progress", step: "retry", message: "The paid voice did not work, so the free voice is reading it." });
+        narrator = { provider: "kokoro", voice: DEFAULT_VOICE };
+        info = await read(narrator);
+      }
       // step 3, the sentence table: a measurement of this audio, no gate
       emit({ event: "progress", step: "sentences" });
       const table = sentenceTable(projectDir);
@@ -1049,7 +1099,16 @@ const commands = {
       return { info, gate: project.gates.voice, status: project.status };
     }
     appendLog(projectDir, "music: ElevenLabs Music");
-    const info = await logged(projectDir, "music: ElevenLabs Music", () => timed("music-length", Math.max(30, videoSeconds(projectDir)), emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) })));
+    let info;
+    try {
+      info = await timed("music-length", Math.max(30, videoSeconds(projectDir)), emit, () => makeMusic({ projectDir, apiKey: key(), prompt: music?.prompt, onProgress: (p) => emit({ event: "progress", ...p }) }));
+    } catch (e) {
+      if (!serviceFailed(e)) throw e;
+      // music made by code stands in, free, and the Preview says so
+      appendLog(projectDir, `music: ElevenLabs Music failed, ${e.message}; music made by code instead`);
+      addNote(projectDir, "music", `The music was made on this computer, because ElevenLabs Music did not work: ${friendlyMessage(e)}`);
+      info = await logged(projectDir, "music", () => timed("remix", 1, emit, () => setMusic({ projectDir, music: { kind: "synth", mood: music?.mood }, onProgress: (p) => emit({ event: "progress", ...p }) })));
+    }
     const project = setGate(loadProject(projectDir), "voice", { state: loadProject(projectDir).autopilot ? "approved" : "pending", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `music: done, final ${info.finalLufs} LUFS, music ${info.musicGainDb} dB`);
@@ -1293,6 +1352,7 @@ const commands = {
     let project = loadProject(projectDir);
     if (identityDir && typeof look === "object") look = { ...look, iconsRecent: recentIcons(identityDir, path.basename(projectDir)) };
     if (project.gates.scenes?.state !== "approved") throw new Error("Approve the scene table first.");
+    ensureRoom(projectDir, ROOM_FOR_BUILD, "the preview");
     project = setGate(project, "review", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, "review: build, check, contact sheet");
@@ -1328,6 +1388,7 @@ const commands = {
   "render-video": async ({ projectDir, identityDir, quality }) => {
     if (loadProject(projectDir).gates.review?.state !== "approved") throw new Error("Approve the preview first.");
     const q = quality === "draft" || quality === "high" ? quality : "standard";
+    ensureRenderRoom(projectDir, videoSeconds(projectDir));
     const mark = (render) => saveProject(projectDir, { ...loadProject(projectDir), render: { ...render, at: new Date().toISOString() } });
     mark({ state: "running", pid: process.pid, quality: q });
     appendLog(projectDir, `render: start (${q})`);
@@ -1449,10 +1510,40 @@ const commands = {
     const mdFile = path.join(projectDir, "script.md");
     const text = notesOf(projectDir) ?? (project.start?.kind === "finished" && fs.existsSync(mdFile) ? fs.readFileSync(mdFile, "utf8") : "");
     appendLog(projectDir, `research: with ${llm.provider}/${llm.model || "default model"}`);
-    const brief = saveBrief(projectDir, await timed("research", 1, emit, () => makeBrief({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, topic: project.start?.topic ?? project.title, text, language: project.language, channel })));
+    let made;
+    try {
+      made = await timed("research", 1, emit, () => makeBrief({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, topic: project.start?.topic ?? project.title, text, language: project.language, channel }));
+    } catch (e) {
+      if (!(e instanceof LlmError)) throw e;
+      appendLog(projectDir, `research: no AI answered, ${e.message}`);
+      addNote(projectDir, "research", "Nothing in this video was researched or fact-checked, because no AI could answer.");
+      made = offlineBrief({ topic: project.start?.topic ?? project.title, language: project.language, reason: friendlyMessage(e) });
+    }
+    const brief = saveBrief(projectDir, made);
     appendLog(projectDir, `research: ${brief.grounded ? "searched the web" : "no web search"}, ${brief.sources.length} sources`);
     return { brief };
   }),
+  // No AI key at all: the same empty brief, without asking anyone.
+  "research-offline": async ({ projectDir }) => {
+    const project = loadProject(projectDir);
+    addNote(projectDir, "research", "Nothing in this video was researched or fact-checked, because no AI key is set.");
+    return { brief: saveBrief(projectDir, offlineBrief({ topic: project.start?.topic ?? project.title, language: project.language, reason: "no AI key is set" })) };
+  },
+  // Offline mode: no AI could write the script, so the Script tab opens with a draft.
+  "script-offline": async ({ projectDir, reason = "" }) => {
+    const r = offlineDraft(projectDir);
+    addNote(projectDir, "script", "You wrote this script by hand, because no AI could answer.");
+    if (reason) appendLog(projectDir, `script: offline because ${reason}`);
+    return r;
+  },
+  // A note on the video from the run itself (a skipped avatar, a skipped source).
+  "project-note": async ({ projectDir, kind, text }) => {
+    addNote(projectDir, String(kind), friendlyMessage(text));
+    return {};
+  },
+  // Copy details and the Health check screen.
+  "error-details": async () => lastError(),
+  "health-check": async ({ projectsDir, keys = null, internet = true }) => healthCheck({ projectsDir, keys, internet }),
   "research-state": async ({ projectDir }) => ({ brief: loadBrief(projectDir) }),
   "research-save": async ({ projectDir, brief }) => {
     const before = loadBrief(projectDir);
@@ -1537,6 +1628,10 @@ const commands = {
 
   "approve-gate": async ({ projectDir, gate }) => {
     const current = loadProject(projectDir);
+    if (gate === "script") {
+      const md = path.join(projectDir, "script.md");
+      if (fs.existsSync(md) && fs.readFileSync(md, "utf8").includes(WRITE_HERE)) throw new Error(`The script still has ${WRITE_HERE} in it. Write those parts on the Script tab, save, and go on.`);
+    }
     // A scene table is approved only if it fits the current voice.
     if (gate === "scenes") {
       const { rows } = await sceneRows(projectDir);
@@ -1565,8 +1660,12 @@ async function readStdin() {
 // Anything thrown outside the command's own await: a sentence for the user,
 // the details on stderr (the core puts them in the app's log).
 function lastResort(e) {
-  process.stderr.write(`${e?.stack ?? e}\n`);
-  if (!answered) emit({ event: "error", message: `Something unexpected went wrong inside the app (${String(e?.message ?? e).slice(0, 200)}). Press the button again; if it happens again, send the diagnostics (Settings, General).` });
+  process.stderr.write(`${secrets.reduce((s, k) => (k ? s.split(k).join("[key]") : s), String(e?.stack ?? e))}\n`);
+  if (!answered) {
+    const message = friendlyMessage(e);
+    logError({ command: process.argv[2], message, error: e, secrets });
+    emit({ event: "error", message });
+  }
   process.exit(1);
 }
 
@@ -1602,11 +1701,15 @@ async function main() {
       await registerPacks(req.identityDir, { hasFootage });
     } else await registerPacks(null);
     if (req.identityDir && LOOK_COMMANDS.has(name)) req.look = lookOf(req);
-    emit({ event: "result", data: await cmd(req) });
+    const data = await cmd(req);
+    if (req.projectDir) for (const text of new Set(aiNotes)) addNote(req.projectDir, "ai", text);
+    emit({ event: "result", data });
     return 0;
   } catch (e) {
-    if (e?.stack) process.stderr.write(`${e.stack}\n`);
-    emit({ event: "error", message: friendlyMessage(e?.message ?? e) });
+    if (e?.stack) process.stderr.write(`${secrets.reduce((s, k) => (k ? s.split(k).join("[key]") : s), e.stack)}\n`);
+    const message = friendlyMessage(e);
+    logError({ command: name, message, error: e, secrets });
+    emit({ event: "error", message });
     return 1;
   }
 }

@@ -44,6 +44,7 @@
     goto,
     render,
     recipe = false,
+    notes = [],
     recorded = false,
   }: {
     app: AppState;
@@ -54,7 +55,7 @@
     changed: () => Promise<void>;
     goto: (t: TabId) => void;
     render: () => void;
-    recipe?: boolean;
+    recipe?: boolean; notes?: { kind?: string; text: string }[];
     recorded?: boolean;
   } = $props();
 
@@ -252,6 +253,12 @@
 
 <svelte:window onkeydown={onKey} />
 
+{#if notes.length}
+  <section class="card run-notes">
+    <h3>What this video did differently</h3>
+    <ul>{#each notes as n (n.kind ?? n.text)}<li>{n.text}</li>{/each}</ul>
+  </section>
+{/if}
 <section class="card">
   <h2>{recorded ? 2 : 5}. Preview</h2>
   <p class="hint lead">A check before the render: the app builds your video and shows one picture per scene. The render takes minutes; a mistake is cheaper to catch here.</p>
@@ -384,6 +391,9 @@
 {/if}
 
 <style>
+  .run-notes { background: var(--warning-surface); color: var(--warning-text); margin-bottom: 8px; }
+  .run-notes h3 { margin: 0 0 4px; font-size: 14px; }
+  .run-notes ul { margin: 0; padding-left: 18px; font-size: 13px; }
   h2 { margin: 0 0 4px; font-size: 17px; }
   .lead { margin: 0 0 12px; }
   .guide { background: var(--muted); border-radius: 8px; padding: 8px 14px; font-size: 14px; }

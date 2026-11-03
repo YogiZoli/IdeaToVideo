@@ -17,6 +17,7 @@
 // table's footage list. Orders, the "never pay twice" file and the limit stay in
 // broll/index.mjs.
 
+import { retrying } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -251,7 +252,7 @@ async function cutFilm({ hit, at, seconds, identityDir, query, env }) {
 }
 
 async function stillFile({ hit, dir, fetchImpl = fetch }) {
-  const res = await fetchImpl(hit.imageUrl, { headers: { "user-agent": AGENT }, signal: AbortSignal.timeout(120000) });
+  const res = await retrying(fetchImpl)(hit.imageUrl, { headers: { "user-agent": AGENT }, timeout: 120000 });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `still-${String(hit.id).replace(/[^\w-]/g, "_").slice(0, 40)}${path.extname(new URL(hit.imageUrl).pathname) || ".jpg"}`);

@@ -24,6 +24,9 @@ export function newScriptVideo({ projectsDir, identity, language = "en", recipe,
   const name = String(topic).replace(/\s+/g, " ").trim().slice(0, 200);
   const pasted = String(text ?? "").replace(/\r\n/g, "\n").trim();
   const on = research === true;
+  const tooLong = textProblem(pasted);
+  if (tooLong) throw new Error(tooLong);
+  if (pasted && !/[\p{L}\p{N}]/u.test(pasted)) throw new Error("That text has no words in it. Paste your script or notes, or type a topic.");
   if (!pasted) {
     if (!name) throw new Error("Type the topic or idea, or paste a text.");
     return createProject({ projectsDir, title: name, language, identity, recipe, queue, start: { kind: "topic", research: on, topic: name } });
@@ -40,6 +43,29 @@ export function newScriptVideo({ projectsDir, identity, language = "en", recipe,
   writeAtomic(path.join(made.dir, NOTES_FILE), pasted + "\n");
   appendLog(made.dir, `script: notes pasted in, ${pasted.split(/\s+/).length} words`);
   return made;
+}
+
+// Offline mode (docs/AUDIT_REPORT.md): no AI could write the script. Notes become the draft
+// as they are; a topic gets a skeleton. The Script tab is open for the user, and this
+// mark must be gone before the script can be approved, so it is never read aloud.
+export const WRITE_HERE = "[write here]";
+export function offlineDraft(projectDir) {
+  const project = loadProject(projectDir);
+  const notes = notesOf(projectDir);
+  const title = project.title;
+  const markdown = notes ? `# ${title}\n\n${notes.trim()}\n` : `# ${title}\n\n${WRITE_HERE} Your opening: what this video is about and why it matters.\n\n## Part 1\n\n${WRITE_HERE} Your first point.\n\n## Part 2\n\n${WRITE_HERE} Your second point, and how the video ends.\n`;
+  writeAtomic(path.join(projectDir, "script.md"), markdown);
+  saveProject(projectDir, setGate(setGate(loadProject(projectDir), "script", { state: "running", mode: "custom" }), "script", { state: "pending", mode: "custom" }));
+  appendLog(projectDir, `script: offline draft from ${notes ? "the notes" : "the topic"}, waiting for the user`);
+  return { markdown };
+}
+
+// Text longer than this is not one video: about 11 hours of speech.
+export const MAX_TEXT = 100000;
+export function textProblem(text) {
+  const t = String(text ?? "");
+  if (t.length > MAX_TEXT) return `That text is too long for one video: ${Math.round(t.length / 1000)}k characters, and the limit is ${MAX_TEXT / 1000}k. Split it into parts, or into a week batch.`;
+  return null;
 }
 
 /** Pasted texts for a week batch: one per block, split on a line of dashes. */

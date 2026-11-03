@@ -9,6 +9,7 @@
 //   POST /api/v1/jobs/createTask { model: "z-image", input: { prompt (max 1000),
 //     aspect_ratio "1:1" | "4:3" | "3:4" | "16:9" | "9:16", nsfw_checker } }
 
+import { retrying } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { call, promptRefusal, waitForResult, API } from "./kie.mjs";
@@ -33,7 +34,7 @@ export async function order({ apiKey, prompt, aspect, fetchImpl }) {
 // render that fails here is not lost: the order is kept, the next run picks it up.
 export async function fetchClip({ apiKey, id, out, seconds = 5, n = 0, fetchImpl = fetch, sleep, onStatus, env = process.env, parallax = null }) {
   const url = await waitForResult({ apiKey, id, fetchImpl, ...(sleep ? { sleep } : {}), ...(onStatus ? { onStatus } : {}) });
-  const res = await fetchImpl(url, { signal: AbortSignal.timeout(300000) });
+  const res = await retrying(fetchImpl)(url, { timeout: 300000 });
   if (!res.ok) throw new BusyError(`Could not download the picture (HTTP ${res.status}).`, { status: res.status });
   fs.mkdirSync(path.dirname(out), { recursive: true });
   const image = `${out}.png`;

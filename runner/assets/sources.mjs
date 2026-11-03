@@ -3,6 +3,7 @@
 // only, reads the license again from the answer, and drops whatever the
 // license module refuses. Nothing is trusted from the search filter alone.
 
+import { retrying } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -16,7 +17,7 @@ const PAGE = 12;
 async function getJson(url, { fetchImpl = fetch, label }) {
   let res;
   try {
-    res = await fetchImpl(url, { headers: { "user-agent": AGENT, accept: "application/json" }, signal: AbortSignal.timeout(30000) });
+    res = await retrying(fetchImpl)(url, { headers: { "user-agent": AGENT, accept: "application/json" }, timeout: 30000 });
   } catch (e) {
     throw new Error(`Could not reach ${label}: ${e.message}`);
   }
@@ -179,7 +180,7 @@ export async function searchAll({ q, sources = Object.keys(SEARCHERS), fetchImpl
 export async function cachePreview({ url, dir, fetchImpl = fetch }) {
   const out = path.join(dir, `${createHash("sha256").update(String(url)).digest("hex").slice(0, 32)}.jpg`);
   if (fs.existsSync(out)) return out;
-  const res = await fetchImpl(url, { headers: { "user-agent": AGENT }, signal: AbortSignal.timeout(30000) });
+  const res = await retrying(fetchImpl)(url, { headers: { "user-agent": AGENT }, timeout: 30000 });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));
@@ -196,7 +197,7 @@ export async function addFreeImage({ identityDir, hit, fetchImpl = fetch, env = 
   const dir = footageDir(identityDir);
   fs.mkdirSync(dir, { recursive: true });
   const img = path.join(dir, `free-${createHash("sha256").update(hit.sourceUrl).digest("hex").slice(0, 16)}${path.extname(new URL(hit.imageUrl).pathname) || ".jpg"}`);
-  const res = await fetchImpl(hit.imageUrl, { headers: { "user-agent": AGENT }, signal: AbortSignal.timeout(120000) });
+  const res = await retrying(fetchImpl)(hit.imageUrl, { headers: { "user-agent": AGENT }, timeout: 120000 });
   if (!res.ok) throw new Error(`Could not download the image: HTTP ${res.status}.`);
   fs.writeFileSync(img, Buffer.from(await res.arrayBuffer()));
   const target = incomingFootage(".mp4");

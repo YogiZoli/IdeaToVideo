@@ -133,6 +133,20 @@ export function readBrief(dir) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
+// What the run did instead of what was asked (a paid service skipped, another AI
+// used). The Preview tab shows it. The same note of a kind replaces the old one, and
+// a note never fails the step it describes.
+export function addNote(dir, kind, text, now = new Date()) {
+  try {
+    const project = loadProject(dir);
+    const notes = (project.notes ?? []).filter((n) => n.kind !== kind);
+    saveProject(dir, { ...project, notes: [...notes, { at: now.toISOString(), kind, text: String(text).slice(0, 600) }].slice(-40) });
+    appendLog(dir, `note: ${text}`);
+  } catch {
+    // the log and the step's own result still say what happened
+  }
+}
+
 // The ONE Video's own log.txt. A log line never fails the step it describes.
 export function appendLog(dir, line) {
   try {

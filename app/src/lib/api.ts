@@ -7,6 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { effectiveConfig } from "./identity";
 import { log } from "./logger";
+import { plainMessage } from "./errors";
 import type { Series } from "./course/course";
 
 // Every call into the core, timed, into the local log (logger.ts).
@@ -318,7 +319,8 @@ export function onProgress(fn: (p: Progress) => void): Promise<UnlistenFn> {
 
 // Tauri rejects with the Rust Err string; anything else gets a readable form.
 export function errorText(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return JSON.stringify(e);
+  if (typeof e === "string") return plainMessage(e);
+  if (e instanceof Error) return plainMessage(e.message);
+  log("ui_error", { thrown: JSON.stringify(e) }, "error");
+  return plainMessage("");
 }

@@ -4,6 +4,7 @@
 //   speak        one block of text -> mp3 bytes + word timings
 // The key only ever goes into the request header, never into a message.
 
+import { retrying } from "../../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -133,7 +134,7 @@ export async function downloadPreview({ url, dir, fetchImpl = fetch }) {
   if (fs.existsSync(file)) return file;
   let res;
   try {
-    res = await fetchImpl(url, { signal: AbortSignal.timeout(30000) });
+    res = await retrying(fetchImpl)(url, { timeout: 30000 });
   } catch (e) {
     throw new Error(`Could not reach ElevenLabs: ${e.message}`);
   }

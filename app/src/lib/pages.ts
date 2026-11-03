@@ -12,7 +12,7 @@ export type PageMenu = "wizards" | "identity" | "settings";
 export type PageId =
   | "cta" | "look" | "motion" | "scenes" | "planner"
   | "channel" | "voice" | "footage" | "dictionary" | "research" | "identity"
-  | "general" | "connections" | "transfer" | "folders" | "backup" | "plan";
+  | "general" | "connections" | "transfer" | "folders" | "backup" | "plan" | "health";
 export type Scope = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; menu: PageMenu; scope: Scope; steps: StepId[] };
@@ -59,6 +59,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "folders", title: "Folders", menu: "settings", scope: "app", steps: [] },
   { id: "backup", title: "Backup", menu: "settings", scope: "app", steps: [] },
   { id: "plan", title: "Plan", menu: "settings", scope: "app", steps: [] },
+  // keys, models, ffmpeg, disk, internet: OK or what to fix (docs/AUDIT_REPORT.md)
+  { id: "health", title: "Health check", menu: "settings", scope: "app", steps: [] },
 ];
 
 export const MENU_NOTE: Record<PageMenu, string> = {

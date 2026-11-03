@@ -4,6 +4,7 @@
 // searches, each one reads the license again from the answer and drops whatever
 // the license module refuses.
 
+import { retrying } from "../net.mjs";
 import { refusal, looksLikePerson } from "./license.mjs";
 import { commonsLicense, nasaHit } from "./sources.mjs";
 
@@ -17,7 +18,7 @@ const keep = (hits) => hits.filter((h) => h && !refusal(h) && h.videoUrl);
 async function getJson(url, { fetchImpl = fetch, label }) {
   let res;
   try {
-    res = await fetchImpl(url, { headers: { "user-agent": AGENT, accept: "application/json" }, signal: AbortSignal.timeout(30000) });
+    res = await retrying(fetchImpl)(url, { headers: { "user-agent": AGENT, accept: "application/json" }, timeout: 30000 });
   } catch (e) {
     throw new Error(`Could not reach ${label}: ${e.message}`);
   }

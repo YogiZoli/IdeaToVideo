@@ -129,14 +129,17 @@ export function costLine(r: Recipe, aiProvider: string): string {
   return `${free} Costs money here: ${paid.join("; ")}.`.replace(/\s+/g, " ").trim();
 }
 
-/** Can this channel make a video right now, or the sentence why not. */
+/**
+ * What this video does without a key that is missing, or null. Nothing stops a video: a
+ * missing key means the hand-written or the free way (docs/AUDIT_REPORT.md), said here first.
+ */
 export function blocker(r: Recipe, keys: Record<string, boolean>, aiProvider: string, mode: "idea" | "script" | "notes", research = false, factChecked = false): { text: string; connections: boolean } | null {
   if (r.engine === "recorded") return null;
-  if (mode === "idea" && !keys[aiProvider]) return { text: "An idea needs your AI key, to write the script. Add it first, or paste your own script.", connections: true };
-  if (mode === "notes" && !keys[aiProvider]) return { text: "Notes need your AI key, to turn them into a script. Add it first, or mark the text as a finished script.", connections: true };
-  if (research && !keys[aiProvider]) return { text: factChecked ? "This style fact-checks every script, which needs your AI key. Add it first." : "Research needs your AI key. Add it first, or turn research off.", connections: true };
-  if (r.voice.provider === "elevenlabs" && !keys["elevenlabs"]) return { text: "This channel's voice needs your ElevenLabs key.", connections: true };
-  if (r.avatar.on && !keys["heygen"]) return { text: "This channel's avatar needs your HeyGen key.", connections: true };
+  if (mode === "idea" && !keys[aiProvider]) return { text: "No AI key is set, so you write the script by hand on the next screen. Add a key to have it written for you.", connections: true };
+  if (mode === "notes" && !keys[aiProvider]) return { text: "No AI key is set, so your notes become the draft as they are, for you to edit. Add a key to have them turned into a script.", connections: true };
+  if (research && !keys[aiProvider]) return { text: factChecked ? "No AI key is set, so this style cannot fact-check this script, and the Publishing Card says it is unchecked." : "No AI key is set, so nothing is researched, and the Publishing Card says it is unchecked.", connections: true };
+  if (r.voice.provider === "elevenlabs" && !keys["elevenlabs"]) return { text: "No ElevenLabs key, so the free voice reads an English video. Another language needs the key.", connections: true };
+  if (r.avatar.on && !keys["heygen"]) return { text: "No HeyGen key, so this video is made without its avatar.", connections: true };
   return null;
 }
 

@@ -657,6 +657,7 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
   const planned = [];
   const warnings = [];
   let byRule = 0;
+  let ai = llm;
   for (const [k, part] of parts.entries()) {
     onProgress({ step: "planning", provider: llm?.provider ?? null, part: k + 1, of: parts.length });
     if (calls.has(part[0].id)) {
@@ -668,9 +669,9 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
     const atStart = k === 0;
     let best = null;
     let note = "";
-    for (let round = 0; llm && round < 2; round++) {
+    for (let round = 0; ai && round < 2; round++) {
       try {
-        const text = await chat({ ...llm, messages: planMessages({ templates, sentences: part, title, language, pace, previous: planned.at(-1)?.template ?? null, shotRules: preset.shotRules, note }), json: true, temperature: 0.3 });
+        const text = await chat({ ...ai, messages: planMessages({ templates, sentences: part, title, language, pace, previous: planned.at(-1)?.template ?? null, shotRules: preset.shotRules, note }), json: true, temperature: 0.3 });
         const got = mendPart({ answer: extractJson(text), part, templates, previous, pace, title, atStart, off });
         if (!best || got.mended < best.mended) best = got;
         if (got.mended / Math.max(1, got.scenes.length) <= ASK_AGAIN_SHARE) break;
@@ -679,6 +680,8 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
       } catch (e) {
         // a rate limit, a dead key, an unreadable answer: this part goes by rule
         warnings.push(`Part ${k + 1} of the plan was made without the AI (${String(e.message).slice(0, 160)}).`);
+        // no AI answers at all: the other parts do not wait for it, one after the other
+        if (e.offline) ai = null;
         break;
       }
     }
