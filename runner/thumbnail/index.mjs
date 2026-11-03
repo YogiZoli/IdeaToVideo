@@ -16,6 +16,7 @@
 // (estimate). "Edit words" only composes again: free. Picking one puts it in
 // the Video Publishing Card (card.mjs).
 
+import { logAsset } from "../assets/license.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { loadProject, writeJson, appendLog } from "../project.mjs";
@@ -239,6 +240,12 @@ export async function make({ projectDir, identityDir, apiKey, withFace = false, 
         const prompt = picturePrompt({ idea, colors: card.colors, withFace, photoCount: refs.length });
         fs.writeFileSync(pictureFile, await makePicture({ apiKey, fetchImpl, model: m.id, prompt, refs, sleep, onRetry: (r) => onProgress({ step: "retry", ...r }) }));
         spent = r2(spent + perImage);
+        // every outside asset is in the ledger; a problem with the ledger never loses a paid picture
+        try {
+          logAsset(projectDir, { file: rel(projectDir, pictureFile), title: "Thumbnail picture", source: "gemini", license: "gemini-terms", author: "AI generated", model: m.id, prompt, costUsd: perImage, date: new Date().toISOString().slice(0, 10) });
+        } catch (e) {
+          appendLog(projectDir, `thumbnail: not in the license ledger, ${e.message}`);
+        }
       }
       onProgress({ step: "compose", n: i + 1, of: want.length });
       const file = path.join(dirOf(projectDir), `v${slot}.jpg`);

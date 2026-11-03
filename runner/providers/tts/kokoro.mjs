@@ -11,6 +11,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { dataDir } from "../../tools.mjs";
+import { stallGuard } from "../../net.mjs";
+import { ensureRoom } from "../../disk.mjs";
 import { phonemize } from "./g2p.mjs";
 import { splitSentences, writeWav, GAP_SECONDS } from "./gemini.mjs";
 
@@ -58,30 +60,53 @@ export async function fetchFile({ url, sha, out, fetchImpl, label, onProgress, w
     fs.rmSync(out, { force: true });
   }
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  let res;
-  try {
-    res = await fetchImpl(url);
-  } catch (e) {
-    throw new Error(`Could not download ${what} (${label}): ${e.message}. Check the internet connection and press the button again.`);
-  }
-  if (!res.ok) throw new Error(`Could not download ${what} (${label}): HTTP ${res.status}. Try again later.`);
-  const total = Number(res.headers?.get?.("content-length")) || 0;
   const tmp = `${out}.part`;
-  const w = fs.createWriteStream(tmp);
-  let got = 0;
-  let shown = -1;
-  try {
-    for await (const chunk of res.body) {
-      got += chunk.length;
-      if (!w.write(chunk)) await new Promise((r) => w.once("drain", r));
-      const pct = total ? Math.floor((got / total) * 100) : 0;
-      if (pct !== shown) {
-        shown = pct;
-        onProgress({ step: "model-download", file: label, percent: pct });
+  const say = (why) => `Could not download ${what} (${label}): ${why}. Check the internet connection and press the button again.`;
+  for (let attempt = 1; ; attempt++) {
+    // a slow line may take its time; a line where nothing arrives for a minute does not
+    const stall = stallGuard();
+    let failed = null;
+    let writeError = null;
+    try {
+      const res = await fetchImpl(url, { signal: stall.signal });
+      if (!res.ok) {
+        // a missing file or a refusal does not get better by asking again
+        if (res.status !== 429 && res.status < 500) throw Object.assign(new Error(`Could not download ${what} (${label}): HTTP ${res.status}. Try again later.`), { final: true });
+        throw new Error(`HTTP ${res.status}`);
       }
+      const total = Number(res.headers?.get?.("content-length")) || 0;
+      if (total) ensureRoom(path.dirname(out), total * 1.1, what);
+      const w = fs.createWriteStream(tmp);
+      w.on("error", (e) => (writeError = e));
+      let got = 0;
+      let shown = -1;
+      try {
+        for await (const chunk of res.body) {
+          stall.touch();
+          if (writeError) throw writeError;
+          got += chunk.length;
+          if (!w.write(chunk)) await new Promise((r) => w.once("drain", r));
+          const pct = total ? Math.floor((got / total) * 100) : 0;
+          if (pct !== shown) {
+            shown = pct;
+            onProgress({ step: "model-download", file: label, percent: pct });
+          }
+        }
+      } finally {
+        await new Promise((r) => w.end(r));
+      }
+      if (writeError) throw writeError;
+    } catch (e) {
+      failed = e;
+    } finally {
+      stall.done();
     }
-  } finally {
-    await new Promise((r) => w.end(r));
+    if (!failed) break;
+    fs.rmSync(tmp, { force: true });
+    if (failed.final || failed.code === "ENOSPC" || /disk space/.test(failed.message)) throw failed;
+    if (attempt >= 3) throw new Error(say(failed.name === "TimeoutError" ? "nothing arrived for a minute" : /^HTTP/.test(failed.message) ? failed.message : "no connection"));
+    onProgress({ step: "model-download", file: label, percent: 0 });
+    await new Promise((r) => setTimeout(r, 2000 * attempt));
   }
   if ((await sha256(tmp)) !== sha) {
     fs.rmSync(tmp, { force: true });

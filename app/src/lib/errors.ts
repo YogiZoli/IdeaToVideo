@@ -3,11 +3,23 @@
 // the message text the runner and the Rust core already produce; never
 // includes a key (those messages never contain one).
 
+// What only a program should read. The runner's and the core's messages are plain already
+// (runner/friendly.mjs); this is the last net, for something thrown in the window itself.
+const RAW = /^(Type|Reference|Range|Syntax|Eval|URI)?Error\b|\n\s+at\s|Cannot read propert|is not a function|is not defined|undefined \(reading|null \(reading|Unexpected token|JSON at position|\[object Object\]|^undefined$|^null$|^\{.*\}$/s;
+
+export function plainMessage(message: string): string {
+  const m = message.trim();
+  if (!m) return "This step stopped without saying why. Press the button again; if it happens again, use Copy details and send them.";
+  return RAW.test(m) ? "Something went wrong inside the app in this step. Press the button again; if it happens again, use Copy details and send them." : m;
+}
+
 export function errorCode(message: string): string {
   const m = message.toLowerCase();
   const http = /http (\d{3})/.exec(m)?.[1];
   if (m.startsWith("stopped by you") || m.startsWith("stopped before it started")) return "ITV-STOPPED";
   if (m.includes("no sign of life")) return "ITV-STUCK";
+  if (m.includes("disk space") || m.includes("disk is full")) return "ITV-DISK";
+  if (m.includes("none of your ai services")) return "ITV-LLM-NONE";
   if (m.startsWith("interrupted")) return "ITV-INTERRUPTED";
   if (m.includes("internet connection may be down")) return "ITV-NET";
   if (m.includes("rejected the api key")) return "ITV-KEY-401";

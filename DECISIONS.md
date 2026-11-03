@@ -2742,3 +2742,13 @@
 
     Tests: Node 637 of 640 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors. Rust was not touched and its
     tests were not run again. New `scripts/phase2/clay-e2e.mjs` 51/51 with the real free voice and real renders, one video by rule and one with every template once, looked at on contact sheets and close up; 3D Explainer's e2e 21/21 and Motion Frames' channel e2e 56/56. A real AI was not used. Longest video tried: 62 s.
+
+164. **Reliability audit, 2026-11-03: nothing stops a video for lack of a service** (Zoltan's brief, the choices below are Claude's and can be overruled). `docs/AUDIT_REPORT.md` has everything found and fixed, `npm run audit` tests it for 0 USD.
+    - **The AI chain:** the configured model and its siblings, then any other saved key, then offline mode. The other keys go to the runner only as an environment variable, which it clears at start. Claude's choice: nobody waits for a busy service while another key can answer, the long wait comes only when all of them failed. A provider with no default model (OpenAI, Grok) takes the newest from its own list.
+    - **Offline script:** notes become the draft as they are; a topic gets a skeleton with `[write here]`, and a script with that mark cannot be approved, so it is never read aloud.
+
+165. **This changes DECISIONS 160.** Research stays on for a fact-checked style (Night Case File), but no AI no longer stops it: an empty brief says nothing was checked, one click goes on, the Publishing Card says `unchecked`. Zoltan's brief asks every preset to run offline; the promise of the style is now kept by saying so on the card. Overrule it if a fact-checked style should rather refuse.
+
+166. **A paid voice that fails or has no budget: Kokoro reads it, English only** (Claude's choice). The note on the Preview says so, so a clone is never swapped silently. A channel in another language stops with a sentence instead, because Kokoro reads English only and a Hungarian video read by an English voice is worth nothing. So offline mode has one hole there, in `docs/AUDIT_REPORT.md`, Left open.
+
+167. **Small rules from the audit.** A free GET gets three tries through `retrying`, a POST never, because it can cost money twice. Text over 100k characters is refused (about 11 hours of speech). A note on the Preview per kind, the newest wins. The Health check spends nothing at startup; testing the keys is its own button. `Settings` now has seven pages (the limit of six from DECISIONS 119 went to seven for the Health check). The catalog's title "Vox Annotate" became "Annotated keyword", its internal id stays.

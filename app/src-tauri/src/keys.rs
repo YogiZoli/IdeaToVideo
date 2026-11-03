@@ -108,6 +108,20 @@ pub fn delete(name: &str, scope: Scope) -> Result<(), String> {
 /// The key a job uses, and whose it is ("app" or the Identity id): the
 /// Identity's own key first, then the App key. `app_only` skips the
 /// Identity's key (the App settings page tests the App key).
+/// The AI services, in the order the chain tries them after the configured one.
+const AI_NAMES: &[&str] = &["gemini", "claude", "openrouter", "deepseek", "openai", "grok"];
+
+/// Every other AI key a job of this owner can use, as JSON for the runner (the chain in
+/// runner/providers/llm.mjs). A keychain that cannot be read here only means a shorter chain.
+pub fn other_ai(primary: Option<&str>, identity: Option<&str>, app_only: bool) -> Option<String> {
+    let list: Vec<serde_json::Value> = AI_NAMES
+        .iter()
+        .filter(|n| Some(**n) != primary)
+        .filter_map(|n| resolve(n, identity, app_only).ok().flatten().map(|(k, _)| serde_json::json!({ "provider": n, "apiKey": k })))
+        .collect();
+    (!list.is_empty()).then(|| serde_json::Value::Array(list).to_string())
+}
+
 pub fn resolve(name: &str, identity: Option<&str>, app_only: bool) -> Result<Option<(String, String)>, String> {
     resolve_with(identity, app_only, |scope| get(name, scope))
 }

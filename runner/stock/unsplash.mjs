@@ -12,6 +12,7 @@
 // Demo mode allows 50 requests an hour, so searches are cached for an hour
 // and the rate limit gets a plain message.
 
+import { retrying, readJson } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -77,7 +78,7 @@ export function failure(res) {
 
 async function get(url, apiKey, fetchImpl, what) {
   try {
-    return await fetchImpl(url, { headers: headers(apiKey), signal: AbortSignal.timeout(30000) });
+    return await retrying(fetchImpl)(url, { headers: headers(apiKey), timeout: 30000 });
   } catch (e) {
     throw new Error(`Could not reach Unsplash${what}: ${redact(String(e.message), apiKey)}`);
   }
@@ -97,7 +98,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
   const params = new URLSearchParams({ query, per_page: "18", orientation: "landscape", content_filter: "high" });
   const res = await get(`${API}/search/photos?${params}`, apiKey, fetchImpl, "");
   if (!res.ok) throw new Error(failure(res));
-  const body = await res.json();
+  const body = await readJson(res, "Unsplash");
   const hits = (body.results ?? []).map(shapeHit).filter(Boolean);
   if (cached) {
     fs.mkdirSync(cacheDir, { recursive: true });
@@ -127,7 +128,7 @@ export async function trackDownload({ apiKey, hit, fetchImpl = fetch }) {
 
 export async function download({ hit, out, fetchImpl = fetch }) {
   if (!isUnsplashImageUrl(hit.download)) throw new Error("Not an Unsplash address.");
-  const res = await fetchImpl(hit.download, { signal: AbortSignal.timeout(300000) });
+  const res = await retrying(fetchImpl)(hit.download, { timeout: 300000 });
   if (!res.ok) throw new Error(`Could not download from Unsplash (HTTP ${res.status}).`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));

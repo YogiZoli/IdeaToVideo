@@ -27,6 +27,7 @@ const KEY_JOBS: &[&str] = &[
     "suggest-channel",
     "write-script",
     "research-make",
+    "week-batch",
     "keyword-ideas",
     "make-voice",
     "make-music",
@@ -46,6 +47,9 @@ const KEY_JOBS: &[&str] = &[
     "broll-paid-approve",
     "thumbnail-make",
 ];
+
+/// Long work with no video of its own: still in the Jobs list, so it has a Stop button.
+const LISTED: &[&str] = &["week-batch", "week-batch-local", "browser-ensure", "voice-model-ensure", "backup-all", "restore-project", "planner-research", "planner-plan", "planner-outline"];
 
 /// Commands that set a gate of a ONE Video "running" while they work.
 const GATE_WORK: &[&str] = &[
@@ -205,7 +209,7 @@ impl Jobs {
         Value::Array(
             s.jobs
                 .iter()
-                .filter(|j| j.class != Class::Free || j.info.project.is_some())
+                .filter(|j| j.class != Class::Free || j.info.project.is_some() || LISTED.contains(&j.info.command.as_str()))
                 .map(|j| {
                     json!({
                         "id": j.id,

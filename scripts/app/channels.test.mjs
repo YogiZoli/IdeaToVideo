@@ -41,9 +41,9 @@ test("what stops a video is said, with where to fix it", () => {
   assert.match(blocker({ ...free, avatar: { on: true, lookId: "x" } }, { gemini: true }, "gemini", "idea").text, /HeyGen/);
 });
 
-test("notes and research need the AI, a finished script alone does not", () => {
-  assert.match(blocker(free, {}, "gemini", "notes").text, /Notes need your AI key/);
-  assert.match(blocker(free, {}, "gemini", "script", true).text, /Research needs your AI key/);
+test("without an AI key notes and research say what happens instead, a finished script needs nothing", () => {
+  assert.match(blocker(free, {}, "gemini", "notes").text, /your notes become the draft/);
+  assert.match(blocker(free, {}, "gemini", "script", true).text, /nothing is researched/);
   assert.equal(blocker(free, { gemini: true }, "gemini", "notes", true), null);
 });
 

@@ -7,6 +7,7 @@
 // Docs (2026-09-30): developers.heygen.com, pages audio-to-video, assets,
 // docs/avatar-looks, user-profile, reference/get-video, docs/error-codes.
 
+import { retrying } from "../../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { redact } from "../llm.mjs";
@@ -213,7 +214,7 @@ export async function listVideos({ apiKey, limit = 50, pages = 2, title, fetchIm
 export async function downloadVideo({ apiKey, id, out, fetchImpl = fetch }) {
   const v = await getVideo({ apiKey, id, fetchImpl });
   if (v?.status !== "completed" || !v.video_url) throw new Error("This video is not finished at HeyGen yet.");
-  const res = await fetchImpl(v.video_url, { signal: AbortSignal.timeout(300000) });
+  const res = await retrying(fetchImpl)(v.video_url, { timeout: 300000 });
   if (!res.ok) throw new Error(`Could not download the video (HTTP ${res.status}).`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));
@@ -248,7 +249,7 @@ export async function waitAndDownload({ apiKey, id, out, fetchImpl = fetch, slee
       let res;
       for (let i = 0; ; i++) {
         try {
-          res = await fetchImpl(v.video_url, { signal: AbortSignal.timeout(300000) });
+          res = await retrying(fetchImpl)(v.video_url, { timeout: 300000 });
           if (res.ok) break;
         } catch {
           res = null;
@@ -283,7 +284,7 @@ export async function cachePreview({ url, dir, fetchImpl = fetch }) {
   const name = Buffer.from(url.split("?")[0]).toString("base64url").slice(-80) + "." + ext;
   const file = path.join(dir, name);
   if (fs.existsSync(file)) return file;
-  const res = await fetchImpl(url, { signal: AbortSignal.timeout(60000) });
+  const res = await retrying(fetchImpl)(url, { timeout: 60000 });
   if (!res.ok) throw new Error(`Could not load the preview (HTTP ${res.status}).`);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));

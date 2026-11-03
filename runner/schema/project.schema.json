@@ -82,6 +82,21 @@
       "additionalProperties": false,
       "properties": { "at": { "type": "string" } }
     },
+    "notes": {
+      "type": "array",
+      "$comment": "what the run did instead of what was asked: a paid service skipped, another AI used. The Preview tab shows them.",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": ["text"],
+        "additionalProperties": false,
+        "properties": {
+          "at": { "type": "string" },
+          "kind": { "type": "string", "maxLength": 40 },
+          "text": { "type": "string", "maxLength": 600 }
+        }
+      }
+    },
     "render": {
       "type": "object",
       "$comment": "the last render: running, done or failed, so a failed one is seen after a restart",

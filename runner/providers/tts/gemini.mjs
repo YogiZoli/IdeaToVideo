@@ -9,6 +9,7 @@
 //
 // Output of speak(): { audio: WAV bytes (24 kHz mono 16-bit), words }.
 
+import { readJson } from "../../net.mjs";
 import { redact } from "../llm.mjs";
 import { closesSentence } from "../../timing/sentences.mjs";
 import { BusyError, patiently, busyStatus } from "../retry.mjs";
@@ -121,7 +122,7 @@ async function ttsOnce({ apiKey, fetchImpl = fetch, model, voice, style, text })
     if (busyStatus(res.status)) throw new BusyError(`Gemini answered with HTTP ${res.status}${why}. The app kept trying for about three minutes. Try again later; the parts already read are kept.`, { status: res.status });
     throw new Error(`Gemini answered with HTTP ${res.status}${why}. Try again later.`);
   }
-  const j = await res.json();
+  const j = await readJson(res, "Gemini");
   const audio = (j.steps ?? []).filter((s) => s.type === "model_output").flatMap((s) => s.content ?? []).filter((c) => c.type === "audio" && c.data).pop();
   if (!audio) throw new Error("Gemini returned no audio.");
   return parseWav(Buffer.from(audio.data, "base64"));

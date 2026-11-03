@@ -11,12 +11,14 @@
   import { open as pickFile } from "@tauri-apps/plugin-dialog";
   import { filesMissing } from "./recorded";
   import ErrorBox from "../ErrorBox.svelte";
+  import Progress from "../Progress.svelte";
+  import { running, startWork } from "../work.svelte";
   import RecipeEditor from "./RecipeEditor.svelte";
   import type { AppState } from "../api";
   import { runner, errorText, onProgress, saveSettings } from "../api";
   import { defaultConfig, cleanConfig, LANGUAGES } from "../catalog";
   import { identityFromConfig, roomForIdentity } from "../identity";
-  import { llmFor } from "../llm";
+  import { llmFor, aiWithKey } from "../llm";
   import { setScreen, log } from "../logger";
   import { fullPlanText } from "../edition";
   import { blocker, costLine, recipeLines, recipeSide, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
@@ -24,6 +26,7 @@
   let { app, choose, saved, openProject, goto }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void } = $props();
 
   setScreen("channel");
+  startWork();
 
   let st = $state<ChannelState | null>(null);
   let error = $state("");
@@ -36,7 +39,7 @@
   let starting = $state(false);
 
   const config = $derived(app.config!);
-  const aiProvider = $derived(llmFor(config, "script").provider);
+  const aiProvider = $derived((aiWithKey(llmFor(config, "script"), app.keys) ?? llmFor(config, "script")).provider);
   const language = $derived(config.channel.contentLanguage ?? "en");
   const side = $derived(st ? recipeSide(st.recipe, direction) : null);
   const hasText = $derived(!!text.trim());
@@ -151,6 +154,7 @@
   let batching = $state(false);
   let batchStep = $state("");
   let batchNote = $state("");
+  const batchJob = $derived(running(null, ["week-batch", "week-batch-local"]));
   const unlisten = onProgress((p) => {
     if (p.command !== "week-batch" && p.command !== "week-batch-local") return;
     const s = p.progress as { step?: string; n?: number; of?: number; title?: string; message?: string };
@@ -165,9 +169,9 @@
     batchNote = "";
     error = "";
     try {
-      // a finished script needs no AI, and no key
-      const local = !!pasted.trim() && kind === "finished" && !researching;
-      const r = await runner<{ written: number; failed: number }>(local ? "week-batch-local" : "week-batch", { projectsDir: app.projectsDir, identity: app.identity?.id, ...(local ? {} : { llm: llmFor(config, "script") }), channel: config.channel, name: app.identity?.name, theme, language, pasted, textKind: kind, research });
+      // a finished script needs no AI, and no key; without one notes become drafts by hand
+      const local = (!!pasted.trim() && kind === "finished" && !researching) || !app.keys[aiProvider];
+      const r = await runner<{ written: number; failed: number }>(local ? "week-batch-local" : "week-batch", { projectsDir: app.projectsDir, identity: app.identity?.id, ...(local ? {} : { llm: aiWithKey(llmFor(config, "script"), app.keys) }), channel: config.channel, name: app.identity?.name, theme, language, pasted, textKind: kind, research });
       batchNote = `${r.written} ${researching ? "briefs ready, each waits for your click," : local ? "scripts" : "scripts written and"} queued.${r.failed ? ` ${r.failed} failed: they are in the queue, open one to do it again.` : ""}`;
       theme = "";
       pasted = "";
@@ -286,7 +290,7 @@
       {/if}
       <div class="actions">
         <span class="hint">It stops at the preview for your approval. Nothing is ever published by itself.</span>
-        <button type="button" class="primary big" disabled={starting || (!topic.trim() && !hasText) || !!stop} onclick={makeVideo}>{starting ? "Starting..." : "Make the video"}</button>
+        <button type="button" class="primary big" disabled={starting || (!topic.trim() && !hasText)} onclick={makeVideo}>{starting ? "Starting..." : "Make the video"}</button>
       </div>
     </section>
     {/if}
@@ -295,12 +299,13 @@
     <section class="card batch">
       <div class="head">
         <h2>Week batch</h2>
-        <button type="button" disabled={batching || !(app.keys[aiProvider] || (pasted.trim() && kind === "finished" && !researching))} onclick={weekBatch}>{batching ? "Working..." : pasted.trim() ? "Make them all" : `Write ${st.week} scripts`}</button>
+        <button type="button" disabled={batching || !(app.keys[aiProvider] || pasted.trim())} onclick={weekBatch}>{batching ? "Working..." : pasted.trim() ? "Make them all" : `Write ${st.week} scripts`}</button>
       </div>
       <p class="hint">{st.week} video ideas and their scripts for this channel, or one video per text you paste, in one run, then queued here. No voice, no render, nothing published. It follows your choices above: {pasted.trim() ? (kind === "finished" ? "finished scripts" : "notes") : "topics"}, research {research ? "on, so each stops at its brief for your click" : "off"}.{app.keys[aiProvider] ? "" : " Needs your AI key, except for finished scripts."}</p>
       <input bind:value={theme} disabled={batching || !!pasted.trim()} aria-label="Theme of the week" placeholder="This week's theme (optional)" />
       <textarea rows="3" bind:value={pasted} disabled={batching} aria-label="Pasted texts" placeholder="Or paste up to 7 texts here, with a line of --- between them."></textarea>
       {#if batchStep}<p class="busy" role="status">{batchStep}</p>{/if}
+      {#if batchJob}<Progress command={batchJob} label={batchStep || "Week batch"} reveal={false} />{/if}
       {#if batchNote}<p class="good">{batchNote}</p>{/if}
       {#if st.queue.length}
         <ol class="queue">

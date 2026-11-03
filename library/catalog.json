@@ -4481,7 +4481,7 @@
   },
   "vox-annotate": {
    "status": "on",
-   "title": "Vox Annotate",
+   "title": "Annotated keyword",
    "label": "Annotated keyword",
    "role": "emphasis",
    "shows": "A held sentence; a hand-drawn marker circles or underlines its keyword while a thin line draws to a small callout note.",

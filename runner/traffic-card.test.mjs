@@ -23,7 +23,7 @@ test("traffic card: the profile, the name, the language and the tables", () => {
   assert.deepEqual(c.keywords.map((k) => [k.keyword, k.volume, k.competition]), [["sourdough starter", 74000, "Medium"], ["sourdough for beginners", 12500, "Low"], ["why is my sourdough dense", 2900, "Low"]]);
   assert.equal(c.playlists[0].keyword, "sourdough starter");
   assert.equal(c.videos[0].title, "Make a Sourdough Starter in 7 Days");
-  assert.deepEqual(parseTrafficCard("﻿" + TEXT.replace(/\n/g, "\r\n")).keywords.length, 3, "a BOM and Windows line ends are no problem");
+  assert.deepEqual(parseTrafficCard("﻿" + TEXT.replace(/\r?\n/g, "\r\n")).keywords.length, 3, "a BOM and Windows line ends are no problem");
 });
 
 test("traffic card: anything else is refused in plain words", () => {

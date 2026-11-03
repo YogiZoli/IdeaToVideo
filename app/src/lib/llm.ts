@@ -27,6 +27,16 @@ export function llmFor(config: Pick<Config, "llm"> | null | undefined, step: Llm
   return { provider: pick.provider, model: pick.model, effort: pick.effort ?? null };
 }
 
+/**
+ * The AI to ask for a step: the configured one, or any other whose key is saved. Null: no
+ * AI at all, so the step goes by hand or by rule (offline mode, docs/AUDIT_REPORT.md).
+ */
+export function aiWithKey(l: StepLlm, keys: Record<string, boolean>): StepLlm | null {
+  if (keys[l.provider]) return l;
+  const other = LLM_PROVIDERS.find((p) => keys[p.id]);
+  return other ? { provider: other.id, model: modelChoices(other.id)[0]?.id ?? "", effort: null } : null;
+}
+
 /** "Claude Opus 5.5, High effort", "Gemini 3.5 Flash". */
 export function describeLlm(l: StepLlm): string {
   const provider = LLM_PROVIDERS.find((p) => p.id === l.provider);

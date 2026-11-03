@@ -26,11 +26,13 @@ export const PROVIDERS = {
 };
 
 export class LlmError extends Error {
-  constructor(message, { status, retryable = false } = {}) {
+  constructor(message, { status, retryable = false, offline = false } = {}) {
     super(message);
     this.name = "LlmError";
     this.status = status;
     this.retryable = retryable;
+    // no configured AI answered: the caller goes on by hand or by rule
+    this.offline = offline;
   }
 }
 
@@ -103,12 +105,13 @@ export const ROUND_WAITS = [15, 30, 45, 60];
 const transient = (err) => err instanceof LlmError && (err.status >= 500 || err.status === 429 || (err.status === undefined && err.retryable));
 const why = (err) => (err.status ? `HTTP ${err.status}` : "no connection");
 
-// One chat completion. Each model gets 3 quick tries (chatOnce); a busy or
+// One provider. Each model gets 3 quick tries (chatOnce); a busy or
 // out-of-quota model hands over to the provider's other models (Gemini
 // counts the free quota per model, DECISIONS 72, K5); when all of them
 // failed, a wait (ROUND_WAITS) and another round. `patient: false` (a key
-// test) and `noFallback` answer at once.
-export async function chat(opts) {
+// test) and `noFallback` answer at once. No connection at all is not a busy
+// service: no other model helps, and it gets one short wait, not three minutes.
+async function chatProvider(opts) {
   const p = PROVIDERS[opts.provider];
   const first = opts.model || p?.model;
   const models = [first, ...(opts.noFallback ? [] : (p?.fallbackModels ?? []).filter((m) => m !== first))];
@@ -127,13 +130,83 @@ export async function chat(opts) {
         // only a busy model hands over; a rejected key or request does not
         if (!transient(e) || (i === 0 && round === 0 && opts.noFallback)) throw e;
         last = e;
+        if (last.status === undefined) break;
       }
     }
-    if (round >= waits.length) throw last;
+    const noConnection = last.status === undefined;
+    if (round >= (noConnection ? Math.min(1, waits.length) : waits.length)) throw last;
     const label = p?.label ?? opts.provider;
-    report({ step: "retry", provider: opts.provider, status: last.status ?? "network", round: round + 1, of: waits.length, waitSeconds: waits[round], message: `${label} is busy (${why(last)}). Trying again in ${waits[round]} s, round ${round + 1} of ${waits.length}.` });
+    report({ step: "retry", provider: opts.provider, status: last.status ?? "network", round: round + 1, of: noConnection ? 1 : waits.length, waitSeconds: waits[round], message: `${label} is busy (${why(last)}). Trying again in ${waits[round]} s, round ${round + 1} of ${noConnection ? 1 : waits.length}.` });
     await sleep(waits[round] * 1000);
   }
+}
+
+// The other AI keys this user has saved, from the Rust core (runner.rs): the chain's
+// second link. main.mjs takes them out of the environment at the start, so no child
+// process ever sees them.
+let otherKeys = [];
+export function setOtherKeys(list) {
+  otherKeys = Array.isArray(list) ? list.filter((k) => PROVIDERS[k?.provider] && k.apiKey) : [];
+}
+
+// A provider without a default model (OpenAI, Grok): the newest chat model its own list names.
+const NOT_CHAT = /image|audio|realtime|embedding|tts|whisper|transcribe|moderation|vision|search|dall-e|sora|codex/i;
+export async function pickModel({ provider, apiKey, fetchImpl = fetch, timeoutMs = 15000 }) {
+  const p = PROVIDERS[provider];
+  if (p.model) return p.model;
+  const res = await fetchImpl(new URL("models", p.baseUrl).toString(), { headers: { authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new LlmError(friendlyError(p.label, res.status, ""), { status: res.status });
+  const list = ((await res.json())?.data ?? []).filter((m) => typeof m?.id === "string" && !NOT_CHAT.test(m.id) && /^(gpt|grok|o\d)/i.test(m.id));
+  const best = list.sort((a, b) => (b.created ?? 0) - (a.created ?? 0))[0]?.id;
+  if (!best) throw new LlmError(`Pick a model for ${p.label} in Settings.`);
+  return best;
+}
+
+// The chain (docs/AUDIT_REPORT.md): the configured model and its siblings, then any
+// other configured key, then an error marked `offline`, which the caller turns into
+// the hand-written or rule-made path. With another key to try nobody waits for a busy
+// service first; only when all of them failed the configured one gets its long wait.
+export async function chat(opts) {
+  const others = opts.noFallback || opts.patient === false || opts.once ? [] : (opts.fallbacks ?? otherKeys).filter((k) => k.provider !== opts.provider);
+  if (!others.length) {
+    try {
+      return await chatProvider(opts);
+    } catch (e) {
+      if (e instanceof LlmError && opts.patient !== false && !opts.noFallback) e.offline = true;
+      throw e;
+    }
+  }
+  let first;
+  try {
+    return await chatProvider({ ...opts, patient: false });
+  } catch (e) {
+    if (!(e instanceof LlmError)) throw e;
+    first = e;
+  }
+  const tried = [PROVIDERS[opts.provider]?.label ?? opts.provider];
+  let busy = transient(first) && first.status !== undefined;
+  for (const other of others) {
+    const label = PROVIDERS[other.provider].label;
+    report({ step: "fallback-provider", from: opts.provider, to: other.provider, status: first.status, message: `${tried[0]} did not answer, so ${label} is trying.` });
+    try {
+      const model = other.model ?? (await pickModel({ provider: other.provider, apiKey: other.apiKey, fetchImpl: opts.fetchImpl ?? fetch }));
+      const text = await chatProvider({ ...opts, provider: other.provider, apiKey: other.apiKey, model, effort: null, patient: false, claudeClient: opts.claudeClient });
+      report({ step: "ai-used", from: opts.provider, to: other.provider, label, firstLabel: tried[0] });
+      return text;
+    } catch (e) {
+      if (!(e instanceof LlmError) && e?.name !== "TimeoutError" && e?.name !== "TypeError") throw e;
+      tried.push(label);
+      busy ||= transient(e) && e.status !== undefined;
+    }
+  }
+  if (busy) {
+    try {
+      return await chatProvider(opts);
+    } catch (e) {
+      if (!(e instanceof LlmError)) throw e;
+    }
+  }
+  throw new LlmError(`None of your AI services answered right now (${tried.join(", ")}). Try again later, or write or paste the text by hand and go on.`, { status: first.status, offline: true });
 }
 
 // The effort field each OpenAI-compatible provider understands.
@@ -196,7 +269,9 @@ async function chatOnce({ provider, apiKey, model, effort = null, messages, json
       continue;
     }
     if (res.ok) {
-      const data = await res.json();
+      // a proxy or a captive portal can answer 200 with a web page
+      const data = await res.json().catch(() => null);
+      if (!data) throw new LlmError(`${p.label} answered with something that is not an AI answer. Try again, or check your connection.`, { status: 200 });
       const text = data?.choices?.[0]?.message?.content;
       if (!allowEmpty && (typeof text !== "string" || text.trim() === "")) throw new LlmError(`${p.label} returned an empty answer.`);
       return text;
@@ -240,7 +315,7 @@ async function searchOnce({ provider, apiKey, model, messages, temperature = 0.2
       continue;
     }
     if (res.ok) {
-      const c = (await res.json())?.candidates?.[0];
+      const c = (await res.json().catch(() => null))?.candidates?.[0];
       const text = (c?.content?.parts ?? []).map((x) => x.text ?? "").join("");
       if (!text.trim()) throw new LlmError(`${p.label} returned an empty answer.`);
       const g = c.groundingMetadata ?? {};
@@ -256,7 +331,8 @@ async function searchOnce({ provider, apiKey, model, messages, temperature = 0.2
   throw lastError;
 }
 
-export const searchChat = (opts) => chat({ ...opts, once: searchOnce });
+// Only Gemini searches, so no other key is tried here: makeBrief asks plain chat next.
+export const searchChat = (opts) => chatProvider({ ...opts, once: searchOnce });
 
 // A tiny request that proves the key and the model work ("Test key").
 export async function testKey(opts) {

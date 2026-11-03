@@ -211,9 +211,9 @@ test("network errors are retried and redacted", async () => {
   const f = fakeFetch([new Error(`connect failed for ${KEY}`)]);
   const slept = [];
   await assert.rejects(chat({ provider: "grok", model: "grok-x", apiKey: KEY, messages: [], fetchImpl: f, sleep: async (ms) => slept.push(ms) }), (e) => {
-    // 3 quick tries, then a wait and another round, about three minutes in all
-    assert.equal(f.calls.length, 3 * (1 + ROUND_WAITS.length));
-    assert.deepEqual(slept.filter((ms) => ms >= 15000), ROUND_WAITS.map((s) => s * 1000));
+    // 3 quick tries, one short wait, 3 more: no connection is not a busy service
+    assert.equal(f.calls.length, 3 * 2);
+    assert.deepEqual(slept.filter((ms) => ms >= 15000), [ROUND_WAITS[0] * 1000]);
     assert.ok(!e.message.includes(KEY));
     return true;
   });

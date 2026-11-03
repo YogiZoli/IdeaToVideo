@@ -139,7 +139,7 @@ export const ENGINE_IDLE_MS = 0;
 // messages; stdout: the whole standard output as it came).
 export function runHyperframes(args, { env = process.env, cwd, browser, onLine = () => {}, signal, idleMs = ENGINE_IDLE_MS } = {}) {
   const bin = hyperframesBin(env);
-  if (!fs.existsSync(bin)) return Promise.reject(new Error(`The video engine is missing (${bin}). Reinstall the app.`));
+  if (!fs.existsSync(bin)) return Promise.reject(new Error(`The video engine is missing. Reinstall the app. Details: ${bin}`));
   fs.mkdirSync(hfHome(env), { recursive: true });
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [bin, ...args], { cwd: cwd ?? engineDir(env), env: childEnv({ env, browser }), windowsHide: true, signal });

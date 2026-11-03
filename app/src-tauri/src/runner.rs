@@ -196,7 +196,19 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("recorded-plan-rule", None),
     ("recorded-plan-save", None),
     ("recorded-prepare", None),
+    // the audit (docs/AUDIT_REPORT.md): offline mode, notes on a video, Copy details,
+    // the Health check. Files only, or a free look; no key
+    ("research-offline", None),
+    ("script-offline", None),
+    ("project-note", None),
+    ("error-details", None),
+    ("health-check", None),
 ];
+
+/** Commands that ask an AI: they also get the other saved AI keys, the chain's second link. */
+pub fn asks_ai(command: &str) -> bool {
+    matches!(check_command(command), Ok(Some(path)) if path.first() == Some(&"llm"))
+}
 
 /// Voices and music made on this computer: named in the request like a key
 /// holder, but they have no key.
@@ -277,6 +289,9 @@ pub struct Paths {
     /// caches). See runner/tools.mjs.
     pub engine: Option<PathBuf>,
     pub data: Option<PathBuf>,
+    /// The other saved AI keys as JSON, for a command that asks an AI. Only in the
+    /// runner's environment, which it clears at once (main.mjs). Never logged.
+    pub other_ai: Option<String>,
 }
 
 /// "audio/music.<ext>" for a music file the voice gate accepts.
@@ -543,6 +558,7 @@ fn run_with(
         .env_remove("NODE_OPTIONS")
         .env_remove("NODE_PATH")
         .env_remove("STUDIO_API_KEY")
+        .env_remove("ITV_LLM_FALLBACK")
         .env("HYPERFRAMES_NO_TELEMETRY", "1")
         .env("HYPERFRAMES_NO_UPDATE_CHECK", "1")
         .env_remove("HYPERFRAMES_FFMPEG_PATH")
@@ -563,6 +579,9 @@ fn run_with(
     if let Some(k) = api_key {
         cmd.env("STUDIO_API_KEY", k);
     }
+    if let Some(k) = &paths.other_ai {
+        cmd.env("ITV_LLM_FALLBACK", k);
+    }
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -574,7 +593,10 @@ fn run_with(
         use std::os::unix::process::CommandExt;
         cmd.process_group(0);
     }
-    let mut child = cmd.spawn().map_err(|e| format!("Could not start the runner: {e}"))?;
+    let mut child = cmd.spawn().map_err(|e| {
+        *diag = format!("spawn: {e}");
+        "The app could not start its worker. Check that your antivirus has not blocked it, or reinstall the app.".to_string()
+    })?;
     // Into the tree before the request goes in: the runner starts nothing
     // before it has read its request.
     if let Ok(mut t) = control.tree.lock() {
@@ -592,7 +614,8 @@ fn run_with(
             let why = control.stopped();
             control.stop("Stopped.");
             let _ = child.wait();
-            return Err(why.unwrap_or_else(|| format!("Could not talk to the runner: {e}")));
+            *diag = format!("stdin: {e}");
+            return Err(why.unwrap_or_else(|| "This step stopped unexpectedly. Press the button again; if it happens again, use Copy details and send them.".to_string()));
         }
     } // dropped: stdin closed, the runner starts
 
@@ -663,7 +686,8 @@ fn run_with(
     match outcome {
         Some(o) => o,
         None => Err(control.stopped().unwrap_or_else(|| {
-            format!("The step ended unexpectedly ({status}). The details are in the app's log (Settings, App, General, Export diagnostics).")
+            diag.push_str(&format!("\nexit: {status}"));
+            "This step stopped unexpectedly. Press the button again; if it happens again, use Copy details and send them.".to_string()
         })),
     }
 }
@@ -743,7 +767,7 @@ mod tests {
     fn runner_starts_from_a_verbatim_path() {
         let script = std::fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs")).unwrap();
         assert!(script.to_string_lossy().starts_with(r"\\?\"));
-        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None, engine: None, data: None };
+        let paths = Paths { node: PathBuf::from("node"), script: plain_path(script), ffmpeg: None, engine: None, data: None, other_ai: None };
         assert!(run(&paths, "providers", &json!({}), None, &Control::default(), &mut String::new(), &mut |_| {}).is_ok());
     }
 
@@ -784,7 +808,7 @@ mod tests {
     #[test]
     fn real_runner_roundtrip() {
         let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../runner/main.mjs");
-        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None, engine: None, data: None };
+        let paths = Paths { node: PathBuf::from("node"), script, ffmpeg: None, engine: None, data: None, other_ai: None };
         let r = run(&paths, "providers", &json!({}), None, &Control::default(), &mut String::new(), &mut |_| {}).unwrap();
         assert_eq!(r["providers"][0]["id"], "gemini");
         let e = run(&paths, "test-llm", &json!({"provider": "gemini"}), None, &Control::default(), &mut String::new(), &mut |_| {}).unwrap_err();
@@ -800,7 +824,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let script = dir.join("sleepy.mjs");
         std::fs::write(&script, "setTimeout(() => {}, 60000);\n").unwrap();
-        let paths = Paths { node: PathBuf::from("node"), script: script.clone(), ffmpeg: None, engine: None, data: None };
+        let paths = Paths { node: PathBuf::from("node"), script: script.clone(), ffmpeg: None, engine: None, data: None, other_ai: None };
         let control = std::sync::Arc::new(Control::new(Some(7)));
         let c2 = control.clone();
         let (tx, rx) = std::sync::mpsc::channel::<Value>();

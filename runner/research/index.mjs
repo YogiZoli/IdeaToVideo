@@ -8,7 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { chat, searchChat, canSearch, extractJson } from "../providers/llm.mjs";
+import { chat, searchChat, canSearch, extractJson, LlmError } from "../providers/llm.mjs";
 
 export const BRIEF_SCHEMA = "itv-research/1";
 export const BRIEF_FILE = "research.json";
@@ -109,7 +109,9 @@ async function answers(url, fetchImpl) {
 export async function makeBrief({ llm, topic = "", text = "", language = "en", channel = {}, fetchImpl = fetch, now = new Date() }) {
   const search = canSearch(llm.provider);
   const messages = briefMessages({ topic, text, language, channel, grounded: search });
-  const ask = search ? () => searchChat({ ...llm, messages, fetchImpl }) : async () => ({ text: await chat({ ...llm, messages, json: true, temperature: 0.2, fetchImpl }), chunks: [], supports: [], queries: [] });
+  const plain = async () => ({ text: await chat({ ...llm, messages, json: true, temperature: 0.2, fetchImpl }), chunks: [], supports: [], queries: [] });
+  // Search that fails goes on from memory (any other key too), and the brief says so.
+  const ask = search ? () => searchChat({ ...llm, messages, fetchImpl }).catch(plain) : plain;
   for (let round = 0; round < 2; round++) {
     const got = await ask();
     let answer = null;
@@ -138,7 +140,13 @@ export async function makeBrief({ llm, topic = "", text = "", language = "en", c
     if (sources.length < MIN_SOURCES) warnings.push(`Only ${sources.length} of at least ${MIN_SOURCES} sources were found.`);
     return { schema: BRIEF_SCHEMA, state: "pending", topic: line(topic, 300), language, checkedText: !!text, grounded, provider: llm.provider, model: llm.model ?? null, queries: got.queries.slice(0, 12), at: now.toISOString(), ...body, sources, warnings };
   }
-  throw new Error("The AI gave no usable research brief. Press Research again.");
+  throw new LlmError("The AI gave no usable research brief. Press Research again.", { offline: true });
+}
+
+/** No AI could research: an empty brief that says so. One click goes on, and the card says unchecked. */
+export function offlineBrief({ topic = "", language = "en", reason = "", now = new Date() }) {
+  const empty = Object.fromEntries(Object.keys(LIMITS).map((k) => [k, []]));
+  return { schema: BRIEF_SCHEMA, state: "pending", topic: line(topic, 300), language, checkedText: false, grounded: false, offline: true, provider: null, model: null, queries: [], at: now.toISOString(), ...empty, claims: [], sources: [], warnings: [`No AI could research this${reason ? ` (${line(reason, 200)})` : ""}, so nothing was checked. You can add facts here by hand, or go on without them.`] };
 }
 
 const fileOf = (projectDir) => path.join(projectDir, BRIEF_FILE);

@@ -15,9 +15,10 @@
 //   plan.json        what happens on screen
 //   camera.mp4, screen.mp4, figure.webm, cutout/   the pictures, cut
 
+import { friendlyMessage } from "../friendly.mjs";
 import fs from "node:fs";
 import path from "node:path";
-import { createProject, loadProject, saveProject, setGate, appendLog, writeJson, writeAtomic } from "../project.mjs";
+import { createProject, loadProject, saveProject, setGate, appendLog, writeJson, writeAtomic, addNote } from "../project.mjs";
 import { loadPreset } from "../presets/index.mjs";
 import { narrationFromMarkdown } from "../gates/voice/narration.mjs";
 import { sentenceTable } from "../timing/sentences.mjs";
@@ -96,7 +97,7 @@ export async function newRecordedVideo({ projectsDir, identity, language = "en",
   if (problem) throw new Error(problem);
   const probes = {};
   for (const [slot, file] of Object.entries(clean)) {
-    if (!fs.existsSync(file)) throw new Error(`This file is not there any more: ${file}`);
+    if (!fs.existsSync(file)) throw new Error(`This file is not there any more: ${file}. Choose it again.`);
     probes[slot] = await probeMedia(file, env);
   }
   for (const [slot, role] of Object.entries(pictureRoles(preset, clean))) if (!probes[role]?.hasVideo) throw new Error(`The ${slot} file has no picture: ${clean[role]}`);
@@ -349,16 +350,23 @@ export async function preparePictures({ projectDir, env = process.env, signal, o
     const dir = work(projectDir, "cutout");
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
-    for (let i = 0; i < behind.length; i++) {
-      const b = behind[i];
-      const seconds = r3(b.end - b.start);
-      onProgress({ step: "recorded-cutout", n: i + 1, of: behind.length, percent: Math.round((i / behind.length) * 100) });
-      const mask = path.join(dir, `${b.id}-mask.mp4`);
-      await personMasks({ file: path.join(projectDir, cam.file), out: mask, width: cam.width, height: cam.height, from: b.start, seconds, env, signal, onProgress });
-      await cutoutClip({ file: path.join(projectDir, cam.file), mask, out: path.join(dir, `${b.id}.webm`), from: b.start, seconds, env, signal });
-      fs.rmSync(mask, { force: true });
+    try {
+      for (let i = 0; i < behind.length; i++) {
+        const b = behind[i];
+        const seconds = r3(b.end - b.start);
+        onProgress({ step: "recorded-cutout", n: i + 1, of: behind.length, percent: Math.round((i / behind.length) * 100) });
+        const mask = path.join(dir, `${b.id}-mask.mp4`);
+        await personMasks({ file: path.join(projectDir, cam.file), out: mask, width: cam.width, height: cam.height, from: b.start, seconds, env, signal, onProgress });
+        await cutoutClip({ file: path.join(projectDir, cam.file), mask, out: path.join(dir, `${b.id}.webm`), from: b.start, seconds, env, signal });
+        fs.rmSync(mask, { force: true });
+      }
+      appendLog(projectDir, `recorded: ${behind.length} person cut-outs`);
+    } catch (e) {
+      // the cut-out is an extra: the big words stay, in front of the person (compose.mjs)
+      fs.rmSync(dir, { recursive: true, force: true });
+      appendLog(projectDir, `recorded: no person cut-out, ${e.message}`);
+      addNote(projectDir, "cutout", `The big words stand in front of you, not behind your head, because the cut-out did not work: ${friendlyMessage(e)}`);
     }
-    appendLog(projectDir, `recorded: ${behind.length} person cut-outs`);
   }
   await releaseMatte();
   for (const n of done.notes) appendLog(projectDir, `recorded: ${n}`);

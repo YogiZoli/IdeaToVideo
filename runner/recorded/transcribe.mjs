@@ -26,7 +26,7 @@ const runFfprobe = (args, env) =>
     let out = "";
     p.stdout.on("data", (d) => (out += d));
     p.on("error", reject);
-    p.on("close", (code) => (code === 0 ? resolve(out) : reject(new Error(`This file cannot be read: ${args.at(-1)}`))));
+    p.on("close", (code) => (code === 0 ? resolve(out) : reject(new Error(`This file cannot be read: ${args.at(-1)}. Check that it plays in a video player, or choose another file.`))));
   });
 
 /** What a file holds: size, length, frame rate, sound, and where each stream starts. */
@@ -60,7 +60,7 @@ export function readSamples(file, env = process.env, rate = SAMPLE_RATE) {
     p.stderr.on("data", (d) => (err += d));
     p.on("error", reject);
     p.on("close", (code) => {
-      if (code !== 0) return reject(new Error(`The sound of this file cannot be read: ${err.trim().split(/\r?\n/).slice(-1)[0] ?? ""}`));
+      if (code !== 0) return reject(new Error(`The sound of this recording cannot be read. Check that the file is still there and plays in a video player, then press the button again. Details: ${err.trim().split(/\r?\n/).slice(-1)[0] ?? ""}`));
       const b = Buffer.concat(parts);
       const copy = new Float32Array(b.length >> 2);
       Buffer.from(copy.buffer).set(b.subarray(0, copy.length * 4));

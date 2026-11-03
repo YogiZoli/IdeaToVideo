@@ -13,6 +13,7 @@
 // The answer is HTTP 200 even for many failures: `code` is what counts. A failed
 // task is not charged. The key goes only in the Authorization header.
 
+import { retrying } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { redact } from "../providers/llm.mjs";
@@ -66,7 +67,7 @@ export function orderBody({ prompt, seconds = 5, quality = "720p", aspect = "16:
 export async function call(url, { apiKey, method = "GET", body, fetchImpl = fetch }) {
   let res;
   try {
-    res = await fetchImpl(url, { method, headers: { authorization: `Bearer ${apiKey}`, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(120000) });
+    res = await retrying(fetchImpl)(url, { method, headers: { authorization: `Bearer ${apiKey}`, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), timeout: 120000 });
   } catch (e) {
     throw new BusyError(`Could not reach Kie AI: ${redact(String(e.message), apiKey)}`);
   }
@@ -145,7 +146,7 @@ export async function waitForResult({ apiKey, id, fetchImpl = fetch, sleep = def
 // Waits for the clip and downloads it to `out`.
 export async function fetchClip({ apiKey, id, out, fetchImpl = fetch, sleep = defaultSleep, onStatus = () => {}, limitMs = POLL_LIMIT_MS }) {
   const url = await waitForResult({ apiKey, id, fetchImpl, sleep, onStatus, limitMs });
-  const res = await fetchImpl(url, { signal: AbortSignal.timeout(300000) });
+  const res = await retrying(fetchImpl)(url, { timeout: 300000 });
   if (!res.ok) throw new BusyError(`Could not download the clip (HTTP ${res.status}).`, { status: res.status });
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));

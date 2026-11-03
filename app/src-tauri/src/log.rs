@@ -114,7 +114,7 @@ impl Log {
         let Some(dir) = s.dir.clone() else { return Ok(0) };
         let mut n = 0;
         for e in fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
-            if e.path().extension().and_then(|x| x.to_str()) == Some("jsonl") {
+            if e.path().extension().and_then(|x| x.to_str()) == Some("jsonl") || e.path().extension().and_then(|x| x.to_str()) == Some("log") {
                 fs::remove_file(e.path()).map_err(|e| format!("Could not delete {}: {e}", e))?;
                 n += 1;
             }

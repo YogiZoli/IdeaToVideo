@@ -49,9 +49,11 @@ test("the commands answer: a new video of each kind, its brief, and a batch of f
   const topic = command("channel-video-new", { ...base, topic: "Why trains are late", research: true }).data;
   const load = (dir) => command("load-project", { projectDir: dir }).data;
   assert.equal(load(topic.dir).researchState, null);
-  // no key: a sentence, not a crash on the way there
-  assert.match(command("research-make", { projectDir: topic.dir, llm: { provider: "gemini", model: "m" }, channel: {} }).message, /API key/);
-  assert.equal(command("research-state", { projectDir: topic.dir }).data.brief, null);
+  // no key: an empty brief that says so, one click goes on (offline mode)
+  const offline = command("research-make", { projectDir: topic.dir, llm: { provider: "gemini", model: "m" }, channel: {} }).data.brief;
+  assert.equal(offline.offline, true);
+  assert.match(offline.warnings[0], /No AI could research this/);
+  assert.equal(command("research-state", { projectDir: topic.dir }).data.brief.state, "pending");
   saveBrief(topic.dir, { state: "pending", grounded: true, facts: [{ text: "A fact.", source: 1 }], numbers: [], dates: [], missing: [], claims: [], sources: [{ title: "A", url: "https://a.example" }] });
   const edited = command("research-save", { projectDir: topic.dir, brief: { facts: [{ text: "My own fact.", source: null }], sources: [] } }).data.brief;
   assert.deepEqual([edited.facts[0].text, edited.sources.length, edited.state], ["My own fact.", 0, "pending"]);

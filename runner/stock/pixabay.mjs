@@ -5,6 +5,7 @@
 // hotlinked), and the search shows where the pictures come from (the UI).
 // The key goes only in the request address, and never into a message.
 
+import { retrying, readJson } from "../net.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -55,7 +56,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
   const url = `${API}${kind === "video" ? "videos/" : ""}?${params}`;
   let res;
   try {
-    res = await fetchImpl(url, { signal: AbortSignal.timeout(30000) });
+    res = await retrying(fetchImpl)(url, { timeout: 30000 });
   } catch (e) {
     // the key travels in the address, so an address in a message is masked too
     throw new Error(`Could not reach Pixabay: ${redact(String(e.message), apiKey).replace(/key=[^&\s]+/g, "key=[hidden]")}`);
@@ -63,7 +64,7 @@ export async function search({ apiKey, q, kind = "image", cacheDir, fetchImpl = 
   if (res.status === 429) throw new Error("Pixabay asks to slow down. Wait a minute and search again.");
   if (res.status === 400 || res.status === 401 || res.status === 403) throw new Error("Pixabay did not accept the key. Check it in Settings, Connections.");
   if (!res.ok) throw new Error(`Pixabay answered with HTTP ${res.status}. Try again later.`);
-  const body = await res.json();
+  const body = await readJson(res, "Pixabay");
   const hits = (body.hits ?? []).map((h) => shapeHit(kind, h)).filter(Boolean);
   if (cached) {
     fs.mkdirSync(cacheDir, { recursive: true });
@@ -88,7 +89,7 @@ export async function cachePreview({ url, dir, fetchImpl = fetch }) {
   const ext = (/\.(jpe?g|png|webp)(\?|$)/i.exec(url)?.[1] ?? "jpg").toLowerCase();
   const file = path.join(dir, `${crypto.createHash("sha1").update(url).digest("hex").slice(0, 20)}.${ext}`);
   if (fs.existsSync(file)) return file;
-  const res = await fetchImpl(url, { signal: AbortSignal.timeout(30000) });
+  const res = await retrying(fetchImpl)(url, { timeout: 30000 });
   if (!res.ok) throw new Error(`Could not load the preview (HTTP ${res.status}).`);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
@@ -97,7 +98,7 @@ export async function cachePreview({ url, dir, fetchImpl = fetch }) {
 
 export async function download({ hit, out, fetchImpl = fetch }) {
   if (!isPixabayUrl(hit.download)) throw new Error("Not a Pixabay address.");
-  const res = await fetchImpl(hit.download, { signal: AbortSignal.timeout(300000) });
+  const res = await retrying(fetchImpl)(hit.download, { timeout: 300000 });
   if (!res.ok) throw new Error(`Could not download from Pixabay (HTTP ${res.status}).`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, Buffer.from(await res.arrayBuffer()));

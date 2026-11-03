@@ -89,7 +89,7 @@ fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));
     }
-    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, engine, data })
+    Ok(runner::Paths { node: runner::plain_path(runner::node_path()?), script, ffmpeg, engine, data, other_ai: None })
 }
 
 fn projects_dir(app: &AppHandle, cfg: Option<&Value>) -> Result<PathBuf, String> {
@@ -110,8 +110,10 @@ async fn run_command(
     request: Value,
     api_key: Option<String>,
     job: Option<(jobs::Info, jobs::Class)>,
+    other_ai: Option<String>,
 ) -> Result<Value, String> {
-    let paths = runner_paths(&app)?;
+    let mut paths = runner_paths(&app)?;
+    paths.other_ai = other_ai;
     tauri::async_runtime::spawn_blocking(move || {
         let core = app.state::<Core>();
         // the key a job uses is masked by value in every log line
@@ -140,9 +142,9 @@ async fn run_command(
                 return;
             }
             let bucket = v.get("percent").and_then(Value::as_f64).map(|p| (p / 10.0) as i64);
-            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "repairing" | "estimate" | "slept" | "stalled" | "moving");
+            let always = matches!(step.as_str(), "waiting" | "retry" | "fallback" | "fallback-provider" | "ai-used" | "repairing" | "estimate" | "slept" | "stalled" | "moving");
             if always || step != last_step || bucket.is_some_and(|b| b != last_bucket) {
-                let level = if matches!(step.as_str(), "retry" | "fallback" | "repairing" | "slept" | "stalled") { "warn" } else { "info" };
+                let level = if matches!(step.as_str(), "retry" | "fallback" | "fallback-provider" | "repairing" | "slept" | "stalled") { "warn" } else { "info" };
                 core.log.write("runner", level, "run_progress", json!({ "command": command, "progress": log::safe(&v) }), &secrets);
                 last_step = step;
                 if let Some(b) = bucket {
@@ -222,7 +224,7 @@ async fn validate(app: &AppHandle, config: Option<&Value>, ident: Option<&Value>
     if let Some(i) = ident {
         req["identity"] = i.clone();
     }
-    let result = run_command(app.clone(), "validate-config".into(), req, None, None).await?;
+    let result = run_command(app.clone(), "validate-config".into(), req, None, None, None).await?;
     let errors = config::errors_from_validation(&result);
     if errors.is_empty() {
         Ok(())
@@ -266,7 +268,7 @@ fn allow_media(app: &AppHandle, projects: &Path) {
 
 /// Everything the UI needs at start: the App settings, the active Identity
 /// and the list, the plan, folders, and where keys are saved.
-#[tauri::command]
+#[tauri::command(async)]
 fn app_state(app: AppHandle) -> Result<Value, String> {
     let cfg = load_app_config(&app)?;
     let all = identity::list(&config_dir(&app)?);
@@ -377,7 +379,7 @@ fn settings_backup(app: &AppHandle) {
 }
 
 /// Settings, App, Backup, "Back up now": the settings part.
-#[tauri::command]
+#[tauri::command(async)]
 fn backup_settings_now(app: AppHandle) -> Result<usize, String> {
     let cfg = load_app_config(&app)?.ok_or("Finish the setup first.")?;
     let root = backup::root(Some(&cfg)).ok_or("No backup folder set. Choose one in Settings, App, Backup.")?;
@@ -450,7 +452,7 @@ fn log_status(app: AppHandle) -> Value {
 
 /// Settings, App, General, "Export diagnostics": one zip to send when
 /// something went wrong (diagnostics.rs). No key is in it.
-#[tauri::command]
+#[tauri::command(async)]
 fn export_diagnostics(app: AppHandle, path: String) -> Result<String, String> {
     let mut out = PathBuf::from(path);
     if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("zip".into()) {
@@ -473,7 +475,7 @@ fn export_diagnostics(app: AppHandle, path: String) -> Result<String, String> {
 }
 
 /// Settings, App, General, "Delete logs": the only way logs go away.
-#[tauri::command]
+#[tauri::command(async)]
 fn delete_logs(app: AppHandle) -> Result<Value, String> {
     let core = app.state::<Core>();
     let n = core.log.delete_all()?;
@@ -487,7 +489,7 @@ fn set_active(app: &AppHandle, id: &str) -> Result<(), String> {
     write_app_config(app, &cfg)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_active_identity(app: AppHandle, id: String) -> Result<Value, String> {
     identity::load(&config_dir(&app)?, &id)?;
     set_active(&app, &id)?;
@@ -498,7 +500,7 @@ fn set_active_identity(app: AppHandle, id: String) -> Result<Value, String> {
 /// "Duplicate this Identity": settings and files under a new name, the own
 /// keys copied inside the core when `copy_keys` (the UI's default comes from
 /// the plan). The ONE Videos are not copied.
-#[tauri::command]
+#[tauri::command(async)]
 fn duplicate_identity(app: AppHandle, id: String, name: String, copy_keys: bool) -> Result<Value, String> {
     let dir = config_dir(&app)?;
     let all = identity::list(&dir);
@@ -519,7 +521,7 @@ fn duplicate_identity(app: AppHandle, id: String, name: String, copy_keys: bool)
 }
 
 /// Removes an Identity's settings and own keys. Its ONE Videos stay on disk.
-#[tauri::command]
+#[tauri::command(async)]
 fn delete_identity(app: AppHandle, id: String) -> Result<Value, String> {
     let dir = config_dir(&app)?;
     let all = identity::list(&dir);
@@ -544,7 +546,7 @@ fn delete_identity(app: AppHandle, id: String) -> Result<Value, String> {
 }
 
 /// "Export Identity": a zip without keys, for another computer or user.
-#[tauri::command]
+#[tauri::command(async)]
 fn export_identity(app: AppHandle, id: String, path: String) -> Result<String, String> {
     let dir = config_dir(&app)?;
     let ident = identity::load(&dir, &id)?;
@@ -595,7 +597,7 @@ fn key_scope<'a>(scope: &str, id: &'a Option<String>) -> Result<keys::Scope<'a>,
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_key(app: AppHandle, name: String, value: String, scope: String) -> Result<(), String> {
     let id = active_id(&app)?;
     let r = keys::set(&name, &value, key_scope(&scope, &id)?);
@@ -605,21 +607,21 @@ fn set_key(app: AppHandle, name: String, value: String, scope: String) -> Result
     r
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn delete_key(app: AppHandle, name: String, scope: String) -> Result<(), String> {
     let id = active_id(&app)?;
     note(&app, "info", "key_deleted", json!({ "name": name, "scope": scope, "identity": id }));
     keys::delete(&name, key_scope(&scope, &id)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn delete_all_keys(app: AppHandle) -> Result<(), String> {
     note(&app, "info", "keys_deleted_all", json!({}));
     keys::delete_all(&identity::ids(&identity::list(&config_dir(&app)?)))
 }
 
 /// For the active Identity: which keys a job can use, and where they are saved.
-#[tauri::command]
+#[tauri::command(async)]
 fn key_status(app: AppHandle) -> Result<Value, String> {
     let id = active_id(&app)?;
     let sources = keys::sources(id.as_deref());
@@ -727,7 +729,8 @@ async fn run_runner(app: AppHandle, command: String, mut request: Value) -> Resu
     };
     let auto = AUTO_BACKUP_AFTER.contains(&command.as_str()) && backup::auto(cfg.as_ref());
     let later = info.clone();
-    let result = run_command(app.clone(), command, request, resolved.map(|(k, _)| k), Some((info, class))).await;
+    let other_ai = if runner::asks_ai(&command) { keys::other_ai(key_name.as_deref(), info.identity.as_deref(), app_only) } else { None };
+    let result = run_command(app.clone(), command, request, resolved.map(|(k, _)| k), Some((info, class)), other_ai).await;
     if let (true, Some(dir), Ok(_)) = (auto, project, &result) {
         tauri::async_runtime::spawn(auto_backup(app, dir, owner_folder, later));
     }
@@ -744,7 +747,7 @@ async fn auto_backup(app: AppHandle, dir: PathBuf, folder: Option<String>, info:
         "projectDir": dir, "backupRoot": root, "identityFolder": folder, "level": backup::level(cfg.as_ref()),
     });
     let job = jobs::Info { command: "backup-project".into(), ..info };
-    let r = run_command(app.clone(), "backup-project".into(), req, None, Some((job, jobs::Class::Free))).await;
+    let r = run_command(app.clone(), "backup-project".into(), req, None, Some((job, jobs::Class::Free)), None).await;
     let payload = match &r {
         Ok(v) => json!({ "projectDir": dir, "ok": true, "result": v }),
         Err(e) => json!({ "projectDir": dir, "ok": false, "error": e }),
@@ -759,7 +762,7 @@ fn brand_dir(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 /// "Export Brand Identity Card": <path>.zip with the card, FRAME.md and logos.
-#[tauri::command]
+#[tauri::command(async)]
 fn export_brand(app: AppHandle, path: String) -> Result<String, String> {
     let mut out = PathBuf::from(path);
     if out.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()) != Some("zip".into()) {
@@ -773,7 +776,7 @@ fn export_brand(app: AppHandle, path: String) -> Result<String, String> {
 /// "Import Brand Identity Card": from a .brand.zip (its logos go into the
 /// active Identity's brand folder) or a .json. Returns the card; the UI saves
 /// it through the runner (brand-save), which checks it against the schema.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_brand(app: AppHandle, path: String) -> Result<Value, String> {
     let (card, logos) = brand::read(&PathBuf::from(&path))?;
     brand::write_logos(&brand_dir(&app)?, &logos)?;
@@ -782,7 +785,7 @@ fn import_brand(app: AppHandle, path: String) -> Result<Value, String> {
 }
 
 /// "Import tokens.css": the text of the tokens file the user picked.
-#[tauri::command]
+#[tauri::command(async)]
 fn read_tokens_file(path: String) -> Result<String, String> {
     brand::read_tokens(&PathBuf::from(path))
 }
@@ -790,7 +793,7 @@ fn read_tokens_file(path: String) -> Result<String, String> {
 /// Copies the chosen logo into the active Identity's folder (or, during setup
 /// of a new Identity, into a waiting folder it adopts on save). Returns the
 /// stored path.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<String>) -> Result<String, String> {
     // "dark": the version for dark backgrounds (Brand Identity Card logo.dark)
     let stem = match variant.as_deref() {
@@ -832,7 +835,7 @@ fn import_logo(app: AppHandle, path: String, for_new: bool, variant: Option<Stri
 /// "Add photo" (Settings, Identity, Thumbnail photos, DECISIONS 131): copies a
 /// profile photo into the active Identity's photos folder, at most 3. Returns
 /// the stored path.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_photo(app: AppHandle, path: String) -> Result<String, String> {
     let id = active_id(&app)?.ok_or("Save the Identity first.")?;
     let dir = identity::dir_of(&config_dir(&app)?, &id)?.join("photos");
@@ -840,7 +843,7 @@ fn import_photo(app: AppHandle, path: String) -> Result<String, String> {
 }
 
 /// "Remove" a profile photo, after the user said yes in the window.
-#[tauri::command]
+#[tauri::command(async)]
 fn remove_photo(app: AppHandle, name: String) -> Result<(), String> {
     let id = active_id(&app)?.ok_or("Save the Identity first.")?;
     let dir = identity::dir_of(&config_dir(&app)?, &id)?.join("photos");
@@ -850,7 +853,7 @@ fn remove_photo(app: AppHandle, name: String) -> Result<(), String> {
 /// "Add footage" (Settings, Identity, Footage): copies the video the user
 /// picked into the active Identity's footage folder under a temporary name;
 /// the runner (footage-add) measures it, finds its cuts and keeps it.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_footage(app: AppHandle, path: String) -> Result<String, String> {
     let src = PathBuf::from(&path);
     let ext = src
@@ -876,7 +879,7 @@ fn import_footage(app: AppHandle, path: String) -> Result<String, String> {
 /// "Upload a segment" (CTA wizard): copies the video the user picked into the
 /// active Identity's segments folder under a temporary name; the runner
 /// (segment-add) checks its length and keyword and keeps or deletes it.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_segment(app: AppHandle, path: String) -> Result<String, String> {
     let src = PathBuf::from(&path);
     let ext = src
@@ -901,7 +904,7 @@ fn import_segment(app: AppHandle, path: String) -> Result<String, String> {
 /// "Export card": copies a rendered video's Video Publishing Card,
 /// <video>.card.json (runner/gates/render/publish.mjs), to where the user
 /// chose. Only that kind of file, only from inside the projects folder.
-#[tauri::command]
+#[tauri::command(async)]
 fn export_card(app: AppHandle, file: String, path: String) -> Result<String, String> {
     let cfg = load_app_config(&app)?;
     let root = projects_dir(&app, cfg.as_ref())?;
@@ -1007,7 +1010,7 @@ fn open_source_link(app: AppHandle, project_dir: String, url: String) -> Result<
 /// Drive" (the cloud's own folder on this computer, from `cloud_folders`).
 /// Only a rendered .mp4 of a ONE Video, with its .srt next to it when there
 /// is one. An existing file is never overwritten: a number is added.
-#[tauri::command]
+#[tauri::command(async)]
 fn export_video(app: AppHandle, file: String, path: String) -> Result<String, String> {
     let cfg = load_app_config(&app)?;
     let root = projects_dir(&app, cfg.as_ref())?;
@@ -1040,7 +1043,7 @@ fn export_video(app: AppHandle, file: String, path: String) -> Result<String, St
 /// Copies a music file the user picked into the project (audio/music.<ext>),
 /// returns that relative name for the voice gate. The runner never gets a
 /// path outside the projects folder.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_music(app: AppHandle, project_dir: String, path: String) -> Result<String, String> {
     let cfg = load_app_config(&app)?;
     let root = projects_dir(&app, cfg.as_ref())?;

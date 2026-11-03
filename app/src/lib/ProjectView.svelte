@@ -22,11 +22,13 @@
   import { setScreen, log } from "./logger";
   import { work, running, track, measure, startWork, pilots } from "./work.svelte";
   import { TABS, RECORDED_TABS, scriptTabs, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import Progress from "./Progress.svelte";
   import RecordingTab from "./channels/RecordingTab.svelte";
   import ResearchTab from "./channels/ResearchTab.svelte";
   import ShotMapTab from "./channels/ShotMapTab.svelte";
   import { avatarLooks } from "./avatars";
-  import { llmFor, describeLlm } from "./llm";
+  import { llmFor, describeLlm, aiWithKey } from "./llm";
+  import { errorCode } from "./errors";
   import { ask } from "@tauri-apps/plugin-dialog";
   import type { Series } from "./course/course";
   import type { Recipe } from "./channels/channels";
@@ -42,7 +44,7 @@
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; cardFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null; start?: { kind: string; research: boolean; topic?: string } | null };
+    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; notes?: { kind?: string; text: string }[]; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null; start?: { kind: string; research: boolean; topic?: string } | null };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
@@ -129,6 +131,36 @@
   };
   let pilotError = $state("");
   let pilotNote = $state("");
+  // offline mode: why the Script tab waits for the user, until the next run
+  let offlineNote = $state("");
+  const stoppedByUser = (e: unknown) => errorCode(errorText(e)) === "ITV-STOPPED" || /you stopped it/.test(errorText(e));
+  const usableAi = (step: "script" | "scenes" | "texts") => aiWithKey(llmFor(app.config, step), app.keys);
+  const noteOn = (kind: string, text: string) => runner("project-note", { projectDir: dir, kind, text }).catch(() => {});
+  // The script, or the hand-written way when no AI can write it. True: go on.
+  async function scriptOrOffline(input: Record<string, unknown>): Promise<boolean> {
+    const ai = usableAi("script");
+    let failure = ai ? "" : "No AI key is set.";
+    if (ai) {
+      setPilot("Writing the script");
+      show("script", "recipe");
+      try {
+        await runner("write-script", { projectDir: dir, llm: ai, input, channel: app.config!.channel });
+      } catch (e) {
+        if (stoppedByUser(e)) throw e;
+        failure = errorText(e);
+      }
+    }
+    if (failure) {
+      await runner("script-offline", { projectDir: dir, reason: failure });
+      await load();
+      show("script", "offline");
+      offlineNote = `${failure} Write or paste your script on this tab, save it, then press Make the video. Everything after the script runs on this computer.`;
+      await runner("autopilot-mark", { projectDir: dir, on: false });
+      return false;
+    }
+    await load();
+    return true;
+  }
   let resumePilot = $state(false);
   // a cut-off Autopilot waits for the step still running, then goes on
   $effect(() => {
@@ -174,12 +206,7 @@
     try {
       await runner("autopilot-mark", { projectDir: dir, on: true });
       if (!approved("script")) {
-        if (!data.scriptMarkdown) {
-          setPilot("Writing the script");
-          show("script", "autopilot");
-          await runner("write-script", { projectDir: dir, llm: llmFor(app.config, "script"), input: { topic: data.project.title, targetLengthMin: data.brief?.targetLengthMin ?? app.config?.defaults?.targetLengthMin ?? 8 }, channel: app.config!.channel });
-          await load();
-        }
+        if (!data.scriptMarkdown && !(await scriptOrOffline({ topic: data.project.title, targetLengthMin: data.brief?.targetLengthMin ?? app.config?.defaults?.targetLengthMin ?? 8 }))) return;
         await approveGate("script");
       }
       if (!approved("voice") && made("voice")) await approveGate("voice");
@@ -189,7 +216,8 @@
         const provider = narratorProvider(app.config?.narrator.provider);
         // Settings may hold a voice id or its name; the user's own voices come first
         const want = (app.config?.narrator.voice ?? "").trim();
-        const list = (await runner<{ voices: { id: string; name: string }[] }>("list-voices", { narrator: { provider } })).voices;
+        // no key or no service here: the runner's free voice takes over (make-voice)
+        const list = (await runner<{ voices: { id: string; name: string }[] }>("list-voices", { narrator: { provider } }).catch(() => ({ voices: [{ id: "af_heart", name: "free" }] }))).voices;
         const voice =
           list.find((v) => v.id === want)?.id ??
           (want ? (list.find((v) => v.name.toLowerCase() === want.toLowerCase()) ?? list.find((v) => v.name.toLowerCase().includes(want.toLowerCase())))?.id : undefined) ??
@@ -211,7 +239,11 @@
         // its price first, like every paid AI call (DECISIONS 130)
         const cost = (await runner<{ text: string }>("scenes-estimate", { projectDir: dir, llm: llmFor(app.config, "scenes"), look })).text;
         if (!(await ask(`Autopilot plans the scenes next: the AI reads the whole scene catalog, then the code of the best scene types for every sentence. With ${describeLlm(llmFor(app.config, "scenes"))} this costs ${cost} from your AI key. Go on?`, { title: "Autopilot: plan the scenes", kind: "info" }))) throw new Error("you stopped it before the scene plan; nothing was spent on it");
-        await runner("make-scenes", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
+        await runner("make-scenes", { projectDir: dir, llm: llmFor(app.config, "scenes"), look }).catch(async (e) => {
+          if (stoppedByUser(e)) throw e;
+          await noteOn("scenes", `The scenes were planned by rule, without the AI: ${errorText(e)}`);
+          await runner("simple-scenes", { projectDir: dir, look });
+        });
         await approveGate("scenes");
       }
       if (!approved("review") && made("review")) await approveGate("review");
@@ -222,7 +254,10 @@
         const vcost = (await runner<{ text: string }>("visual-estimate", { projectDir: dir, llm: llmFor(app.config, "scenes") })).text;
         if (await ask(`The preview is built. Let the AI check every picture against what is said, and swap the scenes that do not fit? With ${describeLlm(llmFor(app.config, "scenes"))} this costs ${vcost} from your AI key. No: the video renders as it is.`, { title: "Autopilot: check the pictures", kind: "info" })) {
           setPilot("Checking the pictures");
-          await runner("visual-check", { projectDir: dir, llm: llmFor(app.config, "scenes"), look });
+          await runner("visual-check", { projectDir: dir, llm: llmFor(app.config, "scenes"), look }).catch(async (e) => {
+            if (stoppedByUser(e)) throw e;
+            await noteOn("visual", `The AI did not check the pictures: ${errorText(e)}`);
+          });
         }
         await approveGate("review");
       }
@@ -257,8 +292,8 @@
       if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
       await load();
     };
-    const hasKey = (l: { provider: string }) => !!app.keys[l.provider];
     setPilot("Starting");
+    offlineNote = "";
     try {
       await runner("autopilot-mark", { projectDir: dir, on: true });
       // Research comes first, and the run waits for the brief: one click goes on
@@ -266,7 +301,9 @@
         if (!data.researchState) {
           setPilot("Researching");
           show("research", "recipe");
-          await runner("research-make", { projectDir: dir, llm: llmFor(app.config, "script"), channel: app.config!.channel });
+          const ai = usableAi("script");
+          if (ai) await runner("research-make", { projectDir: dir, llm: ai, channel: app.config!.channel });
+          else await runner("research-offline", { projectDir: dir });
           await load();
         }
         show("research", "recipe");
@@ -275,20 +312,16 @@
         return;
       }
       if (!approved("script")) {
-        if (!data.scriptMarkdown) {
-          setPilot("Writing the script");
-          show("script", "recipe");
-          await runner("write-script", { projectDir: dir, llm: llmFor(app.config, "script"), input: { topic: data.project.title, targetLengthMin: recipe.targetLengthMin }, channel: app.config!.channel });
-          await load();
-        }
+        if (!data.scriptMarkdown && !(await scriptOrOffline({ topic: data.project.title, targetLengthMin: recipe.targetLengthMin }))) return;
         await approveGate("script");
       }
       // a pasted script: its title ideas and summary, for the Publishing Card
-      if (hasKey(llmFor(app.config, "texts")) && gates().script?.mode === "custom") {
+      const textAi = usableAi("texts");
+      if (textAi && gates().script?.mode === "custom") {
         const has = await runner<{ packaging: unknown }>("packaging-state", { projectDir: dir });
         if (!has.packaging) {
           setPilot("Writing the title and the summary");
-          await runner("packaging-make", { projectDir: dir, llm: llmFor(app.config, "texts") }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
+          await runner("packaging-make", { projectDir: dir, llm: textAi }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
         }
       }
       if (!approved("voice") && made("voice")) await approveGate("voice");
@@ -298,7 +331,7 @@
         await runner("make-voice", { projectDir: dir, narrator: { provider: recipe.voice.provider, voice: recipe.voice.voice }, music: null });
         if (recipe.music.on) {
           setPilot("Adding the music");
-          await runner("make-music", { projectDir: dir, music: { provider: recipe.music.source, mood: recipe.music.mood } });
+          await addMusic(recipe);
         }
         await approveGate("voice");
       }
@@ -306,8 +339,8 @@
         if (!made("scenes")) {
           setPilot("Filling the scene templates");
           show("scenes", "recipe");
-          const ai = llmFor(app.config, "scenes");
-          if (hasKey(ai)) await runner("make-template-scenes", { projectDir: dir, llm: ai, look });
+          const ai = usableAi("scenes");
+          if (ai) await runner("make-template-scenes", { projectDir: dir, llm: ai, look });
           else await runner("simple-template-scenes", { projectDir: dir, look });
         }
         // after the voice: every shot starts on its word (runner/shots)
@@ -318,18 +351,30 @@
       }
       const avatar = gates().avatar?.state;
       if (avatar !== "approved" && avatar !== "skipped") {
-        if (recipe.avatar.on && recipe.avatar.lookId) {
-          if (avatar !== "pending") {
-            setPilot("Asking about the avatar");
-            show("avatar", "recipe");
-            const plan = await runner<{ estimate?: { low: number; high: number } }>("avatar-plan", { projectDir: dir, service: "heygen", engine: "avatar_iii" });
-            const price = plan.estimate ? `about $${plan.estimate.low.toFixed(2)} to $${plan.estimate.high.toFixed(2)}` : "some";
-            if (!(await ask(`This channel's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }))) throw new Error("you stopped it before the avatar; nothing was spent on it. Press Make the video to go on");
-            setPilot("HeyGen is making the avatar");
-            await runner("make-avatar", { projectDir: dir, service: "heygen", lookId: recipe.avatar.lookId, lookName: recipe.avatar.name ?? null, which: ["open", "close"], look, layout: { style: "overlay", position: "bottom-right", size: "medium" }, engine: "avatar_iii", lookEngines: [] });
-            await load();
+        // no key or a service that fails: the video goes on without the avatar, and says so
+        const noAvatar = async (why: string) => {
+          await noteOn("avatar", `This video has no avatar: ${why}`);
+          await runner("skip-gate", { projectDir: dir, gate: "avatar" });
+          await load();
+        };
+        if (recipe.avatar.on && !hasHeygen) await noAvatar("no HeyGen key is set.");
+        else if (recipe.avatar.on && recipe.avatar.lookId) {
+          try {
+            if (avatar !== "pending") {
+              setPilot("Asking about the avatar");
+              show("avatar", "recipe");
+              const plan = await runner<{ estimate?: { low: number; high: number } }>("avatar-plan", { projectDir: dir, service: "heygen", engine: "avatar_iii" });
+              const price = plan.estimate ? `about $${plan.estimate.low.toFixed(2)} to $${plan.estimate.high.toFixed(2)}` : "some";
+              if (!(await ask(`This channel's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }))) throw new Error("you stopped it before the avatar; nothing was spent on it. Press Make the video to go on");
+              setPilot("HeyGen is making the avatar");
+              await runner("make-avatar", { projectDir: dir, service: "heygen", lookId: recipe.avatar.lookId, lookName: recipe.avatar.name ?? null, which: ["open", "close"], look, layout: { style: "overlay", position: "bottom-right", size: "medium" }, engine: "avatar_iii", lookEngines: [] });
+              await load();
+            }
+            await approveGate("avatar");
+          } catch (e) {
+            if (stoppedByUser(e)) throw e;
+            await noAvatar(errorText(e));
           }
-          await approveGate("avatar");
         } else {
           await runner("skip-gate", { projectDir: dir, gate: "avatar" });
           await load();
@@ -339,9 +384,10 @@
         if (recipe.broll?.on) {
           show("scenes", "recipe");
           // the video goes on without it: a source that is down is only fewer clips
-          await findBroll(dir, llmFor(app.config, "scenes"), app.keys, setPilot).catch((e) => {
+          await findBroll(dir, usableAi("scenes") ?? llmFor(app.config, "scenes"), app.keys, setPilot).catch(async (e) => {
+            if (stoppedByUser(e)) throw e;
             log("broll_engine_failed", { error: errorText(e) }, "warn");
-            pilotNote = `The B-roll search stopped: ${errorText(e)}. You can start it again on the Preview tab.`;
+            await noteOn("broll", `The B-roll search stopped, so this video has less B-roll: ${errorText(e)} You can start it again on the Preview tab.`);
           });
         }
         setPilot("Building the preview");
@@ -377,7 +423,6 @@
       if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
       await load();
     };
-    const hasKey = (l: { provider: string }) => !!app.keys[l.provider];
     setPilot("Starting");
     try {
       await runner("autopilot-mark", { projectDir: dir, on: true });
@@ -396,7 +441,7 @@
           await runner("recorded-apply-cuts", { projectDir: dir });
           if (recipe.music.on) {
             setPilot("Adding the music");
-            await runner("make-music", { projectDir: dir, music: { provider: recipe.music.source, mood: recipe.music.mood } });
+            await addMusic(recipe);
           }
           await load();
         }
@@ -405,8 +450,12 @@
       if (!approved("scenes")) {
         if (!made("scenes")) {
           setPilot("Planning what is on screen");
-          const ai = llmFor(app.config, "scenes");
-          if (hasKey(ai)) await runner("recorded-plan", { projectDir: dir, llm: ai });
+          const ai = usableAi("scenes");
+          if (ai) await runner("recorded-plan", { projectDir: dir, llm: ai }).catch(async (e) => {
+            if (stoppedByUser(e)) throw e;
+            await noteOn("plan", `The chapters and big words were made by rule, without the AI: ${errorText(e)}`);
+            await runner("recorded-plan-rule", { projectDir: dir });
+          });
           else await runner("recorded-plan-rule", { projectDir: dir });
           await load();
         }
@@ -415,11 +464,12 @@
         await runner("recorded-prepare", { projectDir: dir });
         await approveGate("scenes");
       }
-      if (hasKey(llmFor(app.config, "texts"))) {
+      const textAi = usableAi("texts");
+      if (textAi) {
         const has = await runner<{ packaging: unknown }>("packaging-state", { projectDir: dir });
         if (!has.packaging) {
           setPilot("Writing the title and the summary");
-          await runner("packaging-make", { projectDir: dir, llm: llmFor(app.config, "texts") }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
+          await runner("packaging-make", { projectDir: dir, llm: textAi }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
         }
       }
       const avatar = gates().avatar?.state;
@@ -429,9 +479,10 @@
       }
       if (!approved("review") && !made("review")) {
         if (recipe.broll?.on) {
-          await findBroll(dir, llmFor(app.config, "scenes"), app.keys, setPilot).catch((e) => {
+          await findBroll(dir, usableAi("scenes") ?? llmFor(app.config, "scenes"), app.keys, setPilot).catch(async (e) => {
+            if (stoppedByUser(e)) throw e;
             log("broll_engine_failed", { error: errorText(e) }, "warn");
-            pilotNote = `The B-roll search stopped: ${errorText(e)}. You can start it again on the Preview tab.`;
+            await noteOn("broll", `The B-roll search stopped, so this video has less B-roll: ${errorText(e)} You can start it again on the Preview tab.`);
           });
         }
         setPilot("Building the preview");
@@ -451,6 +502,14 @@
     }
   }
 
+  // The recipe's music. Own files missing or a bad file: no music, and the Preview says so.
+  async function addMusic(recipe: Recipe) {
+    await runner("make-music", { projectDir: dir, music: { provider: recipe.music.source, mood: recipe.music.mood } }).catch(async (e) => {
+      if (stoppedByUser(e)) throw e;
+      await noteOn("music", `This video has no music: ${errorText(e)}`);
+    });
+  }
+
   // The render belongs to the ONE Video, not to a tab: started from the
   // Preview ("Approve and render") or from Your video, it goes on whichever
   // tab is open, and its error waits on Your video.
@@ -467,6 +526,9 @@
     await load();
   }
   const anyJob = $derived(!!running(dir, tabList.flatMap((t) => t.commands)));
+  // Steps whose tab has no bar of its own: this one has the percent and the Stop.
+  const BARLESS = ["recorded-transcribe", "recorded-apply-cuts", "recorded-plan", "recorded-plan-rule", "recorded-prepare", "shot-map-make", "shot-flow-clip", "make-template-scenes", "simple-template-scenes", "broll-auto-plan", "broll-auto-plan-rule", "broll-auto-find", "broll-auto-find-checked", "broll-auto-pixabay", "broll-auto-finish"];
+  const barless = $derived(active === "preview" ? null : running(dir, BARLESS));
 </script>
 
 <div class="page">
@@ -501,6 +563,8 @@
     </nav>
     {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
     {#if pilotNote && pilot}<p class="note">{pilotNote}</p>{/if}
+    {#if offlineNote && !pilot}<p class="note">{offlineNote}</p>{/if}
+    {#if barless}<Progress command={barless} project={dir} label={pilot || "Working"} reveal={false} />{/if}
     {#if data.project.render?.state === "failed" && !running(dir, ["render-video"]) && active !== "video"}
       <p class="note">The last render did not finish: {data.project.render.error ?? "no reason given"} <button type="button" class="link" onclick={() => show("video", "render-failed")}>Open Your video</button></p>
     {/if}
@@ -521,7 +585,7 @@
       {:else if active === "avatar"}
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}
-        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} recorded={isRecorded} />
+        <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} recorded={isRecorded} notes={data.project.notes ?? []} />
       {:else if active === "thumbnail"}
         <ThumbnailTab {app} {dir} hasVideo={!!data.latestVideo} changed={load} goto={show} {openPage} />
       {:else}
