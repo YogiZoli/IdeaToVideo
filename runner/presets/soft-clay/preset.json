@@ -1,0 +1,1140 @@
+{
+  "schema": "style-preset/1",
+  "id": "soft-clay",
+  "label": "Soft Clay Chronicle",
+  "description": "A warm history documentary in matte clay. Rounded faceless figures, hand-pressed things with a faint fingerprint texture, warm lamp light on an old map table, a soft glow on the thing the story is about, a small date label in the corner.",
+  "engine": "script",
+  "scriptNote": "A piece of history told as a warm story, in the order it happened. Say each date and each place out loud, and the key numbers in digits. Write sentences of 8 to 16 words, each about one thing the viewer can picture: a ship, a crown, a letter, a bridge. Call people by their role, and never describe a real person's looks. If a fact is uncertain, say that it is.",
+  "ideaNote": "Each video tells one moment or one thing from history as a warm story, in the order it happened, with its dates and places.",
+  "defaults": {
+    "broll": false,
+    "research": true,
+    "mood": "warm"
+  },
+  "tokens": {
+    "appearance": "dark",
+    "colors": {
+      "background": "#1a100a",
+      "surface": "#2b1c12",
+      "border": "#4d3524",
+      "text": "#f6e8cf",
+      "muted": "#b79e80",
+      "primary": "#e07a4a",
+      "secondary": "#8f9e5a",
+      "tertiary": "#e6b45a"
+    },
+    "fonts": {
+      "display": "Playfair Display",
+      "body": "Source Serif 4"
+    },
+    "shape": {
+      "corners": "soft",
+      "cards": "paper notes"
+    },
+    "texture": "matte clay with a faint fingerprint, old paper"
+  },
+  "shotRules": {
+    "pacing": "balanced",
+    "cutFrequency": "A new scene every 3 to 5 seconds, each on a sentence or on the word its main text says, plain cuts.",
+    "camera": "One slow move per scene around the table: a push in, a small orbit, or a look down at the map. The scene owns it, not the channel's Motion profile.",
+    "characters": "Rounded faceless figures made of clay, told apart only by what they wear. Never a recognizable real person.",
+    "sound": "No transition sounds. The narration carries the video, warm music sits under it."
+  },
+  "places": "../archive-collage/places.json",
+  "assets": [
+    {
+      "title": "Natural Earth 1:50m countries and 1:110m populated places, simplified",
+      "source": "natural-earth",
+      "sourceUrl": "https://www.naturalearthdata.com/",
+      "license": "pd",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "author": "Natural Earth",
+      "date": "2026-11-03"
+    }
+  ],
+  "objects": [
+    {
+      "id": "scroll",
+      "words": [
+        "scroll",
+        "document",
+        "treaty",
+        "charter",
+        "record",
+        "records",
+        "decree",
+        "law",
+        "tekercs",
+        "törvény",
+        "szerződés"
+      ]
+    },
+    {
+      "id": "figure",
+      "words": [
+        "man",
+        "woman",
+        "person",
+        "people",
+        "merchant",
+        "traveler",
+        "traveller",
+        "explorer",
+        "worker",
+        "child",
+        "férfi",
+        "nő",
+        "ember",
+        "kereskedő",
+        "utazó"
+      ]
+    },
+    {
+      "id": "king",
+      "words": [
+        "king",
+        "kings",
+        "emperor",
+        "ruler",
+        "pharaoh",
+        "sultan",
+        "prince",
+        "lord",
+        "király",
+        "császár",
+        "uralkodó",
+        "fáraó"
+      ]
+    },
+    {
+      "id": "queen",
+      "words": [
+        "queen",
+        "queens",
+        "empress",
+        "princess",
+        "királynő",
+        "császárnő"
+      ]
+    },
+    {
+      "id": "soldier",
+      "words": [
+        "soldier",
+        "soldiers",
+        "army",
+        "armies",
+        "troops",
+        "knight",
+        "knights",
+        "war",
+        "battle",
+        "katona",
+        "hadsereg",
+        "lovag",
+        "háború",
+        "csata"
+      ]
+    },
+    {
+      "id": "sailor",
+      "words": [
+        "sailor",
+        "sailors",
+        "crew",
+        "captain",
+        "admiral",
+        "tengerész",
+        "kapitány",
+        "legénység"
+      ]
+    },
+    {
+      "id": "farmer",
+      "words": [
+        "farmer",
+        "farmers",
+        "peasant",
+        "peasants",
+        "farm",
+        "harvest",
+        "villagers",
+        "paraszt",
+        "földműves"
+      ]
+    },
+    {
+      "id": "scholar",
+      "words": [
+        "scholar",
+        "scholars",
+        "scientist",
+        "teacher",
+        "monk",
+        "monks",
+        "priest",
+        "inventor",
+        "professor",
+        "tudós",
+        "tanár",
+        "szerzetes",
+        "pap",
+        "feltaláló"
+      ]
+    },
+    {
+      "id": "crowd",
+      "words": [
+        "crowd",
+        "crowds",
+        "citizens",
+        "population",
+        "nation",
+        "tömeg",
+        "polgárok",
+        "nép"
+      ]
+    },
+    {
+      "id": "castle",
+      "words": [
+        "castle",
+        "castles",
+        "palace",
+        "fortress",
+        "fort",
+        "kingdom",
+        "vár",
+        "palota",
+        "erőd",
+        "királyság"
+      ]
+    },
+    {
+      "id": "tower",
+      "words": [
+        "tower",
+        "towers",
+        "lighthouse",
+        "wall",
+        "walls",
+        "torony",
+        "világítótorony",
+        "fal"
+      ]
+    },
+    {
+      "id": "house",
+      "words": [
+        "house",
+        "houses",
+        "home",
+        "homes",
+        "village",
+        "cottage",
+        "ház",
+        "otthon",
+        "falu"
+      ]
+    },
+    {
+      "id": "temple",
+      "words": [
+        "temple",
+        "temples",
+        "church",
+        "cathedral",
+        "parliament",
+        "senate",
+        "republic",
+        "templom",
+        "katedrális",
+        "parlament"
+      ]
+    },
+    {
+      "id": "pyramid",
+      "words": [
+        "pyramid",
+        "pyramids",
+        "tomb",
+        "tombs",
+        "piramis",
+        "sír"
+      ]
+    },
+    {
+      "id": "ship",
+      "words": [
+        "ship",
+        "ships",
+        "boat",
+        "boats",
+        "fleet",
+        "vessel",
+        "voyage",
+        "sea",
+        "ocean",
+        "sailed",
+        "hajó",
+        "hajók",
+        "flotta",
+        "tenger",
+        "óceán"
+      ]
+    },
+    {
+      "id": "cart",
+      "words": [
+        "cart",
+        "carts",
+        "wagon",
+        "wagons",
+        "caravan",
+        "kocsi",
+        "szekér",
+        "karaván"
+      ]
+    },
+    {
+      "id": "horse",
+      "words": [
+        "horse",
+        "horses",
+        "cavalry",
+        "rider",
+        "riders",
+        "ló",
+        "lovak",
+        "lovas"
+      ]
+    },
+    {
+      "id": "wheel",
+      "words": [
+        "wheel",
+        "wheels",
+        "machine",
+        "machines",
+        "engine",
+        "kerék",
+        "gép"
+      ]
+    },
+    {
+      "id": "crown",
+      "words": [
+        "crown",
+        "throne",
+        "coronation",
+        "dynasty",
+        "reign",
+        "empire",
+        "korona",
+        "trón",
+        "dinasztia",
+        "birodalom"
+      ]
+    },
+    {
+      "id": "coin",
+      "words": [
+        "coin",
+        "coins",
+        "gold",
+        "silver",
+        "money",
+        "trade",
+        "price",
+        "prices",
+        "tax",
+        "taxes",
+        "érme",
+        "arany",
+        "ezüst",
+        "pénz",
+        "kereskedelem",
+        "adó"
+      ]
+    },
+    {
+      "id": "chest",
+      "words": [
+        "chest",
+        "treasure",
+        "treasury",
+        "riches",
+        "wealth",
+        "láda",
+        "kincs",
+        "vagyon"
+      ]
+    },
+    {
+      "id": "book",
+      "words": [
+        "book",
+        "books",
+        "library",
+        "story",
+        "history",
+        "printed",
+        "könyv",
+        "könyvtár",
+        "történelem",
+        "történet"
+      ]
+    },
+    {
+      "id": "letter",
+      "words": [
+        "letter",
+        "letters",
+        "message",
+        "messages",
+        "mail",
+        "note",
+        "levél",
+        "üzenet"
+      ]
+    },
+    {
+      "id": "quill",
+      "words": [
+        "quill",
+        "pen",
+        "ink",
+        "wrote",
+        "written",
+        "writing",
+        "toll",
+        "tinta",
+        "írta"
+      ]
+    },
+    {
+      "id": "hourglass",
+      "words": [
+        "century",
+        "centuries",
+        "decade",
+        "decades",
+        "years",
+        "hourglass",
+        "évszázad",
+        "évtized",
+        "homokóra"
+      ]
+    },
+    {
+      "id": "clock",
+      "words": [
+        "clockmaker",
+        "watchmaker",
+        "órás",
+        "clock",
+        "clocks",
+        "hour",
+        "hours",
+        "minute",
+        "minutes",
+        "óra",
+        "perc"
+      ]
+    },
+    {
+      "id": "key",
+      "words": [
+        "key",
+        "keys",
+        "lock",
+        "locked",
+        "secret",
+        "secrets",
+        "kulcs",
+        "titok"
+      ]
+    },
+    {
+      "id": "lantern",
+      "words": [
+        "lantern",
+        "lamp",
+        "light",
+        "night",
+        "lámpás",
+        "lámpa",
+        "fény",
+        "éjszaka"
+      ]
+    },
+    {
+      "id": "candle",
+      "words": [
+        "candle",
+        "candles",
+        "fire",
+        "flame",
+        "gyertya",
+        "tűz",
+        "láng"
+      ]
+    },
+    {
+      "id": "globe",
+      "words": [
+        "globe",
+        "world",
+        "earth",
+        "continent",
+        "continents",
+        "földgömb",
+        "világ",
+        "kontinens"
+      ]
+    },
+    {
+      "id": "telescope",
+      "words": [
+        "telescope",
+        "stars",
+        "star",
+        "sky",
+        "astronomer",
+        "távcső",
+        "csillag",
+        "csillagok",
+        "ég"
+      ]
+    },
+    {
+      "id": "anchor",
+      "words": [
+        "anchor",
+        "harbor",
+        "harbour",
+        "port",
+        "ports",
+        "horgony",
+        "kikötő"
+      ]
+    },
+    {
+      "id": "flag",
+      "words": [
+        "flag",
+        "flags",
+        "independence",
+        "revolution",
+        "rebellion",
+        "colony",
+        "colonies",
+        "zászló",
+        "függetlenség",
+        "forradalom",
+        "gyarmat"
+      ]
+    },
+    {
+      "id": "vase",
+      "words": [
+        "vase",
+        "pot",
+        "pottery",
+        "jar",
+        "jars",
+        "amphora",
+        "wine",
+        "oil",
+        "váza",
+        "edény",
+        "bor"
+      ]
+    },
+    {
+      "id": "wheat",
+      "words": [
+        "wheat",
+        "grain",
+        "bread",
+        "corn",
+        "rice",
+        "food",
+        "famine",
+        "búza",
+        "gabona",
+        "kenyér",
+        "élelem"
+      ]
+    },
+    {
+      "id": "tree",
+      "words": [
+        "tree",
+        "trees",
+        "forest",
+        "forests",
+        "wood",
+        "fa",
+        "erdő"
+      ]
+    },
+    {
+      "id": "mountain",
+      "words": [
+        "mountain",
+        "mountains",
+        "alps",
+        "hill",
+        "hills",
+        "stone",
+        "rock",
+        "hegy",
+        "hegység",
+        "kő"
+      ]
+    },
+    {
+      "id": "bridge",
+      "words": [
+        "bridge",
+        "bridges",
+        "river",
+        "rivers",
+        "canal",
+        "híd",
+        "folyó",
+        "csatorna"
+      ]
+    },
+    {
+      "id": "mill",
+      "words": [
+        "mill",
+        "mills",
+        "windmill",
+        "malom",
+        "szélmalom"
+      ]
+    },
+    {
+      "id": "tent",
+      "words": [
+        "tent",
+        "tents",
+        "camp",
+        "camps",
+        "nomads",
+        "sátor",
+        "tábor"
+      ]
+    },
+    {
+      "id": "factory",
+      "words": [
+        "factory",
+        "factories",
+        "industry",
+        "industrial",
+        "steam",
+        "coal",
+        "gyár",
+        "ipar",
+        "gőz",
+        "szén"
+      ]
+    },
+    {
+      "id": "train",
+      "words": [
+        "train",
+        "trains",
+        "railway",
+        "railroad",
+        "locomotive",
+        "vonat",
+        "vasút",
+        "mozdony"
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "id": "title",
+      "label": "One thing in the lamp's glow",
+      "when": "The first scene: what the video is about, with the thing it is about.",
+      "params": {
+        "headline": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "kicker": {
+          "maxWords": 4,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:title",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object",
+            "kicker": "$kicker"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter",
+      "label": "The lamp comes up on a book",
+      "when": "The start of a new part of the story.",
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:chapter",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "statement",
+      "label": "A thing and two notes",
+      "when": "A plain claim: the first line sets it up, the second lands it.",
+      "params": {
+        "line1": {
+          "maxWords": 5,
+          "required": true
+        },
+        "line2": {
+          "maxWords": 4,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:statement",
+          "vars": {
+            "line1": "$line1",
+            "line2": "$line2",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "word",
+      "label": "One large word",
+      "when": "One word is the whole point.",
+      "params": {
+        "word": {
+          "maxWords": 2,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:word",
+          "vars": {
+            "word": "$word",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "highlight",
+      "label": "A note with one word marked",
+      "when": "A short line with one key word to mark.",
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "mark": {
+          "maxWords": 1,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:highlight",
+          "vars": {
+            "line": "$line",
+            "mark": "$mark",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "Somebody wonders",
+      "when": "The narration asks the viewer something.",
+      "ruleFirst": true,
+      "params": {
+        "question": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:question",
+          "vars": {
+            "question": "$question",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "number",
+      "label": "A number and a pile",
+      "when": "The narration says a number and it matters; the thing is what is counted.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "before": {
+          "maxWords": 1,
+          "required": false
+        },
+        "after": {
+          "maxWords": 1,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:number",
+          "vars": {
+            "value": "$value",
+            "before": "$before",
+            "after": "$after",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "year",
+      "label": "A year, large",
+      "when": "The narration says the year something happened.",
+      "ruleFirst": true,
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "line": {
+          "maxWords": 8,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:year",
+          "vars": {
+            "value": "$value",
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "route",
+      "label": "A journey across the map",
+      "when": "Somebody or something travels between two places the narration names.",
+      "ruleFirst": true,
+      "params": {
+        "fromPlace": {
+          "type": "place",
+          "required": true
+        },
+        "toPlace": {
+          "type": "place",
+          "required": true
+        },
+        "fromLabel": {
+          "maxWords": 3,
+          "required": false
+        },
+        "toLabel": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:route",
+          "vars": {
+            "fromPlace": "$fromPlace",
+            "toPlace": "$toPlace",
+            "fromLabel": "$fromLabel",
+            "toLabel": "$toLabel",
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "label": "A pin in the old map",
+      "when": "The narration names one country or big city.",
+      "ruleFirst": true,
+      "params": {
+        "place": {
+          "type": "place",
+          "required": true
+        },
+        "label": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:map",
+          "vars": {
+            "place": "$place",
+            "label": "$label",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "talk",
+      "label": "Two people talking",
+      "when": "Somebody says or asks something.",
+      "ruleFirst": true,
+      "params": {
+        "said": {
+          "maxWords": 6,
+          "required": true,
+          "quoted": true
+        },
+        "object": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:talk",
+          "vars": {
+            "said": "$said",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "versus",
+      "label": "Two sides on round bases",
+      "when": "This or that, before and after, one side against another.",
+      "ruleFirst": true,
+      "params": {
+        "left": {
+          "maxWords": 4,
+          "required": true
+        },
+        "right": {
+          "maxWords": 4,
+          "required": true
+        },
+        "leftObject": {
+          "type": "object",
+          "required": true
+        },
+        "rightObject": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:versus",
+          "vars": {
+            "left": "$left",
+            "right": "$right",
+            "leftObject": "$leftObject",
+            "rightObject": "$rightObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cause",
+      "label": "One thing leads to another",
+      "when": "One thing causes or leads to another.",
+      "ruleFirst": true,
+      "params": {
+        "from": {
+          "maxWords": 3,
+          "required": true
+        },
+        "to": {
+          "maxWords": 3,
+          "required": true
+        },
+        "fromObject": {
+          "type": "object",
+          "required": true
+        },
+        "toObject": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:cause",
+          "vars": {
+            "from": "$from",
+            "to": "$to",
+            "fromObject": "$fromObject",
+            "toObject": "$toObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "board",
+      "label": "Things in a row",
+      "when": "Three or four things that belong together, in the order the narration says them.",
+      "ruleFirst": true,
+      "params": {
+        "item1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "item4": {
+          "maxWords": 3,
+          "required": false
+        },
+        "object1": {
+          "type": "object",
+          "required": true
+        },
+        "object2": {
+          "type": "object",
+          "required": true
+        },
+        "object3": {
+          "type": "object",
+          "required": true
+        },
+        "object4": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:board",
+          "vars": {
+            "item1": "$item1",
+            "item2": "$item2",
+            "item3": "$item3",
+            "item4": "$item4",
+            "object1": "$object1",
+            "object2": "$object2",
+            "object3": "$object3",
+            "object4": "$object4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "relic",
+      "label": "The thing on a cloth",
+      "when": "One thing that was found, made or kept: the thing the story is about, alone in the light.",
+      "ruleFirst": true,
+      "params": {
+        "object": {
+          "type": "object",
+          "required": true
+        },
+        "line": {
+          "maxWords": 9,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "soft-clay:relic",
+          "vars": {
+            "object": "$object",
+            "line": "$line"
+          }
+        }
+      ]
+    }
+  ]
+}
