@@ -430,6 +430,9 @@ async function writeScriptGate({ projectDir, identityDir, llm, input = {}, chann
 async function weekBatch({ projectsDir, identityDir, identity, llm = null, channel = {}, name = "", theme = "", language = "en", count = WEEK, pasted = "", textKind = "notes", research = false }) {
   const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
   const texts = splitPasted(pasted);
+  const preset = loadPreset(recipe.preset);
+  if (preset.factChecked && !llm) throw new Error(`${preset.label} fact-checks every script, which needs your AI key. Add it in Settings, Connections.`);
+  research = research || preset.factChecked === true;
   const avoid = fs.existsSync(projectsDir) ? fs.readdirSync(projectsDir).flatMap((n) => { try { return [loadProject(path.join(projectsDir, n)).title]; } catch { return []; } }) : [];
   const firstWords = (t) => t.replace(/\s+/g, " ").trim().split(" ").slice(0, 8).join(" ").replace(/[.,:;!?]+$/, "");
   return runWeekBatch({
@@ -1435,7 +1438,8 @@ const commands = {
   // next. The UI's run (ProjectView) does the rest.
   "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "" }) => {
     const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
-    const { id, dir } = newScriptVideo({ projectsDir, identity, language, recipe, topic, text, textKind, research, title });
+    // a style whose scripts are fact-checked has research on, whatever was asked (DECISIONS 159)
+    const { id, dir } = newScriptVideo({ projectsDir, identity, language, recipe, topic, text, textKind, research: research || loadPreset(recipe.preset).factChecked === true, title });
     return { id, dir };
   },
 

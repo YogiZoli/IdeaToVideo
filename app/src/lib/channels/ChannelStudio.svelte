@@ -41,7 +41,10 @@
   const side = $derived(st ? recipeSide(st.recipe, direction) : null);
   const hasText = $derived(!!text.trim());
   const mode = $derived<"idea" | "script" | "notes">(!hasText ? "idea" : kind === "finished" ? "script" : "notes");
-  const stop = $derived(side ? blocker(side, app.keys, aiProvider, mode, research) : null);
+  // a style whose scripts are always fact-checked: research stays on, the runner holds it to that too
+  const factChecked = $derived(direction === "script" && !!st?.presets.find((p) => p.id === side?.preset)?.factChecked);
+  const researching = $derived(research || factChecked);
+  const stop = $derived(side ? blocker(side, app.keys, aiProvider, mode, researching, factChecked) : null);
   const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
 
   async function load() {
@@ -79,9 +82,9 @@
     starting = true;
     error = "";
     try {
-      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research });
+      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research: researching });
       await runner("autopilot-mark", { projectDir: r.dir, on: true });
-      log("channel_video", { mode, research, preset: side?.preset });
+      log("channel_video", { mode, research: researching, preset: side?.preset });
       topic = "";
       text = "";
       openProject(r.dir);
@@ -152,7 +155,7 @@
     if (p.command !== "week-batch" && p.command !== "week-batch-local") return;
     const s = p.progress as { step?: string; n?: number; of?: number; title?: string; message?: string };
     if (s.step === "ideas") batchStep = "The AI is planning the week...";
-    if (s.step === "batch-script") batchStep = `${research ? "Research" : "Script"} ${s.n} of ${s.of}: ${s.title}`;
+    if (s.step === "batch-script") batchStep = `${researching ? "Research" : "Script"} ${s.n} of ${s.of}: ${s.title}`;
     if (s.step === "retry" && s.message) batchStep = s.message;
   });
   onDestroy(() => unlisten.then((f) => f()));
@@ -163,9 +166,9 @@
     error = "";
     try {
       // a finished script needs no AI, and no key
-      const local = !!pasted.trim() && kind === "finished" && !research;
+      const local = !!pasted.trim() && kind === "finished" && !researching;
       const r = await runner<{ written: number; failed: number }>(local ? "week-batch-local" : "week-batch", { projectsDir: app.projectsDir, identity: app.identity?.id, ...(local ? {} : { llm: llmFor(config, "script") }), channel: config.channel, name: app.identity?.name, theme, language, pasted, textKind: kind, research });
-      batchNote = `${r.written} ${research ? "briefs ready, each waits for your click," : local ? "scripts" : "scripts written and"} queued.${r.failed ? ` ${r.failed} failed: they are in the queue, open one to do it again.` : ""}`;
+      batchNote = `${r.written} ${researching ? "briefs ready, each waits for your click," : local ? "scripts" : "scripts written and"} queued.${r.failed ? ` ${r.failed} failed: they are in the queue, open one to do it again.` : ""}`;
       theme = "";
       pasted = "";
       st = await runner<ChannelState>("channel-state", { projectsDir: app.projectsDir, identity: app.identity });
@@ -272,9 +275,9 @@
         </div>
         <p class="hint">{kind === "finished" ? "A first line starting with # is its title; lines starting with ## are its parts." : `Keeps your ideas, opinions, stories and way of speaking, in this channel's script structure.${research ? " Only the research can add a fact." : " It never adds a claim you did not make."}`}</p>
       {/if}
-      <label class="research"><input type="checkbox" bind:checked={research} /> Research</label>
+      <label class="research"><input type="checkbox" checked={researching} disabled={factChecked} onchange={(e) => (research = e.currentTarget.checked)} /> Research{factChecked ? ": always on for this style, its scripts are fact-checked" : ""}</label>
       <p class="hint">
-        {#if !research}Off: nothing is searched.
+        {#if !researching}Off: nothing is searched.
         {:else if kind === "finished" && hasText}Checks your script's claims and shows the sources. Your script stays exactly as it is.
         {:else}{aiProvider === "gemini" ? "Gemini searches the web" : "This AI cannot search the web here, so the brief comes from its memory and says so"}: key facts, numbers, dates, 3 to 8 sources.{hasText ? " It checks your claims and adds what is missing." : ""} You see and can change the brief before the script.{/if}
       </p>
@@ -292,7 +295,7 @@
     <section class="card batch">
       <div class="head">
         <h2>Week batch</h2>
-        <button type="button" disabled={batching || !(app.keys[aiProvider] || (pasted.trim() && kind === "finished" && !research))} onclick={weekBatch}>{batching ? "Working..." : pasted.trim() ? "Make them all" : `Write ${st.week} scripts`}</button>
+        <button type="button" disabled={batching || !(app.keys[aiProvider] || (pasted.trim() && kind === "finished" && !researching))} onclick={weekBatch}>{batching ? "Working..." : pasted.trim() ? "Make them all" : `Write ${st.week} scripts`}</button>
       </div>
       <p class="hint">{st.week} video ideas and their scripts for this channel, or one video per text you paste, in one run, then queued here. No voice, no render, nothing published. It follows your choices above: {pasted.trim() ? (kind === "finished" ? "finished scripts" : "notes") : "topics"}, research {research ? "on, so each stops at its brief for your click" : "off"}.{app.keys[aiProvider] ? "" : " Needs your AI key, except for finished scripts."}</p>
       <input bind:value={theme} disabled={batching || !!pasted.trim()} aria-label="Theme of the week" placeholder="This week's theme (optional)" />

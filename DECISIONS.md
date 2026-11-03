@@ -2680,3 +2680,43 @@
     Rust was not touched and its tests were not run again. New `scripts/phase2/collage-e2e.mjs` 51/51 with the real free voice
     and real renders, one video by rule and one with every template once, each looked at frame by frame; Motion Frames' channel e2e 56/56. A real AI was
     not used. Longest video tried: 69 s.
+
+158. **The Night Case File preset** (Zoltan, 2026-11-03, `docs/BUILD_PLAN.md` phase 7; `runner/presets/night-case-file/`).
+    15 templates, 22 things, true story documentaries. All drawing is own code in `pack/shared/nightfile.js`, on a 2D canvas: no image
+    files, no new library, no third-party skill opened. Its own colors (blue-black, one amber accent, a cold pale light for windows and
+    lamps, so that only people and what the story is about glow) and the OFL fonts Bebas Neue and IBM Plex Mono. B-roll off and the
+    music's dark mood when this style is chosen; both switches stay.
+    - **The maps are Archive Collage's own file and list,** by a relative path in `pack.json` and `preset.json`. No second copy.
+    - **Figures are faceless** (a plain lit head, no eyes), feet planted when they walk (`gait`, from the distance alone). The glow is
+      six strokes on the "lighter" mode, no blur filter. The first try, three strokes, looked like a blob and was changed after seeing frames.
+    - **One fact per shot:** pacing "fast". On "balanced" a rule joined short sentences, and the one that said what happened could lose its flash.
+
+159. **Violence is never shown, and its words stay off the screen** (Claude's reading of the plan, can be overruled). `never` in `preset.json`:
+    weapons, blood, killing, death, in English and Hungarian. A rule or an AI's line with one of those words: an optional line is left out,
+    a required one sends the sentence to another template. `flash` comes first for such a sentence. It shows a building whose windows
+    flash, and somebody across the street who only looks.
+    - **Two such sentences in a row** would be two flashes, and the planner never uses a block twice in a row: the second gets `room` with
+      no words (`fallback`). So a sentence always has a picture and the plain-words fallback is never reached on this preset.
+    - **The word list is wide on purpose** ("body", "shot", "beat", "dead"), so an innocent "a dead end" also becomes a flash. Cheap to
+      get wrong in that direction.
+    - **Limit, open for Zoltan:** the voice says what the script says, and the channel's captions, if on, show those words. The script writer
+      is told not to describe weapons, blood or how anyone was hurt. A pasted finished script is used as it is. Hiding words in captions was
+      not built: captions are the narration's own words.
+    - **Safe to look at:** three flashes at most in any second, on the windows; the whole frame lifts at most 13%. This is my own choice,
+      to stay clear of photosensitive limits, not a measurement against a standard.
+    - **The sound:** `synthHit`, a dull thump and rumble made by code, played by the engine as a second audio element on the first flash, not mixed
+      into `vo_bgm.mp3`. Measured in the rendered video: the low band 4 dB up for that second. Listened to by nobody yet: **Zoltan's ear decides the level** (`SOUND_VOLUME`, 0.55).
+
+160. **The fact-check is a promise of the style, and shared code around it** (Claude's choice, can be overruled). `factChecked: true` in `preset.json`:
+    `channel-video-new` and the week batch keep research on whatever is asked, the start screen and the recipe show the box on and locked. With
+    no AI key the start screen stops and says why, and a local week batch refuses. So this style cannot be used with no AI at all, also for a
+    finished script: only the plan and the picture work without one.
+    - **The sources** go into the Publishing Card as before (`researchSources`, for checking only, never in the YouTube text). A
+      fact-checked style with none to show gets `unchecked: true` on the card, a new optional field, so the gap is seen.
+    - **A pasted finished script is still only checked, never changed** (Phase 3): a wrong claim is flagged on the Research tab and on the card.
+    - **Shared code:** on-screen words now keep a time ("11:40", it was "11 40"); a number rule no longer takes a date or a time ("At 11:40" made a
+      giant 11, on every preset); `lineOf` lets a preset's small lines be longer; a text parameter can have `said: true`; a sentence is not cut at "p.m.".
+
+    Tests: Node 615 of 618 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check 0 errors. Rust was not touched and its
+    tests were not run again. New `scripts/phase2/nightfile-e2e.mjs` 65/65 with the real free voice and real renders, one video by rule and one with every
+    template once, looked at on contact sheets; Motion Frames' channel e2e 56/56. A real AI was not used. Longest video tried: 60 s.

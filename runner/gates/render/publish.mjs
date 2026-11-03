@@ -26,6 +26,7 @@ import { loadProject, saveProject } from "../../project.mjs";
 import { loadPackaging } from "./youtube.mjs";
 import { thumbnailBlock } from "../../thumbnail/card.mjs";
 import { loadBrief, briefForCard } from "../../research/index.mjs";
+import { loadPreset } from "../../presets/index.mjs";
 
 export const CARD_SCHEMA = "video-publishing-card/1";
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -93,7 +94,10 @@ export function buildCard(projectDir, videoFile, { language = "en", total, chapt
   // The research brief's sources, for the user's own checking (docs/BUILD_PLAN.md
   // phase 3). Left out without research; never part of the YouTube description.
   const checked = briefForCard(loadBrief(projectDir));
-  const research = checked ? { researchSources: checked } : {};
+  // a style that promises a fact-check says so on the card when there is none to show
+  const presetId = loadProject(projectDir).recipe?.preset;
+  const promised = presetId ? loadPreset(presetId).factChecked === true : false;
+  const research = checked ? { researchSources: checked } : promised ? { researchSources: { grounded: false, sources: [], flags: [], unchecked: true } } : {};
   return {
     schema: CARD_SCHEMA,
     cardId: cardIdOf(projectDir),

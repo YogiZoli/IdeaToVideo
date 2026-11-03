@@ -71,10 +71,19 @@ export function synthLoop({ mood = DEFAULT_MOOD, seed = 1 } = {}) {
   let peak = 0;
   for (let i = 0; i < frames; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
   const gain = peak ? 0.7 / peak : 0;
+  for (let i = 0; i < frames; i++) {
+    left[i] *= gain;
+    right[i] *= gain;
+  }
+  return toWav(left, right);
+}
+
+function toWav(left, right) {
+  const frames = left.length;
   const pcm = Buffer.alloc(frames * 4);
   for (let i = 0; i < frames; i++) {
-    pcm.writeInt16LE(Math.round(left[i] * gain * 32767), i * 4);
-    pcm.writeInt16LE(Math.round(right[i] * gain * 32767), i * 4 + 2);
+    pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, left[i])) * 32767), i * 4);
+    pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, right[i])) * 32767), i * 4 + 2);
   }
   const h = Buffer.alloc(44);
   h.write("RIFF", 0, "ascii");
@@ -90,4 +99,31 @@ export function synthLoop({ mood = DEFAULT_MOOD, seed = 1 } = {}) {
   h.write("data", 36, "ascii");
   h.writeUInt32LE(pcm.length, 40);
   return Buffer.concat([h, pcm]);
+}
+
+// A sound effect's length in seconds.
+export const HIT_SECONDS = 2.4;
+
+/**
+ * One dull distant sound under a light flash (docs/BUILD_PLAN.md phase 7): a low thump
+ * and a soft rumble that dies away, as if heard from across a street. Not a sampled
+ * sound of anything. Deterministic, a 16-bit stereo WAV.
+ */
+export function synthHit({ seed = 7 } = {}) {
+  const frames = Math.round(HIT_SECONDS * RATE);
+  const rand = rng(seed);
+  const out = new Float32Array(frames);
+  let low = 0;
+  for (let i = 0; i < frames; i++) {
+    const t = i / RATE;
+    // the thump: a sine that falls in pitch and dies fast
+    const thump = Math.sin(2 * Math.PI * (38 * t + (22 * (1 - Math.exp(-t * 18))) / 18)) * Math.exp(-t * 7);
+    // the rumble: noise through a one-pole low-pass, slower to die
+    low += 0.018 * (rand() * 2 - 1 - low);
+    out[i] = 0.8 * thump + low * 2.6 * Math.exp(-t * 2.4) * Math.min(1, t / 0.02);
+  }
+  // it ends in silence, whatever the sum left there
+  const fade = Math.round(RATE * 0.25);
+  for (let i = 0; i < fade; i++) out[frames - 1 - i] *= i / fade;
+  return toWav(out, out);
 }

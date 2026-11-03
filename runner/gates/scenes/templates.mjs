@@ -23,7 +23,7 @@ export const PART_SENTENCES = 24;
 // More of a part's scenes than this mended by rule: the AI is asked once more.
 const ASK_AGAIN_SHARE = 0.34;
 
-const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ %$.,-]+/gu, " ").split(/\s+/).map((w) => w.replace(/^[.,-]+|[.,-]+$/g, "")).filter(Boolean);
+const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ %$.,:-]+/gu, " ").split(/\s+/).map((w) => w.replace(/^[.,:-]+|[.,:-]+$/g, "")).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;
 const cap = (text, max) => wordsOf(text).slice(0, max).join(" ");
 // A preset that asks a question on screen keeps its question mark, when the whole text fits.
@@ -94,6 +94,65 @@ export function objectsIn(text, objects = []) {
     if (hit && !out.some((x) => x.object.id === hit.id)) out.push({ object: hit, word: raw });
   }
   return out;
+}
+
+/** A word a preset never puts on screen (`never` in its preset.json). The voice may still say it. Pure. */
+export function neverIn(text, never) {
+  if (!never) return false;
+  return wordsOf(text).some((raw) => {
+    const w = wordKey(raw);
+    return (never.words ?? []).includes(w) || (never.stems ?? []).some((s) => w.startsWith(s));
+  });
+}
+
+// What a rule made, without what may not go on screen: an optional line stays out, and a
+// template that cannot do without it is not this sentence's template.
+function offScreen(template, params) {
+  if (!params || !template.never) return params;
+  const out = { ...params };
+  for (const [id, value] of Object.entries(params)) {
+    const p = template.params?.[id];
+    if (!p || p.type === "object" || p.type === "place" || p.type === "number" || !neverIn(value, template.never)) continue;
+    if (p.required) return null;
+    delete out[id];
+  }
+  return out;
+}
+
+// When a sentence says it happened, as it should stand on a stamp: a date, else a time, else a year.
+const MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December|január|február|március|április|május|június|július|augusztus|szeptember|október|november|december";
+const DATE = new RegExp(`\\b(?:(?:${MONTHS})\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:of\\s+)?(?:${MONTHS})(?:,?\\s+\\d{4})?|\\d{4}\\.?\\s+(?:${MONTHS})\\s+\\d{1,2})`, "iu");
+const CLOCK = /\b(\d{1,2})(?::(\d{2}))?\s?([ap])\.?m\b\.?/i;
+const YEAR = /\b(?:in|since|by|until|from|year|around|early|late|after|before|of)\s+(1[0-9]{3}|20[0-9]{2})\b|\b(1[0-9]{3}|20[0-9]{2})(?:-ban|-ben|-ig|-től|-tól|-as|-es)/i;
+export function whenIn(text) {
+  const said = String(text);
+  const date = DATE.exec(said);
+  if (date) return { text: date[0].replace(/\s+/g, " ").replace(/,/g, "").trim(), raw: date[0] };
+  const clock = CLOCK.exec(said);
+  if (clock) return { text: `${clock[1]}${clock[2] ? `:${clock[2]}` : ""} ${clock[3].toUpperCase()}M`, raw: clock[0] };
+  const year = YEAR.exec(said);
+  return year ? { text: year[1] ?? year[2], raw: year[1] ?? year[2] } : null;
+}
+
+// The sentence without what the stamp already says, so the line under it adds something.
+function restOf(said, when, where) {
+  const words = [when.raw, where?.word].filter(Boolean).map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  let rest = said;
+  for (const w of words) rest = rest.replace(new RegExp(`(?:\\b(?:on|in|at|by|around|since|from|of)\\s+)?${w}[,.]?`, "i"), " ");
+  return rest.replace(/^[\s,.]+/, "").replace(/\s+/g, " ").trim();
+}
+
+// A list the sentence says: "a receipt, a key and a torn note". Null when it says none.
+const ARTICLE = /^(a|an|the|his|her|their|one|two|three|egy|az)\s+/i;
+function listIn(text) {
+  const parts = String(text).replace(/[.!?]+\s*$/, "").split(/,\s*(?:and\s+|or\s+|és\s+)?|\s+(?:and|és)\s+/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 3) return null;
+  const items = parts.map((p, i) => {
+    // the first one starts with the sentence around it
+    const ws = wordsOf(p);
+    return (i === 0 ? ws.slice(-2).join(" ") : ws.join(" ")).replace(ARTICLE, "");
+  });
+  return items.slice(1).every((x) => wordsOf(x).length <= 3) ? items.slice(0, 4) : null;
 }
 
 // A name as a sentence writes it: a Hungarian one takes an ending (Párizsban, Angliából).
@@ -174,6 +233,9 @@ function sideObjects(left, right, said, objects) {
   return [a ?? rest.find((id) => id !== b) ?? fallback, b ?? rest.find((id) => id !== a) ?? fallback];
 }
 
+// A rule's line, as long as this template's line may be.
+const lineOf = (template, said) => headlineOf(said, template.params?.line?.maxWords ?? 6);
+
 // The rules of a preset's own templates: a template is filled only when the sentence
 // really says that thing, else the next one is tried.
 function ownRule(template, said) {
@@ -223,16 +285,41 @@ function ownRule(template, said) {
       const found = placesIn(said, template.places);
       if (found.length < 2) return null;
       const [from, to] = found;
-      return { fromPlace: from.place.id, toPlace: to.place.id, fromLabel: from.word, toLabel: to.word, line: headlineOf(said, 6) };
+      return { fromPlace: from.place.id, toPlace: to.place.id, fromLabel: from.word, toLabel: to.word, line: lineOf(template, said) };
     }
     case "map": {
       const found = placesIn(said, template.places)[0];
       if (!found) return null;
-      return { place: found.place.id, label: found.word, line: headlineOf(said, 6) };
+      return { place: found.place.id, label: found.word, line: lineOf(template, said) };
     }
     case "alert":
       if (!/\b(crisis|collapse|collapsed|collapses|disaster|catastrophe|crash|crashed|panic|bankrupt|bankruptcy|emergency|meltdown)\b|válság|összeoml|katasztróf|csőd|pánik/i.test(said)) return null;
       return { line: headlineOf(said, 6), object: objectFor(said, objects) };
+    case "flash":
+      // something happened: only a light and a sound say so
+      if (!neverIn(said, template.never) && !/\b(suddenly|explosion|blast|crash|crashed|scream|screamed|struck|vanished|disappeared)\b|hirtelen|robban|sikoly|eltűnt/i.test(said)) return null;
+      return { line: lineOf(template, said), object: objectFor(said, objects) };
+    case "stamp": {
+      const when = whenIn(said);
+      if (!when) return null;
+      const where = placesIn(said, template.places)[0];
+      const line = lineOf(template, restOf(said, when, where));
+      return { when: when.text, ...(where ? { where: where.word } : {}), ...(wordsOf(line).length >= 2 ? { line } : {}), object: objectFor(said, objects) };
+    }
+    case "board": {
+      const items = listIn(said);
+      if (!items) return null;
+      return Object.fromEntries(items.map((x, i) => [`item${i + 1}`, x]));
+    }
+    case "evidence":
+      if (!/\b(evidence|clue|clues|found|discovered|fingerprints?|footprints?|receipts?|photographs?|photos?|recordings?|tapes?|notebook|diary)\b|bizonyíték|nyom\b|találta|találtak/i.test(said)) return null;
+      return { line: lineOf(template, said), object: objectFor(said, objects) };
+    case "room":
+      if (!/\b(room|house|home|apartment|flat|office|kitchen|bedroom|hotel|inside|upstairs|basement)\b|szoba|lakás|házban|iroda/i.test(said)) return null;
+      return { line: lineOf(template, said), object: objectFor(said, objects) };
+    case "street":
+      if (!/\b(street|road|highway|alley|walked|walking|drove|driving|car|outside|night|parking)\b|utca|országút|sétált|autó|éjjel|éjszaka/i.test(said)) return null;
+      return { line: lineOf(template, said), object: objectFor(said, objects) };
     case "walk":
       if (!/\b(walk|walks|walked|walking|run|runs|ran|running|leave|leaves|go|goes|went|arrive|arrives|arrived|sétál|mész|elindul)\b/i.test(said)) return null;
       return { line: headlineOf(said, 6), object: objectFor(said, objects) };
@@ -245,7 +332,7 @@ function ownRule(template, said) {
 // cannot fill it (four steps need four things the words do not give). A template with
 // an object parameter gets the thing the sentence names.
 export function ruleParams(template, sentences) {
-  const params = ruleWords(template, sentences);
+  const params = offScreen(template, ruleWords(template, sentences));
   if (!params) return null;
   const said = sentences.map((s) => s.text).join(" ");
   for (const [id, p] of Object.entries(template.params ?? {})) {
@@ -257,7 +344,7 @@ export function ruleParams(template, sentences) {
 function ruleWords(template, sentences) {
   // the words of one sentence: a line made across two reads as nonsense (a shot cut
   // from the words before another shot can hold the end of one and the start of the next)
-  const first = String(sentences[0]?.text ?? "").split(/(?<=[.!?])\s+/)[0];
+  const first = String(sentences[0]?.text ?? "").split(/(?<=[.!?])(?<![ap]\.m\.)\s+/)[0];
   const ws = wordsOf(first);
   if (!ws.length) return null;
   const said = sentences.map((s) => s.text).join(" ");
@@ -286,7 +373,7 @@ function ruleWords(template, sentences) {
     case "question":
       return /\?/.test(said) ? { question: upTo(0, 6).join(" ") } : null;
     case "number": {
-      const n = numberIn(said);
+      const n = numberIn(said.replace(DATE, " ").replace(CLOCK, " ").replace(/\b\d{1,2}:\d{2}\b/g, " "));
       return n && n.after !== "%" ? { value: n.value, before: n.before, after: n.after } : null;
     }
     case "percent": {
@@ -297,6 +384,8 @@ function ruleWords(template, sentences) {
       return null;
   }
 }
+
+const digitsSaid = (text, said) => (String(text).match(/\d+/g) ?? []).every((n) => said.includes(n));
 
 // The AI's params for a template, cut to their limits. Null when a required one
 // is missing or a number was not said.
@@ -337,7 +426,9 @@ export function cleanParams(template, params, sentences) {
       continue;
     }
     const text = capFor(template, v ?? "", p.maxWords ?? MAX_WORDS);
-    if (!text) {
+    // never a word the preset keeps off the screen, never a date the voice does not say
+    const allowed = text && !neverIn(text, template.never) && !(p.said && !digitsSaid(text, said));
+    if (!allowed) {
       if (p.required) return null;
       continue;
     }
@@ -372,7 +463,7 @@ export function ruleScene({ byId, sentences, previous, turn, first, title }) {
   const from = sentences[0].id;
   const to = sentences[sentences.length - 1].id;
   if (first && byId.title && previous !== byId.title.draw.component) {
-    const headline = capFor(byId.title, title, byId.title.params.headline.maxWords) || ruleParams(byId.title, sentences)?.headline;
+    const headline = [capFor(byId.title, title, byId.title.params.headline.maxWords), ruleParams(byId.title, sentences)?.headline].find((h) => h && !neverIn(h, byId.title.never));
     if (headline) return toScene(byId.title, { ...ruleParams(byId.title, sentences), headline }, { from, to });
   }
   // a preset's own templates come first, they fill only when the sentence says that thing
@@ -383,6 +474,11 @@ export function ruleScene({ byId, sentences, previous, turn, first, title }) {
     if (!t || t.draw.component === previous) continue;
     const params = ruleParams(t, sentences);
     if (params) return toScene(t, params, { from, to });
+  }
+  // a template that needs no words: for a sentence with none a preset may show
+  const said = sentences.map((s) => s.text).join(" ");
+  for (const t of Object.values(byId)) {
+    if (t.fallback && t.draw.component !== previous) return toScene(t, { object: objectFor(said, t.objects) }, { from, to });
   }
   return null;
 }

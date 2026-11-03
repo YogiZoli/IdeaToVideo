@@ -37,6 +37,7 @@ import { fileURLToPath } from "node:url";
 import { prepareBuild, buildDir, TRANSITIONS_FILE, COVERED_FILE } from "./index.mjs";
 import { engineDir } from "../../tools.mjs";
 import { duration, ffmpegRun } from "../../audio.mjs";
+import { HIT_SECONDS, synthHit } from "../../providers/music/synth.mjs";
 import { choosePiece, markPieces } from "../../footage/library.mjs";
 import { avatarClips } from "../avatar/index.mjs";
 import { cardForPreset, cardTheme, cardFamilies, fixContrast } from "../../brand/card.mjs";
@@ -69,7 +70,7 @@ export function loadComponent(name, { env = process.env } = {}) {
     const pb = loadPackBlock(name, env.ITV_IDENTITY_DIR);
     const compositionId = (/data-composition-id="([a-z0-9-]+)"/.exec(pb.html) ?? [])[1];
     if (!compositionId) throw new Error(`${name}: the block has no composition id.`);
-    return { name, item: pb.item, html: pb.html, target: null, assets: [], pack: { fontface: pb.fontface, seconds: pb.block.seconds, followBrand: pb.pack.followBrand, compositionId, builtin: pb.pack.builtin ? pb.pack : null } };
+    return { name, item: pb.item, html: pb.html, target: null, assets: [], pack: { fontface: pb.fontface, seconds: pb.block.seconds, sound: pb.block.sound, followBrand: pb.pack.followBrand, compositionId, builtin: pb.pack.builtin ? pb.pack : null } };
   }
   if (!/^[a-z0-9-]+$/.test(String(name))) throw new Error(`Not a component name: ${name}`);
   const dir = path.join(libraryDir(env), "components", name);
@@ -517,7 +518,7 @@ const hostHtml = (m, width, height, motion) => {
 };
 const NL = "\n";
 
-export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null, captions = null, pageScripts = [] }) {
+export function indexHtml({ width, height, total, theme, look, mounts, avatars = [], segments = [], footage = [], footageMode = "scene", language = "en", title = "Video", fontCss = "", motion = null, captions = null, pageScripts = [], sounds = [] }) {
   const hosts = mounts.map((m) => hostHtml(m, width, height, motion)).join(NL);
   const ground = motion?.backgrounds?.length
     ? motion.backgrounds
@@ -574,7 +575,7 @@ ${[fontCss, themeCss(theme, baseTheme(look))]
 ${ground}${footageMode === "background" ? footage.map((f) => "\n" + footageVideo(f, "background")).join("") : ""}
 ${hosts}${footageMode === "background" ? "" : footage.map((f) => "\n" + footageVideo(f, "scene")).join("")}
 ${avatars.map((a) => avatarVideo(a, width, height)).join("\n")}${segments.map((g) => "\n" + segmentVideo(g)).join("")}${captions ? `\n    <div id="captions" class="clip" data-composition-id="${captions.compositionId}" data-composition-src="${captions.src}" data-start="0" data-duration="${total}" data-track-index="9" data-width="${width}" data-height="${height}" data-layout-allow-overlap></div>` : ""}
-    <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>
+    <audio id="main-audio" src="vo_bgm.mp3" data-start="0" data-duration="${total}" data-track-index="2"></audio>${sounds.map((x, n) => `\n    <audio id="sound-${n + 1}" src="${x.file}" data-start="${x.start}" data-duration="${x.seconds}" data-track-index="${11 + (n % 2)}" data-volume="${SOUND_VOLUME}"></audio>`).join("")}
     </div>
     <script>
       window.__timelines = window.__timelines || {};
@@ -588,6 +589,19 @@ ${extra}    </script>
 // What a build moves with when the Identity has no Motion profile: cuts, a
 // plain background and the continuous camera push (motion/stage.mjs).
 export const BASE_MOTION = Object.freeze({ transition: { mood: "premium", primary: CUT, accent: null, energy: "calm", where: "every" }, background: { type: "plain", vars: {} }, camera: { move: "push" }, scenes: { off: [], style: {} } });
+
+// A sound a preset's block asks for (its `sound` in pack.json), made by code, on its second of the
+// scene. Under the narration, never over it. Two tracks: a sound can outlast a short scene.
+const SOUND_VOLUME = 0.55;
+const SOUND_FILES = { hit: { file: "sounds/hit.wav", make: synthHit, seconds: HIT_SECONDS } };
+export function soundPlan(scenes, components, times) {
+  return scenes.flatMap((sc, n) => {
+    const sound = components.get(sc.component)?.pack?.sound;
+    const made = sound && SOUND_FILES[sound.kind];
+    if (!made) return [];
+    return [{ kind: sound.kind, file: made.file, start: Math.round((times[n].start + sound.at) * 1000) / 1000, seconds: made.seconds }];
+  });
+}
 
 // The Motion profile's part of a build (motion/): scene changes, camera
 // wrappers, background pieces. `sectionStarts`: the scenes that open a new
@@ -766,6 +780,12 @@ export async function assemble(projectDir, { env = process.env, total, language,
   });
   if (mp?.shader) fs.copyFileSync(path.join(engineDir(env), "node_modules", "@hyperframes", "shader-transitions", "dist", "index.global.js"), path.join(out, SHADER_FILE));
   const pageScripts = packScripts([...components.values()], out, env);
+  const sounds = soundPlan(scenes, components, times);
+  for (const kind of new Set(sounds.map((x) => x.kind))) {
+    const made = SOUND_FILES[kind];
+    fs.mkdirSync(path.dirname(path.join(out, made.file)), { recursive: true });
+    fs.writeFileSync(path.join(out, made.file), made.make());
+  }
   // The look's fonts, local: no font is fetched while rendering.
   const fonts = fontFaces(look.families ?? [], { dir: libraryDir(env) });
   for (const f of fonts.files) {
@@ -810,7 +830,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount, pageScripts }));
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, sounds, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount, pageScripts }));
   return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
 }
 

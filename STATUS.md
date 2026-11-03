@@ -1,14 +1,53 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-03 (Archive Collage preset, DECISIONS 155 to 157)
+Frissítve: 2026-11-03 (Night Case File preset, DECISIONS 158 to 160)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-03, Archive Collage, DECISIONS 155 to 157)
+## Now (2026-11-03, Night Case File, DECISIONS 158 to 160)
 
-**Phase 6 of `docs/BUILD_PLAN.md` is done. Phase 7, Night Case File, is next.**
+**Phase 7 of `docs/BUILD_PLAN.md` is done. Phase 8, Soft Clay Chronicle, is next.**
+
+- **Where to find it:** a channel's recipe, Style: Night Case File. Choosing it turns B-roll off and sets the dark music mood; both switches stay.
+- **What it makes:** true story documentaries. Dark blue-black streets and rooms from simple shapes, faceless figures glowing amber, date and
+  place stamps, an evidence board with one string, one thing under a lamp, dark maps with pins and routes. 15 scene templates, 22 things
+  drawn by code. Nothing is downloaded when a video is made and nothing is paid. Its own colors and the OFL fonts Bebas Neue and IBM Plex Mono.
+- **Never a weapon, blood or violence:** a sentence that says such a thing gets windows flashing in the dark and a dull sound made by code, and
+  no word of it on screen (English and Hungarian list, `never` in the preset). The script writer is told not to describe it.
+- **Your call, Claude chose (DECISIONS 159 and 160):**
+  - The voice still says what the script says, and captions, if the channel has them, show those words. A pasted finished script stays as it is.
+  - Research is always on for this style and cannot be turned off, so even a finished script needs your AI key on this style.
+  - Nobody has listened to the flash's sound yet. It is measurably there (the low band up 4 dB). **Your ear decides the level.**
+- **Fact-check:** the brief stops the run as in Phase 3, one click goes on. Sources and flagged claims go into the Publishing Card, never into
+  the YouTube text. A video with no sources says `unchecked` on the card.
+- **The AI only fills templates.** A dead AI still gets a varied plan, though a line cut by rule can read oddly ("A man walked / side door and went", "At 11:40 / P.M").
+- **Speed:** 60 s of video renders in about 130 s (draft quality), 24 MB.
+- **Also fixed, every preset:** "At 11:40" no longer makes a giant 11, and a date no longer makes a number. A time on screen keeps its colon.
+- Tests: Node 615 of 618 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check
+  0 errors, new `scripts/phase2/nightfile-e2e.mjs` 65/65 with the real free voice and real renders, Motion Frames' channel e2e 56/56. Rust not touched, not run again.
+- Merged into `main` from branch `preset-night-case-file` and pushed. No PR, no GitHub Actions run (`build.yml` runs only
+  on a PR or by hand).
+- Local installer built 2026-11-03 14:56 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The installed copy's own node,
+  runner and engine rendered a real Night Case File video (13/13 steps, 23 s of video in 75 s). The app was opened and the style list clicked in the
+  installed window: the style, its dark mood and the locked research box show. Cancelled, your recipes were not changed.
+- Samples: `C:/Users/gdp/Videos/IdeaToVideo-mintak/2026-11-03_night-case-file_minden-sablon.mp4` (every template once) and
+  `2026-11-03_night-case-file_szabaly-alapjan.mp4` (planned by rule, no AI). Draft quality. The story in them is invented, as a test.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch
+  (about 15 minutes).
+
+**Not tried yet:** a real AI on the plan, the brief and the script (rule, a pasted script and a stand-in brief only), so Google Search grounding
+has still not run against the real service; Hungarian on this preset (only the forbidden words are tested); a video over 60 s.
+
+**Next:** in a new chat, Phase 8 (Soft Clay Chronicle). `docs/BUILD_PLAN.md`, "What later phases reuse", says what to start from.
+Zoltan's own tries are still open: one true story on Night Case File with research on, one explainer on Archive Collage, one what-if story on
+Stick World, one strange question on 3D Explainer, and Phase 3's (one topic with research, one set of notes, one recording).
+
+## Earlier (2026-11-03, Archive Collage, DECISIONS 155 to 157)
+
+**Phase 6 of `docs/BUILD_PLAN.md` is done.**
 
 - **Where to find it:** a channel's recipe, Style: Archive Collage. Choosing it turns B-roll off; the switch stays.
 - **What it makes:** documentary collage explainers. Aged paper with a faint map, halftone cutouts with a rough light
