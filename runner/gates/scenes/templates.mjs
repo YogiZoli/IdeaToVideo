@@ -37,7 +37,7 @@ const longest = (ws) => ws.reduce((best, w) => (w.length > best.length ? w : bes
 // ---- the prompt ------------------------------------------------------------------
 
 export function templateList(templates) {
-  const kind = (p) => (p.type === "number" ? " (number)" : p.type === "object" ? " (one of OBJECTS)" : ` (max ${p.maxWords} words)`);
+  const kind = (p) => (p.type === "number" ? " (number)" : p.type === "object" ? " (one of OBJECTS)" : p.type === "place" ? " (a country or big city the sentence names)" : ` (max ${p.maxWords} words)`);
   const list = templates
     .map((t) => `${t.id}: ${t.when} Params: ${Object.entries(t.params).map(([id, p]) => `${id}${p.required ? "" : "?"}${kind(p)}`).join(", ")}`)
     .join("\n");
@@ -96,11 +96,56 @@ export function objectsIn(text, objects = []) {
   return out;
 }
 
+// A name as a sentence writes it: a Hungarian one takes an ending (Párizsban, Angliából).
+const PLACE_ENDINGS = /^(?:'s|’s|ban|ben|ba|be|ból|ből|ról|ről|ra|re|nak|nek|hoz|hez|höz|tól|től|ig|on|en|ön|n|i)$/;
+const LETTERS = /[\p{L}\p{N}]/u;
+
+/**
+ * The places a text names, in the order it says them, from a preset's list. A name is written
+ * with its capital, so "turkey" on a plate and "reading" are not places. Pure.
+ */
+export function placesIn(text, places = []) {
+  const said = String(text);
+  const hits = [];
+  for (const place of places) {
+    for (const word of place.words ?? []) {
+      // a Hungarian name's last a or e lengthens before an ending
+      const stems = /[ae]$/.test(word) ? [word, word.slice(0, -1) + (word.endsWith("a") ? "á" : "é")] : [word];
+      for (const stem of stems) {
+        for (let at = said.indexOf(stem); at >= 0; at = said.indexOf(stem, at + 1)) {
+          if (at > 0 && LETTERS.test(said[at - 1])) continue;
+          let end = at + stem.length;
+          while (end < said.length && (LETTERS.test(said[end]) || "'’".includes(said[end]))) end++;
+          const tail = said.slice(at + stem.length, end);
+          if (stem !== word && !tail) continue;
+          if (!tail || PLACE_ENDINGS.test(tail)) hits.push({ place, word, at, end: at + stem.length });
+        }
+      }
+    }
+  }
+  hits.sort((a, b) => a.at - b.at || b.end - a.end);
+  const out = [];
+  let reached = 0;
+  for (const h of hits) {
+    if (h.at < reached) continue;
+    reached = h.end;
+    if (!out.some((x) => x.place.id === h.place.id)) out.push({ place: h.place, word: h.word });
+  }
+  return out;
+}
+
+// A place by its id, name or word, as an AI may answer it.
+function placeNamed(answer, places = []) {
+  const key = wordKey(answer);
+  if (!key) return null;
+  return places.find((p) => wordKey(p.id) === key || wordKey(p.name) === key || (p.words ?? []).some((w) => wordKey(w) === key)) ?? null;
+}
+
 // Which object a text shows. Nothing named: the preset's first, its neutral one.
 const objectFor = (text, objects = []) => objectsIn(text, objects)[0]?.object.id ?? objects[0]?.id ?? "";
 
 // A line cut to its limit must not stop on a word that needs the next one.
-const HANGING = /^(a|an|the|and|or|but|of|to|in|on|at|for|with|from|by|is|are|was|were|be|that|this|its|your|my|az|egy|és|de|hogy)$/i;
+const HANGING = /^(a|an|the|and|or|but|of|to|in|on|at|for|with|from|by|is|are|was|were|be|that|this|its|your|my|when|while|if|than|as|into|onto|through|az|egy|és|de|hogy)$/i;
 function headlineOf(text, max) {
   const ws = wordsOf(text).slice(0, max);
   while (ws.length > 1 && HANGING.test(ws.at(-1))) ws.pop();
@@ -115,6 +160,7 @@ function around(text, joint, max) {
   const right = text.slice(m.index + m[0].length);
   const before = wordsOf(left).slice(-max);
   const after = wordsOf(right).slice(0, max);
+  while (after.length > 2 && HANGING.test(after.at(-1))) after.pop();
   return before.length >= 2 && after.length >= 2 ? { before: before.join(" "), after: after.join(" "), left, right, joint: m[0].toLowerCase() } : null;
 }
 
@@ -168,6 +214,25 @@ function ownRule(template, said) {
       const quoted = /["“„]([^"”]+)["”]/.exec(said)?.[1];
       return { said: headlineOf(quoted ?? said, 6), object: objectFor(said, objects) };
     }
+    case "year": {
+      const m = /\b(in|since|by|until|from|year|around|early|late|after|before)\s+(1[0-9]{3}|20[0-9]{2})\b|\b(1[0-9]{3}|20[0-9]{2})(?:-ban|-ben|-ig|-től|-tól|-as|-es)/i.exec(said);
+      if (!m) return null;
+      return { value: Number(m[2] ?? m[3]), line: headlineOf(said, 6), object: objectFor(said, objects) };
+    }
+    case "route": {
+      const found = placesIn(said, template.places);
+      if (found.length < 2) return null;
+      const [from, to] = found;
+      return { fromPlace: from.place.id, toPlace: to.place.id, fromLabel: from.word, toLabel: to.word, line: headlineOf(said, 6) };
+    }
+    case "map": {
+      const found = placesIn(said, template.places)[0];
+      if (!found) return null;
+      return { place: found.place.id, label: found.word, line: headlineOf(said, 6) };
+    }
+    case "alert":
+      if (!/\b(crisis|collapse|collapsed|collapses|disaster|catastrophe|crash|crashed|panic|bankrupt|bankruptcy|emergency|meltdown)\b|válság|összeoml|katasztróf|csőd|pánik/i.test(said)) return null;
+      return { line: headlineOf(said, 6), object: objectFor(said, objects) };
     case "walk":
       if (!/\b(walk|walks|walked|walking|run|runs|ran|running|leave|leaves|go|goes|went|arrive|arrives|arrived|sétál|mész|elindul)\b/i.test(said)) return null;
       return { line: headlineOf(said, 6), object: objectFor(said, objects) };
@@ -198,22 +263,28 @@ function ruleWords(template, sentences) {
   const said = sentences.map((s) => s.text).join(" ");
   const own = ownRule(template, first);
   if (own) return own;
+  // on a preset with objects a line it has to cut does not stop on a word that needs the next one
+  const upTo = (from, max) => {
+    const part = ws.slice(from, from + max);
+    while (template.objects && part.length > 1 && HANGING.test(part.at(-1))) part.pop();
+    return part;
+  };
   switch (template.id) {
     case "statement": {
       const a = Math.min(5, Math.ceil(ws.length / 2));
-      return { line1: ws.slice(0, a).join(" "), line2: ws.slice(a, a + 4).join(" ") || longest(ws) };
+      return { line1: upTo(0, a).join(" "), line2: upTo(a, 4).join(" ") || longest(ws) };
     }
     case "word":
       return { word: longest(ws) };
     case "highlight": {
-      const line = ws.slice(0, 6);
+      const line = upTo(0, 6);
       return { line: line.join(" "), mark: longest(line) };
     }
     case "title":
     case "chapter":
       return { headline: ws.slice(0, 5).join(" ") };
     case "question":
-      return /\?/.test(said) ? { question: ws.slice(0, 6).join(" ") } : null;
+      return /\?/.test(said) ? { question: upTo(0, 6).join(" ") } : null;
     case "number": {
       const n = numberIn(said);
       return n && n.after !== "%" ? { value: n.value, before: n.before, after: n.after } : null;
@@ -240,6 +311,18 @@ export function cleanParams(template, params, sentences) {
       const asked = String(v ?? "").trim().toLowerCase();
       if (ids.includes(asked)) out[id] = asked;
       else if (p.required) out[id] = objectFor(said, template.objects);
+      continue;
+    }
+    // a place is one the maps have: the one named, else the one the sentences say
+    if (p.type === "place") {
+      const place = placeNamed(v, template.places);
+      if (place) out[id] = place.id;
+      else if (p.required) {
+        const taken = Object.values(out);
+        const found = placesIn(said, template.places).find((x) => !taken.includes(x.place.id));
+        if (!found) return null;
+        out[id] = found.place.id;
+      }
       continue;
     }
     if (p.type === "number") {
@@ -293,7 +376,7 @@ export function ruleScene({ byId, sentences, previous, turn, first, title }) {
     if (headline) return toScene(byId.title, { ...ruleParams(byId.title, sentences), headline }, { from, to });
   }
   // a preset's own templates come first, they fill only when the sentence says that thing
-  const own = Object.values(byId).filter((t) => t.ruleFirst).map((t) => t.id);
+  const own = Object.values(byId).filter((t) => t.ruleFirst && !t.rare).map((t) => t.id);
   const tried = [...own, "percent", "number", ...Array.from({ length: ROTATION.length }, (_, i) => ROTATION[(turn + i) % ROTATION.length]), "chapter", "question"];
   for (const id of tried) {
     const t = byId[id];
@@ -302,6 +385,49 @@ export function ruleScene({ byId, sentences, previous, turn, first, title }) {
     if (params) return toScene(t, params, { from, to });
   }
   return null;
+}
+
+/**
+ * A template the plan keeps rare (`rare: {every}`): never closer than that many scenes. A rule
+ * gives one to a plain scene whose sentences say that thing, an AI's extra ones become the
+ * rule's choice. Over the whole plan, so it holds across the parts. Pure.
+ */
+export function spaceRare(scenes, { templates, sentences, title = "" }) {
+  const rare = templates.filter((t) => t.rare);
+  if (!rare.length) return scenes;
+  const byId = Object.fromEntries(templates.map((t) => [t.id, t]));
+  const index = new Map(sentences.map((s, i) => [s.id, i]));
+  const spanOf = (sc) => sentences.slice(index.get(sc.from), (index.get(sc.to ?? sc.from) ?? 0) + 1);
+  const out = scenes.map((sc) => ({ ...sc }));
+  for (const t of rare) {
+    let since = t.rare.every;
+    out.forEach((sc, i) => {
+      if (sc.template === t.id) {
+        if (since >= t.rare.every) since = 0;
+        else {
+          let other = null;
+          for (let turn = 0; turn < 4 && !other; turn++) {
+            const tried = ruleScene({ byId, sentences: spanOf(sc), previous: out[i - 1]?.component ?? null, turn: i + turn, first: false, title });
+            if (tried && tried.component !== out[i + 1]?.component) other = tried;
+          }
+          if (other) out[i] = other;
+          since++;
+        }
+        return;
+      }
+      // it wins over any other picture but the opening: this is the moment of the video
+      if (since >= t.rare.every && sc.template && sc.template !== "title" && out[i - 1]?.template !== t.id && out[i + 1]?.template !== t.id) {
+        const params = ruleParams(t, spanOf(sc));
+        if (params) {
+          out[i] = toScene(t, params, { from: sc.from, to: sc.to ?? sc.from });
+          since = 0;
+          return;
+        }
+      }
+      since++;
+    });
+  }
+  return out;
 }
 
 /**
@@ -468,7 +594,7 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
     planned.push(...best.scenes);
   }
 
-  let answer = joinShort({ scenes: planned }, { sentences, total, calls, gaps });
+  let answer = joinShort({ scenes: spaceRare(planned, { templates, sentences, title }) }, { sentences, total, calls, gaps });
   const { issues, warnings: seen } = checkScenes(answer, { sentences, total, env, off, calls, gaps, pace });
   const hard = issues.filter((i) => !isSoft(i));
   if (hard.length) {

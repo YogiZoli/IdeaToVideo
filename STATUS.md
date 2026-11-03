@@ -1,14 +1,51 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-03 (Stick World preset, DECISIONS 152 to 154)
+Frissítve: 2026-11-03 (Archive Collage preset, DECISIONS 155 to 157)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-03, Stick World, DECISIONS 152 to 154)
+## Now (2026-11-03, Archive Collage, DECISIONS 155 to 157)
 
-**Phase 5 of `docs/BUILD_PLAN.md` is done. Phase 6, Archive Collage, is next.**
+**Phase 6 of `docs/BUILD_PLAN.md` is done. Phase 7, Night Case File, is next.**
+
+- **Where to find it:** a channel's recipe, Style: Archive Collage. Choosing it turns B-roll off; the switch stays.
+- **What it makes:** documentary collage explainers. Aged paper with a faint map, halftone cutouts with a rough light
+  keyline and an offset accent stroke, torn strips of words, giant ticking numbers, underline swipes, a date stamp, map pins
+  and route lines on real maps, and a rare frame that floods with the accent. 15 scene templates, 32 things drawn by code.
+  Nothing is downloaded when a video is made and nothing is paid. Its own colors and the OFL fonts Archivo Black and Newsreader.
+- **Maps:** Natural Earth (public domain) is bundled, 242 countries and 236 cities. Logged in every video's license file,
+  never in a YouTube description. A sentence that names a place gets a pin, one that names two gets a route.
+- **As the plan asks:** six layers at different depths in real parallax under one slow drift per scene, spring pop-ups with a
+  slight overshoot, staggered entrances. The alert comes at most once per 16 scenes, only where the words say crisis or the like.
+- **Your call, Claude chose:** the cutouts are drawn by code, not real photos put through dots (DECISIONS 155). The draft
+  of 69 s is about 85 MB because of the print grain; say if that is too much.
+- **The AI only fills templates and names things.** A dead AI still gets a varied video by rule.
+- **Speed:** 69 s of video renders in about 160 to 230 s (draft quality), slower than Stick World.
+- Tests: Node 590 of 593 (the one red is `traffic-card.test.mjs`, red on main before; 2 live tests skipped), UI check
+  0 errors, new `scripts/phase2/collage-e2e.mjs` 51/51 with the real free voice and real renders. Rust not touched, not run again.
+- Merged into `main` from branch `preset-archive-collage` and pushed. No PR, no GitHub Actions run (`build.yml` runs only
+  on a PR or by hand).
+- Local installer built 2026-11-03 13:35 and installed over the old app:
+  `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The installed copy's own node,
+  runner and engine rendered a real Archive Collage video (42/42 steps, 69 s of video in 150 s). The app was opened. The style
+  list was not clicked in the installed window (screen access was declined this session); the installed runner does offer it.
+- Samples: `C:/Users/gdp/Videos/IdeaToVideo-mintak/2026-11-03_archive-collage_minden-sablon.mp4` (every template once) and
+  `2026-11-03_archive-collage_szabaly-alapjan.mp4` (planned by rule, no AI). Draft quality.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch
+  (about 20 minutes).
+
+**Not tried yet:** a real AI on the plan and on the script's places and years (rule and a pasted script only); Hungarian on
+this preset (only the finding of places is tested); a video over 69 s.
+
+**Next:** in a new chat, Phase 7 (Night Case File). `docs/BUILD_PLAN.md`, "What later phases reuse", says what to start
+from. Zoltan's own tries are still open: one explainer on Archive Collage, one what-if story on Stick World, one strange
+question on 3D Explainer, and Phase 3's (one topic with research, one set of notes, one recording).
+
+## Earlier (2026-11-03, Stick World, DECISIONS 152 to 154)
+
+**Phase 5 of `docs/BUILD_PLAN.md` is done.**
 
 - **Where to find it:** a channel's recipe, Style: Stick World. Choosing it turns B-roll off; the switch stays.
 - **What it makes:** what-if stories told to "you". Black stick figures on a light plain background, you are the one

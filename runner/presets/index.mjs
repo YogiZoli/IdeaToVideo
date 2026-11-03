@@ -43,6 +43,7 @@ export function checkPreset(p) {
   for (const t of Array.isArray(list) ? list : []) {
     const at = `template ${t?.id ?? "?"}`;
     if (Object.values(t?.params ?? {}).some((x) => x.type === "object") && !p.objects?.length) issues.push(`${at}: an object parameter needs the preset's objects list`);
+    if (Object.values(t?.params ?? {}).some((x) => x.type === "place") && !p.places?.length) issues.push(`${at}: a place parameter needs the preset's places list`);
     if (!t?.id || seen.has(t.id)) issues.push(`${at}: needs a unique id`);
     seen.add(t?.id);
     if (!String(t?.when ?? "").trim()) issues.push(`${at}: says nothing about when it fits`);
@@ -65,6 +66,8 @@ export function listPresets({ dir = here } = {}) {
     const file = path.join(dir, e.name, "preset.json");
     if (!e.isDirectory() || !fs.existsSync(file)) continue;
     const p = JSON.parse(fs.readFileSync(file, "utf8"));
+    // a long list lives in its own file, and never goes into a prompt or a card
+    if (typeof p.places === "string") p.places = JSON.parse(fs.readFileSync(path.join(dir, e.name, p.places), "utf8"));
     const issues = checkPreset(p);
     if (issues.length) throw new Error(`The preset ${e.name} is not valid: ${issues.slice(0, 3).join("; ")}`);
     out.push(p);
@@ -122,6 +125,6 @@ export function resolveTemplates(preset, { off = [], env = process.env } = {}) {
     const use = t.use.find((u) => !off.includes(u.component) && usable(u));
     if (!use) return [];
     const variables = PACK_COMPONENTS.get(use.component)?.variables ?? loadComponent(use.component, { env }).item.variables ?? [];
-    return [{ ...t, ...(preset.objects ? { objects: preset.objects } : {}), draw: { ...use, types: Object.fromEntries(variables.map((v) => [v.id, v.type])) } }];
+    return [{ ...t, ...(preset.objects ? { objects: preset.objects } : {}), ...(preset.places ? { places: preset.places } : {}), draw: { ...use, types: Object.fromEntries(variables.map((v) => [v.id, v.type])) } }];
   });
 }

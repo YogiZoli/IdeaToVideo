@@ -237,7 +237,9 @@ the narrator talks to "you". Big readable text for key numbers.
 
 ### Phase 6: Preset "Archive Collage" (documentary collage explainer)
 
-Status: todo
+Status: done (2026-11-03, DECISIONS 155 to 157). Not tried yet: a real AI on the plan and on the
+script's places and years (the rule and a pasted script only), Hungarian on this preset (only the finding
+of places is tested), a video over 69 seconds. Cutouts are drawn by code, no real photo is halftoned (DECISIONS 155).
 
 Aged paper and map texture as the stage. Halftone black-and-white cutouts
 (objects, places, code-drawn generic figures) with a rough light keyline and an
@@ -324,6 +326,14 @@ Other findings:
   The same one tween and scene eviction, no three.js. Its `figure` draws a jointed person, `gait` and `route`
   walk with planted feet from the distance alone, `eyesAt` blinks on the video's own clock (the host's
   `data-start`). Faces are two eyes at most.
+- Paper, torn edges, halftone cutouts and maps on a 2D canvas: `runner/presets/archive-collage/pack/shared/collage.js`.
+  `sticker` turns any gray drawing into print dots with a keyline; `cameraAt` and `layerAt` give each layer its own
+  move, and the paper is one picture behind every canvas, so a cut never shows an empty frame.
+- Maps (Night Case File's places too): `pack/shared/map-data.js` and `places.json`, written by `scripts/make-map.mjs` from
+  Natural Earth. A template parameter of type `place` takes a name the maps have (`placesIn`, `cleanParams`); the list
+  never goes into a prompt. A pack's `script` can be a list of files.
+- `rare: { every: N }` on a template: `spaceRare` keeps it N scenes apart over the whole plan.
+- `assets` in `preset.json`: what a preset bundles from outside, logged in every video's `assets_license.json` at the build.
 - `ruleParams` in `runner/gates/scenes/templates.mjs` knows the shared template ids (title, chapter,
   statement, word, highlight, question, number, percent), whatever preset they are in. A preset adds
   its own rule in `ownRule`, and `ruleFirst` on a template makes a rule try it before the rotation, in the
@@ -351,8 +361,8 @@ Other findings:
 
 ## Next step
 
-Phase 6: Preset "Archive Collage". First, Zoltan tries Phase 5 on the installer: a channel on Stick World, one
-what-if story, up to the render. Phases 3 and 4 too if he has not yet (one topic with research on, one set of
-notes, one real recording, one strange question), and his decisions on the table above if he has made them.
-Still open in that table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143) and the Z-Image
-picture size (DECISIONS 146).
+Phase 7: Preset "Night Case File". First, Zoltan tries Phase 6 on the installer: a channel on Archive Collage, one
+explainer with real places, years and numbers, up to the render. Phases 3, 4 and 5 too if he has not yet (one topic with
+research on, one set of notes, one real recording, one strange question, one what-if story), and his decisions on the table
+above if he has made them. Still open in that table's spirit: Google's terms on showing Search Suggestions (DECISIONS 143)
+and the Z-Image picture size (DECISIONS 146).

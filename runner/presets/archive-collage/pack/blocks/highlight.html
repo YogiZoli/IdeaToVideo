@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape" data-composition-variables='[{"id":"line","type":"string","label":"Line","default":""},{"id":"mark","type":"string","label":"Mark","default":""},{"id":"object","type":"string","label":"Object","default":"figure"}]'>
+<head><meta charset="UTF-8"/></head>
+<body>
+<template>
+<div id="root" data-composition-id="cx-highlight" data-width="1920" data-height="1080" data-start="0" data-duration="600">
+<div class="cx-root">
+<canvas class="cx-view" width="1" height="1"></canvas>
+<section class="clip cx-clip" data-start="0" data-duration="600" data-scene-dur="5" data-track-index="1"></section>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+window.__timelines["cx-highlight"] = ITVCollage.block(document.getElementById("root"), "highlight", window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {});
+</script>
+</div>
+</template>
+</body>
+</html>

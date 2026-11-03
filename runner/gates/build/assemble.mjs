@@ -488,9 +488,9 @@ export function packScripts(components, out, env = process.env) {
       fs.writeFileSync(path.join(out, THREE_FILE), `var THREE = {};\n(function (exports) {\n${code}\n})(THREE);\n`);
       names.push(THREE_FILE);
     }
-    if (p.script) {
-      const name = `${p.id}-${path.basename(p.script)}`;
-      fs.copyFileSync(path.join(p.dir, ...p.script.split("/")), path.join(out, name));
+    for (const script of [p.script ?? []].flat()) {
+      const name = `${p.id}-${path.basename(script)}`;
+      fs.copyFileSync(path.join(p.dir, ...script.split("/")), path.join(out, name));
       names.push(name);
     }
   }

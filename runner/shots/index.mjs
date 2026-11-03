@@ -66,7 +66,7 @@ export function wordFor(text, said) {
 }
 
 // Not text on screen: icon names and what only marks a word already shown.
-const NOT_ELEMENT = /^(l|r)?ico\d*$|^layout$|^emphasis_word$|^underline_word$|^mark$|^cues$|^object\d*$|^(small|big|left|right|from|to)Object$/;
+const NOT_ELEMENT = /^(l|r)?ico\d*$|^layout$|^emphasis_word$|^underline_word$|^mark$|^cues$|^object\d*$|^(small|big|left|right|from|to)Object$|^(place|fromPlace|toPlace)$/;
 
 /** What a row puts on screen, in order: text and numbers. */
 export function elementsOf(sc, { env = process.env } = {}) {

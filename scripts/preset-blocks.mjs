@@ -12,6 +12,7 @@ import path from "node:path";
 export const text = (maxWords, required = true) => ({ maxWords, required });
 export const object = (required = true) => ({ type: "object", required });
 export const number = () => ({ type: "number", required: true, said: true });
+export const place = (required = true) => ({ type: "place", required });
 
 const label = (id) => id.replace(/([A-Z0-9])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 
@@ -22,7 +23,7 @@ export const variablesOf = (b, neutral) =>
     type: p.type === "number" ? "number" : "string",
     label: label(id),
     default: p.type === "number" ? 0 : p.type === "object" ? neutral : "",
-    ...(p.required && p.type !== "object" ? {} : { optional: true }),
+    ...(p.required && p.type !== "object" && p.type !== "place" ? {} : { optional: true }),
     ...(p.maxWords ? { maxWords: p.maxWords } : {}),
   }));
 
@@ -73,6 +74,7 @@ export function writePack({ dir, pack, name, camera, runtime = [], script, block
     label: b.label,
     when: b.when,
     ...(b.first ? { ruleFirst: true } : {}),
+    ...(b.rare ? { rare: b.rare } : {}),
     params: b.params,
     use: [{ component: `${pack}:${b.id}`, vars: Object.fromEntries(Object.keys(b.params).map((p) => [p, `$${p}`])) }],
   }));

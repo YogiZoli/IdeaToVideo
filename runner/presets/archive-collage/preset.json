@@ -1,0 +1,922 @@
+{
+  "schema": "style-preset/1",
+  "id": "archive-collage",
+  "label": "Archive Collage",
+  "description": "A documentary collage explainer. Halftone cutouts on aged paper and maps, giant numbers, map pins and route lines, torn edges and print grain, one hot accent. Layers move in parallax under one slow camera drift.",
+  "engine": "script",
+  "scriptNote": "A documentary explainer built on facts. Name the real places, and say the years and the key numbers in digits. Write sentences of 8 to 16 words, one fact per sentence, because each one gets its own shot. Never name or describe a real person's looks.",
+  "ideaNote": "Each video explains how something in history, money or the world really happened, with places, dates and numbers.",
+  "defaults": {
+    "broll": false
+  },
+  "tokens": {
+    "appearance": "light",
+    "colors": {
+      "background": "#e6dbc2",
+      "surface": "#f3ebd8",
+      "border": "#bdae8c",
+      "text": "#17140f",
+      "muted": "#5f5441",
+      "primary": "#e8401c",
+      "secondary": "#0e6a70",
+      "tertiary": "#5f5441"
+    },
+    "fonts": {
+      "display": "Archivo Black",
+      "body": "Newsreader"
+    },
+    "shape": {
+      "corners": "none",
+      "cards": "flat"
+    },
+    "texture": "aged paper, map lines, print grain, matte"
+  },
+  "shotRules": {
+    "pacing": "balanced",
+    "cutFrequency": "A new shot on most sentences, plain cuts.",
+    "camera": "One slow drift per scene, layers at different depths move in real parallax. The scene owns it, not the channel's Motion profile.",
+    "characters": "Generic faceless figures drawn by code as halftone cutouts. Never a recognizable real person.",
+    "sound": "No transition sounds. The narration carries the video, the music sits under it."
+  },
+  "assets": [
+    {
+      "title": "Natural Earth 1:50m countries and 1:110m populated places, simplified",
+      "source": "natural-earth",
+      "sourceUrl": "https://www.naturalearthdata.com/",
+      "license": "pd",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "author": "Natural Earth",
+      "date": "2026-11-03"
+    }
+  ],
+  "places": "places.json",
+  "objects": [
+    {
+      "id": "figure",
+      "words": [
+        "person",
+        "man",
+        "woman",
+        "worker",
+        "citizen",
+        "ember",
+        "férfi",
+        "nő"
+      ]
+    },
+    {
+      "id": "crowd",
+      "words": [
+        "people",
+        "crowd",
+        "workers",
+        "population",
+        "citizens",
+        "voters",
+        "emberek",
+        "tömeg",
+        "lakosság"
+      ]
+    },
+    {
+      "id": "ship",
+      "words": [
+        "ship",
+        "ships",
+        "boat",
+        "boats",
+        "fleet",
+        "cargo",
+        "vessel",
+        "hajó",
+        "flotta"
+      ]
+    },
+    {
+      "id": "plane",
+      "words": [
+        "plane",
+        "planes",
+        "airplane",
+        "aircraft",
+        "flight",
+        "airline",
+        "repülő"
+      ]
+    },
+    {
+      "id": "train",
+      "words": [
+        "train",
+        "trains",
+        "railway",
+        "railroad",
+        "rail",
+        "vonat",
+        "vasút"
+      ]
+    },
+    {
+      "id": "car",
+      "words": [
+        "car",
+        "cars",
+        "truck",
+        "trucks",
+        "autó",
+        "teherautó"
+      ]
+    },
+    {
+      "id": "factory",
+      "words": [
+        "factory",
+        "factories",
+        "industry",
+        "plant",
+        "mill",
+        "gyár",
+        "ipar"
+      ]
+    },
+    {
+      "id": "city",
+      "words": [
+        "city",
+        "cities",
+        "town",
+        "towns",
+        "skyline",
+        "város"
+      ]
+    },
+    {
+      "id": "tower",
+      "words": [
+        "tower",
+        "towers",
+        "skyscraper",
+        "lighthouse",
+        "torony"
+      ]
+    },
+    {
+      "id": "bridge",
+      "words": [
+        "bridge",
+        "bridges",
+        "canal",
+        "híd",
+        "csatorna"
+      ]
+    },
+    {
+      "id": "bank",
+      "words": [
+        "bank",
+        "banks",
+        "government",
+        "parliament",
+        "court",
+        "museum",
+        "bankok",
+        "kormány",
+        "parlament"
+      ]
+    },
+    {
+      "id": "house",
+      "words": [
+        "house",
+        "houses",
+        "home",
+        "homes",
+        "housing",
+        "ház",
+        "otthon"
+      ]
+    },
+    {
+      "id": "barrel",
+      "words": [
+        "oil",
+        "barrel",
+        "barrels",
+        "fuel",
+        "petroleum",
+        "olaj",
+        "hordó"
+      ]
+    },
+    {
+      "id": "coins",
+      "words": [
+        "coin",
+        "coins",
+        "gold",
+        "silver",
+        "money",
+        "dollars",
+        "dollar",
+        "euro",
+        "pounds",
+        "pénz",
+        "arany",
+        "ezüst",
+        "dollár"
+      ]
+    },
+    {
+      "id": "cash",
+      "words": [
+        "cash",
+        "banknote",
+        "banknotes",
+        "salary",
+        "wage",
+        "wages",
+        "debt",
+        "profit",
+        "bill",
+        "bills",
+        "bankjegy",
+        "fizetés",
+        "adósság"
+      ]
+    },
+    {
+      "id": "crown",
+      "words": [
+        "crown",
+        "empire",
+        "kingdom",
+        "throne",
+        "royal",
+        "monarchy",
+        "korona",
+        "birodalom",
+        "királyság"
+      ]
+    },
+    {
+      "id": "globe",
+      "words": [
+        "world",
+        "globe",
+        "earth",
+        "planet",
+        "global",
+        "világ",
+        "föld"
+      ]
+    },
+    {
+      "id": "newspaper",
+      "words": [
+        "newspaper",
+        "newspapers",
+        "news",
+        "press",
+        "headline",
+        "headlines",
+        "article",
+        "újság",
+        "hírek"
+      ]
+    },
+    {
+      "id": "letter",
+      "words": [
+        "letter",
+        "letters",
+        "treaty",
+        "contract",
+        "document",
+        "documents",
+        "law",
+        "laws",
+        "levél",
+        "szerződés",
+        "törvény"
+      ]
+    },
+    {
+      "id": "book",
+      "words": [
+        "book",
+        "books",
+        "library",
+        "history",
+        "könyv",
+        "történelem"
+      ]
+    },
+    {
+      "id": "clock",
+      "words": [
+        "clock",
+        "clocks",
+        "hour",
+        "hours",
+        "minute",
+        "minutes",
+        "time",
+        "óra",
+        "idő"
+      ]
+    },
+    {
+      "id": "key",
+      "words": [
+        "key",
+        "keys",
+        "secret",
+        "lock",
+        "kulcs",
+        "titok"
+      ]
+    },
+    {
+      "id": "bulb",
+      "words": [
+        "bulb",
+        "idea",
+        "ideas",
+        "electricity",
+        "power",
+        "light",
+        "invention",
+        "villany",
+        "áram",
+        "ötlet"
+      ]
+    },
+    {
+      "id": "anchor",
+      "words": [
+        "anchor",
+        "port",
+        "ports",
+        "harbor",
+        "harbour",
+        "dock",
+        "kikötő",
+        "horgony"
+      ]
+    },
+    {
+      "id": "rocket",
+      "words": [
+        "rocket",
+        "rockets",
+        "spacecraft",
+        "satellite",
+        "moon",
+        "rakéta",
+        "műhold"
+      ]
+    },
+    {
+      "id": "tree",
+      "words": [
+        "tree",
+        "trees",
+        "forest",
+        "forests",
+        "wood",
+        "fa",
+        "erdő"
+      ]
+    },
+    {
+      "id": "mountain",
+      "words": [
+        "mountain",
+        "mountains",
+        "mine",
+        "mines",
+        "peak",
+        "hill",
+        "hegy",
+        "bánya"
+      ]
+    },
+    {
+      "id": "wheat",
+      "words": [
+        "wheat",
+        "grain",
+        "farm",
+        "farms",
+        "harvest",
+        "food",
+        "crop",
+        "crops",
+        "búza",
+        "gabona",
+        "termés"
+      ]
+    },
+    {
+      "id": "phone",
+      "words": [
+        "phone",
+        "phones",
+        "smartphone",
+        "telephone",
+        "telefon"
+      ]
+    },
+    {
+      "id": "computer",
+      "words": [
+        "computer",
+        "computers",
+        "internet",
+        "software",
+        "network",
+        "számítógép",
+        "internet"
+      ]
+    },
+    {
+      "id": "scale",
+      "words": [
+        "balance",
+        "justice",
+        "trade",
+        "market",
+        "markets",
+        "price",
+        "prices",
+        "mérleg",
+        "piac",
+        "ár"
+      ]
+    },
+    {
+      "id": "flag",
+      "words": [
+        "flag",
+        "flags",
+        "nation",
+        "nations",
+        "country",
+        "countries",
+        "state",
+        "zászló",
+        "nemzet",
+        "ország"
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "id": "title",
+      "label": "Torn headline and cutout",
+      "when": "The first scene: the video's question or claim, with a cutout of what it is about.",
+      "params": {
+        "headline": {
+          "maxWords": 8,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        },
+        "kicker": {
+          "maxWords": 4,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:title",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object",
+            "kicker": "$kicker"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter",
+      "label": "A new sheet",
+      "when": "The start of a new part of the story.",
+      "params": {
+        "headline": {
+          "maxWords": 5,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:chapter",
+          "vars": {
+            "headline": "$headline",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "statement",
+      "label": "Two torn strips",
+      "when": "A plain claim: the first strip sets it up, the second lands it.",
+      "params": {
+        "line1": {
+          "maxWords": 5,
+          "required": true
+        },
+        "line2": {
+          "maxWords": 4,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:statement",
+          "vars": {
+            "line1": "$line1",
+            "line2": "$line2",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "word",
+      "label": "One huge word",
+      "when": "One word is the whole point.",
+      "params": {
+        "word": {
+          "maxWords": 2,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:word",
+          "vars": {
+            "word": "$word",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "highlight",
+      "label": "Underline swipe",
+      "when": "A short line with one key word to underline.",
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "mark": {
+          "maxWords": 1,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:highlight",
+          "vars": {
+            "line": "$line",
+            "mark": "$mark",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "A question on the desk",
+      "when": "The narration asks the viewer something.",
+      "ruleFirst": true,
+      "params": {
+        "question": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:question",
+          "vars": {
+            "question": "$question",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "versus",
+      "label": "Torn in two",
+      "when": "This or that, before and after, two sides.",
+      "ruleFirst": true,
+      "params": {
+        "left": {
+          "maxWords": 4,
+          "required": true
+        },
+        "right": {
+          "maxWords": 4,
+          "required": true
+        },
+        "leftObject": {
+          "type": "object",
+          "required": false
+        },
+        "rightObject": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:versus",
+          "vars": {
+            "left": "$left",
+            "right": "$right",
+            "leftObject": "$leftObject",
+            "rightObject": "$rightObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cause",
+      "label": "A leads to B",
+      "when": "One thing causes or leads to another.",
+      "ruleFirst": true,
+      "params": {
+        "from": {
+          "maxWords": 3,
+          "required": true
+        },
+        "to": {
+          "maxWords": 3,
+          "required": true
+        },
+        "fromObject": {
+          "type": "object",
+          "required": false
+        },
+        "toObject": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:cause",
+          "vars": {
+            "from": "$from",
+            "to": "$to",
+            "fromObject": "$fromObject",
+            "toObject": "$toObject"
+          }
+        }
+      ]
+    },
+    {
+      "id": "year",
+      "label": "A date stamp",
+      "when": "The narration says the year something happened.",
+      "ruleFirst": true,
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:year",
+          "vars": {
+            "value": "$value",
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "route",
+      "label": "A route on the map",
+      "when": "Something moves between two places the narration names: a route line on the map.",
+      "ruleFirst": true,
+      "params": {
+        "fromPlace": {
+          "type": "place",
+          "required": true
+        },
+        "toPlace": {
+          "type": "place",
+          "required": true
+        },
+        "fromLabel": {
+          "maxWords": 3,
+          "required": false
+        },
+        "toLabel": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 6,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:route",
+          "vars": {
+            "fromPlace": "$fromPlace",
+            "toPlace": "$toPlace",
+            "fromLabel": "$fromLabel",
+            "toLabel": "$toLabel",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "label": "A pin on the map",
+      "when": "The narration names one place: a pin on the map.",
+      "ruleFirst": true,
+      "params": {
+        "place": {
+          "type": "place",
+          "required": true
+        },
+        "label": {
+          "maxWords": 3,
+          "required": false
+        },
+        "line": {
+          "maxWords": 6,
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:map",
+          "vars": {
+            "place": "$place",
+            "label": "$label",
+            "line": "$line"
+          }
+        }
+      ]
+    },
+    {
+      "id": "number",
+      "label": "A giant number",
+      "when": "The narration says a number and it matters: it ticks up, huge.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        },
+        "before": {
+          "maxWords": 1,
+          "required": false
+        },
+        "after": {
+          "maxWords": 1,
+          "required": false
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:number",
+          "vars": {
+            "value": "$value",
+            "before": "$before",
+            "after": "$after",
+            "object": "$object"
+          }
+        }
+      ]
+    },
+    {
+      "id": "percent",
+      "label": "A share of a disc",
+      "when": "The narration says a percentage.",
+      "params": {
+        "value": {
+          "type": "number",
+          "required": true,
+          "said": true
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:percent",
+          "vars": {
+            "value": "$value"
+          }
+        }
+      ]
+    },
+    {
+      "id": "path",
+      "label": "Four stops",
+      "when": "Exactly four steps in order, joined by one line.",
+      "params": {
+        "step1": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step2": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step3": {
+          "maxWords": 3,
+          "required": true
+        },
+        "step4": {
+          "maxWords": 3,
+          "required": true
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:path",
+          "vars": {
+            "step1": "$step1",
+            "step2": "$step2",
+            "step3": "$step3",
+            "step4": "$step4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "alert",
+      "label": "The alert",
+      "when": "Rarely, at the one moment of crisis: the whole frame floods with the accent color.",
+      "rare": {
+        "every": 16
+      },
+      "params": {
+        "line": {
+          "maxWords": 6,
+          "required": true
+        },
+        "object": {
+          "type": "object",
+          "required": false
+        }
+      },
+      "use": [
+        {
+          "component": "archive-collage:alert",
+          "vars": {
+            "line": "$line",
+            "object": "$object"
+          }
+        }
+      ]
+    }
+  ]
+}
