@@ -39,7 +39,7 @@ if (RECORDED) project.recipe = { engine: "recorded", preset: RECORDED, voice: { 
 const hasStills = () => ORDER.indexOf("review") < stage || project.gates.review.state !== "todo";
 const listeners = {};
 window.__emit = (event, payload) => (listeners[event] ?? []).forEach((h) => window["_" + h]?.({ event, payload, id: 1 }));
-const LONG = { "broll-plan": 20, "broll-make": 90, "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
+const LONG = { "suggest-channel": 8, "keyword-ideas": 6, "broll-plan": 20, "broll-make": 90, "write-script": 60, "make-voice": 90, "make-music": 95, "make-scenes": 40, "simple-scenes": 2, "refill-scene": 18, "make-avatar": 300, "build-video": 45, "render-video": 400, "youtube-texts": 10 };
 // ?quiet=1: no heartbeat, ?stuck=1: the check-in says stuck (the bar's "no sign of life" line); ?slept=1: the
 // computer slept during the job; Stop (stop_job) ends a job with its reason.
 let nextJob = 10;
@@ -80,7 +80,7 @@ const core = {
     ...(q.get("one") ? [] : [{ schema: 1, id: "voxflow", name: "VoxFlow", folder: "VoxFlow", ...fields({ llm: { provider: "claude", model: "claude-sonnet-5" }, channel: { contentLanguage: "hu", audience: "coaches", youtubeUrl: null } }) }]),
   ],
   // "<name>@app" or "<name>@<identity id>"
-  keys: new Set(["gemini@app", "elevenlabs@app", "heygen@app", "vidiq@voxflow", "pixabay@app", "unsplash@app"]),
+  keys: new Set([...(q.get("noai") ? [] : ["gemini@app"]), "elevenlabs@app", "heygen@app", "vidiq@voxflow", "pixabay@app", "unsplash@app"]),
 };
 const tier = q.get("tier") === "solo" ? "Solo" : "Agency";
 const edition = { product: "IdeaToVideo", tier, identityLimit: tier === "Solo" ? 1 : null, copyKeysDefault: tier !== "Solo" };
@@ -201,6 +201,7 @@ const replies = {
   "thumbnail-photos": { photos: [], max: 3 },
   "keyword-ideas": { keywords: [{ keyword: "turn viewers into subscribers", monthlySearches: 1200, competition: 30, score: 62, growthPct: 4 }, { keyword: "how to get subscribers", monthlySearches: 8800, competition: 71, score: 41, growthPct: 1 }] },
   "video-keyword": { keyword: null },
+  "suggest-channel": { text: "TEST text written by the AI" },
   // ?nobrief=1: a video whose research has not been done yet
   "research-state": { brief: q.get("nobrief") ? null : BRIEF },
   "research-save": { brief: BRIEF },
@@ -346,6 +347,17 @@ window.__TAURI_INTERNALS__ = {
           if (args.command === "set-upload" && args.request.clear) return { upload: null, calls };
           if (args.command === "set-upload") return { upload: { at: `${args.request.at}T12:00:00Z`, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ" }, calls };
           return { upload: /m1-l1$/.test(args.request.projectDir) ? { at: "2026-10-23T12:00:00Z", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ" } : null, calls };
+        }
+        // The YouTube Brand Channel Wizard: real questions and kit (kit.mjs), the answers kept in memory. ?noai=1: no AI key saved.
+        if (args.command.startsWith("channel-wizard-")) {
+          const K = await import("/channel-wizard-kit.mjs");
+          const { channel = {}, ...input } = args.request;
+          window.__wizard = window.__wizard ?? null;
+          if (args.command === "channel-wizard-state") return { questions: K.QUESTIONS, phases: K.PHASES, draft: window.__wizard, hasCard: !!q.get("card"), kept: q.get("card") ? { keywords: 1, playlists: 0, videos: 0 } : null };
+          if (args.command === "channel-wizard-draft") { window.__wizard = input; return { saved: true }; }
+          if (args.command === "channel-wizard-kit") return { ...K.buildKit(input.answers, input.texts), checklist: K.checklist(input.answers), checklistText: K.checklistText(input.answers, input.checks), pathNote: K.PATH_NOTE, fields: K.fieldsFrom(input.answers, channel, input.texts), missing: K.missingAnswers(input.answers), markdown: K.cardMarkdown({ ...input, today: "2026-11-04" }), hasCard: !!q.get("card"), kept: q.get("card") ? { keywords: 1, playlists: 0, videos: 0 } : null };
+          if (args.command === "channel-wizard-save") { window.__wizard = input; window.__wizardCard = K.cardMarkdown({ ...input, today: "2026-11-04" }); return { card: {} }; }
+          if (args.command === "channel-wizard-export") return { file: input.file };
         }
         const mockCard = { generated: "2026-10-20", audience: "TEST home bakers", result: "bake a loaf in a weekend", topic: "sourdough", frustration: "", proof: "", language: "en", nameOptions: ["TEST Sourdough Weekend"], keywords: [{ keyword: "sourdough starter", volume: 74000, competition: "Medium", score: 62 }], playlists: [], videos: [] };
         if (args.command === "traffic-card-load") return { card: q.get("card") ? mockCard : null };

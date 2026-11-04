@@ -33,6 +33,7 @@
   import MotionPage from "./motion/MotionPage.svelte";
   import CtaWizard from "./cta/CtaWizard.svelte";
   import CtaPage from "./cta/CtaPage.svelte";
+  import ChannelWizard from "./channelwizard/ChannelWizard.svelte";
   import FootagePage from "./footage/FootagePage.svelte";
   import PhotosPanel from "./PhotosPanel.svelte";
   import ScenesPage from "./scenes/ScenesPage.svelte";
@@ -81,7 +82,8 @@
   let motionSaved = $state(0);
   let ctaWizard = $state(false);
   let ctaSaved = $state(0);
-  let brand = $state<BrandState | null>(null);
+  let channelWizard = $state(false);
+  let brand =$state<BrandState | null>(null);
 
   // The Brand page: the Identity's card as it is now (docs/wizards/brand.md 5).
   async function loadBrand() {
@@ -152,7 +154,7 @@
     else subId = s.id;
   }
   // the page's save button and its "run setup again": only where that part has fields
-  const NO_SAVE: PageId[] = ["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner", "health", "courses", "thumbnail", "photos", "legal"];
+  const NO_SAVE: PageId[] = ["brandchannel", "look","dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner", "health", "courses", "thumbnail", "photos", "legal"];
   const hasFields = $derived(!NO_SAVE.includes(pageId) && !(pageId === "connections" && sub !== "ai"));
 
   let dupName = $state(untrack(() => copyName(app.identity?.name ?? "", app.identities.map((i) => i.name))));
@@ -223,6 +225,19 @@
     });
   }
 
+  // The wizard's preview was ticked: these go into the Identity's own fields.
+  async function channelWizardSaved(fields: { field: string; value: string }[], text: string) {
+    channelWizard = false;
+    await run(async () => {
+      if (!fields.length) {
+        message = text;
+        return;
+      }
+      config.channel = { ...config.channel, ...Object.fromEntries(fields.map((f) => [f.field, f.value])) };
+      after(await persist(), text);
+    });
+  }
+
   async function removeAllKeys() {
     if (!(await ask("Remove every API key this app saved in the system keychain, for the App and every Identity? You can add them again any time.", { title: "Remove all keys", kind: "warning" }))) return;
     await run(async () => {
@@ -254,7 +269,9 @@
   }
 </script>
 
-{#if brandWizard}
+{#if channelWizard}
+  <ChannelWizard {app} {config} onclose={() => (channelWizard = false)} onsaved={channelWizardSaved} goto={(id) => { channelWizard = false; openPage(id); }} />
+{:else if brandWizard}
   <BrandWizard {app} onclose={() => (brandWizard = false)} onsaved={brandSaved} />
 {:else if scenesWizard}
   <ScenesWizard {app} onclose={() => (scenesWizard = false)} onsaved={() => { scenesWizard = false; scenesSaved += 1; message = "Your scenes are saved. Every new scene plan of this Identity uses them."; }} />
@@ -302,8 +319,16 @@
     {#if message}<p class="good">{message}</p>{/if}
     {#if error}<ErrorBox message={error} context={{ step: "settings", provider: config.llm.provider, model: config.llm.model }} />{/if}
 
-    {#if ["look", "motion", "scenes", "cta"].includes(pageId)}
+    {#if ["brandchannel", "look", "motion", "scenes", "cta"].includes(pageId)}
       <WizardMap current={pageId} goto={(id) => openPage(id)} />
+    {/if}
+
+    {#if pageId === "brandchannel"}
+      <section class="card">
+        <h2>Prepare your YouTube channel</h2>
+        <p class="hint">13 questions, one per screen, for this Identity. At the end you have name and handle ideas, the channel's texts, banner and logo image prompts and a checklist, all to copy, and your Evergreen Traffic Card for the Playlist Planner. It never changes anything on YouTube: you paste the texts in yourself. Your answers are kept, so you can stop and come back.</p>
+        <div class="row"><button type="button" class="primary" disabled={busy} onclick={() => { message = ""; channelWizard = true; }}>Open YouTube Brand Channel Wizard</button></div>
+      </section>
     {/if}
 
     {#if page.steps.length && pageId !== "look" && hasFields}
@@ -438,6 +463,7 @@
         <p class="hint">The thumbnails themselves are made in <button type="button" class="link" onclick={() => openPage("thumbnail")}>Publishing, Thumbnail</button>.</p>
       </section>
     {:else if pageId === "channel"}
+      <p class="hint">New channel, or not sure what to write here? <button type="button" class="link" onclick={() => openPage("brandchannel")}>The YouTube Brand Channel Wizard</button> asks 13 questions and fills these fields for you.</p>
       <TrafficCard bind:config />
     {/if}
 

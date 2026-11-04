@@ -2,10 +2,11 @@
   // WizardMap (DECISIONS 170): one moving frame that shows what each wizard is about,
   // on each wizard's page and first screen. The one on screen is lit, in the picture
   // too. With `goto` the rows open their page.
-  type Id = "cta" | "look" | "motion" | "scenes";
+  type Id = "brandchannel" | "cta" | "look" | "motion" | "scenes";
   let { current, goto }: { current: string; goto?: (id: Id) => void } = $props();
 
   const ROWS: { id: Id; name: string; what: string; text: string }[] = [
+    { id: "brandchannel", name: "YouTube Brand Channel Wizard", what: "The channel itself", text: "13 questions, then the name ideas, the texts and the image prompts you paste into YouTube." },
     { id: "cta", name: "CTA", what: "What it asks for", text: "The keyword viewers comment, and who says it." },
     { id: "look", name: "Design", what: "How it looks", text: "Colors, fonts and shapes." },
     { id: "motion", name: "Motion", what: "How it moves", text: "The change from one scene to the next, the background behind them, the camera." },
@@ -21,6 +22,7 @@
     <span class="tag lookTag">Design</span>
     <span class="tag motionTag">Motion</span>
     <span class="pill">Comment GUIDE</span>
+    <div class="channel"><i class="banner"></i><i class="face"></i><b>Your channel</b><i class="line"></i></div>
   </div>
   <div class="rows">
     {#each ROWS as r (r.id)}
@@ -61,5 +63,12 @@
   .on-motion .scene { animation-duration: 1.4s; }
   .on-cta .pill { outline: 3px solid #fde047; animation: beat 1.4s ease-in-out infinite; }
   @keyframes beat { 50% { transform: translateX(-50%) scale(1.1); } }
+  .channel { display: none; position: absolute; inset: 0; background: #fff; color: #111; font-size: 13px; }
+  .on-brandchannel .channel { display: block; }
+  .channel .banner { position: absolute; left: 0; right: 0; top: 0; height: 42%; background: linear-gradient(90deg, #1e3a8a, #dc2626); animation: pulse 3s ease-in-out infinite alternate; }
+  @keyframes pulse { to { opacity: 0.75; } }
+  .channel .face { position: absolute; left: 8%; top: 50%; width: 15%; aspect-ratio: 1; border-radius: 50%; background: #1e3a8a; outline: 3px solid #fde047; }
+  .channel b { position: absolute; left: 28%; top: 52%; }
+  .channel .line { position: absolute; left: 28%; right: 16%; top: 70%; height: 5px; border-radius: 3px; background: #94a3b8; }
   @media (prefers-reduced-motion: reduce) { .frame * { animation: none !important; } }
 </style>

@@ -76,7 +76,7 @@
 
 <section class="card">
   <h2>Evergreen Traffic Card</h2>
-  <p class="hint">The .md card from the Brand Channel Wizard. It stays with this Identity, fills the fields that fit, and the Playlist Planner reads its keywords.</p>
+  <p class="hint">The .md card from the YouTube Brand Channel Wizard: the wizard in this app keeps it here by itself, and a card from the web version comes in with Import. It stays with this Identity, fills the fields that fit, and the Playlist Planner reads its keywords.</p>
   {#if kept}<p class="good">Card kept{kept.generated ? `, made ${kept.generated}` : ""}: {kept.keywords.length} keywords, {kept.playlists.length} playlists, {kept.videos.length} video ideas.</p>{/if}
   <div class="acts">
     <button type="button" disabled={busy} onclick={pickFile}>Import card (.md)</button>

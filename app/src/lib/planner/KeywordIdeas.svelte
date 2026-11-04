@@ -8,10 +8,12 @@
   import { runner, errorText } from "../api";
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
+  import Progress from "../Progress.svelte";
 
   type Kw = { keyword: string; monthlySearches: number | null; competition: number | null; score: number | null; growthPct: number | null };
 
-  let { app, topic = "", chosen = null, onchoose, goto }: { app: AppState; topic?: string; chosen?: string | null; onchoose?: (keyword: string | null) => void; goto?: (page: "connections") => void } = $props();
+  // onfound: every keyword of a search, for a screen that keeps them (the YouTube Brand Channel Wizard)
+  let { app, topic = "", chosen = null, onchoose, onfound, goto }: { app: AppState; topic?: string; chosen?: string | null; onchoose?: (keyword: string | null) => void; onfound?: (keywords: Kw[], seed: string) => void; goto?: (page: "connections") => void } = $props();
 
   let q = $state(untrack(() => topic));
   let keywords = $state<Kw[]>([]);
@@ -26,6 +28,7 @@
     try {
       keywords = (await runner<{ keywords: Kw[] }>("keyword-ideas", { service: "vidiq", keyword: q.trim() })).keywords;
       log("keyword_ideas", { found: keywords.length });
+      onfound?.($state.snapshot(keywords), q.trim());
     } catch (e) {
       error = errorText(e);
     } finally {
@@ -42,6 +45,7 @@
     <button type="submit" disabled={busy || !q.trim()}>{busy ? "Asking vidIQ..." : "Keyword ideas"}</button>
   </form>
 {/if}
+{#if busy}<Progress command="keyword-ideas" label="vidIQ is looking up the keywords" reveal={false} />{/if}
 {#if chosen}<p class="good">Chosen for the script: "{chosen}". {#if onchoose}<button type="button" class="link" onclick={() => onchoose?.(null)}>Remove it</button>{/if}</p>{/if}
 {#if error}<ErrorBox message={error} context={{ step: "keyword-ideas" }} />{/if}
 {#if keywords.length}

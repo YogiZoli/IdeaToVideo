@@ -42,6 +42,8 @@ fs.cpSync(build, out, { recursive: true });
 // Course import (DECISIONS 121): the real preview of the example file.
 fs.writeFileSync(path.join(out, "course-preview.json"), JSON.stringify(previewCourse({ projectsDir: out, file: path.join(here, "..", "..", "runner", "fixtures", "example-course-content-structure.json") })));
 fs.copyFileSync(path.join(here, "mock.js"), path.join(out, "mock.js"));
+// The YouTube Brand Channel Wizard: the real questions, kit and card (a pure file), in the browser.
+fs.copyFileSync(path.join(here, "..", "..", "runner", "channelwizard", "kit.mjs"), path.join(out, "channel-wizard-kit.mjs"));
 const index = path.join(out, "index.html");
 fs.writeFileSync(index, fs.readFileSync(index, "utf8").replace("<head>", `<head><script src="/mock.js?v=${Date.now()}"></script>`));
 // The Brand wizard's data, as the runner gives it, with the fonts served

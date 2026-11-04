@@ -73,6 +73,7 @@ import { previewCourse, importCourse, listCourses, exportCourse, readSeed } from
 import { channelBoard, setUpload, markSent } from "./course/board.mjs";
 import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
+import { wizardState, saveDraft as saveWizardDraft, wizardKit, wizardSave, wizardExport } from "./channelwizard/index.mjs";
 import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import * as thumbnail from "./thumbnail/index.mjs";
 import { listPresets, loadPreset, presetCard, presetLook } from "./presets/index.mjs";
@@ -591,8 +592,15 @@ const commands = {
   "test-service": async ({ service }) => testServiceKey({ service, apiKey: key() }),
 
   // Onboarding "Use recommended" for Audience and Brand Voice.
-  "suggest-channel": async ({ llm, field, channel, topic }) =>
-    suggestChannel({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, field, channel, topic }),
+  "suggest-channel": async ({ llm, field, channel, topic, words, answers }) =>
+    suggestChannel({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, field, channel, topic, words, answers }),
+
+  // The YouTube Brand Channel Wizard (channelwizard/index.mjs). No AI, no network.
+  "channel-wizard-state": async ({ identityDir }) => wizardState(identityDir),
+  "channel-wizard-draft": async ({ identityDir, ...draft }) => { saveWizardDraft(identityDir, draft); return { saved: true }; },
+  "channel-wizard-kit": async ({ identityDir, ...input }) => wizardKit(identityDir, input),
+  "channel-wizard-save": async ({ identityDir, ...input }) => wizardSave(identityDir, input),
+  "channel-wizard-export": async ({ identityDir, ...input }) => wizardExport(identityDir, input),
 
   "create-project": async ({ projectsDir, title, language, brief, autopilot, identity }) => {
     const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot, identity });

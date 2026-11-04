@@ -381,6 +381,10 @@ it: an empty brief says nothing was checked, and the Publishing Card says `unche
 Zoltan walked through the app and asked for a new order (DECISIONS 168 to 171). It changes Phase 1's Advanced toggle: there is no toggle any more, every menu is always there. Top menu: Home, Videos, Video Recording Editing, Playlist, Publishing,
 Wizards, Identity, Settings (`app/src/lib/pages.ts`); Video Recording Editing starts a video from a recording (DECISIONS 172, 173). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). The Thumbnail is on the Publishing menu and can be made before the video.
 
+## YouTube Brand Channel Wizard (2026-11-04, outside the phases)
+
+The first page of Wizards: 13 questions for the active Identity, "Write it with AI" on the texts, a kit to copy, the Identity's fields after a preview, the same Evergreen Traffic Card as the Import. `docs/wizards/brand-channel.md`, DECISIONS 174. For later: `kit.mjs` makes every text with no AI, `cardMarkdown` writes a card of version 1.
+
 ## Next step
 
 Phase 9: macOS build, done on a Mac with Claude Code, no CI. It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
