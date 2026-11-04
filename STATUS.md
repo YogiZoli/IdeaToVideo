@@ -25,6 +25,9 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **Import & Export:** one "Your look" row with one Import for both kinds of file, instead of Brand Identity Card and tokens.css. "Extra scene designs" instead of Scene pack. HeyGen import moved to Wizards, CTA.
 - **Wizards:** a small moving picture for every choice of Motion and Scenes (`wizard/Demo.svelte`), one picture of what each wizard is about on all four (`wizard/WizardMap.svelte`). They illustrate the idea; the real look is still the Motion wizard's sample video.
 
+- Local installer built 2026-11-04 12:13 and installed over the old app: `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The app was opened, its silent Health check logged 0 problems. No screen was clicked in the installed window.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch (about 15 minutes).
+
 **The three CTA clips were not lost:** they belong to the Identity ZG C2C, and the app was on Test Stick man. Files: `C:/Users/gdp/Videos/CTA-segments/`.
 
 **Your call (DECISIONS 171):** the photos are on both Identity, Thumbnail and Publishing, Thumbnail: keep both? The PDT's own "make it" button next to Copy is in the publishing-dreamteam repo, a separate task. The 13 step YouTube Brand Channel Wizard inside the app: a separate session, from Zoltan's prompt.
