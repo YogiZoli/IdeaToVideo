@@ -86,12 +86,15 @@ test("retrying: a refusal is not asked again", async () => {
 });
 
 test("stallGuard: nothing arriving aborts, something arriving does not", async () => {
-  const g = stallGuard(30);
-  await new Promise((r) => setTimeout(r, 15));
+  // wide margins: on a busy computer a timer can fire tens of milliseconds late
+  const g = stallGuard(600);
+  await new Promise((r) => setTimeout(r, 200));
   g.touch();
-  await new Promise((r) => setTimeout(r, 15));
-  assert.equal(g.signal.aborted, false);
-  await new Promise((r) => setTimeout(r, 60));
+  await new Promise((r) => setTimeout(r, 200));
+  g.touch();
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(g.signal.aborted, false, "600 ms have passed, but something arrived twice");
+  await new Promise((r) => setTimeout(r, 1500));
   assert.equal(g.signal.aborted, true);
   assert.equal(g.signal.reason.name, "TimeoutError");
   g.done();
