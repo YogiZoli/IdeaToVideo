@@ -47,6 +47,7 @@ import * as unsplash from "./stock/unsplash.mjs";
 import { addStock, suggestQueries } from "./stock/index.mjs";
 import { FAMILIES as ICON_FAMILIES, loadFamily as loadIconFamily } from "./icons/index.mjs";
 import { ROLES as SCENE_ROLES, COMPONENTS as SCENE_COMPONENTS } from "./gates/scenes/roles.mjs";
+import { entryOf } from "./gates/scenes/catalog.mjs";
 import { loadScenes as loadScenesProfile, saveScenes as saveScenesProfile, MIX_PRESETS, KINDS, KIND_LABELS, PICTURE_SOURCES } from "./scenes-profile.mjs";
 import { listPacks, importPack, exportPack, removePack, writeState as writePackState, registerPacks } from "./packs/index.mjs";
 import { loadLibrary, footageDir, addClip, updateClip, removeClip, setMode as setFootageMode, MODES as FOOTAGE_MODES, MAX_CLIP_SECONDS } from "./footage/library.mjs";
@@ -415,7 +416,7 @@ async function writeScriptGate({ projectDir, identityDir, llm, input = {}, chann
     const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
       writeScript({
         llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
-        input: { ...input, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator"), notes: notesOf(projectDir), research: briefForScript(loadBrief(projectDir)), styleNote: project.recipe?.preset ? loadPreset(project.recipe.preset).scriptNote : null },
+        input: { ...input, keyword: input.keyword ?? project.keyword ?? undefined, brief: readBrief(projectDir) ?? undefined, seed: readSeed(projectDir), bridge: bridgeLines(path.dirname(projectDir), project.series), channel, language: project.language, dictionary: dictionaryData(dict), commentCalls: plan.filter((c) => c.mode === "narrator"), notes: notesOf(projectDir), research: briefForScript(loadBrief(projectDir)), styleNote: project.recipe?.preset ? loadPreset(project.recipe.preset).scriptNote : null },
         onProgress: (p) => emit({ event: "progress", ...p }),
       }),
     );
@@ -889,7 +890,7 @@ const commands = {
     });
     const roles = Object.entries(SCENE_ROLES)
       .filter(([r]) => r !== "closing")
-      .map(([r, meta]) => ({ role: r, label: meta.label, hint: meta.hint, components: Object.entries(SCENE_COMPONENTS).filter(([, c]) => c.role === r && !c.retired).map(([name, c]) => ({ name, label: c.label })) }))
+      .map(([r, meta]) => ({ role: r, label: meta.label, hint: meta.hint, components: Object.entries(SCENE_COMPONENTS).filter(([, c]) => c.role === r && !c.retired).map(([name, c]) => ({ name, label: c.label, description: entryOf(name)?.shows ?? "" })) }))
       .filter((r) => r.components.length);
     return {
       profile,
@@ -1546,6 +1547,15 @@ const commands = {
   // Copy details and the Health check screen.
   "error-details": async () => lastError(),
   "health-check": async ({ projectsDir, keys = null, internet = true }) => healthCheck({ projectsDir, keys, internet }),
+  // The search keyword chosen on the Research tab: the script uses it.
+  "video-keyword": async ({ projectDir, keyword = null }) => {
+    const text = String(keyword ?? "").trim().slice(0, 200);
+    const project = loadProject(projectDir);
+    if (text) project.keyword = text;
+    else delete project.keyword;
+    saveProject(projectDir, project);
+    return { keyword: text || null };
+  },
   "research-state": async ({ projectDir }) => ({ brief: loadBrief(projectDir) }),
   "research-save": async ({ projectDir, brief }) => {
     const before = loadBrief(projectDir);

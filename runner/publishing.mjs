@@ -8,7 +8,7 @@
 //   5xx, no answer                 a problem on the way: try again
 //
 // The request goes from the runner, never from the window, so the window's
-// CSP stays closed. The address is the user's (Settings, Connections): https
+// CSP stays closed. The address is the user's (Publishing, PDT Connection): https
 // only, plain http only for this computer (localhost), so the token never
 // travels unencrypted. The token comes from the OS keychain like every key.
 
@@ -22,7 +22,7 @@ export const MAX_CARD_BYTES = 2 * 1024 * 1024;
 // prefix, no query, no password in it. Returns the clean base or throws.
 export function checkUrl(raw) {
   const text = String(raw ?? "").trim();
-  if (!text) throw new Error("Set the Publishing address in Settings, Connections first.");
+  if (!text) throw new Error("Set the Publishing address in Publishing, PDT Connection first.");
   let u;
   try {
     u = new URL(text);
@@ -51,7 +51,7 @@ export function sameOrigin(link, base) {
 // { ok: false, retry, message, status }; never throws on a server's answer.
 export async function sendCard({ url, token, cardFile, fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
   const base = checkUrl(url);
-  if (!token) return { ok: false, retry: false, status: null, message: "Save the Publishing token in Settings, Connections first." };
+  if (!token) return { ok: false, retry: false, status: null, message: "Save the Publishing token in Publishing, PDT Connection first." };
   if (!/\.card\.json$/i.test(String(cardFile ?? "")) || !fs.existsSync(cardFile)) return { ok: false, retry: false, status: null, message: "This video has no publishing card. Render it again." };
   const card = fs.readFileSync(cardFile, "utf8");
   // The publishing app takes a card of at most 2 MB; with a thumbnail inside
@@ -80,7 +80,7 @@ export async function sendCard({ url, token, cardFile, fetchImpl = fetch, timeou
   }
   if (res.status >= 400 && res.status < 500) {
     const said = typeof body?.error === "string" && body.error.trim() ? body.error.trim().slice(0, 300) : null;
-    const plain = res.status === 401 || res.status === 403 ? "The publishing app did not accept the token. Check it in Settings, Connections." : res.status === 404 ? "The publishing app has no card address there. Check the Publishing address in Settings." : `The publishing app refused the card (${res.status}).`;
+    const plain = res.status === 401 || res.status === 403 ? "The publishing app did not accept the token. Check it in Publishing, PDT Connection." : res.status === 404 ? "The publishing app has no card address there. Check the Publishing address in Settings." : `The publishing app refused the card (${res.status}).`;
     return { ok: false, retry: false, status: res.status, message: said ?? plain };
   }
   return { ok: false, retry: true, status: res.status, message: `The publishing app had a problem (${res.status}). Try again in a minute.` };

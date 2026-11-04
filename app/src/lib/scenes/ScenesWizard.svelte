@@ -11,6 +11,8 @@
   import WizardShell from "../wizard/WizardShell.svelte";
   import ErrorBox from "../ErrorBox.svelte";
   import PacksPage from "../packs/PacksPage.svelte";
+  import Demo from "../wizard/Demo.svelte";
+  import WizardMap from "../wizard/WizardMap.svelte";
 
   let { app, onclose, onsaved }: { app: AppState; onclose: () => void; onsaved: (p: ScenesProfile) => void } = $props();
 
@@ -18,7 +20,7 @@
     { id: "start", title: "Start" },
     { id: "mix", title: "Mix" },
     { id: "types", title: "Scene types" },
-    { id: "packs", title: "Scene packs" },
+    { id: "packs", title: "Extra scene designs" },
     { id: "icons", title: "Icons" },
     { id: "pictures", title: "Pictures and video" },
     { id: "save", title: "Check and save" },
@@ -113,25 +115,36 @@
     {#if error}<ErrorBox message={error} context={{ step: "scenes" }} />{/if}
 
     {#if step === 0}
-      <p class="lead">What your videos show. The Brand wizard sets how things look, the Motion wizard how they move; this one sets what is on screen: words, icons and drawings, pictures and video, and which scene types the AI may pick.</p>
+      <WizardMap current="scenes" />
+      <p class="lead">What your videos show: words, icons and drawings, pictures and video, and which kinds of scene the AI may pick.</p>
+      <div class="kinds">
+        {#each st.options.kinds as k (k.id)}
+          <div class="kind"><Demo of={`kind:${k.id}`} /><span>{k.label}</span></div>
+        {/each}
+      </div>
       <p class="hint">Pick a starting mix. You can fine-tune it on the next screen.</p>
       <div class="gallery">
         {#each st.options.presets as p (p.id)}
           <button type="button" class="card" class:chosen={profile.preset === p.id} onclick={() => usePreset(p.id)}>
+            <Demo of="mix" mix={p.mix} />
             <b>{p.label}{p.id === "balanced" ? " (recommended)" : ""}</b>
             <span>{p.hint}</span>
             <span class="hint">{st.options.kinds.map((k) => `${k.label} ${p.mix[k.id]}%`).join(", ")}</span>
           </button>
         {/each}
       </div>
+      <p class="legend"><i class="text"></i> Words <i class="icon"></i> Icons <i class="image"></i> Pictures <i class="video"></i> Video</p>
       <p class="hint">How often the picture changes (now: {st.options.pace}) is set in the Motion wizard.</p>
     {:else if step === 1}
       <p class="lead">The share of each kind of scene the AI aims for. A kind without a source is folded into the others for that video.</p>
       {#each st.options.kinds as k (k.id)}
-        <label class="slider">
-          <span class="lbl"><b>{k.label}</b> <span class="hint">{pct(k.id)}%</span></span>
-          <input type="range" min="0" max="100" step="5" value={profile.mix[k.id]} oninput={(e) => setMix(k.id, Number(e.currentTarget.value))} />
-        </label>
+        <div class="kindRow">
+          <Demo of={`kind:${k.id}`} />
+          <label class="slider">
+            <span class="lbl"><b>{k.label}</b> <span class="hint">{pct(k.id)}%</span></span>
+            <input type="range" min="0" max="100" step="5" value={profile.mix[k.id]} oninput={(e) => setMix(k.id, Number(e.currentTarget.value))} />
+          </label>
+        </div>
         {#if k.id === "image" && !pictureReady}<p class="warn">No picture source yet: add a free Pixabay or Unsplash key (Settings, Connections) or your own footage (Identity, Footage), and turn the source on under "Pictures and video".</p>{/if}
         {#if k.id === "video" && !videoReady}<p class="warn">No video source yet: add your own clips (Identity, Footage), or turn on AI B-roll there.</p>{/if}
       {/each}
@@ -139,16 +152,19 @@
     {:else if step === 2}
       <p class="lead">The app's own scene types, by what they are for. Each kind keeps at least one. The closing scenes are set in the CTA wizard; how each type looks is set in the Motion wizard.</p>
       {#each st.options.roles as r (r.role)}
-        <section class="role">
-          <h2>{r.label} <span class="hint">{r.hint}</span></h2>
-          {#each r.components as c (c.name)}
-            {@const on = !profile.off.includes(c.name)}
-            <label class="check"><input type="checkbox" checked={on} disabled={on && onCount(r.role) <= 1} onchange={(e) => setOn(c.name, e.currentTarget.checked)} /> {c.label}</label>
-          {/each}
+        <section class="role roleRow">
+          <Demo of={`role:${r.role}`} />
+          <div>
+            <h2>{r.label} <span class="hint">{r.hint}</span></h2>
+            {#each r.components as c (c.name)}
+              {@const on = !profile.off.includes(c.name)}
+              <label class="check"><input type="checkbox" checked={on} disabled={on && onCount(r.role) <= 1} onchange={(e) => setOn(c.name, e.currentTarget.checked)} /> <span>{c.label}{#if c.description}<br /><span class="hint">{c.description}</span>{/if}</span></label>
+            {/each}
+          </div>
         </section>
       {/each}
     {:else if step === 3}
-      <p class="lead">Scene packs add scene types someone designed. Import a pack file (.itvpack), choose its scene types, and decide whether it wears this Identity's Brand. Changes here are saved at once.</p>
+      <p class="lead">Optional. New kinds of scenes someone designed, in one file (.itvpack). Import one, choose its scenes, and decide whether they wear this Identity's Brand. Changes here are saved at once.</p>
       <PacksPage />
     {:else if step === 4}
       <p class="lead">The icon sets the drawings and icon scenes use, the first one preferred. All are free line icons.</p>
@@ -196,9 +212,19 @@
   .loading { padding: 24px; display: grid; gap: 12px; }
   .lead { font-size: 16px; margin: 0 0 8px; }
   .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
-  .card { display: grid; gap: 6px; text-align: left; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: none; font-weight: 400; }
+  .card { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: stretch; justify-content: stretch; line-height: 1.35; gap: 6px; text-align: left; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: none; font-weight: 400; }
   .card b { font-weight: 700; }
   .card.chosen { border-color: var(--primary, currentColor); box-shadow: 0 0 0 1px var(--primary, currentColor); }
+  .kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .kind { display: grid; gap: 4px; font-size: 13px; text-align: center; }
+  .legend { display: flex; gap: 6px 10px; align-items: center; flex-wrap: wrap; margin: 0; font-size: 12px; color: var(--muted-foreground); }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; }
+  .legend .text { background: #60a5fa; }
+  .legend .icon { background: #34d399; }
+  .legend .image { background: #fbbf24; }
+  .legend .video { background: #f87171; }
+  .kindRow { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: center; }
+  .roleRow { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: start; }
   .slider { display: grid; gap: 4px; margin: 10px 0; }
   .slider input { width: 100%; max-width: 520px; }
   .lbl { display: flex; gap: 8px; align-items: baseline; }

@@ -1,8 +1,7 @@
 <script lang="ts">
-  // App shell: first run shows the setup, afterwards the top menu (Home,
-  // Videos, Wizards, Identity, Settings; DECISIONS 119), the Identity menu
-  // and the Jobs list. "New Identity" runs the setup's Identity steps
-  // (docs/identity.md 7).
+  // App shell: first run shows the setup, afterwards the top menu (pages.ts,
+  // DECISIONS 119, 168), the Identity menu and the Jobs list. "New Identity"
+  // runs the setup's Identity steps (docs/identity.md 7).
   import { open } from "@tauri-apps/plugin-dialog";
   import { appState, saveSettings, setActiveIdentity, restoreSettings, errorText, runner, type AppState, type Config, type Job } from "$lib/api";
   import { installLogger, log, setScreen, setIdentity } from "$lib/logger";
@@ -11,7 +10,8 @@
   import { IDENTITY_STEPS, QUICK_SETUP } from "$lib/steps";
   import { setKeySources, refreshKeySources } from "$lib/keystate.svelte";
   import { PRODUCT, ONE_VIDEO } from "$lib/edition";
-  import { visibleMenus, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
+  import { MENUS, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
+  import type { TabId } from "$lib/tabs";
   import Onboarding from "$lib/Onboarding.svelte";
   import Projects from "$lib/Projects.svelte";
   import ProjectView from "$lib/ProjectView.svelte";
@@ -24,7 +24,7 @@
 
   let app = $state<AppState | null>(null);
   let fatal = $state("");
-  let view = $state<"home" | "projects" | "settings" | "new-identity">("home");
+  let view = $state<"home" | "edit" | "projects" | "settings" | "new-identity">("home");
   // Home's "Make a video": the list opens with the new ONE Video form
   let startNew = $state(false);
   let projectDir = $state<string | null>(null);
@@ -85,19 +85,8 @@
   }
   init();
 
-  // The Advanced toggle (docs/BUILD_PLAN.md): the wizards, the long setup and
-  // the old Home wait behind it, kept on this computer's settings.
-  const advanced = $derived(!!app?.app?.ui?.advanced);
+  // The first setup is the short one; every step is one click away.
   let longSetup = $state(false);
-  async function setAdvanced(on: boolean) {
-    if (!app?.app) return;
-    try {
-      take(await saveSettings({ ...app.app, ui: { language: "en", ...(app.app.ui ?? {}), advanced: on } }, null));
-      if (!on && view === "settings" && menuOf(settingsPage) === "wizards") view = "home";
-    } catch (e) {
-      notice = errorText(e);
-    }
-  }
 
   // A new computer: settings and Identities from a backup folder.
   let restoring = $state(false);
@@ -128,7 +117,7 @@
       // keep the last known state
     }
   }
-  async function show(v: "home" | "projects" | "settings", page: PageId = settingsPage) {
+  async function show(v: "home" | "edit" | "projects" | "settings", page: PageId = settingsPage) {
     settingsPage = page;
     if (v === "settings") settingsEpoch++;
     if (v !== "projects") startNew = false;
@@ -136,17 +125,33 @@
     projectDir = null;
     await refreshKeys();
   }
-  // one of the five top menus
+  // one of the top menus
   function menu(m: MenuId) {
     if (m === "home") return show("home");
     if (m === "videos") return show("projects");
+    if (m === "edit") return show("edit");
     return show("settings", view === "settings" && menuOf(settingsPage) === m ? settingsPage : firstPage(m));
   }
   const goto = (page: PageId) => show("settings", page);
-  const current = $derived<MenuId>(view === "home" ? "home" : view === "settings" ? menuOf(settingsPage) : "videos");
+  const current = $derived<MenuId>(view === "home" ? "home" : view === "edit" ? "edit" : view === "settings" ? menuOf(settingsPage) : "videos");
   async function openProject(d: string) {
     await refreshKeys();
+    openTab = null;
     projectDir = d;
+  }
+  // a video opened from outside its tabs, on one step (Publishing, Thumbnail)
+  let openTab = $state<TabId | null>(null);
+  async function openVideoAt(d: string, tab: TabId) {
+    await refreshKeys();
+    openTab = tab;
+    view = "projects";
+    projectDir = d;
+  }
+  // Your video's "Make the thumbnail": Publishing, Thumbnail, on this video
+  let thumbnailVideo = $state<string | null>(null);
+  function openThumbnail(d: string) {
+    thumbnailVideo = d;
+    return show("settings", "thumbnail");
   }
 
   // The Channels board (DECISIONS 127): a video of any Identity, opened in
@@ -185,6 +190,8 @@
 
   async function openJob(j: Job) {
     if (j.identity && j.identity !== app?.identity?.id) await choose(j.identity);
+    // the thumbnails are made on the Publishing menu
+    if (j.project && j.command.startsWith("thumbnail-")) return openThumbnail(j.project);
     view = "projects";
     if (j.project) await openProject(j.project);
   }
@@ -215,7 +222,7 @@
     {#key longSetup}
       <Onboarding bind:config={draft} bind:keys only={longSetup ? undefined : QUICK_SETUP} save={saveFirst} done={take} newIdentity />
     {/key}
-    <div class="restorebar"><button type="button" class="ghost" onclick={() => (longSetup = !longSetup)}>{longSetup ? "Short setup" : "Advanced: every setup step"}</button></div>
+    <div class="restorebar"><button type="button" class="ghost" onclick={() => (longSetup = !longSetup)}>{longSetup ? "Short setup" : "Every setup step"}</button></div>
   </main>
 {:else}
   <main class="shell">
@@ -224,14 +231,13 @@
       <IdentityMenu
         {app}
         {choose}
-        newIdentity={advanced ? newIdentity : () => show("home")}
+        {newIdentity}
         duplicate={() => show("settings", "identity")}
         settings={() => show("settings", "identity")}
       />
-      {#each visibleMenus(advanced) as m (m.id)}
+      {#each MENUS as m (m.id)}
         <button type="button" class:active={current === m.id} onclick={() => menu(m.id)}>{m.title}</button>
       {/each}
-      <label class="advanced" title="The wizards, the long setup and the readiness list"><input type="checkbox" checked={advanced} onchange={(e) => setAdvanced(e.currentTarget.checked)} /> Advanced</label>
       <Jobs {openJob} />
     </nav>
     {#if notice}
@@ -257,18 +263,20 @@
       />
     {:else if view === "settings"}
       {#key settingsEpoch}
-        <Settings {app} saved={take} startPage={settingsPage} {goto} />
+        <Settings {app} saved={take} startPage={settingsPage} {goto} {openVideoAt} {thumbnailVideo} />
       {/key}
     {:else if projectDir}
       {#key projectDir}
-        <ProjectView {app} dir={projectDir} back={() => (projectDir = null)} saved={take} connections={() => goto("connections")} openPage={goto} />
+        <ProjectView {app} dir={projectDir} startTab={openTab} back={() => (projectDir = null)} saved={take} openPage={goto} {openThumbnail} />
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}
-        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} />
-        {#if advanced}
-          <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
-        {/if}
+        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="script" />
+        <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
+      {/key}
+    {:else if view === "edit"}
+      {#key app.identity.id}
+        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="recorded" />
       {/key}
     {:else}
       {#key app.identity.id}
@@ -297,13 +305,12 @@
   .shell { display: flex; flex-direction: column; height: 100vh; }
   .view { flex: 1; min-height: 0; overflow: auto; }
   .center { display: grid; place-items: center; min-height: 100vh; }
-  .brandbar { display: flex; gap: 6px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .brandbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
   .brandbar { position: relative; }
   .brandbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--hairline); }
   .name { display: inline-flex; align-items: center; gap: 10px; margin-right: 18px; font-weight: 700; font-size: var(--text-lg); }
   .name img { width: 26px; height: 26px; }
   .brandbar > button { border: none; background: none; padding: 6px 12px; }
-  .advanced { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted-foreground); padding: 0 8px; margin-left: 4px; cursor: pointer; }
   .brandbar > button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
   .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }

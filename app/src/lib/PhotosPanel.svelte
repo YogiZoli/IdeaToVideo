@@ -2,7 +2,7 @@
   // PhotosPanel: the Identity's profile photos for the Thumbnail step
   // (DECISIONS 131). Added once per Identity, at most 3, kept in the
   // Identity's folder like the logo (and in its export). Remove asks first.
-  // Shown on Identity, Voice & Avatar and on the Thumbnail tab.
+  // Shown on Identity, Thumbnail and on Publishing, Thumbnail.
   import { onMount } from "svelte";
   import { open, ask } from "@tauri-apps/plugin-dialog";
   import { convertFileSrc } from "@tauri-apps/api/core";

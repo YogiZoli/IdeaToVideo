@@ -2752,3 +2752,41 @@
 166. **A paid voice that fails or has no budget: Kokoro reads it, English only** (Claude's choice). The note on the Preview says so, so a clone is never swapped silently. A channel in another language stops with a sentence instead, because Kokoro reads English only and a Hungarian video read by an English voice is worth nothing. So offline mode has one hole there, in `docs/AUDIT_REPORT.md`, Left open.
 
 167. **Small rules from the audit.** A free GET gets three tries through `retrying`, a POST never, because it can cost money twice. Text over 100k characters is refused (about 11 hours of speech). A note on the Preview per kind, the newest wins. The Health check spends nothing at startup; testing the keys is its own button. `Settings` now has seven pages (the limit of six from DECISIONS 119 went to seven for the Health check). The catalog's title "Vox Annotate" became "Annotated keyword", its internal id stays.
+
+## 2026-11-04 (the menu and the steps of a video, Zoltan's walk through the app)
+
+168. **The top menu is Home, Videos, Playlist, Publishing, Wizards, Identity, Settings, and nothing waits behind a switch** (Zoltan, 2026-11-04). This changes Phase 1 of `docs/BUILD_PLAN.md`,
+    which put the wizards behind an Advanced toggle, and DECISIONS 119's five menus. `pages.ts` has the list.
+    - **Advanced is gone:** no checkbox, every menu always there, Home always shows the readiness list. `ui.advanced` stays allowed in `config.json` so that old files still load; nothing reads it. The small menu
+      in a tab's action bar is now called More.
+    - **Playlist (the whole channel, not one video):** Playlist Planner (out of Wizards), Keyword Research (was Identity, Resources, which held only vidIQ), Course or Playlist File (out of Import & Export).
+    - **Publishing:** Thumbnail, PDT Connection. The connection left Settings, Connections, whose sub link "Publishing" now opens it. The Video Publishing Card's export is there too, with a new Send.
+    - **Identity:** Voice & Avatar became Audio Voice, AI Avatar and Thumbnail (the profile photos). Publishing, Thumbnail shows the same photos: one store, two doors, as Zoltan asked for both. Open for him.
+    - **Settings:** Health check first, General renamed Legal and last, Plan renamed Account Plan.
+    - **Sub links in the left column** (`SUB_PAGES`): Connections (AI, AI providers, Services, Publishing, Remove all keys) and Footage (Your footage, AI B-roll, Stock photos and videos, Free images). One part on screen.
+    - **Import & Export holds only what belongs to the Identity as a whole:** the HeyGen import moved to Wizards, CTA, next to the clips it makes; Back up now to Settings, Backup, which was a duplicate; Diagnostics stays (Zoltan).
+
+169. **Every script video has the same eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video. The Thumbnail left the steps** (Zoltan, 2026-11-04). Until now only a video started from the
+    channel screen had Research and the Shot map, which is why he could not find them on a video from the Videos list.
+    - **Research never blocks.** It is the step at hand only for a video that waits for its brief, or for one from the Videos list until its script is begun; one click skips it. It has its own button now, and without an AI key says so.
+    - **The vidIQ keyword ideas moved from the Script tab to the Research tab** (Zoltan: they belong to the research before the script). The choice is kept in `project.json` (`keyword`, command `video-keyword`) and `writeScriptGate` reads it, so every
+      way of writing the script uses it. The search asks first now, because it uses vidIQ credits. The same search is on Playlist, Keyword Research (`planner/KeywordIdeas.svelte`).
+    - **The Shot map is made for every plan, also a catalog one,** when the scenes are approved, on the Scenes tab and in Autopilot. It needs no AI. If it cannot be made the plan stands, and its tab has a button. A block chosen stays that block. `scripts/phase2/e2e.mjs` runs it on a
+      catalog plan through the render. An older video gets the tab too; it is empty until made.
+    - **The Thumbnail is made on Publishing, Thumbnail, for any video, at any time.** The runner no longer asks for a render first, so a thumbnail can come before the video (Zoltan's idea: first the thumbnail, then the video); it goes into the card at the render. It is not a phase of the video: it blocks nothing, so it
+      does not belong in a row of steps. Your video links to it.
+    - **The numbers left the buttons and headings** ("Go to 3. Scenes"): they would have been wrong for a recording. The row of tabs still has them.
+
+170. **Every choice of the Motion and Scenes wizards shows a small moving picture** (Zoltan: "ránézek és tudom, miről van szó"). `wizard/Demo.svelte`, own CSS, no file and no render, so a screen opens at once; all 20 scene changes, the backgrounds, the camera, energy, pace, the kinds of scene, the roles
+    and the mixes. They illustrate the idea and do not claim to be the render: the Motion wizard's sample video still shows the real thing, and it says so on the screen. `wizard/WizardMap.svelte` is one picture of what each of the four wizards is about, on each wizard's page and first screen (CTA: what it asks for, Brand: how it looks, Motion: how it
+    moves, Scenes: what is on screen). The Scenes wizard's scene types now show what each does, from the catalog's own sentence. Not one picture per scene type: the 25 types get one picture per role.
+
+171. **"Your look" is one row and one Import, with no technical words** (Zoltan: why two, and why tokens.css). Brand Identity Card and tokens.css were two rows for the same thing: a tokens file is only a foreign way to bring in a look, and it was already turned into the same card. One Import now takes both kinds of file and
+    the code tells them apart. The whole Identity above it still carries the look and everything else. A scene pack is now "Extra scene designs", which says what it is and that the wizard does not make them. The Playlist Planner fills in the audience and the topic from the Identity when there is no Traffic Card, so nothing is typed twice.
+
+    Tests: see `STATUS.md`.
+
+    **Open for Zoltan (his own question, not decided by Claude alone):** the same photos on two pages or one; the PDT's own thumbnail page with a "make it" button is in the other repo, a separate task; whether to give a Shot map its name in Hungarian terms in the app (he says jelenetterv, the app stays in English).
+
+172. **Editing a recording has its own top menu, Edit. Home is only for a video from a script** (Zoltan asked; both ways he weighed, one app or a later separate app, start with this). The switch on the start screen is gone. A channel's recipe keeps its two sides, nothing else moved: the runner, the recipe and the Videos list are the same, so moving it to an app of its own later stays
+    possible and costs nothing now. **Whether it ever becomes its own app is open for Zoltan.** Also new: "Write it with AI" on Channel Profile: from a few words, the channel's text in its language, ready to paste into YouTube. It may not invent a number, a name or a claim. Same call as the Audience and Brand Voice buttons, which got the same name.

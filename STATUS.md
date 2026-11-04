@@ -1,12 +1,38 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-03 (reliability audit, DECISIONS 164 to 167)
+Frissítve: 2026-11-04 (new menu and video steps, DECISIONS 168 to 171)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-03, reliability audit, DECISIONS 164 to 167)
+## Now (2026-11-04, new menu and video steps, DECISIONS 168 to 171)
+
+**Zoltan walked through the app and asked for a new order. Done, in one change. Phase 9, the macOS build, is still next, and it needs a Mac.**
+
+- **Top menu:** Home, Videos, Edit, Playlist, Publishing, Wizards, Identity, Settings. The Advanced checkbox is gone, everything is always there.
+- **Edit:** a video from a recording starts here, with no script steps in sight. Home is only for a video from a script. Whether it becomes its own app later is your call (DECISIONS 172).
+- **Write it with AI:** on Channel Profile too: from a few words, the channel's text, ready to paste into YouTube.
+- **Playlist:** Playlist Planner (out of Wizards), Keyword Research (was Identity, Resources), Course or Playlist File (out of Import & Export).
+- **Publishing:** Thumbnail, for any video at any time, before the video too. PDT Connection, with the Video Publishing Card's Send and Save.
+- **A script video's steps, the same for every video:** Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video. Research never blocks and one click skips it. The vidIQ keyword ideas moved to the Research tab. The Thumbnail tab is gone.
+- **Identity:** Audio Voice, AI Avatar, Thumbnail (the profile photos) instead of Voice & Avatar. Footage has sub links.
+- **Settings:** Health check first, Legal (was General) last, Account Plan (was Plan). Connections has sub links. Back up now moved to Backup.
+- **Import & Export:** one "Your look" row with one Import for both kinds of file, instead of Brand Identity Card and tokens.css. "Extra scene designs" instead of Scene pack. HeyGen import moved to Wizards, CTA.
+- **Wizards:** a small moving picture for every choice of Motion and Scenes (`wizard/Demo.svelte`), one picture of what each wizard is about on all four (`wizard/WizardMap.svelte`). They illustrate the idea; the real look is still the Motion wizard's sample video.
+
+**The three CTA clips were not lost:** they belong to the Identity ZG C2C, and the app was on Test Stick man. Files: `C:/Users/gdp/Videos/CTA-segments/`.
+
+**Your call (DECISIONS 171):** the photos are on both Identity, Thumbnail and Publishing, Thumbnail: keep both? The PDT's own "make it" button next to Copy is in the publishing-dreamteam repo, a separate task.
+
+**Not tried yet:** the screens were clicked in `scripts/ui-mock` (no console error), not in the installed window. A real AI, vidIQ or Gemini call from the moved places: none was made, nothing was spent. A Shot map on a real long catalog video (the e2e one is 21 s). An older video opened in the new tabs.
+
+- Tests: Node 665 of 667 (2 live tests skipped, none red), `npm run audit:quick` 823 of 823 in 36 minutes, 0 USD, `scripts/phase2/e2e.mjs` 59/59 with real renders (new: a Shot map on a catalog plan, a thumbnail before the video), channel e2e 56/56, Rust 50, UI check 0 errors. The audit ran before the Edit menu commit, which changed the window and one AI prompt; Node and the UI check ran after it. One timing test (`stallGuard`, 15 ms sleeps) was red once in a busy full run, then green 5 of 5 alone and in the next two full runs.
+- Merged into `main` from branch `ui-menu-reorganize` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
+
+**Next:** Zoltan tries the new menu on the installer. Then Phase 9 in a new chat, on a Mac.
+
+## Earlier (2026-11-03, reliability audit, DECISIONS 164 to 167)
 
 **The audit is done: `docs/AUDIT_REPORT.md` has what was found, fixed and left open. Phase 9, the macOS build, is still next, and it needs a Mac.**
 

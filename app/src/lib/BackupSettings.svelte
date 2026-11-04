@@ -2,12 +2,14 @@
   // Settings, Backup (DECISIONS 66, docs/backup.md): the backup folder
   // (the Google Drive, OneDrive or Dropbox desktop folder uploads it), the
   // default level with sizes from the ONE Videos on this computer, automatic
-  // backups. "Back up now" is on Settings, Import & Export (DECISIONS 119).
+  // backups, and "Back up now" (it was on Import & Export too, DECISIONS 168).
   import { open } from "@tauri-apps/plugin-dialog";
   import type { AppState, BackupSettings } from "./api";
-  import { runner, cloudFolders } from "./api";
+  import { runner, cloudFolders, backupSettingsNow, errorText } from "./api";
+  import ErrorBox from "./ErrorBox.svelte";
+  import Progress from "./Progress.svelte";
 
-  let { app, backup = $bindable(), goto }: { app: AppState; backup: BackupSettings; goto?: (page: "transfer") => void } = $props();
+  let { app, backup = $bindable() }: { app: AppState; backup: BackupSettings } = $props();
 
   let clouds = $state<{ label: string; path: string }[]>([]);
   let sizes = $state<Record<string, number> | null>(null);
@@ -36,6 +38,24 @@
     if (typeof dir === "string") backup = { ...backup, dir };
   }
 
+  let backingUp = $state(false);
+  let done = $state("");
+  let error = $state("");
+  async function backupNow() {
+    backingUp = true;
+    done = "";
+    error = "";
+    try {
+      const r = await runner<{ projects: number; courses?: number; copied: number; bytes: number; failed: { project: string; error: string }[] }>("backup-all", {});
+      const n = await backupSettingsNow();
+      done = `Backed up ${r.projects} ${r.projects === 1 ? "video" : "videos"} (${r.copied} files changed, ${mb(r.bytes)}) and the settings of ${n} ${n === 1 ? "Identity" : "Identities"}.${r.courses ? ` ${r.courses} ${r.courses === 1 ? "course" : "courses"} with the course file.` : ""}`;
+      if (r.failed.length) error = `Not backed up: ${r.failed.map((f) => `${f.project}: ${f.error}`).join("; ")}`;
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      backingUp = false;
+    }
+  }
 </script>
 
 <section class="card">
@@ -70,7 +90,11 @@
 
 <section class="card">
   <h2>Back up now</h2>
-  <p class="hint">Every ONE Video of every Identity and the settings, at once: on {#if goto}<button type="button" class="link" onclick={() => goto("transfer")}>Settings, Import & Export</button>{:else}Settings, Import & Export{/if}. Save settings first if you changed the folder.</p>
+  <p class="hint">Every ONE Video of every Identity and the settings (never the keys) into the backup folder. Only changed files are copied. Save settings first if you changed the folder. A video comes back with "Restore from backup" on Videos.</p>
+  {#if backingUp}<Progress command="backup-all" label="Backup" />{/if}
+  {#if error}<ErrorBox message={error} context={{ step: "backup" }} />{/if}
+  {#if done}<p class="good">{done}</p>{/if}
+  <div class="row"><button type="button" class="primary" disabled={backingUp || !app.backupRoot} title={app.backupRoot ? "" : "Choose a backup folder and save settings first"} onclick={backupNow}>{backingUp ? "Backing up..." : "Back up now"}</button></div>
 </section>
 
 <style>
@@ -79,5 +103,5 @@
   .radio { display: flex; gap: 8px; align-items: baseline; margin: 8px 0; font-weight: 400; }
   .hint { font-size: 13px; color: var(--muted-foreground); }
   .path { font-family: var(--font-mono); font-size: 13px; word-break: break-all; }
-  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
+  .good { color: var(--success); margin: 8px 0; }
 </style>

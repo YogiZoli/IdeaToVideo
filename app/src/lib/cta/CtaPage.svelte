@@ -10,9 +10,10 @@
   import { log } from "../logger";
   import ErrorBox from "../ErrorBox.svelte";
   import SegmentsManager from "./SegmentsManager.svelte";
+  import HeygenImport from "./HeygenImport.svelte";
   import { SOURCE_LABEL, available, effectiveSource, heygenReady, modeFor, priceText, callText, type ClipSource } from "./clips";
 
-  let { app, onopen, refresh = 0, goto }: { app: AppState; onopen: () => void; refresh?: number; goto?: (page: "transfer" | "voice" | "connections") => void } = $props();
+  let { app, onopen, refresh = 0, goto }: { app: AppState; onopen: () => void; refresh?: number; goto?: (page: "avatar" | "connections") => void } = $props();
 
   // YouTube's end screen (DECISIONS 53): seconds left after the last call,
   // set here, not in the wizard.
@@ -122,7 +123,7 @@
           {#if !hasHeygenKey}
             <span class="state">HeyGen options are greyed out: <button type="button" class="link" onclick={() => goto?.("connections")}>Connect HeyGen</button></span>
           {:else if !heygen && !seg}
-            <span class="state">HeyGen needs an avatar look: <button type="button" class="link" onclick={() => goto?.("voice")}>Identity, Voice & Avatar</button></span>
+            <span class="state">HeyGen needs an avatar look: <button type="button" class="link" onclick={() => goto?.("avatar")}>Identity, AI Avatar</button></span>
           {/if}
           <div class="acts">
             <button type="button" class="ghost" onclick={() => (editing = editing === h.keyword ? null : h.keyword)}>{seg ? "Replace clip" : "Add a clip"}</button>
@@ -133,6 +134,12 @@
     </div>
     {#if sourceSaved}<p class="good">Saved. {sourceSaved}</p>{/if}
     <SegmentsManager {app} options={st.options} cta={profile} bind:segments={st.segments} bind:keyword={editing} grid={false} {goto} />
+  </section>
+
+  <section class="card">
+    <h2>A video from your HeyGen account</h2>
+    <p class="hint">A video already in your HeyGen account becomes the clip of one comment keyword. Reading and downloading costs nothing.</p>
+    <HeygenImport {app} />
   </section>
 
   <section class="card">

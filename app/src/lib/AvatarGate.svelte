@@ -188,7 +188,7 @@
 </script>
 
 <section class="card">
-  <h2>4. Avatar <span class="opt">optional</span></h2>
+  <h2>Avatar <span class="opt">optional</span></h2>
   <p class="hint lead">An avatar can say the opening and the closing, lip-synced to your narration. It costs HeyGen credits; you see the price first. Without it the video is complete.</p>
 
   {#if !scenesApproved}
@@ -196,8 +196,8 @@
   {:else if !hasKey}
     <p class="hint">An avatar needs a HeyGen API key (Settings). Without it, go on: the video is complete without an avatar.</p>
     <div class="actionbar">
-      <span class="say">{skipped ? "Without an avatar. Next: 5. Preview." : "No HeyGen key: the video goes on without an avatar."}</span>
-      <button type="button" class="primary" disabled={locked} onclick={() => (skipped ? goto("preview") : skip())}>{skipped ? "Go to 5. Preview" : "Continue without an avatar"}</button>
+      <span class="say">{skipped ? "Without an avatar. Next: Preview." : "No HeyGen key: the video goes on without an avatar."}</span>
+      <button type="button" class="primary" disabled={locked} onclick={() => (skipped ? goto("preview") : skip())}>{skipped ? "Go to Preview" : "Continue without an avatar"}</button>
     </div>
   {:else}
     {#if loading}<Progress command="avatar-looks" label="Loading your avatars and their pictures (faster next time)" reveal={false} />{/if}
@@ -242,9 +242,9 @@
 
     <div class="actionbar">
       {#if approved}
-        <span class="say"><b>Approved.</b> Next: 5. Preview.</span>
+        <span class="say"><b>Approved.</b> Next: Preview.</span>
       {:else if skipped && !current}
-        <span class="say"><b>Without an avatar.</b> You can still add one. Next: 5. Preview.</span>
+        <span class="say"><b>Without an avatar.</b> You can still add one. Next: Preview.</span>
       {:else if current}
         <span class="say">Watch the clips. Happy with them? Approve them.</span>
       {:else}
@@ -261,7 +261,7 @@
         <button type="button" class="primary" disabled={locked} onclick={skip}>Continue without an avatar</button>
       {/if}
       {#if current && !approved}<button type="button" class="primary" disabled={locked} onclick={approve}>Approve and continue</button>{/if}
-      {#if approved || (skipped && !current)}<button type="button" class="primary" onclick={() => goto("preview")}>Go to 5. Preview</button>{/if}
+      {#if approved || (skipped && !current)}<button type="button" class="primary" onclick={() => goto("preview")}>Go to Preview</button>{/if}
     </div>
   {/if}
 </section>

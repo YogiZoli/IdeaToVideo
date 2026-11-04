@@ -14,6 +14,7 @@
   import { log } from "../logger";
   import WizardShell from "../wizard/WizardShell.svelte";
   import BrandMini from "./BrandMini.svelte";
+  import WizardMap from "../wizard/WizardMap.svelte";
   import ErrorBox from "../ErrorBox.svelte";
 
   let { app, onclose, onsaved }: { app: AppState; onclose: () => void; onsaved: (card: BrandCard, lightLogo: string | null) => void } = $props();
@@ -201,12 +202,13 @@
     {#if notice}<p class="good">{notice}</p>{/if}
 
     {#if step === 0}
+      <WizardMap current="look" />
       <p class="lead">Your videos get this look: colors, fonts and shapes. Start from a preset, from your logo's colors, or from what you have now.</p>
       <div class="starts">
         <button type="button" class="start" onclick={() => (step = 1)}><b>From my logo</b><span>Upload your logo, then pick colors from it.</span></button>
         <button type="button" class="start" onclick={() => { card!.source = { kind: "scratch" }; step = 2; }}><b>From scratch</b><span>Start from your current look and change it.</span></button>
       </div>
-      <p class="hint">Have a tokens.css from Claude Design, open-design or another design system? Import it on Settings, Import & Export; it becomes this look, and you fine-tune it here.</p>
+      <p class="hint">Made your look in another design tool? Import its file on Settings, Import & Export; it becomes this look, and you fine-tune it here.</p>
       <h2>Or pick a look</h2>
       <div class="filter">
         <select bind:value={group} aria-label="Group" disabled={!!search.trim()}>
@@ -225,7 +227,7 @@
       {#if !shown.length}<p class="hint">No look matches "{search}".</p>{/if}
       <p class="hint">HyperFrames presets by HeyGen (Apache-2.0). The styles come from open-design (Apache-2.0): colors, corners and shapes only; brand fonts are replaced by free look-alikes. {st.styleNote}</p>
     {:else if step === 1}
-      <p class="lead">Your logo is not shown in your videos. It is kept on your Brand Identity Card for your other tools, for example a landing page, and the Colors screen suggests colors from it.</p>
+      <p class="lead">Your logo is not shown in your videos. It is kept with your look for your other tools, for example a landing page, and the Colors screen suggests colors from it.</p>
       <div class="logos">
         {#each [{ v: "light", label: "For light backgrounds", path: lightLogo }, { v: "dark", label: "For dark backgrounds (optional)", path: darkLogo }] as l (l.v)}
           <div class="logo card">
@@ -287,7 +289,7 @@
         {/each}
       </ul>
       <details bind:open={advanced}>
-        <summary>Advanced: every color</summary>
+        <summary>Every color</summary>
         <div class="all">
           {#each COLOR_ROLES as role (role)}
             <label class="color">

@@ -208,9 +208,8 @@ export async function make({ projectDir, identityDir, apiKey, withFace = false, 
   const m = modelOf(model);
   const want = (slots ?? [1, 2, 3]).filter((n) => Number.isInteger(n) && n >= 1 && n <= VARIANTS);
   if (!want.length) throw new Error("No variant to make.");
-  if (!latestVideo(projectDir)) throw new Error("Render the video first.");
   const photos = withFace ? photosOf(identityDir) : [];
-  if (withFace && !photos.length) throw new Error("Add a profile photo first (Settings, Identity, Thumbnail photos), or switch to No face.");
+  if (withFace && !photos.length) throw new Error("Add a profile photo first (Identity, Thumbnail), or switch to No face.");
   const title = titleOf(projectDir);
   if (!title) throw new Error("The video has no YouTube title yet. Choose one on the Script tab.");
   const language = loadProject(projectDir).language ?? "en";

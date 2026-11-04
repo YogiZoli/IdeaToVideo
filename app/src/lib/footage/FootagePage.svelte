@@ -5,6 +5,7 @@
   // stills; the AI writes what is on it (the user can edit it), which is what
   // the scene planner matches to the narration. A long clip serves many
   // videos: every video takes the piece used least before, starting at a cut.
+  // Four parts, one on screen (pages.ts SUB_PAGES, DECISIONS 168).
   import { llmFor } from "../llm";
   import { onMount } from "svelte";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -16,7 +17,7 @@
   import BrollSettings from "./BrollSettings.svelte";
   import FreeImages from "./FreeImages.svelte";
 
-  let { app, goto }: { app: AppState; goto?: (page: "connections") => void } = $props();
+  let { app, sub = "own", goto }: { app: AppState; sub?: string; goto?: (page: "connections") => void } = $props();
 
   let st = $state<FootageState | null>(null);
   let error = $state("");
@@ -119,8 +120,8 @@
 </script>
 
 {#if error}<ErrorBox message={error} context={{ step: "footage" }} />{/if}
+{#if sub === "own"}
 <section class="card">
-  <h2>Your footage</h2>
   <p class="hint">Your own video clips as B-roll, without their sound: the narrator speaks over them. The scene planner puts a clip under the sentences it fits, from what is on it. A long clip serves many videos: each video takes a different piece, always from the start of a shot.</p>
   {#if st}
     <div class="row">
@@ -166,13 +167,15 @@
   {/if}
 </section>
 
+{:else if sub === "free"}
 <FreeImages added={load} />
-<BrollSettings {app} />
+{:else if sub === "stock"}
 <section class="card">
-  <h2>Stock photos and videos</h2>
   <p class="hint">Free stock pictures and clips for your scenes (Pixabay, Unsplash), searched on the Scenes tab of a video. Their keys: {#if goto}<button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>{:else}Settings, Connections{/if}.</p>
 </section>
 
+{:else}
+<BrollSettings {app} />
 {#if st && generated.length}
   <section class="card">
     <h2>AI B-roll library</h2>
@@ -198,6 +201,7 @@
     </ul>
   </section>
 {/if}
+{/if}
 
 <style>
   .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0; }
@@ -212,7 +216,6 @@
   .saved { padding: 10px 12px; border-radius: 8px; background: var(--success-surface, #e7f6ec); color: var(--success, #1f7a3a); font-weight: 600; }
   .warn { font-size: 12px; color: var(--danger-text, #a5161b); }
   .tag { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--muted); color: var(--muted-foreground); }
-  section.card + section.card { margin-top: 16px; }
   @media (max-width: 760px) { .clips li { grid-template-columns: 1fr; } }
   .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
 </style>

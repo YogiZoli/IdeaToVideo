@@ -1,10 +1,10 @@
 <script lang="ts">
-  // Advanced (D6, DECISIONS 119): a tab's action bar shows one main button;
+  // More (D6, DECISIONS 119): a tab's action bar shows one main button;
   // everything else (make again, fine-tuning) waits in this small menu,
   // which opens upwards from the bar. It closes after a choice.
   import type { Snippet } from "svelte";
 
-  let { children, label = "Advanced" }: { children: Snippet; label?: string } = $props();
+  let { children, label = "More" }: { children: Snippet; label?: string } = $props();
   let el = $state<HTMLDetailsElement>();
   const close = () => el && (el.open = false);
 </script>

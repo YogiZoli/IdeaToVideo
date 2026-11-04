@@ -39,9 +39,10 @@
     renderError = "",
     render,
     goto,
-    connections,
+    openPage,
+    openThumbnail,
     thumbnailChosen = false,
-  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; series?: Series | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; connections?: () => void; thumbnailChosen?: boolean } = $props();
+  }: { app: AppState; dir: string; title: string; reviewApproved: boolean; latest: Video | null; series?: Series | null; renderError?: string; render: (quality: string) => void; goto: (t: TabId) => void; openPage?: (page: "pdt") => void; openThumbnail?: (dir: string) => void; thumbnailChosen?: boolean } = $props();
 
   const rendering = $derived(!!running(dir, ["render-video"]));
   const video = $derived(latest);
@@ -149,7 +150,7 @@
 </script>
 
 <section class="card">
-  <h2>6. Your video</h2>
+  <h2>Your video</h2>
 
   {#if !reviewApproved && !video}
     <Needs text="The video is rendered from the approved preview. Approve the preview first." tab="preview" {goto} />
@@ -221,8 +222,8 @@
         <div class="block">
           <div class="bhead"><span class="label">Publishing</span></div>
           <p class="hint">The video's publishing card: chapters with times, the script, the comment keywords with their times, your landing page, and the title, summary and tags from the Script tab.</p>
-          <p class="hint">{#if thumbnailChosen}The thumbnail you picked goes with it.{:else}No thumbnail in it yet.{/if} <button type="button" class="link" onclick={() => goto("thumbnail")}>{thumbnailChosen ? "Change the thumbnail" : "Make one on the Thumbnail tab"}</button></p>
-          {#if !pubReady}<p class="hint">To send it, set the address and the token on {#if connections}<button type="button" class="link" onclick={connections}>Settings, Connections</button>{:else}Settings, Connections{/if}.</p>{/if}
+          <p class="hint">{#if thumbnailChosen}The thumbnail you picked goes with it.{:else}No thumbnail in it yet.{/if} <button type="button" class="link" onclick={() => openThumbnail?.(dir)}>{thumbnailChosen ? "Change it in Publishing, Thumbnail" : "Make one in Publishing, Thumbnail"}</button></p>
+          {#if !pubReady}<p class="hint">To send it, set the address and the token on <button type="button" class="link" onclick={() => openPage?.("pdt")}>Publishing, PDT Connection</button>.</p>{/if}
           {#if sent?.ok}
             <p class="good">{sent.updated ? "Updated in Publishing." : "Sent to Publishing."} {#if sent.url}<button type="button" class="link" onclick={openSent}>{sent.url}</button>{/if}</p>
           {:else if sent}
@@ -257,7 +258,7 @@
           </label>
           <button type="button" disabled={!reviewApproved} onclick={() => render(quality)}>Render again</button>
         </Advanced>
-        <button type="button" class="primary" disabled={!pubReady || sending || !video.cardFile} title={!video.cardFile ? "This video has no publishing card: render it again." : pubReady ? "" : "Set the address and the token on Settings, Connections"} onclick={sendCard}>{sending ? "Sending..." : "Send to Publishing"}</button>
+        <button type="button" class="primary" disabled={!pubReady || sending || !video.cardFile} title={!video.cardFile ? "This video has no publishing card: render it again." : pubReady ? "" : "Set the address and the token on Publishing, PDT Connection"} onclick={sendCard}>{sending ? "Sending..." : "Send to Publishing"}</button>
         {#if reviewApproved}<UploadTick {dir} />{/if}
       {:else}
         <label class="q">Quality

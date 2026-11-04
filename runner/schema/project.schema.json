@@ -28,6 +28,11 @@
         "playlistUrl": { "type": ["string", "null"], "maxLength": 300 }
       }
     },
+    "keyword": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "$comment": "the search keyword chosen on the Research tab; the script uses it (DECISIONS 169)"
+    },
     "recipe": {
       "type": "object",
       "$comment": "the channel's locked recipe when this video was started (channels/recipe.mjs, DECISIONS 132): changing the recipe later never changes a video under way"

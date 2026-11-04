@@ -1,6 +1,6 @@
 <script lang="ts">
-  // The pages of the Wizards, Identity and Settings menus (pages.ts,
-  // DECISIONS 119): every onboarding field, editable any time (PRD 5), one
+  // The pages of the Playlist, Publishing, Wizards, Identity and Settings menus
+  // (pages.ts, DECISIONS 119, 168): every onboarding field, editable any time (PRD 5), one
   // page at a time, the menu's pages on the left. A page edits the App
   // (every Identity) or the active Identity (docs/identity.md 2). Each page
   // can re-run its part of the setup wizard. Keys save immediately; the rest
@@ -11,7 +11,8 @@
   import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity } from "./api";
   import { cleanConfig, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
-  import { SETTINGS_PAGES, MENU_NOTE, menuOf, type PageId } from "./pages";
+  import { SETTINGS_PAGES, SUB_PAGES, MENU_NOTE, MENUS, menuOf, type PageId, type SubPage } from "./pages";
+  import type { TabId } from "./tabs";
   import { identityFromConfig, roomForIdentity, copyName } from "./identity";
   import { planText, fullPlanText, PRODUCT } from "./edition";
   import { refreshKeySources } from "./keystate.svelte";
@@ -40,11 +41,16 @@
   import { runner, exportBrand, importBrand } from "./api";
   import TrafficCard from "./planner/TrafficCard.svelte";
   import PlaylistPlanner from "./planner/PlaylistPlanner.svelte";
+  import CourseImport from "./course/CourseImport.svelte";
+  import KeywordIdeas from "./planner/KeywordIdeas.svelte";
+  import ThumbnailPage from "./publishing/ThumbnailPage.svelte";
+  import PublishingCards from "./publishing/PublishingCards.svelte";
+  import WizardMap from "./wizard/WizardMap.svelte";
   import type { BrandState, BrandCard } from "./api";
   import { log, setScreen, changedPaths } from "./logger";
 
 
-  let { app, saved, startPage = "identity", goto }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId; goto: (page: PageId) => void } = $props();
+  let { app, saved, startPage = "identity", goto, openVideoAt, thumbnailVideo = null }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId; goto: (page: PageId) => void; openVideoAt: (dir: string, tab: TabId) => void; thumbnailVideo?: string | null } = $props();
 
   // working copies: edits stay local until "Save settings". $state.snapshot,
   // not structuredClone: a reactive proxy cannot be cloned (DataCloneError).
@@ -63,6 +69,10 @@
   let message = $state("");
   let error = $state("");
   let pageId = $state<PageId>(untrack(() => startPage));
+  // the part of a big page on screen (pages.ts SUB_PAGES)
+  let subId = $state("");
+  const subs = $derived<SubPage[]>(SUB_PAGES[pageId] ?? []);
+  const sub = $derived(subs.some((x) => x.id === subId) ? subId : (subs[0]?.id ?? ""));
   let wizard = $state(false);
   let brandWizard = $state(false);
   let motionWizard = $state(false);
@@ -89,20 +99,19 @@
   // The card as a file of its own (docs/wizards/brand.md 12): for another
   // Identity, another computer, or the user's other tools.
   async function exportCard() {
-    const path = await saveDialog({ defaultPath: `${app.identity!.name}.brand.zip`, filters: [{ name: "Brand Identity Card", extensions: ["zip"] }] });
+    const path = await saveDialog({ defaultPath: `${app.identity!.name}.brand.zip`, filters: [{ name: "Your look", extensions: ["zip"] }] });
     if (typeof path !== "string") return;
     await run(async () => {
       if (!brand) await loadBrand();
       if (!brand?.own) await runner("brand-save", { card: $state.snapshot(brand!.card) });
       const out = await exportBrand(path);
-      message = `Exported to ${out}: the Brand Identity Card, its FRAME.md and the logos.`;
+      message = `Exported to ${out}: your look and your logos.`;
       await loadBrand();
     });
   }
 
-  async function importCard() {
-    const path = await open({ multiple: false, directory: false, filters: [{ name: "Brand Identity Card", extensions: ["zip", "json"] }] });
-    if (typeof path !== "string") return;
+  // TransferPage's dialog picked the file: a look file (.zip, .json), not a .css
+  async function importCard(path: string) {
     await run(async () => {
       const card = await importBrand(path);
       await runner("brand-save", { card: { ...card, name: app.identity?.name ?? card.name } });
@@ -111,8 +120,8 @@
       const light = brand?.card.logo?.light;
       if (light && brand?.brandDir) {
         config.brand = { ...config.brand, logo: `${brand.brandDir}${brand.brandDir.includes("\\") ? "\\" : "/"}${light}` };
-        after(await persist(), "Brand Identity Card imported. New videos of this Identity use it.");
-      } else message = "Brand Identity Card imported. New videos of this Identity use it.";
+        after(await persist(), "Your look is imported. New videos of this Identity use it.");
+      } else message = "Your look is imported. New videos of this Identity use it.";
     });
   }
 
@@ -132,9 +141,19 @@
   // a page of this menu opens here; one of another menu through the shell
   function openPage(id: PageId) {
     message = "";
-    if (menuOf(id) === menu) pageId = id;
-    else goto(id);
+    if (menuOf(id) === menu) {
+      pageId = id;
+      subId = "";
+    } else goto(id);
   }
+  function openSub(s: SubPage) {
+    message = "";
+    if (s.page) openPage(s.page);
+    else subId = s.id;
+  }
+  // the page's save button and its "run setup again": only where that part has fields
+  const NO_SAVE: PageId[] = ["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner", "health", "courses", "thumbnail", "photos", "legal"];
+  const hasFields = $derived(!NO_SAVE.includes(pageId) && !(pageId === "connections" && sub !== "ai"));
 
   let dupName = $state(untrack(() => copyName(app.identity?.name ?? "", app.identities.map((i) => i.name))));
   let dupKeys = $state(untrack(() => app.edition.copyKeysDefault));
@@ -198,7 +217,7 @@
     wizard = false;
   }
 
-  function recommend(id: "audience" | "brandVoice") {
+  function recommend(id: "audience" | "brandVoice" | "profile") {
     return run(async () => {
       config = await recommendStep(id, config);
     });
@@ -258,27 +277,36 @@
 <div class="layout">
   <nav class="pages">
     <div class="group">
-      <span class="gname">{menu === "settings" ? "Settings" : menu === "wizards" ? "Wizards" : app.identity?.name}</span>
+      <span class="gname">{menu === "identity" ? app.identity?.name : MENUS.find((m) => m.id === menu)?.title}</span>
       <span class="gnote">{MENU_NOTE[menu]}</span>
     </div>
     {#each SETTINGS_PAGES.filter((p) => p.menu === menu) as p}
-      <button type="button" class:current={p.id === pageId} onclick={() => openPage(p.id)}>{p.title}</button>
+      <button type="button" class:current={p.id === pageId && !subs.length} class:parent={p.id === pageId && !!subs.length} onclick={() => openPage(p.id)}>{p.title}</button>
+      {#if p.id === pageId}
+        {#each subs as x (x.id)}
+          <button type="button" class="subpage" class:current={x.id === sub} onclick={() => openSub(x)}>{x.title}</button>
+        {/each}
+      {/if}
     {/each}
   </nav>
   <div class="page">
     <header>
       <div>
         <p class="for">{page.scope === "app" ? "For the whole app, every Identity" : `For: ${app.identity?.name}`}</p>
-        <h1>{page.title}</h1>
+        <h1>{page.title}{#if subs.length}: {subs.find((x) => x.id === sub)?.title}{/if}</h1>
       </div>
-      {#if !["look", "dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner", "health"].includes(pageId)}
+      {#if hasFields}
         <button type="button" class="primary" disabled={busy} onclick={save}>Save settings</button>
       {/if}
     </header>
     {#if message}<p class="good">{message}</p>{/if}
     {#if error}<ErrorBox message={error} context={{ step: "settings", provider: config.llm.provider, model: config.llm.model }} />{/if}
 
-    {#if page.steps.length && pageId !== "look"}
+    {#if ["look", "motion", "scenes", "cta"].includes(pageId)}
+      <WizardMap current={pageId} goto={(id) => openPage(id)} />
+    {/if}
+
+    {#if page.steps.length && pageId !== "look" && hasFields}
       <div class="rerun">
         <p class="hint">Want to rethink this part? The setup wizard walks you through it again, step by step.</p>
         <button type="button" disabled={busy} onclick={() => { message = ""; wizard = true; }}>Run setup for this part again</button>
@@ -288,45 +316,55 @@
     {#if pageId === "health"}
       <HealthCheck {app} goto={(id) => openPage(id)} />
     {:else if pageId === "connections"}
+      {#if sub === "ai"}
+        <section class="card">
+          <p class="hint">The AI that writes the scripts, plans the scenes and the small texts, for every Identity.</p>
+          <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" steps />
+          <label class="radio own"><input type="checkbox" checked={ownLlm} onchange={(e) => (ownLlm = e.currentTarget.checked)} /> Use a different AI for this Identity ({app.identity?.name})</label>
+          {#if ownLlm}
+            <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" steps /></div>
+          {/if}
+          <p class="hint">Save settings after changing the AI or the model. Keys are saved at once.</p>
+        </section>
+      {:else if sub === "providers"}
+        <section class="card">
+          <p class="hint">Gemini and the other AI providers, for example when one step of the script uses another model.</p>
+          {#each LLM_PROVIDERS as p (p.id)}
+            <ConnectionRow name={p.id} label={p.label} keyUrl={p.keyUrl} identityName={app.identity?.name} bind:isSet={keys[p.id]} test={() => ({ command: "test-llm", provider: p.id, model: p.id === appCfg.llm.provider ? appCfg.llm.model : p.model })} />
+          {/each}
+        </section>
+      {:else if sub === "services"}
+        <section class="card">
+          <ConnectionRow name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} hint="The narrator voice and the music." identityName={app.identity?.name} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
+          <ConnectionRow name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} hint="Avatars, CTA clips and AI B-roll." identityName={app.identity?.name} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
+          <ConnectionRow name="kie" label="Kie AI" keyUrl={SERVICE_KEY_URLS.kie} hint="Optional: paid AI clips for hero moments, off until you turn them on in a channel's recipe. Nothing is spent without your yes on the Preview tab." identityName={app.identity?.name} bind:isSet={keys.kie} test={() => ({ command: "test-service", service: "kie" })} />
+          <ConnectionRow name="pixabay" label="Pixabay" keyUrl={SERVICE_KEY_URLS.pixabay} hint="Free stock photos and videos (Pixabay Content License: a free license, not CC0; also commercially, no credit required)." identityName={app.identity?.name} bind:isSet={keys.pixabay} test={() => ({ command: "test-service", service: "pixabay" })} />
+          <ConnectionRow name="unsplash" label="Unsplash Access Key" keyUrl={SERVICE_KEY_URLS.unsplash} hint="Free stock photos (Unsplash License). Make an app at Unsplash and paste its Access Key, never the Secret key. Demo mode: 50 searches an hour." identityName={app.identity?.name} bind:isSet={keys.unsplash} test={() => ({ command: "test-service", service: "unsplash" })} />
+          <ConnectionRow name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} hint="Optional: keyword data for your topics." identityName={app.identity?.name} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
+        </section>
+      {:else}
+        <section class="card">
+          <p class="hint">Keys are stored only in your system keychain. This removes the keys for every Identity and every Identity's own keys, for example before you uninstall.</p>
+          <div class="row"><button type="button" disabled={busy} onclick={removeAllKeys}>Remove all keys</button></div>
+        </section>
+      {/if}
+    {:else if pageId === "pdt"}
       <section class="card">
-        <h2>AI</h2>
-        <p class="hint">The AI that writes the scripts, plans the scenes and the small texts, for every Identity.</p>
-        <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" steps />
-        <label class="radio own"><input type="checkbox" checked={ownLlm} onchange={(e) => (ownLlm = e.currentTarget.checked)} /> Use a different AI for this Identity ({app.identity?.name})</label>
-        {#if ownLlm}
-          <div class="inner"><AiSection bind:llm={identLlm} bind:keys keyScope="identity" steps /></div>
-        {/if}
-        <p class="hint">Save settings after changing the AI or the model. Keys are saved at once.</p>
-      </section>
-      <section class="card">
-        <h2>AI providers</h2>
-        <p class="hint">Gemini and the other AI providers, for example when one step of the script uses another model.</p>
-        {#each LLM_PROVIDERS as p (p.id)}
-          <ConnectionRow name={p.id} label={p.label} keyUrl={p.keyUrl} identityName={app.identity?.name} bind:isSet={keys[p.id]} test={() => ({ command: "test-llm", provider: p.id, model: p.id === appCfg.llm.provider ? appCfg.llm.model : p.model })} />
-        {/each}
-      </section>
-      <section class="card">
-        <h2>Services</h2>
-        <ConnectionRow name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} hint="The narrator voice and the music." identityName={app.identity?.name} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
-        <ConnectionRow name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} hint="Avatars, CTA clips and AI B-roll." identityName={app.identity?.name} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
-        <ConnectionRow name="kie" label="Kie AI" keyUrl={SERVICE_KEY_URLS.kie} hint="Optional: paid AI clips for hero moments, off until you turn them on in a channel's recipe. Nothing is spent without your yes on the Preview tab." identityName={app.identity?.name} bind:isSet={keys.kie} test={() => ({ command: "test-service", service: "kie" })} />
-        <ConnectionRow name="pixabay" label="Pixabay" keyUrl={SERVICE_KEY_URLS.pixabay} hint="Free stock photos and videos (Pixabay Content License: a free license, not CC0; also commercially, no credit required)." identityName={app.identity?.name} bind:isSet={keys.pixabay} test={() => ({ command: "test-service", service: "pixabay" })} />
-        <ConnectionRow name="unsplash" label="Unsplash Access Key" keyUrl={SERVICE_KEY_URLS.unsplash} hint="Free stock photos (Unsplash License). Make an app at Unsplash and paste its Access Key, never the Secret key. Demo mode: 50 searches an hour." identityName={app.identity?.name} bind:isSet={keys.unsplash} test={() => ({ command: "test-service", service: "unsplash" })} />
-        <ConnectionRow name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} hint="Optional: keyword data for your topics." identityName={app.identity?.name} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
-      </section>
-      <section class="card">
-        <h2>Publishing</h2>
+        <h2>Publishing Dream Team</h2>
         <p class="hint">Where "Send to Publishing" on a finished video sends its publishing card: your publishing app's address and its token. The address starts with https:// (plain http only for localhost). The token is kept in your computer's keychain, never in a file. Save settings after changing the address.</p>
         <label class="field"><span>Address</span><input type="url" placeholder="https://..." value={appCfg.publishing?.url ?? ""} oninput={(e) => (appCfg.publishing = { url: e.currentTarget.value.trim() || null })} /></label>
         <KeyField name="publishing" label="Publishing token" scope="app" bind:isSet={keys.publishing} />
       </section>
+      <PublishingCards {app} {openVideoAt} />
+    {:else if pageId === "thumbnail"}
+      <ThumbnailPage {app} video={thumbnailVideo} {openVideoAt} goto={(id) => openPage(id)} />
+    {:else if pageId === "courses"}
       <section class="card">
-        <h2>Remove all keys</h2>
-        <p class="hint">Keys are stored only in your system keychain. This removes the keys for every Identity and every Identity's own keys, for example before you uninstall.</p>
-        <div class="row"><button type="button" disabled={busy} onclick={removeAllKeys}>Remove all keys</button></div>
+        <p class="hint">A whole course or playlist as one file: from the Minicourse page, or from the Playlist Planner. It becomes one prepared video per entry.</p>
+        <CourseImport {app} off={busy} />
       </section>
     {:else if pageId === "transfer"}
-      <TransferPage {app} {busy} saved={(s, text) => after(s, text)} {importCard} exportCardFile={exportCard} goto={(id) => openPage(id)} />
+      <TransferPage {app} {busy} saved={(s, text) => after(s, text)} {importCard} exportCardFile={exportCard} />
     {:else if pageId === "folders"}
       <section class="card">
         <h2>Projects folder</h2>
@@ -340,7 +378,7 @@
         </div>
       </section>
     {:else if pageId === "backup"}
-      <BackupSettings {app} bind:backup={appCfg.backup!} goto={(id) => openPage(id)} />
+      <BackupSettings {app} bind:backup={appCfg.backup!} />
     {:else if pageId === "plan"}
       <section class="card">
         <h2>{app.edition.tier}</h2>
@@ -349,7 +387,7 @@
           {#each app.identities as i}<li>{i.name}</li>{/each}
         </ul>
       </section>
-    {:else if pageId === "general"}
+    {:else if pageId === "legal"}
       <section class="card about">
         <h2>About</h2>
         <p>{PRODUCT} {app.version}. Built on HyperFrames by HeyGen (Apache-2.0).</p>
@@ -367,7 +405,7 @@
             <div class="brandtext">
               <p>{brand.own ? `Your own look${brand.card.updatedAt ? `, saved ${new Date(brand.card.updatedAt).toLocaleDateString()}` : ""}${brand.card.source?.preset ? `, from ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? brand.card.source.preset}` : ""}.` : `The ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? "default"} preset. You have not set your own look yet.`}</p>
               <p class="hint">Fonts: {brand.card.fonts.display.family} for titles, {brand.card.fonts.body.family} for text.</p>
-              <p class="hint">Saved as this Identity's Brand Identity Card, the design source your other tools can read too.</p>
+              <p class="hint">Saved with this Identity. Your other tools can read it too.</p>
               <div class="row"><button type="button" class="primary" disabled={busy} onclick={() => { message = ""; brandWizard = true; }}>Open Brand wizard</button></div>
             </div>
           </div>
@@ -375,7 +413,7 @@
           <p class="hint">Loading...</p>
         {/if}
       </section>
-      <p class="hint">The Brand Identity Card as a file, and tokens.css: <button type="button" class="link" onclick={() => openPage("transfer")}>Settings, Import & Export</button>.</p>
+      <p class="hint">Your look as a file, or a look from another design tool: <button type="button" class="link" onclick={() => openPage("transfer")}>Settings, Import & Export</button>.</p>
     {:else if pageId === "motion"}
       <MotionPage refresh={motionSaved} onopen={() => { message = ""; motionWizard = true; }} />
     {:else if pageId === "cta"}
@@ -383,11 +421,22 @@
     {:else if pageId === "scenes"}
       <ScenesPage refresh={scenesSaved} onopen={() => { message = ""; scenesWizard = true; }} goto={(id) => openPage(id)} />
     {:else if pageId === "footage"}
-      <FootagePage {app} goto={(id) => openPage(id)} />
+      <FootagePage {app} {sub} goto={(id) => openPage(id)} />
     {:else if pageId === "dictionary"}
       <DictionaryPage />
     {:else if pageId === "planner"}
       <PlaylistPlanner {app} goto={(id) => openPage(id)} />
+    {:else if pageId === "research"}
+      <section class="card">
+        <p class="hint">What people search for on YouTube, from vidIQ with your own key. It feeds the <button type="button" class="link" onclick={() => openPage("planner")}>Playlist Planner</button>; for a single video the same search is on its Research tab.</p>
+        <KeywordIdeas {app} goto={(id) => openPage(id)} />
+      </section>
+    {:else if pageId === "photos"}
+      <section class="card">
+        <h2>Your face on thumbnails</h2>
+        <PhotosPanel />
+        <p class="hint">The thumbnails themselves are made in <button type="button" class="link" onclick={() => openPage("thumbnail")}>Publishing, Thumbnail</button>.</p>
+      </section>
     {:else if pageId === "channel"}
       <TrafficCard bind:config />
     {/if}
@@ -396,20 +445,13 @@
       <section class="card">
         <div class="head">
           <h2>{s.id === "name" ? "Name" : s.title}</h2>
-          {#if s.id === "audience" || s.id === "brandVoice"}
-            <button type="button" disabled={busy} onclick={() => recommend(s.id as "audience" | "brandVoice")}>Use recommended</button>
+          {#if s.id === "audience" || s.id === "brandVoice" || s.id === "profile"}
+            <button type="button" disabled={busy} onclick={() => recommend(s.id as "audience" | "brandVoice" | "profile")}>Write it with AI</button>
           {/if}
         </div>
         <ConfigSection id={s.id} bind:config bind:keys keyScope="identity" />
       </section>
     {/each}
-
-    {#if pageId === "voice"}
-      <section class="card">
-        <h2>Thumbnail photos</h2>
-        <PhotosPanel />
-      </section>
-    {/if}
 
     {#if pageId === "identity"}
       <section class="card">
@@ -447,6 +489,8 @@
   .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; padding: 24px; max-width: 1060px; margin: 0 auto; }
   .pages { display: grid; gap: 2px; align-content: start; }
   .pages button { width: 100%; justify-content: flex-start; text-align: left; border: none; background: none; padding: 6px 10px; border-radius: 6px; }
+  .pages .subpage { padding-left: 24px; font-size: 13px; }
+  .pages .parent { font-weight: 600; }
   .pages .current { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
   .group { display: grid; padding: 12px 10px 4px; }
   .group:first-child { padding-top: 0; }

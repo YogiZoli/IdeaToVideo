@@ -13,7 +13,7 @@
   import type { TabId } from "../tabs";
   import type { Shot, ShotMap } from "./channels";
 
-  let { dir, busy = false, changed, goto, next }: { dir: string; busy?: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId } = $props();
+  let { dir, look, busy = false, planned = false, changed, goto, next }: { dir: string; look: string; busy?: boolean; planned?: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId } = $props();
 
   const job = $derived(running(dir, ["shot-map-make", "shot-flow-clip"]));
   let map = $state<ShotMap | null>(null);
@@ -52,6 +52,7 @@
       working = "";
     }
   }
+  const makeMap = () => act("make", () => runner<ShotMap>("shot-map-make", { projectDir: dir, look }));
   const setOn = (s: Shot, on: boolean) => act(s.id, () => runner<ShotMap>("shot-flow-set", { projectDir: dir, id: s.id, on }));
   const setPrompt = (s: Shot, prompt: string) => act(s.id, () => runner<ShotMap>("shot-flow-set", { projectDir: dir, id: s.id, prompt }));
   const addClip = (id: string, file: string) => act(id, () => runner<ShotMap>("shot-flow-clip", { projectDir: dir, id, file }));
@@ -93,9 +94,11 @@
     <h2>Shot map</h2>
     <button type="button" class="ghost" onclick={() => goto("scenes")}>Change a block on the Scenes tab</button>
   </div>
+  <p class="hint">The detailed plan behind the Scenes: every shot with its length and camera, and the exact word each thing on screen appears on. Made on this computer, it costs nothing. The Preview, the next big step, shows what it looks like.</p>
   {#if error}<ErrorBox message={error} context={{ step: "shot-map" }} />{/if}
   {#if !map || !map.shots.length}
-    <p class="hint">{map?.warning ?? "The shot map comes after the voice and the scene plan. Press Make the video at the top."}</p>
+    <p class="hint">{map?.warning ?? (planned ? "This video has no shot map yet." : "The shot map comes after the voice and the scene plan. Plan the scenes first.")}</p>
+    {#if planned}<div class="actions"><button type="button" class="primary" disabled={off} onclick={makeMap}>{working === "make" ? "Making..." : "Make the shot map"}</button></div>{/if}
   {:else}
     {#if map.warning}<p class="warn">{map.warning}</p>{/if}
     {#if map.summary}

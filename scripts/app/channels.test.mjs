@@ -1,11 +1,9 @@
-// The channel screen's plain words (docs/BUILD_PLAN.md, phase 1), and the
-// Advanced toggle: the wizards are hidden, never deleted.
+// The channel screen's plain words (docs/BUILD_PLAN.md, phase 1), and the steps of a video.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { recipeLines, costLine, blocker, queueOpen, recipeSide } from "../../app/src/lib/channels/channels.ts";
-import { MENUS, SETTINGS_PAGES, visibleMenus } from "../../app/src/lib/pages.ts";
-import { TABS, scriptTabs, tabStates, firstOpen, nextAfter } from "../../app/src/lib/tabs.ts";
+import { TABS, videoTabs, tabStates, firstOpen, nextAfter } from "../../app/src/lib/tabs.ts";
 import { phaseText } from "../../app/src/lib/progressInfo.ts";
 
 const free = { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 };
@@ -56,29 +54,33 @@ test("one recipe, either direction", () => {
   assert.deepEqual([back.engine, back.voice.provider, back.targetLengthMin], ["script", "kokoro", 5]);
 });
 
-test("a channel's video: the Shot map after the Scenes, the Research first when it is on", () => {
-  assert.deepEqual(scriptTabs(false).map((t) => t.label), ["Script", "Voice and music", "Scenes", "Shot map", "Avatar", "Preview", "Your video", "Thumbnail"]);
-  assert.deepEqual(scriptTabs(true).map((t) => t.id).slice(0, 2), ["research", "script"]);
-  assert.deepEqual(scriptTabs(true).map((t) => t.n), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+test("every script video: Research first, the Shot map after the Scenes, no Thumbnail tab (DECISIONS 169)", () => {
+  for (const list of [videoTabs(false), videoTabs(true)]) {
+    assert.deepEqual(list.map((t) => t.label), ["Research", "Script", "Voice and music", "Scenes", "Shot map", "Avatar", "Preview", "Your video"]);
+    assert.deepEqual(list.map((t) => t.n), [1, 2, 3, 4, 5, 6, 7, 8]);
+  }
   const gates = { script: { state: "approved" }, voice: { state: "approved" }, scenes: { state: "todo" }, avatar: { state: "todo" }, review: { state: "todo" } };
-  const list = scriptTabs(true);
+  const list = videoTabs(true);
   assert.equal(firstOpen(gates, false, false, list, false), "research", "the brief waits for its click");
   assert.equal(firstOpen(gates, false, false, list, true), "scenes");
-  assert.equal(tabStates(gates, false, false, false, list, true).research, "done");
-  assert.equal(tabStates({ ...gates, scenes: { state: "approved" } }, false, false, false, list, true).shots, "done");
+  assert.equal(tabStates(gates, false, false, list, true).research, "done");
+  assert.equal(tabStates({ ...gates, scenes: { state: "approved" } }, false, false, list, true).shots, "done");
   assert.equal(nextAfter("scenes", false, list), "shots");
   assert.equal(nextAfter("shots", false, list), "preview");
-  assert.equal(TABS.length, 7, "an older video keeps its tabs");
+  assert.equal(nextAfter("shots", true, list), "avatar");
+});
+
+test("research that is not asked for never blocks a video, and can still be done", () => {
+  const none = { script: { state: "todo" }, voice: { state: "todo" }, scenes: { state: "todo" }, avatar: { state: "todo" }, review: { state: "todo" } };
+  const list = videoTabs(false);
+  assert.equal(firstOpen(none, false, false, list, false), "script");
+  assert.equal(tabStates(none, false, false, list, false).research, "optional");
+  assert.equal(tabStates(none, false, false, list, true).research, "done");
+  assert.equal(TABS.find((t) => t.id === "research").optional, true, "by default it is optional: the Channels board goes by this");
 });
 
 test("the queue counts the videos ready to make", () => {
   assert.equal(queueOpen([{ script: "pending" }, { script: "approved" }, { script: "failed" }, { script: "todo" }]), 2);
-});
-
-test("Advanced hides the wizards and deletes nothing", () => {
-  assert.deepEqual(visibleMenus(false).map((m) => m.id), ["home", "videos", "identity", "settings"]);
-  assert.deepEqual(visibleMenus(true), MENUS);
-  for (const id of ["motion", "look", "scenes", "cta", "planner"]) assert.ok(SETTINGS_PAGES.some((p) => p.id === id && p.menu === "wizards"), id);
 });
 
 test("the short first setup asks for the AI key and a name; the long one is still there", () => {

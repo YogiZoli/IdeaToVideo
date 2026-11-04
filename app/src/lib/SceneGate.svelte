@@ -7,6 +7,7 @@
   // (Default, runner simple-scenes) lets the video go on (Zoltan, 2026-10-05).
   import { onDestroy } from "svelte";
   import { ask } from "@tauri-apps/plugin-dialog";
+  import { log } from "./logger";
   import ErrorBox from "./ErrorBox.svelte";
   import Advanced from "./Advanced.svelte";
   import Progress from "./Progress.svelte";
@@ -148,6 +149,9 @@
     }
     busy = true;
     try {
+      // every approved plan gets its Shot map, whichever way it was made. It needs no AI;
+      // if it cannot be made the plan stands, and the Shot map tab can try again.
+      await runner("shot-map-make", { projectDir: dir, look }).catch((e) => log("shot_map_failed", { error: errorText(e) }, "warn"));
       await runner("approve-gate", { projectDir: dir, gate: "scenes" });
       await changed();
     } catch (e) {
@@ -169,7 +173,7 @@
 </script>
 
 <section class="card">
-  <h2>3. Scenes</h2>
+  <h2>Scenes</h2>
   <p class="hint lead">What the viewer sees while each sentence is spoken. The AI picks a scene for every sentence; you can swap a scene or change its text.</p>
 
   {#if !voiceApproved}

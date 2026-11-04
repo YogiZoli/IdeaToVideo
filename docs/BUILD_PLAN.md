@@ -289,10 +289,10 @@ avoids them where it can; the rest waits for his decision.
 | libvips through sharp (LGPL), inside the engine | MIT, Apache, BSD or OFL only | Comes with HyperFrames, not used by ITV directly. |
 | Non-OFL fonts | OFL only | **Closed (audit, 2026-11-03):** all 36 families checked on Fontsource, all OFL-1.1. Every new preset must list only OFL fonts in its tokens. |
 | The registry component `vox-annotate` | never "Vox" or any other brand name in the app | **Closed (audit, 2026-11-03):** the title it shows is now "Annotated keyword". Its internal id stays, the registry finds the files by it. |
-| Unsplash, HeyGen AI B-roll, ElevenLabs Music | allowed sources, no attribution, music, 0 USD | Still in the Advanced paths. Unsplash's API terms ask for a credit to the photographer, so the new attribution rule rejects it for channel videos. A channel video's build refuses Unsplash; HeyGen clips are logged with model and prompt. Pixabay and Kie AI are allowed now (Phase 1b). |
+| Unsplash, HeyGen AI B-roll, ElevenLabs Music | allowed sources, no attribution, music, 0 USD | Still in the paths of a video from the Videos list (the Advanced toggle is gone, DECISIONS 168). Unsplash's API terms ask for a credit to the photographer, so the new attribution rule rejects it for channel videos. A channel video's build refuses Unsplash; HeyGen clips are logged with model and prompt. Pixabay and Kie AI are allowed now (Phase 1b). |
 | Kie AI's terms say nothing about who owns the output | clean licensing | Only the product page says "Fully licensed for business use". See Phase 1b: ask Kie AI in writing before a paid clip goes into a monetized video. |
 | Prelinger and other old film can show real people | never a recognizable real person | Filtered by words, and with an AI key the AI looks at the frame. Without a key no old film is used. The Preview tab still asks Zoltan to look at each clip. |
-| Gemini thumbnail pictures | 0 USD | Still a choice on the Thumbnail tab, with its price. Channel videos start on the free maker. |
+| Gemini thumbnail pictures | 0 USD | Still a choice on Publishing, Thumbnail, with its price. Channel videos start on the free maker. |
 
 Other findings:
 
@@ -375,6 +375,11 @@ Other findings:
 `docs/AUDIT_REPORT.md`: what was found, fixed and left open. The rules it added are in `CLAUDE.md`, and `npm run audit` tests them
 without spending anything. It changed one rule of Phase 7: research stays on for a fact-checked style, but no AI no longer stops
 it: an empty brief says nothing was checked, and the Publishing Card says `unchecked`.
+
+## Menu and steps (2026-11-04, outside the phases)
+
+Zoltan walked through the app and asked for a new order (DECISIONS 168 to 171). It changes Phase 1's Advanced toggle: there is no toggle any more, every menu is always there. Top menu: Home, Videos, Edit, Playlist, Publishing,
+Wizards, Identity, Settings (`app/src/lib/pages.ts`); Edit starts a video from a recording (DECISIONS 172). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). The Thumbnail is on the Publishing menu and can be made before the video.
 
 ## Next step
 

@@ -248,7 +248,7 @@ export type ScenesState = {
   options: {
     presets: { id: string; label: string; hint: string; mix: Record<SceneKind, number> }[];
     kinds: { id: SceneKind; label: string }[];
-    roles: { role: string; label: string; hint: string; components: { name: string; label: string }[] }[];
+    roles: { role: string; label: string; hint: string; components: { name: string; label: string; description?: string }[] }[];
     icons: { id: string; label: string; license: string; count: number; sample: string[][] }[];
     sources: { id: string; label: string; hint: string; kinds: SceneKind[]; later: boolean }[];
     footage: number;

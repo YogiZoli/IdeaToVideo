@@ -12,6 +12,7 @@
   import { log } from "../logger";
   import WizardShell from "../wizard/WizardShell.svelte";
   import ErrorBox from "../ErrorBox.svelte";
+  import WizardMap from "../wizard/WizardMap.svelte";
   import CallsEditor from "./CallsEditor.svelte";
   import CallsPreview from "./CallsPreview.svelte";
 
@@ -98,6 +99,7 @@
     {#if error}<ErrorBox message={error} context={{ step: "cta" }} />{/if}
 
     {#if step === 0}
+      <WizardMap current="cta" />
       <p class="lead">The video asks viewers to comment one keyword. The keyword tells you how ready they are: cold wants a free resource, warm wants to learn more, hot is ready to buy. The method: cold at the start, warm in the middle, hot at the end.</p>
       <div class="row">
         <button type="button" onclick={useDefault}>Use the method: GUIDE, COURSE, TRIGGER</button>
