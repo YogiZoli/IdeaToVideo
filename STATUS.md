@@ -14,9 +14,13 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **With no AI** it works by hand and says so in one sentence.
 - **Links:** Identity, YouTube Channel & Audience links to it.
 - **Your call (DECISIONS 174):** whether the first name idea should be offered as the Identity's name (now: no); whether question 3 should keep the word "course".
-- Tests: Node 683 of 685 (2 live tests skipped, none red), 15 new in `runner/channel-wizard.test.mjs`, UI check 0 errors. Screens clicked in `scripts/ui-mock`, no console error: the whole way with an AI stand-in, no AI key (`?noai=1`), the vidIQ search, Stop, Save, coming back to the answers, the link from Identity.
+- Tests: Node 683 of 685 (2 live tests skipped, none red), 15 new in `runner/channel-wizard.test.mjs`, Rust 50, UI check 0 errors. Screens clicked in `scripts/ui-mock`, no console error: the whole way with an AI stand-in, no AI key (`?noai=1`), the vidIQ search, Stop, Save, coming back to the answers, the link from Identity.
 
-**Not tried:** a real AI on the wizard's prompts. Every AI answer so far was a stand-in, so how good the texts are, and whether a real model keeps to the channel's language and invents nothing, nobody has seen. A real vidIQ search from the wizard. The Copy buttons actually copying: the test browser refuses the clipboard, there only the sentence that it failed was seen.
+- Local installer built 2026-11-04 22:26 and installed over the old app: `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The installed copy's own node and runner did state, draft, kit, save and download on a throwaway folder with a space and an accent, and the card was read back (`traffic-card-load`, `planner-start`). The app was opened, its silent Health check logged 0 problems. Clicked in the installed window, on the Identity test explainer: Wizards, the wizard opens, the kit screen, one Copy (the clipboard really had the text), Close. Nothing was typed or saved there.
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch (about 10 to 15 minutes).
+- Merged into `main` from branch `channel-wizard` and pushed. No PR, no GitHub Actions run.
+
+**Not tried:** a real AI on the wizard's prompts. Every AI answer so far was a stand-in, so how good the texts are, and whether a real model keeps to the channel's language and invents nothing, nobody has seen. A real vidIQ search from the wizard. A whole run with typed answers and Save in the installed window (that ran in `scripts/ui-mock` and through the installed runner's commands, separately). `npm run audit:quick` was not run: this change touches no video stage.
 
 **Next:** Zoltan runs the wizard once on the installer with his AI key, on a real or test Identity, and reads the texts. Then Phase 9 in a new chat, on a Mac.
 
