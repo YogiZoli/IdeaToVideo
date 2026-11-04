@@ -90,6 +90,13 @@ export function recipeSide(r: Recipe, direction: Direction): Recipe | null {
   return side ? { ...r, engine: "script", ...side } : null;
 }
 
+/** The search words for a fact's picture: its first few real words, no numbers. Pure. */
+const NOT_A_PICTURE = new Set("a an and are as at be been but by for from had has have he her his in into is it its of on or she that the their they this to was were which while who will with about after before most many more than then there these those over under between during".split(" "));
+export function pictureWords(fact: string, max = 5): string {
+  const words = String(fact ?? "").toLowerCase().replace(/[^\p{L}\s-]/gu, " ").split(/\s+/).filter((w) => w.length > 2 && !NOT_A_PICTURE.has(w));
+  return words.slice(0, max).join(" ");
+}
+
 /** The locked recipe in the plain lines the start screen shows. */
 export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVoice[] = []): { label: string; value: string }[] {
   const preset = presets.find((p) => p.id === r.preset)?.label ?? r.preset;

@@ -48,3 +48,10 @@ test("the planner gets the mix, a kind without a source folded into the others",
   assert.match(sys, /Mix the scenes: about 45% words/);
   assert.doesNotMatch(buildMessages({}, [])[0].content, /\{\{MIX\}\}/, "no profile: the balanced mix");
 });
+
+test("Unsplash stays off unless it was turned on knowingly (DECISIONS 173)", () => {
+  assert.ok(!defaultScenes().pictures.sources.includes("unsplash"));
+  const base = defaultScenes();
+  assert.ok(!normalizeScenes({ ...base, pictures: { sources: ["footage", "unsplash"] } }).pictures.sources.includes("unsplash"), "an older saved profile had it by default");
+  assert.ok(normalizeScenes({ ...base, pictures: { sources: ["unsplash"], unsplashOk: true } }).pictures.sources.includes("unsplash"));
+});

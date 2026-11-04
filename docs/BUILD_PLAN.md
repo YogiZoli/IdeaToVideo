@@ -378,8 +378,8 @@ it: an empty brief says nothing was checked, and the Publishing Card says `unche
 
 ## Menu and steps (2026-11-04, outside the phases)
 
-Zoltan walked through the app and asked for a new order (DECISIONS 168 to 171). It changes Phase 1's Advanced toggle: there is no toggle any more, every menu is always there. Top menu: Home, Videos, Edit, Playlist, Publishing,
-Wizards, Identity, Settings (`app/src/lib/pages.ts`); Edit starts a video from a recording (DECISIONS 172). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). The Thumbnail is on the Publishing menu and can be made before the video.
+Zoltan walked through the app and asked for a new order (DECISIONS 168 to 171). It changes Phase 1's Advanced toggle: there is no toggle any more, every menu is always there. Top menu: Home, Videos, Video Recording Editing, Playlist, Publishing,
+Wizards, Identity, Settings (`app/src/lib/pages.ts`); Video Recording Editing starts a video from a recording (DECISIONS 172, 173). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). The Thumbnail is on the Publishing menu and can be made before the video.
 
 ## Next step
 

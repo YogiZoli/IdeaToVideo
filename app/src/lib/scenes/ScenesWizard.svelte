@@ -79,7 +79,8 @@
   }
   function setSource(id: string, on: boolean) {
     const s = profile!.pictures.sources.filter((x) => x !== id);
-    profile!.pictures = { sources: on ? [...s, id] : s };
+    const unsplash = (on ? [...s, id] : s).includes("unsplash");
+    profile!.pictures = { sources: on ? [...s, id] : s, ...(unsplash ? { unsplashOk: true } : {}) };
   }
 
   async function save() {
@@ -164,7 +165,7 @@
         </section>
       {/each}
     {:else if step === 3}
-      <p class="lead">Optional. New kinds of scenes someone designed, in one file (.itvpack). Import one, choose its scenes, and decide whether they wear this Identity's Brand. Changes here are saved at once.</p>
+      <p class="lead">Optional. New kinds of scenes someone designed, in one file (.itvpack). Import one, choose its scenes, and decide whether they wear this Identity's Design. Changes here are saved at once.</p>
       <PacksPage />
     {:else if step === 4}
       <p class="lead">The icon sets the drawings and icon scenes use, the first one preferred. All are free line icons.</p>

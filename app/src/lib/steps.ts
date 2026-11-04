@@ -18,7 +18,7 @@ export type Step = { id: StepId; title: string; intro: string; required?: boolea
 export const STEPS: Step[] = [
   { id: "ai", title: "AI key", intro: "The AI writes your scripts. It uses your own API key, which is stored only in your system keychain.", required: true, canRecommend: true },
   { id: "name", title: "Identity", intro: "An Identity is one brand, pen name or client, with its own look, voice and audience, and at most one YouTube channel. Give it a name. Its videos go in a folder with this name. You can change it any time in Settings.", canRecommend: false },
-  { id: "brand", title: "Brand", intro: "Colors and fonts of your videos come from a preset. Add your logo if you have one.", canRecommend: true },
+  { id: "brand", title: "Design", intro: "Colors and fonts of your videos come from a preset. Add your logo if you have one.", canRecommend: true },
   { id: "audience", title: "Audience", intro: "Who do you make videos for? One clear viewer makes every script better.", canRecommend: true },
   { id: "brandVoice", title: "Brand Voice", intro: "How your scripts sound: tone, style, words to avoid. This is not the Narrator Voice.", canRecommend: true },
   { id: "profile", title: "Channel Profile", intro: "What is your channel about, and what makes it different? A few words are enough: the AI can write the text from them, ready to paste into YouTube.", canRecommend: true },

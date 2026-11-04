@@ -95,7 +95,7 @@
       const now = await runner<BrandState>("brand-state", {});
       await runner("brand-save", { card: { ...r.card, logo: now.card.logo, nameplate: now.card.nameplate } });
       log("brand_tokens_imported", { fonts: r.fonts.length });
-      message = `Imported from ${fileName(file)}. New videos of this Identity use this look.${r.fonts.length ? ` Fonts the app does not ship were replaced by free look-alikes: ${[...new Set(r.fonts)].join(", ")}.` : ""} Check it in Wizards, Brand.`;
+      message = `Imported from ${fileName(file)}. New videos of this Identity use this look.${r.fonts.length ? ` Fonts the app does not ship were replaced by free look-alikes: ${[...new Set(r.fonts)].join(", ")}.` : ""} Check it in Wizards, Design.`;
     });
   }
 

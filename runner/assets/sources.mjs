@@ -188,7 +188,7 @@ export async function cachePreview({ url, dir, fetchImpl = fetch }) {
 }
 
 /** An allowed image into the Identity's footage library, with its license. */
-export async function addFreeImage({ identityDir, hit, fetchImpl = fetch, env = process.env }) {
+export async function addFreeImage({ identityDir, hit, about = "", fetchImpl = fetch, env = process.env }) {
   const why = refusal(hit);
   if (why) throw new Error(why);
   if (!hit.imageUrl) throw new Error("This result has no image to download.");
@@ -211,7 +211,8 @@ export async function addFreeImage({ identityDir, hit, fetchImpl = fetch, env = 
     identityDir,
     file: target,
     name: `Image: ${hit.title || label}`.slice(0, 80),
-    description: `${hit.title || "A public domain image"} (${label}).`,
+    // what it is for comes first: the scene planner matches this text to the sentences
+    description: `${about ? `${String(about).trim().slice(0, 240)} ` : ""}${hit.title || "A public domain image"} (${label}).`.slice(0, 400),
     source: hit.source,
     credit: { source: label, sourceId: hit.source, id: hit.id, kind: "image", author: hit.author, license: hit.licenseName ?? hit.license, licenseKey: hit.license, licenseUrl: hit.licenseUrl ?? null, pageUrl: hit.sourceUrl, date: hit.date },
     env,

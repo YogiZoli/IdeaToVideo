@@ -339,7 +339,7 @@
           <ConnectionRow name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} hint="Avatars, CTA clips and AI B-roll." identityName={app.identity?.name} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
           <ConnectionRow name="kie" label="Kie AI" keyUrl={SERVICE_KEY_URLS.kie} hint="Optional: paid AI clips for hero moments, off until you turn them on in a channel's recipe. Nothing is spent without your yes on the Preview tab." identityName={app.identity?.name} bind:isSet={keys.kie} test={() => ({ command: "test-service", service: "kie" })} />
           <ConnectionRow name="pixabay" label="Pixabay" keyUrl={SERVICE_KEY_URLS.pixabay} hint="Free stock photos and videos (Pixabay Content License: a free license, not CC0; also commercially, no credit required)." identityName={app.identity?.name} bind:isSet={keys.pixabay} test={() => ({ command: "test-service", service: "pixabay" })} />
-          <ConnectionRow name="unsplash" label="Unsplash Access Key" keyUrl={SERVICE_KEY_URLS.unsplash} hint="Free stock photos (Unsplash License). Make an app at Unsplash and paste its Access Key, never the Secret key. Demo mode: 50 searches an hour." identityName={app.identity?.name} bind:isSet={keys.unsplash} test={() => ({ command: "test-service", service: "unsplash" })} />
+          <ConnectionRow name="unsplash" label="Unsplash Access Key" keyUrl={SERVICE_KEY_URLS.unsplash} hint="Better not to use it: its terms ask for a credit to the photographer, and your videos carry none. It stays off unless you turn it on in the Scenes wizard. Paste its Access Key, never the Secret key." identityName={app.identity?.name} bind:isSet={keys.unsplash} test={() => ({ command: "test-service", service: "unsplash" })} />
           <ConnectionRow name="vidiq" label="vidIQ" keyUrl={SERVICE_KEY_URLS.vidiq} hint="Optional: keyword data for your topics." identityName={app.identity?.name} bind:isSet={keys.vidiq} test={() => ({ command: "test-service", service: "vidiq" })} />
         </section>
       {:else}
@@ -406,7 +406,7 @@
               <p>{brand.own ? `Your own look${brand.card.updatedAt ? `, saved ${new Date(brand.card.updatedAt).toLocaleDateString()}` : ""}${brand.card.source?.preset ? `, from ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? brand.card.source.preset}` : ""}.` : `The ${brand.presets.find((p) => p.id === brand!.card.source?.preset)?.label ?? "default"} preset. You have not set your own look yet.`}</p>
               <p class="hint">Fonts: {brand.card.fonts.display.family} for titles, {brand.card.fonts.body.family} for text.</p>
               <p class="hint">Saved with this Identity. Your other tools can read it too.</p>
-              <div class="row"><button type="button" class="primary" disabled={busy} onclick={() => { message = ""; brandWizard = true; }}>Open Brand wizard</button></div>
+              <div class="row"><button type="button" class="primary" disabled={busy} onclick={() => { message = ""; brandWizard = true; }}>Open Design wizard</button></div>
             </div>
           </div>
         {:else}

@@ -23,14 +23,14 @@ test("the App's pages hold only the App's AI step", () => {
 });
 
 test("the top menu (DECISIONS 119, 168, 172): eight menus, at most seven pages each, every old page kept", () => {
-  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "Videos", "Edit", "Playlist", "Publishing", "Wizards", "Identity", "Settings"]);
+  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "Videos", "Video Recording Editing", "Playlist", "Publishing", "Wizards", "Identity", "Settings"]);
   for (const m of ["playlist", "publishing", "wizards", "identity", "settings"]) {
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
   }
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Playlist Planner", "Keyword Research", "Course or Playlist File"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "publishing").map((p) => p.title), ["Thumbnail", "PDT Connection"]);
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Brand", "Motion", "Scenes"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Design", "Motion", "Scenes"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Audio Voice", "AI Avatar", "Thumbnail", "Footage", "Dictionary", "Manage Identity"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["Health check", "Connections", "Import & Export", "Folders", "Backup", "Account Plan", "Legal"]);
   for (const id of ["folders", "backup", "plan", "legal", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "avatar", "photos", "research", "connections", "transfer", "planner", "courses", "thumbnail", "pdt"]) {

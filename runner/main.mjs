@@ -1632,9 +1632,9 @@ const commands = {
     }));
     return { hits: hits.filter((h) => h.local), failed: r.failed };
   },
-  "assets-add": async ({ identityDir, hit }) => {
-    if (!identityDir) throw new Error("No channel to add the image to.");
-    return addFreeImage({ identityDir, hit });
+  "assets-add": async ({ identityDir, hit, about = "" }) => {
+    if (!identityDir) throw new Error("No Identity to add the image to.");
+    return addFreeImage({ identityDir, hit, about });
   },
   "assets-ledger": async ({ projectDir }) => readLedger(projectDir),
 

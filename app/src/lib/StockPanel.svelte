@@ -98,7 +98,7 @@
           {#each keyed as s (s)}<label class="radio"><input type="radio" name="stock-source" checked={source === s} onchange={() => (picked = s)} /> {LABEL[s]}</label>{/each}
         </div>
       {/if}
-      {#if source === "unsplash"}<p class="hint">Unsplash: photos only. While your key is in Demo mode, Unsplash allows 50 searches an hour.</p>{/if}
+      {#if source === "unsplash"}<p class="warn">Better not to use Unsplash: its terms ask for a credit to the photographer, and your videos carry none. Pixabay asks for nothing. Photos only; Demo mode allows 50 searches an hour.</p>{/if}
       <div class="row">
         <input type="search" class="grow" placeholder="What should it show? (in English works best)" bind:value={q} onkeydown={(e) => e.key === "Enter" && find()} />
         <label class="radio"><input type="radio" name="stock-kind" checked={kind === "image"} onchange={() => (kind = "image")} /> Photos</label>

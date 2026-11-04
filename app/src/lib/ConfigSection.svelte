@@ -59,7 +59,7 @@
     <select id="preset" bind:value={config.brand!.preset}>
       {#each PRESETS as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
     </select>
-    <p class="hint">A starting point. Your own colors, fonts and shapes: Wizards, Brand, after the setup.</p>
+    <p class="hint">A starting point. Your own colors, fonts and shapes: Wizards, Design, after the setup.</p>
   </div>
   <div class="field">
     <span class="label">Logo</span>

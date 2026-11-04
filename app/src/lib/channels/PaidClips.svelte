@@ -60,7 +60,7 @@
         <label for="pv">Most per video</label>
         <div><input id="pv" type="number" min={choice.limits.perVideo.min} max={choice.limits.perVideo.max} step="0.5" bind:value={s.paid.maxPerVideoUsd} onchange={() => save("per video")} /> USD{each > 0 ? `, about ${Math.floor(s.paid.maxPerVideoUsd / each)} clips` : ""}</div>
         <label for="pm">Most per month</label>
-        <div><input id="pm" type="number" min={choice.limits.perMonth.min} max={choice.limits.perMonth.max} step="1" bind:value={s.paid.maxPerMonthUsd} onchange={() => save("per month")} /> USD for this channel</div>
+        <div><input id="pm" type="number" min={choice.limits.perMonth.min} max={choice.limits.perMonth.max} step="1" bind:value={s.paid.maxPerMonthUsd} onchange={() => save("per month")} /> USD for this Identity</div>
       </div>
       <p class="hint">Used only where nothing free fits a hero moment. The Preview tab lists those scenes and the total; nothing is spent until you approve it. Kie AI's product page calls this model licensed for business use, but its <button type="button" class="link" onclick={() => openUrl("https://kie.ai/terms-of-use")}>terms of use</button> do not say who owns the output.</p>
     {/if}

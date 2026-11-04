@@ -144,7 +144,7 @@
     {#if step === 0}
       <WizardMap current="motion" />
       <p class="lead">How your videos move: not what is on screen (that is the Scenes wizard), but how one scene turns into the next. Pick a mood: each picture shows its scene change. Background and camera come next.</p>
-      {#if st.recommended.reason}<p class="good">Recommended for your brand: {moods.find((m) => m.id === st!.recommended.mood)?.label}. {st.recommended.reason}</p>{/if}
+      {#if st.recommended.reason}<p class="good">Recommended for your design: {moods.find((m) => m.id === st!.recommended.mood)?.label}. {st.recommended.reason}</p>{/if}
       <div class="gallery">
         {#each moods as m (m.id)}
           <button type="button" class="mood" class:chosen={profile.transition.mood === m.id} onclick={() => useMood(m.id)}>
@@ -212,7 +212,7 @@
           <label class="radio card demoCard" class:disabled={blocked}>
             <Demo of={`background:${b.id}`} />
             <span><input type="radio" name="bg" disabled={blocked} checked={profile.background.type === b.id} onchange={() => (profile!.background = { type: b.id as MotionProfile["background"]["type"], vars: {} })} /> <b>{b.label}</b></span>
-            {#if b.id === "plain"}<span class="hint">Your brand's background color.</span>{/if}
+            {#if b.id === "plain"}<span class="hint">Your design's background color.</span>{/if}
             {#if b.id === "grain-field"}<span class="hint">A slow field of dots in your colors.</span>{/if}
             {#if b.id === "aurora-drift"}<span class="hint">Slow light over a deep blue base.{blocked ? " Needs a dark look: your look is light." : ""}</span>{/if}
             {#if b.cost}<span class="hint">{b.cost}</span>{/if}
@@ -235,7 +235,7 @@
     {:else if step === 4}
       <p class="lead">Captions burned into the video: the narrator's words as they are spoken, the spoken word highlighted. Viewers who watch without sound read along. The captions file (.srt) for YouTube is made either way.</p>
       <label class="radio"><input type="checkbox" checked={(profile.spokenWord ?? "highlight") === "highlight"} onchange={(e) => (profile!.spokenWord = e.currentTarget.checked ? "highlight" : "off")} /> Highlight the spoken word in the scene's own text too (and no shaking headlines)</label>
-      <p class="hint">Fifteen caption styles from HyperFrames by HeyGen, in your brand's font and colors. The calm ones suit explainers; the loud ones suit short, punchy videos.</p>
+      <p class="hint">Fifteen caption styles from HyperFrames by HeyGen, in your design's font and colors. The calm ones suit explainers; the loud ones suit short, punchy videos.</p>
       <div class="capgrid">
         <label class="capcard" class:chosen={(profile.captions?.style ?? "off") === "off"}>
           <input type="radio" name="captions" checked={(profile.captions?.style ?? "off") === "off"} onchange={() => (profile!.captions = { style: "off" })} />

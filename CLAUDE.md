@@ -40,8 +40,9 @@ locked recipe (`<identity>/recipe.json`): engine, preset, voice, avatar, music, 
 
 On screen a script video has eight tabs: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video.
 The Thumbnail is not one of them: it is on the Publishing menu, for any video, at any time. The top menu is Home, Videos,
-Edit, Playlist, Publishing, Wizards, Identity, Settings, and nothing hides behind a switch (DECISIONS 168, 169, 172). Home starts a
-video from a script, Edit one from a recording.
+Video Recording Editing, Playlist, Publishing, Wizards, Identity, Settings, and nothing hides behind a switch (DECISIONS 168, 169, 172, 173). Home
+starts a video from a script, Video Recording Editing one from a recording. On screen the word is Identity, not channel: one Identity has 0 or 1
+YouTube channel. The Brand wizard is called Design on screen; the code still says `brand` and `channels`.
 
 A preset is three things: a style sheet (JSON tokens, a PNG rendered by code), scene templates, shot rules. At runtime
 the LLM only outputs scene JSON that fills the templates; it is checked, repaired once, and otherwise filled by a rule.

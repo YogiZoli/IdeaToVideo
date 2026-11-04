@@ -129,7 +129,7 @@ type RawState = Omit<AppState, "config">;
 const withConfig = (s: RawState): AppState => ({ ...s, config: s.app && s.identity ? effectiveConfig(s.app, s.identity) : null });
 
 export type Gate = { state: string; mode?: string; at?: string; error?: string; reason?: string };
-export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate>; series?: Series | null; queue?: { batch: string; position: number; of: number } | null };
+export type ProjectSummary = { id: string; title: string; status: string; dir: string; createdAt: string; gates: Record<string, Gate>; render?: { state?: string } | null; recipe?: { engine?: string } | null; series?: Series | null; queue?: { batch: string; position: number; of: number } | null };
 
 export type KeyScope = "app" | "identity";
 
@@ -241,7 +241,7 @@ export type MotionOptions = {
 };
 /** The Identity's Scenes profile (runner/scenes-profile.mjs, DECISIONS 110). */
 export type SceneKind = "text" | "icon" | "image" | "video";
-export type ScenesProfile = { schema: "scenes-profile/1"; preset: string; mix: Record<SceneKind, number>; off: string[]; icons: { families: string[] }; pictures: { sources: string[] }; updatedAt?: string };
+export type ScenesProfile = { schema: "scenes-profile/1"; preset: string; mix: Record<SceneKind, number>; off: string[]; icons: { families: string[] }; pictures: { sources: string[]; unsplashOk?: boolean }; updatedAt?: string };
 export type ScenesState = {
   profile: ScenesProfile;
   saved: boolean;

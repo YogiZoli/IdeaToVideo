@@ -129,8 +129,8 @@
 </script>
 
 <section class="card editor">
-  <h2>{st.saved ? "Change this channel's recipe" : `Set the recipe of ${app.identity?.name}`}</h2>
-  <p class="hint">Asked once. After this, every video of the channel is made the same way.</p>
+  <h2>{st.saved ? "Change this Identity's recipe" : `Set the recipe of ${app.identity?.name}`}</h2>
+  <p class="hint">Asked once. After this, every video of this Identity is made the same way.</p>
 
   <div class="row">
     <span class="label">Direction</span>
@@ -187,7 +187,7 @@
       {#if r.avatar.on}
         <select aria-label="Avatar look" bind:value={r.avatar.lookId}>
           <option value={null}>Choose a look</option>
-          {#if r.avatar.lookId && !looks.some((l) => l.id === r.avatar.lookId)}<option value={r.avatar.lookId}>{r.avatar.name ?? "The look this channel uses"}</option>{/if}
+          {#if r.avatar.lookId && !looks.some((l) => l.id === r.avatar.lookId)}<option value={r.avatar.lookId}>{r.avatar.name ?? "The look this Identity uses"}</option>{/if}
           {#each looks as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
         </select>
         <p class="hint">HeyGen Avatar III, transparent, laid over the video as it comes: never cut, resized or moved. Uses your HeyGen credits; the price is asked first.</p>
@@ -229,7 +229,7 @@
             {#each st.moods as m (m)}<option value={m}>{m}</option>{/each}
           </select>
         {:else}
-          <p class="hint">{st.ownMusic.length ? `${st.ownMusic.length} files in this channel's music folder.` : "No files yet."} The folder appears when you lock the recipe: {st.musicDir}</p>
+          <p class="hint">{st.ownMusic.length ? `${st.ownMusic.length} files in this Identity's music folder.` : "No files yet."} The folder appears when you lock the recipe: {st.musicDir}</p>
         {/if}
       {/if}
     </div>
