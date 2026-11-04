@@ -5,7 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { SETTINGS_PAGES, MENUS, firstPage, menuOf } from "../../app/src/lib/pages.ts";
+import { SETTINGS_PAGES, SUB_PAGES, MENUS, firstPage, menuOf } from "../../app/src/lib/pages.ts";
 
 test("every step is on exactly one Settings page", () => {
   const src = fs.readFileSync(new URL("../../app/src/lib/steps.ts", import.meta.url), "utf8");
@@ -22,21 +22,39 @@ test("the App's pages hold only the App's AI step", () => {
   assert.ok(SETTINGS_PAGES.some((p) => p.scope === "identity" && p.steps.includes("name")));
 });
 
-test("the top menu (DECISIONS 119): five menus, at most seven pages each, every old page kept", () => {
-  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "Videos", "Wizards", "Identity", "Settings"]);
-  for (const m of ["wizards", "identity", "settings"]) {
+test("the top menu (DECISIONS 119, 168): seven menus, at most seven pages each, every old page kept", () => {
+  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "Videos", "Playlist", "Publishing", "Wizards", "Identity", "Settings"]);
+  for (const m of ["playlist", "publishing", "wizards", "identity", "settings"]) {
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
   }
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Brand", "Motion", "Scenes", "Playlist Planner"]);
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Voice & Avatar", "Footage", "Dictionary", "Resources", "Manage Identity"]);
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["General", "Connections", "Import & Export", "Folders", "Backup", "Plan", "Health check"]);
-  // the pages before: app-ai, identity-ai and publishing are now Connections
-  for (const id of ["folders", "backup", "plan", "general", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "research", "connections", "transfer"]) {
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Playlist Planner", "Keyword Research", "Course or Playlist File"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "publishing").map((p) => p.title), ["Thumbnail", "PDT Connection"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Brand", "Motion", "Scenes"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Audio Voice", "AI Avatar", "Thumbnail", "Footage", "Dictionary", "Manage Identity"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["Health check", "Connections", "Import & Export", "Folders", "Backup", "Account Plan", "Legal"]);
+  for (const id of ["folders", "backup", "plan", "legal", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "avatar", "photos", "research", "connections", "transfer", "planner", "courses", "thumbnail", "pdt"]) {
     assert.ok(SETTINGS_PAGES.some((p) => p.id === id), id);
   }
   assert.equal(firstPage("wizards"), "cta");
+  assert.equal(firstPage("settings"), "health");
   assert.equal(menuOf("connections"), "settings");
+  assert.equal(menuOf("planner"), "playlist");
+});
+
+test("a big page has its parts as sub links (DECISIONS 168), and a link to another page goes to one that exists", () => {
+  assert.deepEqual(SUB_PAGES.connections.map((s) => s.title), ["AI", "AI providers", "Services", "Publishing", "Remove all keys"]);
+  assert.deepEqual(SUB_PAGES.footage.map((s) => s.title), ["Your footage", "AI B-roll", "Stock photos and videos", "Free images"]);
+  assert.equal(SUB_PAGES.connections.find((s) => s.id === "publishing").page, "pdt");
+  for (const subs of Object.values(SUB_PAGES)) for (const s of subs) if (s.page) assert.ok(SETTINGS_PAGES.some((p) => p.id === s.page), s.page);
+});
+
+test("nothing asks the user to turn on Advanced any more (DECISIONS 168)", () => {
+  const page = fs.readFileSync(new URL("../../app/src/routes/+page.svelte", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /Advanced/);
+  assert.doesNotMatch(page, /type="checkbox"/);
+  const bar = fs.readFileSync(new URL("../../app/src/lib/Advanced.svelte", import.meta.url), "utf8");
+  assert.match(bar, /label = "More"/);
 });
 
 test("setup's preset list is the shipped one (library/presets.map.json)", async () => {

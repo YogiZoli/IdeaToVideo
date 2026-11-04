@@ -54,7 +54,6 @@
 </script>
 
 <section class="card free">
-  <h2>Free images</h2>
   <p class="hint">CC0 and public domain only, from Openverse, Wikimedia Commons and the Library of Congress. No key, no cost. Look at each picture before you use it: real people never go in a video.</p>
   <form class="row" onsubmit={(e) => { e.preventDefault(); search(); }}>
     <input bind:value={q} aria-label="What the image should show" placeholder="What should the image show?" />
@@ -83,7 +82,6 @@
 
 <style>
   .free { display: grid; gap: 10px; }
-  h2 { margin: 0; font-size: 17px; }
   .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
   form.row input { flex: 1; }
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }

@@ -191,7 +191,7 @@
 </script>
 
 <section class="card">
-  <h2>2. Voice and music</h2>
+  <h2>Voice and music</h2>
   <p class="hint lead">The narrator reads your script, and the music goes under it. You listen to the result, then approve it.</p>
 
   {#if !scriptApproved}
@@ -251,12 +251,12 @@
 
     <div class="actionbar">
       {#if approved}
-        <span class="say"><b>Approved.</b> Next: 3. Scenes.</span>
+        <span class="say"><b>Approved.</b> Next: Scenes.</span>
         <Advanced>
           <button type="button" disabled={locked} onclick={make}>Make the voice again</button>
           <button type="button" disabled={locked} onclick={applyMusic}>Use the selected music</button>
         </Advanced>
-        <button type="button" class="primary" onclick={() => goto("scenes")}>Go to 3. Scenes</button>
+        <button type="button" class="primary" onclick={() => goto("scenes")}>Go to Scenes</button>
       {:else if made}
         <span class="say">Listen to it. Happy with it? Approve it, and the scenes come next.</span>
         <Advanced>

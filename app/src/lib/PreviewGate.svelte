@@ -275,7 +275,7 @@
         <li><b>Click a picture.</b> The scene opens next to it: what is said, and what is on screen.</li>
         <li><b>Change it.</b> Edit the words on screen, pick another scene of the same kind, or tell the AI what you want in your own words, for example "make this a list of the three steps" or "mark the word FREE".</li>
         <li><b>Click "Update the preview".</b> All your changes go in at once, in about a minute, and the new pictures appear.</li>
-        <li><b>Something else?</b> The spoken words: 1. Script. The voice or the music: 2. Voice and music. The avatar's place and size: 4. Avatar. Then come back here.</li>
+        <li><b>Something else?</b> The spoken words: the Script tab. The voice or the music: the Voice and music tab. The avatar's place and size: the Avatar tab. Then come back here.</li>
       </ol>
     </details>
     {/if}
@@ -318,7 +318,7 @@
       {#if approved && !changes}
         <span class="say"><b>Approved.</b> {rendering ? `The video is rendering on ${recorded ? 3 : 6}. Your video.` : `Next: ${recorded ? 3 : 6}. Your video.`}</span>
         <Advanced><button type="button" disabled={locked} onclick={build}>Build again</button></Advanced>
-        <button type="button" class="primary" onclick={() => goto("video")}>Go to {recorded ? 3 : 6}. Your video</button>
+        <button type="button" class="primary" onclick={() => goto("video")}>Go to Your video</button>
       {:else if changes > 0 || (edited && stills.length > 0)}
         <span class="say">Your changes are saved. The preview shows them after the update.</span>
         <button type="button" class="primary" disabled={locked} onclick={build}>Update the preview</button>

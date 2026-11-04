@@ -13,6 +13,8 @@
   import { log } from "../logger";
   import WizardShell from "../wizard/WizardShell.svelte";
   import ErrorBox from "../ErrorBox.svelte";
+  import Demo from "../wizard/Demo.svelte";
+  import WizardMap from "../wizard/WizardMap.svelte";
 
   let { app, onclose, onsaved }: { app: AppState; onclose: () => void; onsaved: (p: MotionProfile) => void } = $props();
 
@@ -140,11 +142,13 @@
     {#if error}<ErrorBox message={error} context={{ step: "motion" }} />{/if}
 
     {#if step === 0}
-      <p class="lead">How your videos move between scenes. Pick a mood: it sets the scene changes. Background and camera come next.</p>
+      <WizardMap current="motion" />
+      <p class="lead">How your videos move: not what is on screen (that is the Scenes wizard), but how one scene turns into the next. Pick a mood: each picture shows its scene change. Background and camera come next.</p>
       {#if st.recommended.reason}<p class="good">Recommended for your brand: {moods.find((m) => m.id === st!.recommended.mood)?.label}. {st.recommended.reason}</p>{/if}
       <div class="gallery">
         {#each moods as m (m.id)}
           <button type="button" class="mood" class:chosen={profile.transition.mood === m.id} onclick={() => useMood(m.id)}>
+            <Demo of={`transition:${m.primary}`} />
             <b>{m.label}{m.id === st.recommended.mood ? " (recommended)" : ""}</b>
             <span>{m.hint}</span>
             <span class="hint">{m.primary === "cut" ? "Cut" : label(m.primary)}{m.accent ? `, ${label(m.accent)} at new sections` : ""}</span>
@@ -152,24 +156,31 @@
         {/each}
       </div>
       <h2>Energy</h2>
-      <div class="opts">
+      <p class="hint">How fast one scene change happens. Watch how quickly A turns into B.</p>
+      <div class="opts cards">
         {#each st.options.energies as e (e.id)}
-          <label class="radio"><input type="radio" name="energy" checked={profile.transition.energy === e.id} onchange={() => (profile!.transition.energy = e.id as MotionProfile["transition"]["energy"])} /> {e.label} <span class="hint">({e.seconds} s per change)</span></label>
+          <label class="radio card demoCard">
+            <Demo of={`energy:${e.id}`} />
+            <span><input type="radio" name="energy" checked={profile.transition.energy === e.id} onchange={() => (profile!.transition.energy = e.id as MotionProfile["transition"]["energy"])} /> <b>{e.label}</b> <span class="hint">{e.seconds} s per change</span></span>
+          </label>
         {/each}
       </div>
       <h2>Pace</h2>
-      <p class="hint">How often the picture changes. Each sentence gets its own picture; slower paces join sentences that belong together.</p>
-      <div class="opts">
+      <p class="hint">How often the picture changes. Each sentence gets its own picture; slower paces join sentences that belong together. The pictures show the difference, faster than real time.</p>
+      <div class="opts cards">
         {#each st.options.paces ?? [] as p (p.id)}
-          <label class="radio"><input type="radio" name="pace" checked={(profile.pace ?? "balanced") === p.id} onchange={() => (profile!.pace = p.id as MotionProfile["pace"])} /> {p.label}{p.id === "balanced" ? " (recommended)" : ""} <span class="hint">({p.picture})</span></label>
+          <label class="radio card demoCard">
+            <Demo of={`pace:${p.id}`} />
+            <span><input type="radio" name="pace" checked={(profile.pace ?? "balanced") === p.id} onchange={() => (profile!.pace = p.id as MotionProfile["pace"])} /> <b>{p.label}{p.id === "balanced" ? " (recommended)" : ""}</b> <span class="hint">{p.picture}</span></span>
+          </label>
         {/each}
       </div>
       <p class="hint">Moods, energies and transitions come from HyperFrames by HeyGen (Apache-2.0): its transition overview, its transition registry and its shader transitions.</p>
     {:else if step === 1}
       <p class="lead">One main change between related points, a different one where a new section starts. The last change is always a slow crossfade.</p>
       <div class="pick">
-        <label class="field"><span>Main change</span>{@render transitionSelect(profile.transition.primary, (v) => (profile!.transition.primary = v), false)}</label>
-        <label class="field"><span>At the start and at a new section</span>{@render transitionSelect(profile.transition.accent, (v) => (profile!.transition.accent = v || null), true)}</label>
+        <label class="field"><span>Main change</span>{#if profile.transition.primary}<Demo of={`transition:${profile.transition.primary}`} />{/if}{@render transitionSelect(profile.transition.primary, (v) => (profile!.transition.primary = v), false)}</label>
+        <label class="field"><span>At the start and at a new section</span><Demo of={`transition:${profile.transition.accent ?? profile.transition.primary}`} />{@render transitionSelect(profile.transition.accent, (v) => (profile!.transition.accent = v || null), true)}</label>
         {#if usesPush}
           <label class="field"><span>Push direction</span>
             <select value={profile.transition.direction ?? "LEFT"} onchange={(e) => (profile!.transition.direction = e.currentTarget.value as "LEFT")}>
@@ -177,6 +188,17 @@
             </select>
           </label>
         {/if}
+      </div>
+      <h2>All of them</h2>
+      <p class="hint">Each picture shows one scene (A) changing into the next (B). Click one to make it the main change. These pictures show the idea; the sample video on the last screen shows the real thing.</p>
+      <div class="gallery">
+        {#each st.options.transitions as t (t.name)}
+          <button type="button" class="mood" class:chosen={profile.transition.primary === t.name} onclick={() => (profile!.transition.primary = t.name)}>
+            <Demo of={`transition:${t.name}`} />
+            <b>{t.label}</b>
+            {#if t.kind === "shader"}<span class="hint">Renders slower</span>{/if}
+          </button>
+        {/each}
       </div>
       <h2>Where</h2>
       <label class="radio"><input type="radio" name="where" checked={profile.transition.where === "every"} onchange={() => (profile!.transition.where = "every")} /> At every scene change</label>
@@ -187,9 +209,9 @@
       <div class="opts cards">
         {#each st.options.backgrounds as b (b.id)}
           {@const blocked = b.darkOnly && st.light}
-          <label class="radio card" class:disabled={blocked}>
-            <input type="radio" name="bg" disabled={blocked} checked={profile.background.type === b.id} onchange={() => (profile!.background = { type: b.id as MotionProfile["background"]["type"], vars: {} })} />
-            <b>{b.label}</b>
+          <label class="radio card demoCard" class:disabled={blocked}>
+            <Demo of={`background:${b.id}`} />
+            <span><input type="radio" name="bg" disabled={blocked} checked={profile.background.type === b.id} onchange={() => (profile!.background = { type: b.id as MotionProfile["background"]["type"], vars: {} })} /> <b>{b.label}</b></span>
             {#if b.id === "plain"}<span class="hint">Your brand's background color.</span>{/if}
             {#if b.id === "grain-field"}<span class="hint">A slow field of dots in your colors.</span>{/if}
             {#if b.id === "aurora-drift"}<span class="hint">Slow light over a deep blue base.{blocked ? " Needs a dark look: your look is light." : ""}</span>{/if}
@@ -201,9 +223,9 @@
       <p class="lead">A slow camera move keeps every scene alive after it has landed, so nothing looks like a slide.</p>
       <div class="opts cards">
         {#each st.options.cameras as c (c.id)}
-          <label class="radio card">
-            <input type="radio" name="camera" checked={profile.camera.move === c.id} onchange={() => (profile!.camera = { move: c.id as MotionProfile["camera"]["move"] })} />
-            <b>{c.label}{c.id === "push" ? " (recommended)" : ""}</b>
+          <label class="radio card demoCard">
+            <Demo of={`camera:${c.id}`} />
+            <span><input type="radio" name="camera" checked={profile.camera.move === c.id} onchange={() => (profile!.camera = { move: c.id as MotionProfile["camera"]["move"] })} /> <b>{c.label}{c.id === "push" ? " (recommended)" : ""}</b></span>
             {#if c.id === "off"}<span class="hint">The scenes hold still once they have landed. Can look like a slide.</span>{/if}
             {#if c.id === "jitter"}<span class="hint">A tiny movement that keeps a held frame alive.</span>{/if}
             {#if c.id === "push"}<span class="hint">A slow push in with a gentle drift through the whole scene, never stopping.</span>{/if}
@@ -280,10 +302,11 @@
   .loading { padding: 24px; display: grid; gap: 12px; }
   .lead { margin: 0; }
   .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
-  .mood { display: grid; gap: 4px; text-align: left; align-content: start; padding: 12px; font-weight: 400; }
+  .mood { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: stretch; justify-content: stretch; gap: 4px; text-align: left; align-content: start; padding: 12px; font-weight: 400; line-height: 1.35; }
   .mood .hint { font-size: 12px; color: var(--muted-foreground); }
   .mood.chosen, .card:has(input:checked) { outline: 2px solid var(--primary); }
   .opts { display: flex; flex-wrap: wrap; gap: 12px; }
+  .demoCard { align-items: stretch; align-content: start; }
   .cards .card { display: grid; gap: 4px; padding: 12px; min-width: 200px; max-width: 280px; border: 1px solid var(--border); border-radius: 8px; }
   .card.disabled { opacity: 0.55; }
   .pick { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }

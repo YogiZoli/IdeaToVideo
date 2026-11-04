@@ -70,7 +70,7 @@
   );
 
   const pubReady = $derived(!!app.app?.publishing?.url && !!app.keys["publishing"]);
-  const publishing = $derived<Row>({ id: "publishing", label: "Publishing", detail: pubReady ? "Finished videos can be sent to your publishing app." : "Where a finished video's card goes. Not needed to make videos.", ready: pubReady, optional: true, action: "Connections", go: () => goto("connections") });
+  const publishing = $derived<Row>({ id: "publishing", label: "Publishing", detail: pubReady ? "Finished videos can be sent to your publishing app." : "Where a finished video's card goes. Not needed to make videos.", ready: pubReady, optional: true, action: "PDT Connection", go: () => goto("pdt") });
 
   const allReady = $derived(needed.every((r) => r.ready));
 </script>

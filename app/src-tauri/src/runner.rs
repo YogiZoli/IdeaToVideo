@@ -172,6 +172,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     // needs an AI; the Shot map is local work
     ("research-make", Some(&["llm", "provider"])),
     ("research-state", None),
+    ("video-keyword", None),
     ("research-save", None),
     ("research-approve", None),
     ("shot-map-make", None),

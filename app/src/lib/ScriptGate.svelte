@@ -1,8 +1,8 @@
 <script lang="ts">
   // Gate 1, the script: Recommended (the AI writes it), Custom (edit it, or
   // write or paste your own: no AI needed, Zoltan 2026-10-05: "when Gemini is
-  // out of tokens I cannot go on"), Approve. The comment calls and the vidIQ
-  // keyword ideas sit above the script.
+  // out of tokens I cannot go on"), Approve. The comment calls sit above the
+  // script. The search keyword is chosen on the Research tab (DECISIONS 169).
   import { ask } from "@tauri-apps/plugin-dialog";
   import { onDestroy, untrack } from "svelte";
   import ErrorBox from "./ErrorBox.svelte";
@@ -19,7 +19,6 @@
   import { pendingHeygen, makeHeygenClip, priceText } from "./cta/clips";
   import { running } from "./work.svelte";
 
-  type Kw = { keyword: string; monthlySearches: number | null; competition: number | null; score: number | null; growthPct: number | null };
   let {
     app,
     dir,
@@ -29,6 +28,7 @@
     briefLength,
     hasBrief,
     fromCourse = false,
+    keyword = null,
     calls,
     changed,
     saved,
@@ -43,14 +43,15 @@
     briefLength?: number;
     hasBrief: boolean;
     fromCourse?: boolean;
+    keyword?: string | null;
     calls: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
     changed: () => Promise<void>;
     saved: (s: AppState) => void;
-    goto?: (t: "voice") => void;
-    openPage?: (page: "cta" | "connections" | "voice") => void;
+    goto?: (t: "voice" | "research") => void;
+    openPage?: (page: "cta" | "connections" | "avatar") => void;
   } = $props();
 
-  const COMMANDS = ["write-script", "save-script", "keyword-ideas"];
+  const COMMANDS = ["write-script", "save-script"];
   const job = $derived(running(dir, COMMANDS));
   let busy = $state(false);
   const locked = $derived(busy || !!job);
@@ -78,23 +79,6 @@
   });
   onDestroy(() => unlisten.then((f) => f()));
 
-  // Optional (DECISIONS 64): keyword ideas from vidIQ for the title.
-  let keywords = $state<Kw[]>([]);
-  let keyword = $state("");
-  let kwBusy = $state(false);
-  const canVidiq = $derived(!!app.keys["vidiq"] && app.config?.research?.vidiq !== false);
-  async function keywordIdeas() {
-    kwBusy = true;
-    error = "";
-    try {
-      keywords = (await runner<{ keywords: Kw[] }>("keyword-ideas", { service: "vidiq", keyword: title })).keywords;
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      kwBusy = false;
-    }
-  }
-
   // Optional (DECISIONS 88): the creator's own story or opinion for this
   // video, and the natural-voice pass, the Identity's level unless changed.
   let angle = $state("");
@@ -115,7 +99,7 @@
       const r = await runner<{ words: number; humanizeNote?: string | null }>("write-script", {
         projectDir: dir,
         llm: stepLlm,
-        input: { topic: title, targetLengthMin: length, humanize, ...(angle.trim() ? { angle: angle.trim() } : {}), ...(keyword ? { keyword } : {}), ...(ownCalls ? { cta: $state.snapshot(ownCalls) } : {}) },
+        input: { topic: title, targetLengthMin: length, humanize, ...(angle.trim() ? { angle: angle.trim() } : {}), ...(ownCalls ? { cta: $state.snapshot(ownCalls) } : {}) },
         channel: app.config!.channel,
       });
       notice = `Script ready, ${r.words} words. Read it, change what you like, then approve it below.${r.humanizeNote ? ` ${r.humanizeNote}` : ""}`;
@@ -184,7 +168,7 @@
 </script>
 
 <section class="card">
-  <h2>1. Script</h2>
+  <h2>Script</h2>
   <p class="hint lead">What the narrator will say. The AI writes it from your title, your Audience and your Brand Voice, or you write it yourself.</p>
 
   <StepModel {app} step="script" {saved} disabled={locked} />
@@ -203,31 +187,7 @@
     <HumanizeSlider bind:value={humanize} id="humanize-video" disabled={locked} compact />
   </details>
 
-  {#if canVidiq}
-    <div class="controls">
-      <span class="hint grow">{keyword ? `Keyword for the script: "${keyword}"` : "Optional: pick a search keyword for the script."}</span>
-      <button type="button" disabled={kwBusy || locked} onclick={keywordIdeas}>{kwBusy ? "Asking vidIQ..." : "Keyword ideas (vidIQ)"}</button>
-    </div>
-    {#if keywords.length}
-      <div class="kwbox">
-        <table class="kw">
-          <thead><tr><th>Keyword</th><th>Monthly searches</th><th>Competition</th><th>Score</th><th></th></tr></thead>
-          <tbody>
-            {#each keywords.slice(0, 12) as k}
-              <tr class:on={keyword === k.keyword}>
-                <td>{k.keyword}</td>
-                <td>{k.monthlySearches?.toLocaleString("en-US") ?? ""}</td>
-                <td>{k.competition ?? ""}</td>
-                <td>{k.score ?? ""}</td>
-                <td><button type="button" class="ghost" onclick={() => (keyword = keyword === k.keyword ? "" : k.keyword)}>{keyword === k.keyword ? "Chosen" : "Use"}</button></td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-      <p class="hint">Score: vidIQ's opportunity score (higher is better). Competition: how many videos target it (lower is easier).</p>
-    {/if}
-  {/if}
+  {#if keyword}<p class="hint">Search keyword for the script: "{keyword}". <button type="button" class="link" onclick={() => goto?.("research")}>Change it on the Research tab</button></p>{/if}
 
   {#if job === "write-script"}<Progress command="write-script" project={dir} label={step || "Writing the script"} />{/if}
   {#if error}
@@ -252,7 +212,7 @@
 
   <div class="actionbar">
     {#if approved && !dirty}
-      <span class="say"><b>Approved.</b> Next: 2. Voice and music.</span>
+      <span class="say"><b>Approved.</b> Next: Voice and music.</span>
     {:else if editing}
       <span class="say">Read it through. Happy with it? Approve it, and the voice comes next.</span>
     {:else}
@@ -269,7 +229,7 @@
       {#if !approved || dirty}
         <button type="button" class="primary" disabled={locked || !draft.trim()} onclick={approve}>Approve and continue</button>
       {:else}
-        <button type="button" class="primary" onclick={() => goto?.("voice")}>Go to 2. Voice and music</button>
+        <button type="button" class="primary" onclick={() => goto?.("voice")}>Go to Voice and music</button>
       {/if}
     {/if}
   </div>
@@ -280,15 +240,10 @@
   .lead { margin: 0 0 12px; }
   .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .controls input { width: 70px; }
-  .grow { flex: 1; }
-  .kwbox { max-height: 240px; overflow: auto; }
   .angle { margin: 4px 0 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; }
   .angle summary { cursor: pointer; font-weight: 600; font-size: 14px; }
   .angle textarea { width: 100%; height: auto; min-height: 70px; font-family: inherit; font-size: 14px; }
-  .kw { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 6px; }
-  .kw th { text-align: left; color: var(--muted-foreground); font-weight: 600; padding: 4px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
-  .kw td { padding: 4px; border-bottom: 1px solid var(--border); }
-  .kw tr.on { background: var(--primary-surface); }
+  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
   .label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
   /* the script scrolls in its own box, so the page fits one screen */
   textarea { width: 100%; height: max(220px, calc(100vh - 470px)); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; resize: vertical; }

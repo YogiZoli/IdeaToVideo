@@ -31,7 +31,7 @@ export const STEPS: Step[] = [
   { id: "import", title: "Import from Planner", intro: "If you use the Planner app, you will be able to import your channel and video plans here.", canRecommend: false },
 ];
 
-/** The first setup without Advanced: the AI key and a name. The channel's recipe does the rest. */
+/** The short first setup: the AI key and a name. The channel's recipe does the rest. */
 export const QUICK_SETUP: StepId[] = ["ai", "name"];
 
 /** The steps of "New Identity": everything but the App's AI key and the Planner import. */

@@ -1,8 +1,7 @@
 <script lang="ts">
   // HeygenImport: a video already in the user's HeyGen account becomes the
   // segment of one comment keyword (DECISIONS 101): reading and downloading
-  // costs nothing. Moved out of the CTA page's segments to Settings, Import
-  // & Export (D4, DECISIONS 119); the CTA page links here.
+  // costs nothing. On Wizards, CTA, next to the clips it makes (DECISIONS 168).
   import { onMount, untrack } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";
   import type { AppState, CtaKeyword, CtaSegment } from "../api";

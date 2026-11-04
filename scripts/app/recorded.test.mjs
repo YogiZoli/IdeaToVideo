@@ -10,17 +10,17 @@ import { phaseText } from "../../app/src/lib/progressInfo.ts";
 
 const gates = (over = {}) => ({ script: { state: "todo" }, voice: { state: "todo" }, scenes: { state: "todo" }, avatar: { state: "todo" }, review: { state: "todo" }, ...over });
 
-test("a recording has four tabs, and no script, voice or avatar step", () => {
-  assert.deepEqual(RECORDED_TABS.map((t) => t.label), ["Recording", "Preview", "Your video", "Thumbnail"]);
-  assert.deepEqual(RECORDED_TABS.map((t) => t.n), [1, 2, 3, 4]);
-  assert.equal(TABS.length, 7, "a script video keeps its seven");
+test("a recording has three tabs, and no script, voice or avatar step", () => {
+  assert.deepEqual(RECORDED_TABS.map((t) => t.label), ["Recording", "Preview", "Your video"]);
+  assert.deepEqual(RECORDED_TABS.map((t) => t.n), [1, 2, 3]);
+  assert.equal(TABS.length, 8, "a script video has eight");
 });
 
 test("the Recording tab is done when the plan is approved; then the Preview is the step", () => {
   assert.equal(firstOpen(gates(), false, true, RECORDED_TABS), "recording");
   const planned = gates({ script: { state: "approved" }, voice: { state: "approved" }, scenes: { state: "approved" } });
   assert.equal(firstOpen(planned, false, true, RECORDED_TABS), "preview");
-  const st = tabStates(planned, false, true, false, RECORDED_TABS);
+  const st = tabStates(planned, false, true, RECORDED_TABS);
   assert.equal(st.recording, "done");
   assert.equal(st.preview, "now");
   assert.equal(st.video, "next");

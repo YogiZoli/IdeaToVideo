@@ -197,7 +197,12 @@ const replies = {
     week: 7,
   },
   "recipe-save": { recipe: { engine: "script" } },
-  "research-state": { brief: BRIEF },
+  "thumbnail-state": { withFace: false, model: "free", variants: [], chosen: null, chosenFile: null, spentUsd: 0, photos: [], models: [{ id: "free", label: "Brand colours (free, no AI)", usdPerImage: 0, test: false, free: true }, { id: "gemini-nano-banana-2.1", label: "Gemini picture", usdPerImage: 0.0336, test: false }], title: "How to turn viewers into subscribers", hasVideo: false, maxWords: 4 },
+  "thumbnail-photos": { photos: [], max: 3 },
+  "keyword-ideas": { keywords: [{ keyword: "turn viewers into subscribers", monthlySearches: 1200, competition: 30, score: 62, growthPct: 4 }, { keyword: "how to get subscribers", monthlySearches: 8800, competition: 71, score: 41, growthPct: 1 }] },
+  "video-keyword": { keyword: null },
+  // ?nobrief=1: a video whose research has not been done yet
+  "research-state": { brief: q.get("nobrief") ? null : BRIEF },
   "research-save": { brief: BRIEF },
   "research-approve": { brief: { ...BRIEF, state: "approved" } },
   "research-make": { brief: BRIEF },

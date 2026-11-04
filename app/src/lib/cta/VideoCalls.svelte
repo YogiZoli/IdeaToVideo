@@ -25,7 +25,7 @@
     openPage,
   }: {
     app: AppState;
-    openPage?: (page: "cta" | "connections" | "voice") => void;
+    openPage?: (page: "cta" | "connections" | "avatar") => void;
     own?: CtaProfile | null;
     used?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
     disabled?: boolean;
@@ -149,7 +149,7 @@
               {:else}<span class="hint">No uploaded clip for these keywords yet. <button type="button" class="link" onclick={() => openPage?.("cta")}>Add one in Wizards, CTA</button></span>{/if}
             {:else if w.id === "heygen-new"}
               {#if !hasKey}<span class="hint">You have not added a HeyGen key yet. <button type="button" class="link" onclick={() => openPage?.("connections")}>Add it here</button></span>
-              {:else if !canHeygen}<span class="hint">Pick your HeyGen avatar first. <button type="button" class="link" onclick={() => openPage?.("voice")}>Identity, Voice & Avatar</button></span>
+              {:else if !canHeygen}<span class="hint">Pick your HeyGen avatar first. <button type="button" class="link" onclick={() => openPage?.("avatar")}>Identity, AI Avatar</button></span>
               {:else}<span class="hint">Made with your key before the script is written, {price} a clip. Uses HeyGen credits. An uploaded clip is never replaced.</span>{/if}
             {:else if w.id === "previous"}
               {#if !hasKey}<span class="hint">Needs your HeyGen key. <button type="button" class="link" onclick={() => openPage?.("connections")}>Add it here</button></span>

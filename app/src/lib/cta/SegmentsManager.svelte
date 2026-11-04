@@ -34,7 +34,7 @@
     options: CtaState["options"];
     cta?: CtaProfile | null;
     segments?: CtaSegment[];
-    goto?: (page: "transfer" | "voice") => void;
+    goto?: (page: "avatar" | "connections") => void;
     /** Keywords shown elsewhere (the house three on the CTA page, D5). */
     except?: string[];
     /** false: no cards, only the add or replace form for `keyword`. */
@@ -175,12 +175,12 @@
         </div>
         <div class="way">
           <b>B. Make it with HeyGen</b>
-          <span class="hint">{!lookId ? "Choose an avatar in Identity, Voice & Avatar first." : "Your narrator voice reads this sentence, HeyGen makes a full-frame avatar video on it. Uses HeyGen credits."}</span>
+          <span class="hint">{!lookId ? "Choose an avatar in Identity, AI Avatar first." : "Your narrator voice reads this sentence, HeyGen makes a full-frame avatar video on it. Uses HeyGen credits."}</span>
           <label class="field"><span>The sentence your avatar says</span><textarea rows="4" maxlength={TEXT_MAX} bind:value={text}></textarea><span class="hint">{text.length} / {TEXT_MAX} characters</span></label>
           <div class="row"><button type="button" disabled={!!busy || !lookId || !narrator || !text.trim()} onclick={makeWithHeygen}>Make it with HeyGen</button></div>
         </div>
       </div>
-      <p class="hint">C. A video you already made in HeyGen: import it on <button type="button" class="link" onclick={() => goto?.("transfer")}>Settings, Import & Export</button>.</p>
+      <p class="hint">C. A video you already made in HeyGen: import it under "A video from your HeyGen account" on this page.</p>
   {/if}
   {#if busy}<p class="busy">{busy}</p>{/if}
   {#if added}<p class="saved">{added.message}</p>{/if}
@@ -205,7 +205,6 @@
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .field { display: grid; gap: 4px; }
   .ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .link { border: none; background: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: inherit; font-family: inherit; min-height: 0; }
   .way { display: grid; gap: 8px; align-content: start; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
   .for { margin: 8px 0 0; font-weight: 600; }
   .busy { font-weight: 600; }

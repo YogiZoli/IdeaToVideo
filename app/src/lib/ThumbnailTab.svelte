@@ -1,5 +1,6 @@
 <script lang="ts">
-  // ThumbnailTab: step 7, after Your video (DECISIONS 131). With my face or
+  // ThumbnailTab: on Publishing, Thumbnail (DECISIONS 131, 169), at any time,
+  // before the video too: a thumbnail can come first. With my face or
   // no face; one button makes 3 variants with the Gemini key (the price is
   // asked first); each shows full size and at phone size; the words can be
   // changed for free; one is picked and goes into the Video Publishing Card,
@@ -34,7 +35,7 @@
   };
   type Estimate = { usd: number; images: number; test?: boolean; text: string };
 
-  let { app, dir, hasVideo, changed, goto, openPage }: { app: AppState; dir: string; hasVideo: boolean; changed: () => Promise<void>; goto: (id: TabId) => void; openPage?: (page: "cta" | "connections" | "voice") => void } = $props();
+  let { app, dir, changed, goto, openPage }: { app: AppState; dir: string; changed: () => Promise<void>; goto: (id: TabId) => void; openPage?: (page: "connections") => void } = $props();
 
   const COMMANDS = ["thumbnail-make", "thumbnail-words"];
   const job = $derived(running(dir, COMMANDS));
@@ -152,7 +153,7 @@
       const r = await runner<State & { cardFile: string | null }>("thumbnail-pick", { projectDir: dir, slot: v.slot });
       st = r;
       log("thumbnail_pick", { slot: v.slot, test: v.test });
-      note = r.cardFile ? "Picked. It is in the publishing card now: Send to Publishing on the Your video tab sends it with the video's texts." : "Picked. Render the video, then it goes into the publishing card.";
+      note = r.cardFile ? "Picked. It is in the publishing card now: Send to Publishing on the Your video tab sends it with the video's texts." : "Picked. It goes into the publishing card when the video is rendered.";
       await changed();
     } catch (x) {
       error = errorText(x);
@@ -163,10 +164,7 @@
 </script>
 
 <section class="card">
-  <h2>7. Thumbnail</h2>
-  {#if !hasVideo}
-    <p class="hint">Render the video first, then make its thumbnail here. <button type="button" class="link" onclick={() => goto("video")}>Open Your video</button></p>
-  {:else if st}
+  {#if st}
     <p class="hint">Three thumbnails for "{st.title || "this video"}". The AI draws the picture; the app puts at most {st.maxWords} words on it in your Brand font and colours, with strong contrast, so it reads at phone size.</p>
     {#if job}<Progress command={job} project={dir} label={step || "Making the thumbnails"} />{:else if busy && step}<p class="hint">{step}</p>{/if}
 
@@ -179,7 +177,7 @@
       <label class="model">
         <span>Picture model</span>
         <select bind:value={model} disabled={locked}>
-          {#each st.models as m (m.id)}<option value={m.id}>{m.label}{m.test ? "" : `, about $${m.usdPerImage.toFixed(3)} a picture`}</option>{/each}
+          {#each st.models as m (m.id)}<option value={m.id}>{m.label}{m.test || m.free ? "" : `, about $${m.usdPerImage.toFixed(3)} a picture`}</option>{/each}
         </select>
       </label>
     </div>
@@ -230,7 +228,7 @@
       </ul>
     {/if}
     {#if st.chosen}
-      <p class="hint">Picked: "{st.chosen.words}". <button type="button" class="link" onclick={() => goto("video")}>Send to Publishing on Your video</button></p>
+      <p class="hint">Picked: "{st.chosen.words}". <button type="button" class="link" onclick={() => goto("video")}>Open this video</button></p>
     {/if}
   {:else if error}
     <ErrorBox message={error} context={{ step: "thumbnail" }} />

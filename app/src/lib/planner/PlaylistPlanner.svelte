@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Wizards, Playlist Planner (DECISIONS 127): the YT Evergreen Flywheel for
+  // Playlist, Playlist Planner (DECISIONS 127, 168): the YT Evergreen Flywheel for
   // the app's own user. Card or typed answers, seed keywords, vidIQ keyword
   // research, the AI's plan as a table the user edits and approves, then the
   // outline, and the Course Content Structure goes straight into the course
@@ -16,7 +16,7 @@
   import { videos } from "../course/course";
   import type { TrafficCard } from "./planner";
 
-  let { app, goto }: { app: AppState; goto: (id: "channel" | "connections" | "transfer") => void } = $props();
+  let { app, goto }: { app: AppState; goto: (id: "channel" | "connections") => void } = $props();
 
   type Kw = { keyword: string; volume: number | null; competition: number | null; score: number | null; seed?: string };
   type Row = { position: number; title: string; keyword: string; volume: number | null; competition: number | null };
@@ -49,6 +49,11 @@
       const r = await runner<{ card: TrafficCard | null; seeds: string[]; context: Context }>("planner-start", { answers, channel: app.config?.channel ?? {}, language });
       card = r.card;
       context = r.context;
+      // no card: what the Identity already knows is filled in, never typed twice
+      if (!card) {
+        answers.audience ||= app.config?.channel.audience ?? "";
+        answers.topic ||= app.config?.channel.profile ?? "";
+      }
       if (!seedsText.trim()) seedsText = r.seeds.join("\n");
     } catch (e) {
       error = errorText(e);
@@ -167,11 +172,16 @@
 </script>
 
 <section class="card">
+  <p class="lead">A plan for a whole playlist, not for one video: which videos to make, in what order, each on a keyword people really search for. The result is one prepared video per row on Videos, with nothing started yet.</p>
+  <p class="hint">Four steps: what it is about, keyword research, the plan you can edit, the videos.</p>
+</section>
+
+<section class="card">
   <h2>1. What the playlist is about</h2>
   {#if card}
     <p class="good">From the Traffic Card of {app.identity?.name}: {card.keywords.length} keywords, {card.playlists.length} playlist ideas.</p>
   {:else}
-    <p class="hint">No Traffic Card kept for {app.identity?.name}. <button type="button" class="link" onclick={() => goto("channel")}>Import it on Identity, YouTube Channel & Audience</button>, or answer three questions:</p>
+    <p class="hint">No Traffic Card kept for {app.identity?.name}. <button type="button" class="link" onclick={() => goto("channel")}>Import it on Identity, YouTube Channel & Audience</button>, or check these three. What your Identity already says is filled in.</p>
   {/if}
   <div class="grid">
     <label>Audience <input bind:value={answers.audience} placeholder={card?.audience || "Who the videos are for"} /></label>

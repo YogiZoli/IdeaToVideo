@@ -1,46 +1,46 @@
 // tabs.ts: the steps of a ONE Video as tabs (Zoltan, 2026-10-05, DECISIONS
-// 85), and the one word each tab shows. Pure functions, no Tauri imports, so
-// the Node tests load it.
+// 85; Research first and the Shot map for every video, the Thumbnail out to
+// Publishing, 2026-11-04, DECISIONS 169), and the one word each tab shows. Pure
+// functions, no Tauri imports, so the Node tests load it.
 //   done      the step is approved (the avatar: approved or left out; the
 //             video: rendered)
 //   now       the first step not done yet: where the work is
 //   next      a later step
-//   optional  the avatar, when it is not the step at hand; the thumbnail
-//             (DECISIONS 131) until one is picked: it never blocks the video
+//   optional  the avatar, when it is not the step at hand; the research, when
+//             this video does not wait for it
 //   failed    the last attempt failed
 
-export type TabId = "research" | "recording" | "script" | "voice" | "scenes" | "shots" | "avatar" | "preview" | "video" | "thumbnail";
+export type TabId = "research" | "recording" | "script" | "voice" | "scenes" | "shots" | "avatar" | "preview" | "video";
 export type TabState = "done" | "now" | "next" | "optional" | "failed";
 type Gates = Record<string, { state: string } | undefined>;
+export type Tab = { id: TabId; n: number; label: string; gate: string | null; commands: string[]; optional?: boolean };
 
-export const TABS: { id: TabId; n: number; label: string; gate: string | null; commands: string[] }[] = [
-  { id: "script", n: 1, label: "Script", gate: "script", commands: ["write-script", "save-script"] },
-  { id: "voice", n: 2, label: "Voice and music", gate: "voice", commands: ["make-voice", "make-music", "set-music"] },
-  { id: "scenes", n: 3, label: "Scenes", gate: "scenes", commands: ["make-scenes", "simple-scenes", "make-template-scenes", "simple-template-scenes", "refill-scene", "save-scenes"] },
-  { id: "avatar", n: 4, label: "Avatar", gate: "avatar", commands: ["make-avatar", "avatar-layout", "remove-avatar"] },
-  { id: "preview", n: 5, label: "Preview", gate: "review", commands: ["build-video"] },
-  { id: "video", n: 6, label: "Your video", gate: null, commands: ["render-video"] },
-  { id: "thumbnail", n: 7, label: "Thumbnail", gate: null, commands: ["thumbnail-make", "thumbnail-words"] },
+// Every script video has these, in this order. The research never blocks: it is
+// the step at hand only for a video that waits for its brief (videoTabs).
+export const TABS: Tab[] = [
+  { id: "research", n: 1, label: "Research", gate: null, commands: ["research-make", "keyword-ideas"], optional: true },
+  { id: "script", n: 2, label: "Script", gate: "script", commands: ["write-script", "save-script"] },
+  { id: "voice", n: 3, label: "Voice and music", gate: "voice", commands: ["make-voice", "make-music", "set-music"] },
+  { id: "scenes", n: 4, label: "Scenes", gate: "scenes", commands: ["make-scenes", "simple-scenes", "make-template-scenes", "simple-template-scenes", "refill-scene", "save-scenes"] },
+  { id: "shots", n: 5, label: "Shot map", gate: "scenes", commands: ["shot-map-make", "shot-flow-clip"] },
+  { id: "avatar", n: 6, label: "Avatar", gate: "avatar", commands: ["make-avatar", "avatar-layout", "remove-avatar"] },
+  { id: "preview", n: 7, label: "Preview", gate: "review", commands: ["build-video"] },
+  { id: "video", n: 8, label: "Your video", gate: null, commands: ["render-video"] },
 ];
 
 // A Recorded video (runner/recorded): one tab for the words, the cuts and the plan.
-export const RECORDED_TABS: typeof TABS = [
+export const RECORDED_TABS: Tab[] = [
   { id: "recording", n: 1, label: "Recording", gate: "scenes", commands: ["recorded-transcribe", "recorded-apply-cuts", "recorded-plan", "recorded-plan-rule", "recorded-prepare"] },
   { id: "preview", n: 2, label: "Preview", gate: "review", commands: ["build-video"] },
   { id: "video", n: 3, label: "Your video", gate: null, commands: ["render-video"] },
-  { id: "thumbnail", n: 4, label: "Thumbnail", gate: null, commands: ["thumbnail-make", "thumbnail-words"] },
 ];
 
-// A channel's script video (docs/BUILD_PLAN.md phase 3): the Shot map after the
-// Scenes, the Research first when this video has it on. An older video keeps TABS.
-const RESEARCH_TAB: (typeof TABS)[number] = { id: "research", n: 0, label: "Research", gate: null, commands: ["research-make"] };
-const SHOTS_TAB: (typeof TABS)[number] = { id: "shots", n: 0, label: "Shot map", gate: "scenes", commands: ["shot-map-make", "shot-flow-clip"] };
-export function scriptTabs(research: boolean): typeof TABS {
-  const list = TABS.flatMap((t) => (t.id === "scenes" ? [t, SHOTS_TAB] : [t]));
-  return (research ? [RESEARCH_TAB, ...list] : list).map((t, i) => ({ ...t, n: i + 1 }));
+/** A script video's tabs. `research`: this video starts with its research. */
+export function videoTabs(research: boolean): Tab[] {
+  return TABS.map((t) => (t.id === "research" ? { ...t, optional: !research } : t));
 }
 
-function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false, researchApproved = false): boolean {
+function isDone(id: TabId, gates: Gates, hasVideo: boolean, researchApproved = false): boolean {
   const g = (k: string) => gates[k]?.state;
   switch (id) {
     case "research":
@@ -49,8 +49,6 @@ function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false
       return g("scenes") === "approved";
     case "recording":
       return g("scenes") === "approved";
-    case "thumbnail":
-      return hasThumbnail;
     case "avatar":
       return g("avatar") === "approved" || g("avatar") === "skipped";
     case "video":
@@ -65,21 +63,21 @@ function isDone(id: TabId, gates: Gates, hasVideo: boolean, hasThumbnail = false
 /** The tab where the work is. The avatar counts only with a HeyGen key. */
 function nowTab(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS, researchApproved = false): TabId | null {
   for (const t of list) {
-    if ((t.id === "avatar" && !hasHeygen) || t.id === "thumbnail") continue;
-    if (!isDone(t.id, gates, hasVideo, false, researchApproved)) return t.id;
+    if ((t.id === "avatar" && !hasHeygen) || t.optional) continue;
+    if (!isDone(t.id, gates, hasVideo, researchApproved)) return t.id;
   }
   return null;
 }
 
-export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, hasThumbnail = false, list = TABS, researchApproved = false): Record<TabId, TabState> {
+export function tabStates(gates: Gates, hasVideo: boolean, hasHeygen: boolean, list = TABS, researchApproved = false): Record<TabId, TabState> {
   const now = nowTab(gates, hasVideo, hasHeygen, list, researchApproved);
   const out = {} as Record<TabId, TabState>;
   for (const t of list) {
     const gate = t.gate ? gates[t.gate]?.state : undefined;
-    if (isDone(t.id, gates, hasVideo, hasThumbnail, researchApproved)) out[t.id] = "done";
+    if (isDone(t.id, gates, hasVideo, researchApproved)) out[t.id] = "done";
     else if (gate === "failed") out[t.id] = "failed";
     else if (t.id === now) out[t.id] = "now";
-    else out[t.id] = t.id === "avatar" || t.id === "thumbnail" ? "optional" : "next";
+    else out[t.id] = t.id === "avatar" || t.optional ? "optional" : "next";
   }
   return out;
 }
@@ -91,8 +89,8 @@ export function firstOpen(gates: Gates, hasVideo: boolean, hasHeygen: boolean, l
 
 /** The tab after an approved step. The avatar only with a HeyGen key. */
 export function nextAfter(id: TabId, hasHeygen: boolean, list = TABS): TabId {
-  // nothing is approved on Your video or Thumbnail: they stay where they are
-  if (id === "video" || id === "thumbnail") return id;
+  // nothing is approved on Your video: it stays where it is
+  if (id === "video") return id;
   const i = list.findIndex((t) => t.id === id);
   const next = list[Math.min(list.length - 1, i + 1)].id;
   return next === "avatar" && !hasHeygen ? "preview" : next;

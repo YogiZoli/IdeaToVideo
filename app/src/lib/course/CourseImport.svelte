@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Course import (DECISIONS 121), on Settings, Import & Export: a Course
+  // Course import (DECISIONS 121), on Playlist, Course or Playlist File: a Course
   // Content Structure from the Minicourse page, as a file or as pasted text
   // (its "Copy for IdeaToVideo" button). One parser reads both. A preview
   // comes first; the ONE Videos are made only after "Create". The import

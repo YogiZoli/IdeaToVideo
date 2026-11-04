@@ -3,15 +3,20 @@
   // numbers, dates, the check of the user's own text, what is missing, the sources.
   // Everything can be changed before the script; one click goes on. The sources go
   // into the Publishing Card for the user's own checking, never into the description.
+  // Every script video has this tab (DECISIONS 169), and the vidIQ keyword search too.
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { onMount } from "svelte";
   import ErrorBox from "../ErrorBox.svelte";
   import Progress from "../Progress.svelte";
+  import type { AppState, Llm } from "../api";
+  import type { PageId } from "../pages";
+  import KeywordIdeas from "../planner/KeywordIdeas.svelte";
+  import { describeLlm } from "../llm";
   import { runner, errorText, openSourceLink } from "../api";
   import { running } from "../work.svelte";
   import type { ResearchBrief } from "./channels";
 
-  let { dir, busy = false, kind = "topic", made, goOn }: { dir: string; busy?: boolean; kind?: string; made: () => Promise<void>; goOn: () => void } = $props();
+  let { app, dir, busy = false, kind = "topic", recipe = false, keyword = null, title = "", ai = null, made, goOn, skip, openPage }: { app: AppState; dir: string; busy?: boolean; kind?: string; recipe?: boolean; keyword?: string | null; title?: string; ai?: Llm | null; made: () => Promise<void>; goOn: () => void; skip: () => void; openPage?: (page: PageId) => void } = $props();
 
   const job = $derived(running(dir, ["research-make"]));
   let brief = $state<ResearchBrief | null>(null);
@@ -83,6 +88,27 @@
       working = false;
     }
   }
+  async function research() {
+    working = true;
+    error = "";
+    try {
+      brief = (await runner<{ brief: ResearchBrief }>("research-make", { projectDir: dir, llm: ai, channel: app.config!.channel })).brief;
+      await made();
+    } catch (e) {
+      error = errorText(e);
+    } finally {
+      working = false;
+    }
+  }
+  async function chooseKeyword(k: string | null) {
+    error = "";
+    try {
+      await runner("video-keyword", { projectDir: dir, keyword: k });
+      await made();
+    } catch (e) {
+      error = errorText(e);
+    }
+  }
   const search = (q: string) => openUrl(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
 </script>
 
@@ -92,7 +118,18 @@
   {#if error}<ErrorBox message={error} context={{ step: "research" }} />{/if}
 
   {#if !brief}
-    {#if loaded && !job}<p class="hint">No brief yet. Press Make the video at the top to start the research.</p>{/if}
+    {#if loaded && !job}
+      <p class="hint">Optional. The AI looks the topic up on the web and writes the key facts, numbers and dates with their sources. You check them, then the script is written from them. Nothing else starts by itself.</p>
+      {#if ai}
+        <p class="hint">It uses your AI key: {describeLlm(ai)}.</p>
+      {:else}
+        <p class="warn">No AI key is set, so nothing can be looked up. <button type="button" class="link" onclick={() => openPage?.("connections")}>Add one in Settings, Connections</button>, or go on without research.</p>
+      {/if}
+      <div class="actions">
+        <button type="button" disabled={off} onclick={skip}>Skip, go to the script</button>
+        <button type="button" class="primary" disabled={off || !ai} onclick={research}>{working ? "Researching..." : "Research this topic"}</button>
+      </div>
+    {/if}
   {:else}
     {#each brief.warnings ?? [] as w (w)}<p class="warn">{w}</p>{/each}
     {#if kind === "finished"}<p class="hint">Your script stays exactly as you wrote it. This only checks it: change the script yourself if a claim below is wrong.</p>{/if}
@@ -146,9 +183,15 @@
 
     <div class="actions">
       {#if brief.state === "approved"}<span class="good">Approved. The script uses this brief.</span>{/if}
-      <button type="button" class="primary big" disabled={off} onclick={approve}>{kind === "finished" ? "Looks right, go on" : "Use this brief, write the script"}</button>
+      <button type="button" class="primary big" disabled={off} onclick={approve}>{kind === "finished" ? "Looks right, go on" : recipe ? "Use this brief, write the script" : "Use this brief, go to the script"}</button>
     </div>
   {/if}
+</section>
+
+<section class="card research">
+  <h2>Search keywords</h2>
+  <p class="hint">What people search for, from vidIQ. The keyword you choose goes into the script.</p>
+  <KeywordIdeas {app} topic={title} chosen={keyword} onchoose={chooseKeyword} goto={(id) => openPage?.(id)} />
 </section>
 
 <style>

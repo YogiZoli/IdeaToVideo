@@ -185,6 +185,17 @@ check("gate 3: scene table planned in two steps, one repair", planned.scenes ===
   check("avatar: left out on purpose", k.event === "result" && loadProject(copy).gates.avatar.state === "skipped");
   fs.rmSync(copy, { recursive: true, force: true });
 }
+// The Shot map works on a catalog plan too (DECISIONS 169): what the user or the AI chose
+// stays, and the build and the render below run on the table it leaves.
+{
+  const before = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8")).scenes.map((s) => s.component);
+  const m = runner("shot-map-make", { projectDir: dir, look: "blue-professional" });
+  check("shot map: made for a catalog plan", m.event === "result" && m.data.shots.length > 0, m.event === "error" ? m.message : "");
+  const after = JSON.parse(fs.readFileSync(path.join(dir, "scenes.json"), "utf8")).scenes.map((s) => s.component);
+  check("shot map: every scene the plan chose is still there", before.every((c) => after.includes(c)), JSON.stringify({ before, after }));
+  const again = runner("shot-map-make", { projectDir: dir, look: "blue-professional" });
+  check("shot map: made again, the same shots", again.event === "result" && again.data.shots.length === m.data.shots.length);
+}
 check("gate 3: approved", runner("approve-gate", { projectDir: dir, gate: "scenes" }).event === "result");
 
 // Gate 4: build, lint + check, stills.
@@ -284,6 +295,12 @@ check("the project remembers the video", runner("load-project", { projectDir: di
 // variants composed by the engine, new words for free, one picked into the
 // publishing card.
 {
+  // a thumbnail can come first: a video with only a title has no render and no script yet (DECISIONS 169)
+  const first = createProject({ projectsDir: mine, title: "Thumbnail first", identity: "my-identity" });
+  const early = runner("thumbnail-make", { projectDir: first.dir, identityDir, model: "test", withFace: false });
+  check("thumbnail: can be made before the video exists", early.event === "result" && early.data.variants.length === 3, early.event === "error" ? early.message : "");
+  const earlyPick = runner("thumbnail-pick", { projectDir: first.dir, identityDir, slot: 1 });
+  check("thumbnail: picked before the video, waiting for its card", earlyPick.event === "result" && earlyPick.data.chosen?.slot === 1 && earlyPick.data.cardFile === null);
   const est = runner("thumbnail-estimate", { projectDir: dir, identityDir, model: "test" });
   check("thumbnail: test pictures are free", est.data?.estimate?.usd === 0);
   const made = runner("thumbnail-make", { projectDir: dir, identityDir, model: "test", withFace: false });

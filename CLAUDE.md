@@ -13,7 +13,7 @@ scripts are written by hand, everything else runs on this computer.
 
 | Path | What it is |
 |---|---|
-| `app/src/` | The window (Svelte 5, TypeScript). `lib/api.ts` is the only door to the core. `lib/ProjectView.svelte` runs a video's stages (`recipeRun`, `recordedRun`, `autopilot`). `lib/channels/ChannelStudio.svelte` is the start screen. `lib/HealthCheck.svelte` is the Health check. |
+| `app/src/` | The window (Svelte 5, TypeScript). `lib/api.ts` is the only door to the core. `lib/pages.ts` is the top menu and its pages, `lib/tabs.ts` the steps of a video. `lib/ProjectView.svelte` runs a video's stages (`recipeRun`, `recordedRun`, `autopilot`). `lib/channels/ChannelStudio.svelte` is the start screen. `lib/HealthCheck.svelte` is the Health check. `lib/wizard/Demo.svelte` draws the wizards' small moving pictures. |
 | `app/src-tauri/src/` | The Rust core: `runner.rs` (whitelist of runner commands, starts Node, Stop, the check-in), `jobs.rs` (queue), `keys.rs` (OS keychain), `log.rs` (local log), `lib.rs` (Tauri commands). |
 | `runner/main.mjs` | The Node runner's entry: one command per process, JSON in on stdin, JSON lines out. Every command the UI can call is listed in `runner.rs` too. |
 | `runner/presets/<id>/` | A style preset: `preset.json` (tokens, 8 to 15 templates, shot rules), its own `pack/` when it draws its own. Contract in `runner/presets/index.mjs`. |
@@ -35,8 +35,12 @@ scripts are written by hand, everything else runs on this computer.
 - **Edit a recording:** `talking-head`, `screen-recording`, `screen-share`, `profile-silhouette`.
 
 Stages, in order: Direction, Research (optional), Script, Voice with word timestamps, Shot map, Preview and approval
-(shows paid costs), B-roll and assets, Render, Publishing Card, Thumbnail, PDT export. A channel is an Identity plus one
+(shows paid costs), B-roll and assets, Render, Publishing Card, PDT export. A channel is an Identity plus one
 locked recipe (`<identity>/recipe.json`): engine, preset, voice, avatar, music, length.
+
+On screen a script video has eight tabs: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video.
+The Thumbnail is not one of them: it is on the Publishing menu, for any video, at any time. The top menu is Home, Videos,
+Playlist, Publishing, Wizards, Identity, Settings, and nothing hides behind a switch (DECISIONS 168, 169).
 
 A preset is three things: a style sheet (JSON tokens, a PNG rendered by code), scene templates, shot rules. At runtime
 the LLM only outputs scene JSON that fills the templates; it is checked, repaired once, and otherwise filled by a rule.

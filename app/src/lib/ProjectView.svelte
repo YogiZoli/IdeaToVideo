@@ -15,13 +15,13 @@
   import AvatarGate from "./AvatarGate.svelte";
   import PreviewGate from "./PreviewGate.svelte";
   import VideoTab from "./VideoTab.svelte";
-  import ThumbnailTab from "./ThumbnailTab.svelte";
   import type { AppState, Gate, CtaSlot } from "./api";
   import { runner, errorText } from "./api";
   import { narratorProvider } from "./catalog";
   import { setScreen, log } from "./logger";
   import { work, running, track, measure, startWork, pilots } from "./work.svelte";
-  import { TABS, RECORDED_TABS, scriptTabs, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import { RECORDED_TABS, videoTabs, tabStates, firstOpen, nextAfter, type TabId } from "./tabs";
+  import type { PageId } from "./pages";
   import Progress from "./Progress.svelte";
   import RecordingTab from "./channels/RecordingTab.svelte";
   import ResearchTab from "./channels/ResearchTab.svelte";
@@ -36,7 +36,7 @@
   import { findBroll } from "./brollRun";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
-  let { app, dir: dirProp, back, saved, connections, openPage }: { app: AppState; dir: string; back: () => void; saved: (s: AppState) => void; connections?: () => void; openPage?: (page: "cta" | "connections" | "voice") => void } = $props();
+  let { app, dir: dirProp, startTab = null, back, saved, openPage, openThumbnail }: { app: AppState; dir: string; startTab?: TabId | null; back: () => void; saved: (s: AppState) => void; openPage?: (page: PageId) => void; openThumbnail?: (dir: string) => void } = $props();
   // The project this view was opened for, fixed: a long job (an avatar, a
   // render) keeps writing to it even if the user opens Settings meanwhile.
   const dir = untrack(() => dirProp);
@@ -44,7 +44,7 @@
 
   type Video = { file: string; seconds?: number; renderSeconds?: number; chapters: string | null; srt: string | null; chaptersNote?: string | null; cardFile?: string | null; comments?: string | null; syntheticMedia?: boolean };
   type Loaded = {
-    project: { id: string; title: string; status: string; language: string; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; notes?: { kind?: string; text: string }[]; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null; start?: { kind: string; research: boolean; topic?: string } | null };
+    project: { id: string; title: string; status: string; language: string; keyword?: string | null; autopilot?: boolean; autopilotRun?: { at?: string }; render?: { state: string; at?: string; error?: string } | null; notes?: { kind?: string; text: string }[]; gates: Record<string, Gate>; series?: Series | null; recipe?: Recipe | null; start?: { kind: string; research: boolean; topic?: string } | null };
     brief: { targetLengthMin?: number } | null;
     scriptMarkdown: string | null;
     calls?: { slot: CtaSlot; keyword: string; temperature: string }[] | null;
@@ -63,8 +63,15 @@
   const look = $derived(app.config?.brand?.preset ?? "blue-professional");
 
   const isRecorded = $derived(data?.project.recipe?.engine === "recorded");
-  const listOf = (p: Loaded["project"]) => (p.recipe?.engine === "recorded" ? RECORDED_TABS : p.recipe ? scriptTabs(!!p.start?.research) : TABS);
-  const tabList = $derived(data ? listOf(data.project) : TABS);
+  // Research first (DECISIONS 169). A channel video waits for it only if its start said so;
+  // any other video starts on it until its script is begun, and one click skips it.
+  const scriptBegun = (d: Loaded) => !!d.scriptMarkdown || !["todo", undefined].includes(d.project.gates.script?.state);
+  const listOf = (d: Loaded) => {
+    const p = d.project;
+    if (p.recipe?.engine === "recorded") return RECORDED_TABS;
+    return videoTabs(p.start ? !!p.start.research : !p.recipe && !scriptBegun(d));
+  };
+  const tabList = $derived(data ? listOf(data) : videoTabs(false));
   const researchApproved = $derived(data?.researchState === "approved");
 
   function show(id: TabId, why = "click") {
@@ -86,7 +93,7 @@
       if (first) {
         setScreen(`video/${name}`);
         log("video_state", { video: name, status: next.project.status, gates: states, autopilot: !!next.project.autopilot, hasVideo: !!next.latestVideo });
-        active = firstOpen(next.project.gates, !!next.latestVideo, hasHeygen, listOf(next.project), next.researchState === "approved");
+        active = startTab ?? firstOpen(next.project.gates, !!next.latestVideo, hasHeygen, listOf(next), next.researchState === "approved");
         // a render that failed or was cut off before this view opened
         if (next.project.render?.state === "failed" && !renderError) renderError = next.project.render.error ?? "The last render did not finish.";
         // the app works ahead, for free (K10 b): the avatar list and its
@@ -108,7 +115,7 @@
   }
   load();
 
-  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, !!data.thumbnailChosen, tabList, researchApproved) : null);
+  const states = $derived(data ? tabStates(data.project.gates, !!data.latestVideo, hasHeygen, tabList, researchApproved) : null);
   // the percent of the job running for a tab, for its label
   function tabJob(cmds: string[]) {
     const c = running(dir, cmds);
@@ -136,6 +143,11 @@
   const stoppedByUser = (e: unknown) => errorCode(errorText(e)) === "ITV-STOPPED" || /you stopped it/.test(errorText(e));
   const usableAi = (step: "script" | "scenes" | "texts") => aiWithKey(llmFor(app.config, step), app.keys);
   const noteOn = (kind: string, text: string) => runner("project-note", { projectDir: dir, kind, text }).catch(() => {});
+  // Every plan gets its Shot map. It needs no AI; if it cannot be made the plan stands.
+  const shotMap = () => runner("shot-map-make", { projectDir: dir, look }).catch((e) => {
+    if (stoppedByUser(e)) throw e;
+    log("shot_map_failed", { error: errorText(e) }, "warn");
+  });
   // The script, or the hand-written way when no AI can write it. True: go on.
   async function scriptOrOffline(input: Record<string, unknown>): Promise<boolean> {
     const ai = usableAi("script");
@@ -232,7 +244,10 @@
         }
         await approveGate("voice");
       }
-      if (!approved("scenes") && made("scenes")) await approveGate("scenes");
+      if (!approved("scenes") && made("scenes")) {
+        await shotMap();
+        await approveGate("scenes");
+      }
       if (!approved("scenes")) {
         setPilot("Planning the scenes");
         show("scenes", "autopilot");
@@ -244,6 +259,8 @@
           await noteOn("scenes", `The scenes were planned by rule, without the AI: ${errorText(e)}`);
           await runner("simple-scenes", { projectDir: dir, look });
         });
+        setPilot("Making the shot map");
+        await shotMap();
         await approveGate("scenes");
       }
       if (!approved("review") && made("review")) await approveGate("review");
@@ -573,11 +590,11 @@
       {#if active === "recording"}
         <RecordingTab {dir} busy={!!pilot || anyJob} changed={load} redo={() => recordedRun()} />
       {:else if active === "research"}
-        <ResearchTab {dir} busy={!!pilot} kind={data.project.start?.kind ?? "topic"} made={load} goOn={() => recipeRun()} />
+        <ResearchTab {app} {dir} busy={!!pilot} kind={data.project.start?.kind ?? "topic"} recipe={!!data.project.recipe} keyword={data.project.keyword ?? null} title={data.project.title} ai={usableAi("script")} made={load} goOn={() => (data?.project.recipe ? recipeRun() : show("script", "research"))} skip={() => show("script", "research-skipped")} {openPage} />
       {:else if active === "shots"}
-        <ShotMapTab {dir} busy={!!pilot} changed={load} goto={show} next={nextAfter("shots", hasHeygen, tabList)} />
+        <ShotMapTab {dir} {look} busy={!!pilot} planned={["pending", "approved"].includes(data.project.gates.scenes?.state ?? "")} changed={load} goto={show} next={nextAfter("shots", hasHeygen, tabList)} />
       {:else if active === "script"}
-        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} keyword={data.project.keyword ?? null} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}
@@ -586,10 +603,8 @@
         <AvatarGate {app} {dir} gate={data.project.gates.avatar} scenesApproved={data.project.gates.scenes?.state === "approved"} {look} changed={load} goto={show} />
       {:else if active === "preview"}
         <PreviewGate {app} {dir} gates={data.project.gates} stills={data.stills} {look} changed={load} goto={show} render={() => render("standard")} recipe={!!data.project.recipe} recorded={isRecorded} notes={data.project.notes ?? []} />
-      {:else if active === "thumbnail"}
-        <ThumbnailTab {app} {dir} hasVideo={!!data.latestVideo} changed={load} goto={show} {openPage} />
       {:else}
-        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} series={data.project.series ?? null} {renderError} {render} goto={show} {connections} thumbnailChosen={!!data.thumbnailChosen} />
+        <VideoTab {app} {dir} reviewApproved={data.project.gates.review?.state === "approved"} latest={data.latestVideo} title={data.project.title} series={data.project.series ?? null} {renderError} {render} goto={show} {openPage} {openThumbnail} thumbnailChosen={!!data.thumbnailChosen} />
       {/if}
     </div>
   {/if}
