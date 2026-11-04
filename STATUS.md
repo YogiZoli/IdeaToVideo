@@ -27,6 +27,9 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 
 **Not tried yet:** the screens were clicked in `scripts/ui-mock` (no console error), not in the installed window. A real AI, vidIQ or Gemini call from the moved places: none was made, nothing was spent. A Shot map on a real long catalog video (the e2e one is 21 s). An older video opened in the new tabs.
 
+- Tests: Node 665 of 667 (2 live tests skipped, none red), `npm run audit:quick` 823 of 823 in 36 minutes, 0 USD, `scripts/phase2/e2e.mjs` 59/59 with real renders (new: a Shot map on a catalog plan, a thumbnail before the video), channel e2e 56/56, Rust 50, UI check 0 errors. The audit ran before the Edit menu commit, which changed the window and one AI prompt; Node and the UI check ran after it. One timing test (`stallGuard`, 15 ms sleeps) was red once in a busy full run, then green 5 of 5 alone and in the next two full runs.
+- Merged into `main` from branch `ui-menu-reorganize` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
+
 **Next:** Zoltan tries the new menu on the installer. Then Phase 9 in a new chat, on a Mac.
 
 ## Earlier (2026-11-03, reliability audit, DECISIONS 164 to 167)
