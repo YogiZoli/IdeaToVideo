@@ -100,3 +100,17 @@ export const tabLabel = (id: TabId, list = TABS) => {
   const t = list.find((x) => x.id === id) ?? TABS.find((x) => x.id === id)!;
   return `${t.n}. ${t.label}`;
 };
+
+/**
+ * Today's video on Home (DECISIONS 173): the one to go on with. A queued video first, in
+ * its order, then a lesson of a playlist, in its order, then the newest one not finished.
+ */
+export type Unfinished = { dir: string; title: string; createdAt?: string; gates?: Record<string, { state: string } | undefined>; render?: { state?: string } | null; queue?: { position: number } | null; series?: { playlistPosition?: number | null } | null; recipe?: { engine?: string } | null };
+export function nextVideo<T extends Unfinished>(list: T[], hasHeygen: boolean): { video: T; step: string; others: number } | null {
+  const open = list.filter((v) => v.render?.state !== "done");
+  if (!open.length) return null;
+  const rank = (v: T) => (v.queue ? [0, v.queue.position] : v.series ? [1, v.series.playlistPosition ?? 999] : [2, 0]);
+  const [video] = [...open].sort((a, b) => rank(a)[0] - rank(b)[0] || rank(a)[1] - rank(b)[1] || String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+  const tabs = video.recipe?.engine === "recorded" ? RECORDED_TABS : TABS;
+  return { video, step: tabLabel(firstOpen(video.gates ?? {}, false, hasHeygen, tabs), tabs), others: open.length - 1 };
+}

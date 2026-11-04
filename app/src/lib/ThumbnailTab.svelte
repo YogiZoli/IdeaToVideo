@@ -165,7 +165,7 @@
 
 <section class="card">
   {#if st}
-    <p class="hint">Three thumbnails for "{st.title || "this video"}". The AI draws the picture; the app puts at most {st.maxWords} words on it in your Brand font and colours, with strong contrast, so it reads at phone size.</p>
+    <p class="hint">Three thumbnails for "{st.title || "this video"}". The AI draws the picture; the app puts at most {st.maxWords} words on it in your Design font and colours, with strong contrast, so it reads at phone size.</p>
     {#if job}<Progress command={job} project={dir} label={step || "Making the thumbnails"} />{:else if busy && step}<p class="hint">{step}</p>{/if}
 
     <div class="opts">

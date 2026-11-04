@@ -2,18 +2,21 @@
   // Free images (runner/assets, docs/BUILD_PLAN.md): a search in Openverse,
   // Wikimedia Commons and the Library of Congress, CC0 and public domain only,
   // no key. What the user picks goes into the channel's footage with its
-  // license; a video that uses it logs it in its assets_license.json.
+  // license; a video that uses it logs it in its assets_license.json. Also on a
+  // video's Research tab, for one fact: `query` starts the search, `about` tells the
+  // scene planner what the picture is for (DECISIONS 173).
+  import { onMount, untrack } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import ErrorBox from "../ErrorBox.svelte";
   import { runner, errorText } from "../api";
 
-  let { added }: { added?: () => void } = $props();
+  let { added, query = "", about = "", onclose }: { added?: () => void; query?: string; about?: string; onclose?: () => void } = $props();
 
   type Hit = { id: string; source: string; title: string; author: string; license: string; sourceUrl: string; local: string; [k: string]: unknown };
   const LICENSE: Record<string, string> = { cc0: "CC0", pd: "Public domain", "no-known-restrictions": "No known restrictions", "us-federal": "US federal work" };
 
-  let q = $state("");
+  let q = $state(untrack(() => query));
   let hits = $state<Hit[] | null>(null);
   let failed = $state<{ source: string; message: string }[]>([]);
   let busy = $state(false);
@@ -37,13 +40,17 @@
     }
   }
 
+  onMount(() => {
+    if (query.trim()) search();
+  });
+
   async function add(h: Hit) {
     adding = h.sourceUrl;
     error = "";
     note = "";
     try {
-      const r = await runner<{ again: boolean }>("assets-add", { hit: h });
-      note = r.again ? "That one is already in your footage." : "Added to your footage, with its license.";
+      const r = await runner<{ again: boolean }>("assets-add", { hit: h, about });
+      note = r.again ? "That one is already in your footage." : about ? "Added, with its license. The scene planner puts it under the sentence it fits; a scene plan made already needs planning again." : "Added to your footage, with its license.";
       added?.();
     } catch (e) {
       error = errorText(e);
@@ -54,7 +61,8 @@
 </script>
 
 <section class="card free">
-  <p class="hint">CC0 and public domain only, from Openverse, Wikimedia Commons and the Library of Congress. No key, no cost. Look at each picture before you use it: real people never go in a video.</p>
+  <p class="hint">Only pictures free of copyright: CC0 and public domain, from Openverse, Wikimedia Commons and the Library of Congress. Anything else is refused by the app, so no credit is ever owed. No key, no cost. Each one's source and license are kept with the video. Look at each picture before you use it: real people never go in a video.</p>
+  {#if onclose}<div class="row"><span></span><button type="button" class="ghost" onclick={onclose}>Close</button></div>{/if}
   <form class="row" onsubmit={(e) => { e.preventDefault(); search(); }}>
     <input bind:value={q} aria-label="What the image should show" placeholder="What should the image show?" />
     <button type="submit" disabled={busy || !q.trim()}>{busy ? "Searching..." : "Search"}</button>

@@ -382,7 +382,7 @@
               show("avatar", "recipe");
               const plan = await runner<{ estimate?: { low: number; high: number } }>("avatar-plan", { projectDir: dir, service: "heygen", engine: "avatar_iii" });
               const price = plan.estimate ? `about $${plan.estimate.low.toFixed(2)} to $${plan.estimate.high.toFixed(2)}` : "some";
-              if (!(await ask(`This channel's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }))) throw new Error("you stopped it before the avatar; nothing was spent on it. Press Make the video to go on");
+              if (!(await ask(`This Identity's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }))) throw new Error("you stopped it before the avatar; nothing was spent on it. Press Make the video to go on");
               setPilot("HeyGen is making the avatar");
               await runner("make-avatar", { projectDir: dir, service: "heygen", lookId: recipe.avatar.lookId, lookName: recipe.avatar.name ?? null, which: ["open", "close"], look, layout: { style: "overlay", position: "bottom-right", size: "medium" }, engine: "avatar_iii", lookEngines: [] });
               await load();
@@ -556,7 +556,7 @@
       {#if isRecorded}
         <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => recordedRun()} title="Every step from the recording to the preview.">{pilot ? `${pilot}...` : "Make the video"}</button>
       {:else if data.project.recipe}
-        <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => recipeRun()} title="Every step of this channel's recipe, up to the preview.">{pilot ? `${pilot}...` : "Make the video"}</button>
+        <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => recipeRun()} title="Every step of this Identity's recipe, up to the preview.">{pilot ? `${pilot}...` : "Make the video"}</button>
       {:else}
         <button type="button" class="pilot" disabled={!!pilot || anyJob} onclick={() => autopilot()} title="Every remaining step with the recommended settings, then the render. Never adds an avatar.">{pilot ? `Autopilot: ${pilot}...` : "Finish on Autopilot"}</button>
       {/if}

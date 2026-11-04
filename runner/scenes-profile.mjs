@@ -36,7 +36,7 @@ export const DEFAULT_PRESET = "balanced";
 export const PICTURE_SOURCES = {
   footage: { label: "Your own footage", hint: "Clips you added in Identity, Footage. Free.", kinds: ["video", "image"] },
   pixabay: { label: "Pixabay", hint: "Free stock photos and videos, also for commercial use. Needs a free Pixabay key (Settings, Connections).", kinds: ["image", "video"] },
-  unsplash: { label: "Unsplash", hint: "Free stock photos, also for commercial use. Needs your own Unsplash Access Key (Settings, Connections); Demo mode allows 50 searches an hour.", kinds: ["image"] },
+  unsplash: { label: "Unsplash", hint: "Better left off: its terms ask for a credit to the photographer, and your videos carry none. Pixabay and the free images ask for nothing. Needs your own Unsplash Access Key (Settings, Connections).", kinds: ["image"] },
   "ai-broll": { label: "AI B-roll (HeyGen)", hint: "Generated clips; costs HeyGen API credits, off by default (Identity, Footage).", kinds: ["video"] },
   "ai-image": { label: "AI pictures", hint: "Generated pictures with your Gemini key. Coming soon; costs a little per picture.", kinds: ["image"], later: true },
 };
@@ -45,7 +45,7 @@ export const scenesPath = (identityDir) => path.join(identityDir, SCENES_FILE);
 const ROLES_WITH_LIBRARY = Object.keys(ROLES).filter((r) => r !== "closing" && Object.values(COMPONENTS).some((c) => c.role === r && !c.retired));
 
 export function defaultScenes({ off = [] } = {}) {
-  return { schema: SCENES_SCHEMA, preset: DEFAULT_PRESET, mix: { ...MIX_PRESETS[DEFAULT_PRESET].mix }, off: [...off], icons: { families: [...FAMILIES] }, pictures: { sources: ["footage", "pixabay", "unsplash"] } };
+  return { schema: SCENES_SCHEMA, preset: DEFAULT_PRESET, mix: { ...MIX_PRESETS[DEFAULT_PRESET].mix }, off: [...off], icons: { families: [...FAMILIES] }, pictures: { sources: ["footage", "pixabay"] } };
 }
 
 // The profile checked and evened out: the mix adds up to 100, unknown names
@@ -66,10 +66,12 @@ export function normalizeScenes(input) {
   }
   const families = [...new Set((input.icons?.families ?? FAMILIES).filter((f) => FAMILIES.includes(f)))];
   if (!families.length) errors.push("Keep at least one icon set.");
-  const sources = [...new Set((input.pictures?.sources ?? []).filter((s) => PICTURE_SOURCES[s] && !PICTURE_SOURCES[s].later))];
+  // Unsplash only when it was turned on knowingly, after its warning: an older saved profile had it by default (DECISIONS 173)
+  const unsplashOk = input.pictures?.unsplashOk === true;
+  const sources = [...new Set((input.pictures?.sources ?? []).filter((s) => PICTURE_SOURCES[s] && !PICTURE_SOURCES[s].later && (s !== "unsplash" || unsplashOk)))];
   if (errors.length) throw new Error(errors.join(" "));
   const preset = MIX_PRESETS[input.preset] && KINDS.every((k) => MIX_PRESETS[input.preset].mix[k] === mix[k]) ? input.preset : "custom";
-  return { schema: SCENES_SCHEMA, preset, mix, off, icons: { families }, pictures: { sources }, ...(input.updatedAt ? { updatedAt: input.updatedAt } : {}) };
+  return { schema: SCENES_SCHEMA, preset, mix, off, icons: { families }, pictures: { sources, ...(unsplashOk && sources.includes("unsplash") ? { unsplashOk: true } : {}) }, ...(input.updatedAt ? { updatedAt: input.updatedAt } : {}) };
 }
 
 // The saved profile, or the default (with an old Motion profile's off list,

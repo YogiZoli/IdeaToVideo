@@ -144,7 +144,7 @@
         <p class="hint">Pictures: {paid.imageLabel}. Videos: {paid.label} at {paid.quality}.</p>
         <p class="hint">This video: {paid.spentVideoUsd.toFixed(2)} of {paid.maxPerVideoUsd.toFixed(2)} USD spent. This month: {paid.spentMonthUsd.toFixed(2)} of {paid.maxPerMonthUsd.toFixed(2)} USD spent.{credits?.usd !== null && credits?.usd !== undefined ? ` Kie AI balance: about ${credits.usd.toFixed(2)} USD.` : ""}</p>
         {#if !hasKie}<p class="warn">Add your Kie AI key in Settings, Connections.</p>{/if}
-        {#if paid.over}<p class="warn">That is over this channel's limit. Untick some, or raise the limits in its recipe.</p>{/if}
+        {#if paid.over}<p class="warn">That is over this Identity's limit. Untick some, or raise the limits in its recipe.</p>{/if}
         <button type="button" class="primary" disabled={off || paid.over || !hasKie} onclick={approve}>Approve and spend {paid.totalUsd.toFixed(2)} USD</button>
         <p class="hint">Nothing is spent until you press this. A clip Kie AI cannot make is not charged, and its free clip stays. When a picture fails, its row offers the video, for a new yes.</p>
       </div>

@@ -2,8 +2,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { recipeLines, costLine, blocker, queueOpen, recipeSide } from "../../app/src/lib/channels/channels.ts";
-import { TABS, videoTabs, tabStates, firstOpen, nextAfter } from "../../app/src/lib/tabs.ts";
+import { recipeLines, costLine, blocker, queueOpen, recipeSide, pictureWords } from "../../app/src/lib/channels/channels.ts";
+import { TABS, videoTabs, tabStates, firstOpen, nextAfter, nextVideo } from "../../app/src/lib/tabs.ts";
 import { phaseText } from "../../app/src/lib/progressInfo.ts";
 
 const free = { engine: "script", preset: "motion-frames", voice: { provider: "kokoro", voice: "am_michael" }, avatar: { on: false, lookId: null }, music: { on: true, source: "synth", mood: "calm" }, targetLengthMin: 8 };
@@ -77,6 +77,28 @@ test("research that is not asked for never blocks a video, and can still be done
   assert.equal(tabStates(none, false, false, list, false).research, "optional");
   assert.equal(tabStates(none, false, false, list, true).research, "done");
   assert.equal(TABS.find((t) => t.id === "research").optional, true, "by default it is optional: the Channels board goes by this");
+});
+
+test("a fact's picture is searched by its real words, without numbers", () => {
+  assert.equal(pictureWords("In 1761 the old steam engines of Britain crossed the valley."), "old steam engines britain crossed");
+  assert.equal(pictureWords(""), "");
+});
+
+test("today's video: a queued one first, then a playlist's, then the newest not finished", () => {
+  const gates = { script: { state: "approved" }, voice: { state: "todo" } };
+  const done = { dir: "d", title: "Done", render: { state: "done" }, gates, createdAt: "2026-11-04" };
+  const old = { dir: "o", title: "Old", gates, createdAt: "2026-10-01" };
+  const fresh = { dir: "f", title: "Fresh", gates, createdAt: "2026-11-01" };
+  const lesson2 = { dir: "l2", title: "Lesson 2", gates, series: { playlistPosition: 2 }, createdAt: "2026-11-02" };
+  const lesson1 = { dir: "l1", title: "Lesson 1", gates, series: { playlistPosition: 1 }, createdAt: "2026-11-01" };
+  const queued = { dir: "q", title: "Queued", gates, queue: { position: 1 }, createdAt: "2026-09-01" };
+  assert.equal(nextVideo([done], false), null);
+  assert.equal(nextVideo([done, old, fresh], false).video.title, "Fresh");
+  assert.equal(nextVideo([fresh, lesson2, lesson1], false).video.title, "Lesson 1");
+  const r = nextVideo([fresh, lesson1, queued], false);
+  assert.equal(r.video.title, "Queued");
+  assert.equal(r.others, 2);
+  assert.equal(r.step, "3. Voice and music");
 });
 
 test("the queue counts the videos ready to make", () => {

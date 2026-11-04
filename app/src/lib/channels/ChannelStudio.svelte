@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The start screen (docs/BUILD_PLAN.md, phases 1 and 3). Pick a channel; its locked
+  // The start screen (docs/BUILD_PLAN.md, phases 1 and 3). Pick an Identity; its locked
   // recipe says how. Three choices, each starting from the recipe: the direction,
   // the text (empty for a topic, else a finished script or notes), and research. A
   // new video opens with its run already going (ProjectView recipeRun) and stops at
@@ -196,8 +196,8 @@
 <div class="studio">
   <section class="card channels">
     <div class="head">
-      <h1>Pick a channel</h1>
-      <button type="button" disabled={!room} title={room ? "" : fullPlanText(app.edition)} onclick={() => (creating = !creating)}>{creating ? "Cancel" : "New channel"}</button>
+      <h2>Identity</h2>
+      <button type="button" disabled={!room} title={room ? "" : fullPlanText(app.edition)} onclick={() => (creating = !creating)}>{creating ? "Cancel" : "New Identity"}</button>
     </div>
     <div class="cards">
       {#each app.identities as i (i.id)}
@@ -207,12 +207,12 @@
     {#if creating}
       <div class="new">
         <label for="cname">Name</label>
-        <input id="cname" bind:value={newName} placeholder="The channel's name" />
+        <input id="cname" bind:value={newName} placeholder="The Identity's name" />
         <label for="clang">Language</label>
         <select id="clang" bind:value={newLanguage}>
           {#each LANGUAGES as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
         </select>
-        <button type="button" class="primary" disabled={busyNew || !newName.trim()} onclick={createChannel}>{busyNew ? "Making it..." : "Make the channel"}</button>
+        <button type="button" class="primary" disabled={busyNew || !newName.trim()} onclick={createChannel}>{busyNew ? "Making it..." : "Make the Identity"}</button>
       </div>
     {/if}
   </section>
@@ -224,7 +224,8 @@
   {:else if editing}
     <RecipeEditor {app} state={st} done={locked} cancel={st.saved ? () => (editing = false) : undefined} />
   {:else}
-    <section class="card recipe">
+    <details class="card recipe">
+      <summary><b>The recipe</b> <span class="hint">{recipeLines(side ?? st.recipe, st.presets, st.freeVoices).slice(0, 3).map((l) => l.value).join(", ")}</span></summary>
       <div class="head">
         <h2>{app.identity?.name}: the recipe</h2>
         <button type="button" class="ghost" onclick={() => (editing = true)}>Change</button>
@@ -235,11 +236,11 @@
         {/each}
       </dl>
       <p class="hint">{costLine(side ?? st.recipe, aiProvider)}</p>
-    </section>
+    </details>
 
     {#if !side}
       <section class="card direction">
-        <p class="stop">This channel has no voice for a script video yet. <button type="button" class="link" onclick={() => (editing = true)}>Change its recipe</button>, choose Script to video, and lock it once.</p>
+        <p class="stop">This Identity has no voice for a script video yet. <button type="button" class="link" onclick={() => (editing = true)}>Change its recipe</button>, choose Script to video, and lock it once.</p>
       </section>
     {/if}
 
@@ -264,6 +265,7 @@
       </section>
     {:else if side}
     <section class="card make">
+      <h2>A new video</h2>
       <label class="field" for="stopic">Topic or idea</label>
       <input id="stopic" bind:value={topic} placeholder={hasText ? "Optional: the title, or leave it to the AI" : "What is the video about? One sentence is enough."} />
       <label class="field" for="stext">Text <span class="hint">(optional)</span></label>
@@ -273,7 +275,7 @@
           <label><input type="radio" name="kind" checked={kind === "finished"} onchange={() => (kind = "finished")} /> Finished script, use as is</label>
           <label><input type="radio" name="kind" checked={kind === "notes"} onchange={() => (kind = "notes")} /> Notes, turn into a script</label>
         </div>
-        <p class="hint">{kind === "finished" ? "A first line starting with # is its title; lines starting with ## are its parts." : `Keeps your ideas, opinions, stories and way of speaking, in this channel's script structure.${research ? " Only the research can add a fact." : " It never adds a claim you did not make."}`}</p>
+        <p class="hint">{kind === "finished" ? "A first line starting with # is its title; lines starting with ## are its parts." : `Keeps your ideas, opinions, stories and way of speaking, in this Identity's script structure.${research ? " Only the research can add a fact." : " It never adds a claim you did not make."}`}</p>
       {/if}
       <label class="research"><input type="checkbox" checked={researching} disabled={factChecked} onchange={(e) => (research = e.currentTarget.checked)} /> Research{factChecked ? ": always on for this style, its scripts are fact-checked" : ""}</label>
       <p class="hint">
@@ -292,12 +294,13 @@
     {/if}
 
     {#if direction === "script" && side}
-    <section class="card batch">
+    <details class="card batch" open={!!st.queue.length || batching}>
+      <summary><b>Week batch</b> <span class="hint">several videos in one run{st.queue.length ? `, ${st.queue.length} queued` : ""}</span></summary>
       <div class="head">
         <h2>Week batch</h2>
         <button type="button" disabled={batching || !(app.keys[aiProvider] || pasted.trim())} onclick={weekBatch}>{batching ? "Working..." : pasted.trim() ? "Make them all" : `Write ${st.week} scripts`}</button>
       </div>
-      <p class="hint">{st.week} video ideas and their scripts for this channel, or one video per text you paste, in one run, then queued here. No voice, no render, nothing published. It follows your choices above: {pasted.trim() ? (kind === "finished" ? "finished scripts" : "notes") : "topics"}, research {research ? "on, so each stops at its brief for your click" : "off"}.{app.keys[aiProvider] ? "" : " Needs your AI key, except for finished scripts."}</p>
+      <p class="hint">{st.week} video ideas and their scripts for this Identity, or one video per text you paste, in one run, then queued here. No voice, no render, nothing published. It follows your choices above: {pasted.trim() ? (kind === "finished" ? "finished scripts" : "notes") : "topics"}, research {research ? "on, so each stops at its brief for your click" : "off"}.{app.keys[aiProvider] ? "" : " Needs your AI key, except for finished scripts."}</p>
       <input bind:value={theme} disabled={batching || !!pasted.trim()} aria-label="Theme of the week" placeholder="This week's theme (optional)" />
       <textarea rows="3" bind:value={pasted} disabled={batching} aria-label="Pasted texts" placeholder="Or paste up to 7 texts here, with a line of --- between them."></textarea>
       {#if batchStep}<p class="busy" role="status">{batchStep}</p>{/if}
@@ -314,11 +317,11 @@
           {/each}
         </ol>
       {/if}
-    </section>
+    </details>
     {/if}
 
     {#if st.recipe.music.on && st.recipe.music.source === "own" && st.musicDir}
-      <p class="hint">Your music: <button type="button" class="link" onclick={() => revealItemInDir(st!.musicDir!)}>open this channel's music folder</button></p>
+      <p class="hint">Your music: <button type="button" class="link" onclick={() => revealItemInDir(st!.musicDir!)}>open this Identity's music folder</button></p>
     {/if}
   {/if}
 </div>
@@ -326,7 +329,8 @@
 <style>
   .studio { display: grid; gap: 16px; padding: 24px; max-width: 900px; margin: 0 auto; }
   .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  h1 { margin: 0; font-size: 22px; }
+  details summary { cursor: pointer; }
+  details .head { margin-top: 12px; }
   h2 { margin: 0; font-size: 17px; }
   .cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .channel { padding: 10px 18px; font-weight: 600; }

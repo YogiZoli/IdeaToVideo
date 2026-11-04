@@ -35,7 +35,7 @@
     <p class="hint">Loading...</p>
   {:else if !st.profile}
     <p>No Motion profile yet: scenes change with a straight cut, the background is plain, the camera pushes in slowly through every scene, and the picture changes every 3 to 5 seconds.</p>
-    <p class="hint">Recommended for your brand: {name(st.options.moods, st.recommended.mood)}. {st.recommended.reason ?? ""}</p>
+    <p class="hint">Recommended for your design: {name(st.options.moods, st.recommended.mood)}. {st.recommended.reason ?? ""}</p>
   {:else}
     {@const p = st.profile}
     <p>Mood: {name(st.options.moods, p.transition.mood)}, {name(st.options.energies, p.transition.energy).toLowerCase()} energy. Scene changes: {tlabel(p.transition.primary)}{p.transition.accent ? `, ${tlabel(p.transition.accent)} at new sections` : ""}{p.transition.where === "sections" ? ", cuts inside a section" : ""}.</p>

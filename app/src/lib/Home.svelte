@@ -1,11 +1,10 @@
 <script lang="ts">
-  // Home (D2, DECISIONS 119): "Ready to make videos?", one row per thing a
-  // video needs, each Ready or Missing with a button to its place, then the
-  // latest ONE Videos. The AI key, the voice key and the Identity are
-  // needed; the three CTA keywords' clips and Publishing are not (without a
-  // clip the narrator says the call; Publishing is marked Optional). When the
-  // needed rows are ready, one main button: "Make a video". Above it the
-  // Channels board (DECISIONS 127), when any Identity has a playlist.
+  // The lower part of Home (D2, DECISIONS 119, 173): what a video needs, folded away
+  // while nothing is missing, each row Ready or Missing with a button to its place, then
+  // the latest ONE Videos. The AI key, the voice key and the Identity are needed; the
+  // three CTA keywords' clips and Publishing are not (without a clip the narrator says
+  // the call; Publishing is marked Optional). Above it the Channels board (DECISIONS 127),
+  // when any Identity has a playlist. Today's video is on top of Home (TodayVideo).
   import { onMount } from "svelte";
   import type { AppState, CtaState, ProjectSummary } from "./api";
   import { runner } from "./api";
@@ -16,7 +15,7 @@
   import { effectiveSource, heygenReady, SOURCE_LABEL } from "./cta/clips";
   import ChannelsBoard from "./course/ChannelsBoard.svelte";
 
-  let { app, goto, openProject, openFor, makeVideo, videos }: { app: AppState; goto: (page: PageId) => void; openProject: (dir: string) => void; openFor: (identityId: string, dir: string) => void; makeVideo: () => void; videos: () => void } = $props();
+  let { app, goto, openProject, openFor, videos }: { app: AppState; goto: (page: PageId) => void; openProject: (dir: string) => void; openFor: (identityId: string, dir: string) => void; videos: () => void } = $props();
 
   setScreen("home");
 
@@ -78,12 +77,8 @@
 <div class="home">
   <ChannelsBoard {app} {openFor} />
 
-  <section class="card ready">
-    <div class="head">
-      <h1>Ready to make videos?</h1>
-      {#if allReady}<button type="button" class="primary big" onclick={makeVideo}>Make a video</button>{/if}
-    </div>
-    <p class="hint">{allReady ? "Everything a video needs is here." : "A few things first. Each button takes you to its place."}</p>
+  <details class="card ready" open={!allReady}>
+    <summary><b>What a video needs</b> <span class="hint">{allReady ? "Everything is here." : "A few things first. Each button takes you to its place."}</span></summary>
     <ul class="rows">
       {#each [...needed, ...ctaRows, publishing] as r (r.id)}
         <li class:ok={r.ready}>
@@ -93,7 +88,7 @@
         </li>
       {/each}
     </ul>
-  </section>
+  </details>
 
   <section class="card">
     <div class="head">
@@ -117,9 +112,8 @@
 <style>
   .home { display: grid; gap: 16px; padding: 24px; max-width: 900px; margin: 0 auto; }
   .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  h1 { margin: 0; font-size: 22px; }
   h2 { margin: 0; font-size: 17px; }
-  .big { font-size: 16px; padding: 10px 22px; }
+  summary { cursor: pointer; }
   .rows, .recent { list-style: none; margin: 8px 0 0; padding: 0; display: grid; }
   .rows li { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
   .state { justify-self: start; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: var(--success-surface); color: var(--success); }

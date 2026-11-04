@@ -1,6 +1,6 @@
 // pages.ts: the top menu and its pages (UI simplification, Zoltan,
 // 2026-10-08, DECISIONS 119; new order 2026-11-04, DECISIONS 168, 172). Eight menus:
-// Home, Videos, Edit, Playlist, Publishing, Wizards, Identity, Settings. Nothing waits
+// Home, Videos, Video Recording Editing, Playlist, Publishing, Wizards, Identity, Settings. Nothing waits
 // behind a switch: every menu is always there. `scope` says what a page edits:
 // the App (every Identity on this computer) or the active Identity
 // (docs/identity.md 2). A big page has sub pages (SUB_PAGES) in the left column.
@@ -24,7 +24,7 @@ export const MENUS: { id: MenuId; title: string }[] = [
   { id: "home", title: "Home" },
   { id: "videos", title: "Videos" },
   // a video from a recording you already have: another way in, with no script steps (DECISIONS 172)
-  { id: "edit", title: "Edit" },
+  { id: "edit", title: "Video Recording Editing" },
   { id: "playlist", title: "Playlist" },
   { id: "publishing", title: "Publishing" },
   { id: "wizards", title: "Wizards" },
@@ -47,7 +47,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "cta", title: "CTA", menu: "wizards", scope: "identity", steps: [] },
   // the setup's Brand step lives here, but the page shows the Brand wizard
   // instead of its fields (docs/wizards/brand.md 5)
-  { id: "look", title: "Brand", menu: "wizards", scope: "identity", steps: ["brand"] },
+  { id: "look", title: "Design", menu: "wizards", scope: "identity", steps: ["brand"] },
   // the Motion wizard's profile (docs/wizards/motion.md 6)
   { id: "motion", title: "Motion", menu: "wizards", scope: "identity", steps: [] },
   // block packs: scene types someone designed (DECISIONS 107)

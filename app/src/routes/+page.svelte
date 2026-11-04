@@ -19,6 +19,7 @@
   import IdentityMenu from "$lib/IdentityMenu.svelte";
   import Jobs from "$lib/Jobs.svelte";
   import Home from "$lib/Home.svelte";
+  import TodayVideo from "$lib/TodayVideo.svelte";
   import ChannelStudio from "$lib/channels/ChannelStudio.svelte";
   import "../app.css";
 
@@ -271,8 +272,9 @@
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}
+        <TodayVideo {app} {openProject} videos={() => show("projects")} />
         <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="script" />
-        <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
+        <Home {app} {goto} {openProject} {openFor} videos={() => show("projects")} />
       {/key}
     {:else if view === "edit"}
       {#key app.identity.id}
@@ -310,7 +312,7 @@
   .brandbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--hairline); }
   .name { display: inline-flex; align-items: center; gap: 10px; margin-right: 18px; font-weight: 700; font-size: var(--text-lg); }
   .name img { width: 26px; height: 26px; }
-  .brandbar > button { border: none; background: none; padding: 6px 12px; }
+  .brandbar > button { border: none; background: none; padding: 6px 10px; white-space: nowrap; }
   .brandbar > button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
   .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }

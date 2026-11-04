@@ -7,7 +7,7 @@
 
   const ROWS: { id: Id; name: string; what: string; text: string }[] = [
     { id: "cta", name: "CTA", what: "What it asks for", text: "The keyword viewers comment, and who says it." },
-    { id: "look", name: "Brand", what: "How it looks", text: "Colors, fonts and shapes." },
+    { id: "look", name: "Design", what: "How it looks", text: "Colors, fonts and shapes." },
     { id: "motion", name: "Motion", what: "How it moves", text: "The change from one scene to the next, the background behind them, the camera." },
     { id: "scenes", name: "Scenes", what: "What is on screen", text: "Words, icons, pictures or video, and which kinds of scene." },
   ];
@@ -18,7 +18,7 @@
     <div class="back"></div>
     <div class="scene"><b>Why it works</b><i></i><i></i></div>
     <span class="tag scenesTag">Scenes</span>
-    <span class="tag lookTag">Brand</span>
+    <span class="tag lookTag">Design</span>
     <span class="tag motionTag">Motion</span>
     <span class="pill">Comment GUIDE</span>
   </div>

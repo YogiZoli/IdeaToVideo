@@ -62,7 +62,7 @@
     "thumbnail-make": "Thumbnails",
     "browser-ensure": "Render browser download",
     "voice-model-ensure": "Free voice download",
-    "brand-preview": "Brand preview",
+    "brand-preview": "Design preview",
     "motion-preview": "Motion preview",
   };
   const stop = (j: Job) => stopJob(j.id).catch((e) => log("stop_failed", { error: String(e) }, "warn"));

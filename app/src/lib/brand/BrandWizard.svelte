@@ -188,7 +188,7 @@
     <button type="button" onclick={onclose}>Close</button>
   </div>
 {:else}
-  <WizardShell title={`Brand wizard: ${app.identity?.name ?? ""}`} steps={STEPS} bind:step {busy} onsave={save} oncancel={onclose}>
+  <WizardShell title={`Design wizard: ${app.identity?.name ?? ""}`} steps={STEPS} bind:step {busy} onsave={save} oncancel={onclose}>
     {#snippet aside()}
       <BrandMini card={card!} {language} />
       <ul class="checks">

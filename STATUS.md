@@ -1,17 +1,21 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-04 (new menu and video steps, DECISIONS 168 to 171)
+Frissítve: 2026-11-04 (new menu and video steps, DECISIONS 168 to 173)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-04, new menu and video steps, DECISIONS 168 to 171)
+## Now (2026-11-04, new menu and video steps, DECISIONS 168 to 173)
 
 **Zoltan walked through the app and asked for a new order. Done, in one change. Phase 9, the macOS build, is still next, and it needs a Mac.**
 
-- **Top menu:** Home, Videos, Edit, Playlist, Publishing, Wizards, Identity, Settings. The Advanced checkbox is gone, everything is always there.
-- **Edit:** a video from a recording starts here, with no script steps in sight. Home is only for a video from a script. Whether it becomes its own app later is your call (DECISIONS 172).
+- **Top menu:** Home, Videos, Video Recording Editing, Playlist, Publishing, Wizards, Identity, Settings. The Advanced checkbox is gone, everything is always there.
+- **Video Recording Editing:** a video from a recording starts here, with no script steps in sight. Home is only for a video from a script. Zoltan wants two apps in the end; until then it stays one menu (DECISIONS 172, 173).
+- **Home:** Today's video on top, then the Identity and A new video. The recipe, the week batch and what a video needs are folded away.
+- **Names:** Identity everywhere on screen instead of channel, Design instead of Brand for the look wizard.
+- **Research pictures:** each fact has a Picture button: only CC0 and public domain pictures, the rest is refused by the app, so no credit is owed.
+- **Unsplash:** kept, but off unless turned on after its warning, older saved profiles too.
 - **Write it with AI:** on Channel Profile too: from a few words, the channel's text, ready to paste into YouTube.
 - **Playlist:** Playlist Planner (out of Wizards), Keyword Research (was Identity, Resources), Course or Playlist File (out of Import & Export).
 - **Publishing:** Thumbnail, for any video at any time, before the video too. PDT Connection, with the Video Publishing Card's Send and Save.
@@ -23,12 +27,12 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 
 **The three CTA clips were not lost:** they belong to the Identity ZG C2C, and the app was on Test Stick man. Files: `C:/Users/gdp/Videos/CTA-segments/`.
 
-**Your call (DECISIONS 171):** the photos are on both Identity, Thumbnail and Publishing, Thumbnail: keep both? The PDT's own "make it" button next to Copy is in the publishing-dreamteam repo, a separate task.
+**Your call (DECISIONS 171):** the photos are on both Identity, Thumbnail and Publishing, Thumbnail: keep both? The PDT's own "make it" button next to Copy is in the publishing-dreamteam repo, a separate task. The 13 step YouTube Brand Channel Wizard inside the app: a separate session, from Zoltan's prompt.
 
-**Not tried yet:** the screens were clicked in `scripts/ui-mock` (no console error), not in the installed window. A real AI, vidIQ or Gemini call from the moved places: none was made, nothing was spent. A Shot map on a real long catalog video (the e2e one is 21 s). An older video opened in the new tabs.
+**Not tried yet:** the screens were clicked in `scripts/ui-mock` (no console error), not in the installed window. A real AI, vidIQ or Gemini call from the moved places: none was made, nothing was spent. A real picture search from the Research tab, with the real sources. A Shot map on a real long catalog video (the e2e one is 21 s). An older video opened in the new tabs.
 
-- Tests: Node 665 of 667 (2 live tests skipped, none red), `npm run audit:quick` 823 of 823 in 36 minutes, 0 USD, `scripts/phase2/e2e.mjs` 59/59 with real renders (new: a Shot map on a catalog plan, a thumbnail before the video), channel e2e 56/56, Rust 50, UI check 0 errors. The audit ran before the Edit menu commit, which changed the window and one AI prompt; Node and the UI check ran after it. One timing test (`stallGuard`, 15 ms sleeps) was red once in a busy full run, then green 5 of 5 alone and in the next two full runs.
-- Merged into `main` from branch `ui-menu-reorganize` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
+- Tests: Node 668 of 670 (2 live tests skipped, none red), `npm run audit:quick` 823 of 823 in 36 minutes, 0 USD, `scripts/phase2/e2e.mjs` 59/59 with real renders (new: a Shot map on a catalog plan, a thumbnail before the video), channel e2e 56/56, Rust 50, UI check 0 errors. The audit ran before the last two commits (the Edit menu, Home, the names, the Research pictures, the Unsplash switch); Node 668 of 670, the UI check and both e2e runs were repeated after them. One timing test (`stallGuard`, 15 ms sleeps) was red once in a busy full run, then green 5 of 5 alone and in the next two full runs.
+- Merged into `main` from branches `ui-menu-reorganize` and `ui-home-and-pictures` and pushed. No PR, no GitHub Actions run (`build.yml` runs only on a PR or by hand).
 
 **Next:** Zoltan tries the new menu on the installer. Then Phase 9 in a new chat, on a Mac.
 

@@ -11,6 +11,8 @@
   import type { AppState, Llm } from "../api";
   import type { PageId } from "../pages";
   import KeywordIdeas from "../planner/KeywordIdeas.svelte";
+  import FreeImages from "../footage/FreeImages.svelte";
+  import { pictureWords } from "./channels";
   import { describeLlm } from "../llm";
   import { runner, errorText, openSourceLink } from "../api";
   import { running } from "../work.svelte";
@@ -23,6 +25,8 @@
   let loaded = $state(false);
   let error = $state("");
   let working = $state(false);
+  // the fact whose pictures are open
+  let picturesFor = $state<string | null>(null);
   const off = $derived(busy || !!job || working);
   const SECTIONS = [
     { id: "facts", label: "Key facts" },
@@ -157,8 +161,14 @@
             <li>
               <textarea class="grow" rows="2" aria-label={s.label} bind:value={row.text} disabled={off} onchange={save}></textarea>
               {#if row.source}<span class="src" title={brief.sources[row.source - 1]?.title ?? ""}>[{row.source}]</span>{/if}
+              <button type="button" class="ghost" disabled={off || !row.text.trim()} onclick={() => (picturesFor = picturesFor === row.text ? null : row.text)}>Picture</button>
               <button type="button" class="ghost" disabled={off} onclick={() => removeRow(s.id, i)}>Remove</button>
             </li>
+            {#if picturesFor === row.text}
+              <li class="pictures">
+                {#key picturesFor}<FreeImages query={pictureWords(row.text)} about={row.text} onclose={() => (picturesFor = null)} />{/key}
+              </li>
+            {/if}
           {/each}
         </ul>
         <button type="button" class="ghost small" disabled={off} onclick={() => addRow(s.id)}>Add a line</button>
@@ -200,6 +210,7 @@
   h3 { margin: 10px 0 0; font-size: 15px; }
   .rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .rows li { display: flex; gap: 8px; align-items: flex-start; padding: 2px 0; }
+  .rows li.pictures { display: block; }
   .rows li.bad { border-left: 3px solid var(--danger-text); padding-left: 8px; }
   .rows li.unsure { border-left: 3px solid var(--warning-text); padding-left: 8px; }
   .grow { flex: 1; min-width: 0; box-sizing: border-box; width: 100%; font-size: 14px; }
