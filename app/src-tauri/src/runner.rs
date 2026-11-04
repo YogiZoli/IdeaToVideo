@@ -142,6 +142,11 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("traffic-card-preview", None),
     ("traffic-card-save", None),
     ("traffic-card-load", None),
+    ("channel-wizard-state", None),
+    ("channel-wizard-draft", None),
+    ("channel-wizard-kit", None),
+    ("channel-wizard-save", None),
+    ("channel-wizard-export", None),
     // Playlist Planner (DECISIONS 127): vidIQ steps need the vidIQ key, the
     // plan and the outline the AI key, the rest is free
     ("planner-start", None),

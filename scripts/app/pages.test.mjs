@@ -30,13 +30,13 @@ test("the top menu (DECISIONS 119, 168, 172): eight menus, at most seven pages e
   }
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Playlist Planner", "Keyword Research", "Course or Playlist File"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "publishing").map((p) => p.title), ["Thumbnail", "PDT Connection"]);
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["CTA", "Design", "Motion", "Scenes"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["YouTube Brand Channel Wizard", "CTA", "Design", "Motion", "Scenes"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Audio Voice", "AI Avatar", "Thumbnail", "Footage", "Dictionary", "Manage Identity"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["Health check", "Connections", "Import & Export", "Folders", "Backup", "Account Plan", "Legal"]);
   for (const id of ["folders", "backup", "plan", "legal", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "avatar", "photos", "research", "connections", "transfer", "planner", "courses", "thumbnail", "pdt"]) {
     assert.ok(SETTINGS_PAGES.some((p) => p.id === id), id);
   }
-  assert.equal(firstPage("wizards"), "cta");
+  assert.equal(firstPage("wizards"), "brandchannel");
   assert.equal(firstPage("settings"), "health");
   assert.equal(menuOf("connections"), "settings");
   assert.equal(menuOf("planner"), "playlist");

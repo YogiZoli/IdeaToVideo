@@ -32,7 +32,7 @@ const LANGS = { english: "en", hungarian: "hu", magyar: "hu", german: "de", deut
 const cut = (s, max) => String(s ?? "").trim().slice(0, max);
 
 // "## Heading" -> its lines, for the H2 and H3 levels.
-function sections(md, level) {
+export function sections(md, level) {
   const mark = "#".repeat(level) + " ";
   const out = new Map();
   let name = null;

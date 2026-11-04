@@ -85,6 +85,10 @@ export function costText(command: string, provider?: string): string {
     case "planner-plan":
     case "planner-outline":
       return "Uses AI tokens from your AI key (a few cents at most). No vidIQ credits.";
+    case "suggest-channel":
+      return "Uses AI tokens from your AI key (a fraction of a cent). No other credits.";
+    case "keyword-ideas":
+      return "Uses vidIQ credits from your plan. No AI tokens.";
     case "avatar-looks":
       return "Free: only reads your HeyGen avatar list. No credits.";
     default:

@@ -13,7 +13,7 @@ export type PageMenu = "playlist" | "publishing" | "wizards" | "identity" | "set
 export type PageId =
   | "planner" | "research" | "courses"
   | "thumbnail" | "pdt"
-  | "cta" | "look" | "motion" | "scenes"
+  | "brandchannel" | "cta" | "look" | "motion" | "scenes"
   | "channel" | "voice" | "avatar" | "photos" | "footage" | "dictionary" | "identity"
   | "health" | "connections" | "transfer" | "folders" | "backup" | "plan" | "legal";
 export type Scope = "app" | "identity";
@@ -43,6 +43,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "thumbnail", title: "Thumbnail", menu: "publishing", scope: "identity", steps: [] },
   { id: "pdt", title: "PDT Connection", menu: "publishing", scope: "app", steps: [] },
   // what the wizards make, for every video of this Identity
+  // prepares the YouTube channel itself: 13 questions, a kit to paste in, the Traffic Card (DECISIONS 174)
+  { id: "brandchannel", title: "YouTube Brand Channel Wizard", menu: "wizards", scope: "identity", steps: [] },
   // the CTA wizard's comment calls (docs/wizards/cta.md)
   { id: "cta", title: "CTA", menu: "wizards", scope: "identity", steps: [] },
   // the setup's Brand step lives here, but the page shows the Brand wizard

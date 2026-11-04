@@ -1,12 +1,26 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-04 (new menu and video steps, DECISIONS 168 to 173)
+Frissítve: 2026-11-04 (YouTube Brand Channel Wizard, DECISIONS 174)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-04, new menu and video steps, DECISIONS 168 to 173)
+## Now (2026-11-04, YouTube Brand Channel Wizard, DECISIONS 174)
+
+**The wizard is in the app: Wizards, first page. Phase 9, the macOS build, is still next, and it needs a Mac.**
+
+- **What it does:** the lead magnet's 13 questions, one per screen, for the active Identity. "Write it with AI" on the text answers. Optional vidIQ keywords, asked first. A kit with Copy: name and handle ideas, tagline, channel description, about text, links, banner and logo image prompts, the checklist. Preview and Save: the Identity's fields you tick, and the same Evergreen Traffic Card as the Import, so the Playlist Planner reads it with no change. Download as .md. It never touches YouTube and makes no picture.
+- **With no AI** it works by hand and says so in one sentence.
+- **Links:** Identity, YouTube Channel & Audience links to it.
+- **Your call (DECISIONS 174):** whether the first name idea should be offered as the Identity's name (now: no); whether question 3 should keep the word "course".
+- Tests: Node 683 of 685 (2 live tests skipped, none red), 15 new in `runner/channel-wizard.test.mjs`, UI check 0 errors. Screens clicked in `scripts/ui-mock`, no console error: the whole way with an AI stand-in, no AI key (`?noai=1`), the vidIQ search, Stop, Save, coming back to the answers, the link from Identity.
+
+**Not tried:** a real AI on the wizard's prompts. Every AI answer so far was a stand-in, so how good the texts are, and whether a real model keeps to the channel's language and invents nothing, nobody has seen. A real vidIQ search from the wizard. The Copy buttons actually copying: the test browser refuses the clipboard, there only the sentence that it failed was seen.
+
+**Next:** Zoltan runs the wizard once on the installer with his AI key, on a real or test Identity, and reads the texts. Then Phase 9 in a new chat, on a Mac.
+
+## Earlier (2026-11-04, new menu and video steps, DECISIONS 168 to 173)
 
 **Zoltan walked through the app and asked for a new order. Done, in one change. Phase 9, the macOS build, is still next, and it needs a Mac.**
 
@@ -30,8 +44,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 
 **The three CTA clips were not lost:** they belong to the Identity ZG C2C, and the app was on Test Stick man. Files: `C:/Users/gdp/Videos/CTA-segments/`.
 
-**Your call (DECISIONS 171):** the photos are on both Identity, Thumbnail and Publishing, Thumbnail: keep both? The PDT's own "make it" button next to Copy is in the publishing-dreamteam repo, a separate task. The 13 step YouTube Brand Channel Wizard inside the app: a separate session, from Zoltan's prompt.
-
+**Your call (DECISIONS 171):** the photos are on both Identity, Thumbnail and Publishing, Thumbnail: keep both? The PDT's own "make it" button next to Copy is in the publishing-dreamteam repo, a separate task.
 **Not tried yet:** the screens were clicked in `scripts/ui-mock` (no console error), not in the installed window. A real AI, vidIQ or Gemini call from the moved places: none was made, nothing was spent. A real picture search from the Research tab, with the real sources. A Shot map on a real long catalog video (the e2e one is 21 s). An older video opened in the new tabs.
 
 - Tests: Node 668 of 670 (2 live tests skipped, none red), `npm run audit:quick` 823 of 823 in 36 minutes, 0 USD, `scripts/phase2/e2e.mjs` 59/59 with real renders (new: a Shot map on a catalog plan, a thumbnail before the video), channel e2e 56/56, Rust 50, UI check 0 errors. The audit ran before the last two commits (the Edit menu, Home, the names, the Research pictures, the Unsplash switch); Node 668 of 670, the UI check and both e2e runs were repeated after them. One timing test (`stallGuard`, 15 ms sleeps) was red in two busy full runs and green alone: the test's fault, not the code's, its margins are now wide.
