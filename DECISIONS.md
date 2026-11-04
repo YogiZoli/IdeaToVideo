@@ -2787,3 +2787,6 @@
     Tests: see `STATUS.md`.
 
     **Open for Zoltan (his own question, not decided by Claude alone):** the same photos on two pages or one; the PDT's own thumbnail page with a "make it" button is in the other repo, a separate task; whether to give a Shot map its name in Hungarian terms in the app (he says jelenetterv, the app stays in English).
+
+172. **Editing a recording has its own top menu, Edit. Home is only for a video from a script** (Zoltan asked; both ways he weighed, one app or a later separate app, start with this). The switch on the start screen is gone. A channel's recipe keeps its two sides, nothing else moved: the runner, the recipe and the Videos list are the same, so moving it to an app of its own later stays
+    possible and costs nothing now. **Whether it ever becomes its own app is open for Zoltan.** Also new: "Write it with AI" on Channel Profile: from a few words, the channel's text in its language, ready to paste into YouTube. It may not invent a number, a name or a claim. Same call as the Audience and Brand Voice buttons, which got the same name.

@@ -23,7 +23,7 @@
   import { fullPlanText } from "../edition";
   import { blocker, costLine, recipeLines, recipeSide, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
 
-  let { app, choose, saved, openProject, goto }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void } = $props();
+  let { app, choose, saved, openProject, goto, only = "script" }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void; only?: Direction } = $props();
 
   setScreen("channel");
   startWork();
@@ -31,7 +31,8 @@
   let st = $state<ChannelState | null>(null);
   let error = $state("");
   let editing = $state(false);
-  let direction = $state<Direction>("script");
+  // Home makes a video from a script, the Edit menu from a recording (DECISIONS 172)
+  const direction = $derived<Direction>(only);
   let topic = $state("");
   let text = $state("");
   let kind = $state<TextKind>("notes");
@@ -56,7 +57,6 @@
       st = await runner<ChannelState>("channel-state", { projectsDir: app.projectsDir, identity: app.identity });
       editing = !st.saved;
       // the recipe's defaults; one video can change them here
-      direction = st.recipe.engine;
       kind = st.recipe.start?.text ?? "notes";
       research = st.recipe.start?.research === true;
     } catch (e) {
@@ -237,15 +237,11 @@
       <p class="hint">{costLine(side ?? st.recipe, aiProvider)}</p>
     </section>
 
-    <section class="card direction">
-      <div class="tabs" role="radiogroup" aria-label="Direction">
-        <button type="button" role="radio" class:on={direction === "script"} aria-checked={direction === "script"} onclick={() => (direction = "script")}>Script to video</button>
-        <button type="button" role="radio" class:on={direction === "recorded"} aria-checked={direction === "recorded"} onclick={() => (direction = "recorded")}>Edit a recording</button>
-      </div>
-      {#if !side}
+    {#if !side}
+      <section class="card direction">
         <p class="stop">This channel has no voice for a script video yet. <button type="button" class="link" onclick={() => (editing = true)}>Change its recipe</button>, choose Script to video, and lock it once.</p>
-      {/if}
-    </section>
+      </section>
+    {/if}
 
     {#if direction === "recorded"}
       <section class="card make">
@@ -340,9 +336,6 @@
   dl { margin: 12px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; }
   dt { font-size: 12px; color: var(--muted-foreground); }
   dd { margin: 0; font-weight: 600; font-size: 14px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-  .tabs button { border: none; background: var(--muted); padding: 6px 14px; }
-  .tabs button.on { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
   textarea, .batch input, .make > input { width: 100%; box-sizing: border-box; }
   .batch textarea { margin-top: 8px; }
   .make { display: grid; gap: 6px; }
@@ -351,7 +344,6 @@
   .opts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
   .opts label, .research { display: flex; gap: 8px; align-items: center; font-size: 14px; }
   .research { font-weight: 600; margin-top: 6px; }
-  .direction .tabs { margin-bottom: 0; }
   .slots { display: grid; gap: 8px; margin: 10px 0; }
   .slot { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
   .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }

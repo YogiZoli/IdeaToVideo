@@ -1,6 +1,6 @@
 // pages.ts: the top menu and its pages (UI simplification, Zoltan,
-// 2026-10-08, DECISIONS 119; new order 2026-11-04, DECISIONS 168). Seven menus:
-// Home, Videos, Playlist, Publishing, Wizards, Identity, Settings. Nothing waits
+// 2026-10-08, DECISIONS 119; new order 2026-11-04, DECISIONS 168, 172). Eight menus:
+// Home, Videos, Edit, Playlist, Publishing, Wizards, Identity, Settings. Nothing waits
 // behind a switch: every menu is always there. `scope` says what a page edits:
 // the App (every Identity on this computer) or the active Identity
 // (docs/identity.md 2). A big page has sub pages (SUB_PAGES) in the left column.
@@ -8,7 +8,7 @@
 
 import type { StepId } from "./steps";
 
-export type MenuId = "home" | "videos" | "playlist" | "publishing" | "wizards" | "identity" | "settings";
+export type MenuId = "home" | "videos" | "edit" | "playlist" | "publishing" | "wizards" | "identity" | "settings";
 export type PageMenu = "playlist" | "publishing" | "wizards" | "identity" | "settings";
 export type PageId =
   | "planner" | "research" | "courses"
@@ -23,6 +23,8 @@ export type SettingsPage = { id: PageId; title: string; menu: PageMenu; scope: S
 export const MENUS: { id: MenuId; title: string }[] = [
   { id: "home", title: "Home" },
   { id: "videos", title: "Videos" },
+  // a video from a recording you already have: another way in, with no script steps (DECISIONS 172)
+  { id: "edit", title: "Edit" },
   { id: "playlist", title: "Playlist" },
   { id: "publishing", title: "Publishing" },
   { id: "wizards", title: "Wizards" },

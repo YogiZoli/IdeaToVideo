@@ -217,7 +217,7 @@
     wizard = false;
   }
 
-  function recommend(id: "audience" | "brandVoice") {
+  function recommend(id: "audience" | "brandVoice" | "profile") {
     return run(async () => {
       config = await recommendStep(id, config);
     });
@@ -445,8 +445,8 @@
       <section class="card">
         <div class="head">
           <h2>{s.id === "name" ? "Name" : s.title}</h2>
-          {#if s.id === "audience" || s.id === "brandVoice"}
-            <button type="button" disabled={busy} onclick={() => recommend(s.id as "audience" | "brandVoice")}>Use recommended</button>
+          {#if s.id === "audience" || s.id === "brandVoice" || s.id === "profile"}
+            <button type="button" disabled={busy} onclick={() => recommend(s.id as "audience" | "brandVoice" | "profile")}>Write it with AI</button>
           {/if}
         </div>
         <ConfigSection id={s.id} bind:config bind:keys keyScope="identity" />

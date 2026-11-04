@@ -24,7 +24,7 @@
 
   let app = $state<AppState | null>(null);
   let fatal = $state("");
-  let view = $state<"home" | "projects" | "settings" | "new-identity">("home");
+  let view = $state<"home" | "edit" | "projects" | "settings" | "new-identity">("home");
   // Home's "Make a video": the list opens with the new ONE Video form
   let startNew = $state(false);
   let projectDir = $state<string | null>(null);
@@ -117,7 +117,7 @@
       // keep the last known state
     }
   }
-  async function show(v: "home" | "projects" | "settings", page: PageId = settingsPage) {
+  async function show(v: "home" | "edit" | "projects" | "settings", page: PageId = settingsPage) {
     settingsPage = page;
     if (v === "settings") settingsEpoch++;
     if (v !== "projects") startNew = false;
@@ -129,10 +129,11 @@
   function menu(m: MenuId) {
     if (m === "home") return show("home");
     if (m === "videos") return show("projects");
+    if (m === "edit") return show("edit");
     return show("settings", view === "settings" && menuOf(settingsPage) === m ? settingsPage : firstPage(m));
   }
   const goto = (page: PageId) => show("settings", page);
-  const current = $derived<MenuId>(view === "home" ? "home" : view === "settings" ? menuOf(settingsPage) : "videos");
+  const current = $derived<MenuId>(view === "home" ? "home" : view === "edit" ? "edit" : view === "settings" ? menuOf(settingsPage) : "videos");
   async function openProject(d: string) {
     await refreshKeys();
     openTab = null;
@@ -270,8 +271,12 @@
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}
-        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} />
+        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="script" />
         <Home {app} {goto} {openProject} {openFor} makeVideo={() => { startNew = true; view = "projects"; }} videos={() => show("projects")} />
+      {/key}
+    {:else if view === "edit"}
+      {#key app.identity.id}
+        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="recorded" />
       {/key}
     {:else}
       {#key app.identity.id}

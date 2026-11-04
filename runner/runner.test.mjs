@@ -317,6 +317,11 @@ test("suggestChannel: user text stays in DATA, answer is trimmed text", async ()
   const r = await suggestChannel({ llm: { provider: "gemini", apiKey: KEY, fetchImpl: f, sleep: noSleep }, field: "audience", channel: {} });
   assert.equal(r.text, "Warm and direct.");
   assert.throws(() => buildSuggestMessages({ field: "password" }), /Unknown field/);
+  // a few words become the channel's text, in the channel's language (DECISIONS 172)
+  const words = buildSuggestMessages({ field: "profile", channel: { profile: "sourdough, beginners", contentLanguage: "hu" } });
+  assert.match(words[1].content, /sourdough, beginners/);
+  assert.match(words[1].content, /"contentLanguage": "hu"/);
+  assert.match(words[1].content, /Never invent/);
 });
 
 test("testKey passes on an empty answer (reasoning models), chat does not", async () => {

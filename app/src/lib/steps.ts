@@ -21,7 +21,7 @@ export const STEPS: Step[] = [
   { id: "brand", title: "Brand", intro: "Colors and fonts of your videos come from a preset. Add your logo if you have one.", canRecommend: true },
   { id: "audience", title: "Audience", intro: "Who do you make videos for? One clear viewer makes every script better.", canRecommend: true },
   { id: "brandVoice", title: "Brand Voice", intro: "How your scripts sound: tone, style, words to avoid. This is not the Narrator Voice.", canRecommend: true },
-  { id: "profile", title: "Channel Profile", intro: "What is your channel about, and what makes it different?", canRecommend: false },
+  { id: "profile", title: "Channel Profile", intro: "What is your channel about, and what makes it different? A few words are enough: the AI can write the text from them, ready to paste into YouTube.", canRecommend: true },
   { id: "youtube", title: "YouTube channel", intro: "The address of your channel, if you already have one.", canRecommend: false },
   { id: "landing", title: "Landing page", intro: "A page where viewers get your free offer. Scripts will point to it at the end.", canRecommend: false },
   { id: "language", title: "Content language", intro: "The language of your scripts, narration and on-screen text. The app itself stays in English.", canRecommend: true },
@@ -72,7 +72,7 @@ export function skipStep(id: StepId, c: Config): Config {
 
 /** "Use recommended". Audience and Brand Voice ask the AI (needs the AI key). */
 export async function recommendStep(id: StepId, c: Config): Promise<Config> {
-  if (id === "audience" || id === "brandVoice") {
+  if (id === "audience" || id === "brandVoice" || id === "profile") {
     const r = await runner<{ text: string }>("suggest-channel", { llm: llmFor(c, "texts"), field: id, channel: c.channel });
     return { ...c, channel: { ...c.channel, [id]: r.text } };
   }
