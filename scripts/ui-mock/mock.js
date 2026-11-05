@@ -364,6 +364,11 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "traffic-card-preview") return { card: mockCard, fields: [{ field: "name", label: "Channel name", now: "My Identity", value: "TEST Sourdough Weekend" }, { field: "audience", label: "Audience", now: "", value: "TEST home bakers" }] };
         if (args.command === "traffic-card-save") return { card: mockCard };
         if (args.command === "planner-start") return { card: q.get("card") ? mockCard : null, seeds: ["sourdough starter", "sourdough for beginners"], context: { audience: "TEST home bakers" }, research: window.__research ?? null };
+        if (args.command === "night-candidates") return { groups: [{ key: "playlist:bread", title: "Playlist: TEST Sourdough Basics", videos: [1, 2, 3].map((n) => ({ dir: `C:/P/My Identity/lesson-${n}`, title: `TEST lesson ${n}`, status: "Idea", position: n, engine: "script" })) }, { key: "other", title: "Other videos", videos: [{ dir: `C:/P/My Identity/other`, title: "TEST other", status: "Scened", position: null, engine: "script" }] }] };
+        if (args.command === "night-load") return { shift: window.__shift ?? null };
+        if (args.command === "night-save") { window.__shift = args.request.shift; return { shift: args.request.shift }; }
+        if (args.command === "night-clear") { window.__shift = null; return {}; }
+        if (args.command === "night-prepare") return { recipe: {} };
         if (args.command === "planner-balance") return { credits: 480 };
         if (args.command === "planner-research") return window.__research = { seeds: args.request?.seeds ?? [], at: new Date().toISOString(), keywords: Array.from({ length: 12 }, (_, i) => ({ keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i, score: 70 - i })), failed: [], creditsBefore: 480, creditsAfter: 474, creditsUsed: 6 };
         if (args.command === "planner-plan") return { title: "TEST Sourdough Basics", promise: "Bake a loaf in a weekend", why: "Ten keywords have real volume and low competition; two are near duplicates, so 10 videos.", rows: Array.from({ length: 10 }, (_, i) => ({ position: i + 1, title: `Sourdough video ${i + 1}`, keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i })) };

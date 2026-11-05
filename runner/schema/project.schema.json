@@ -81,6 +81,10 @@
         "videoId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{11}$" }
       }
     },
+    "titleTyped": {
+      "type": "boolean",
+      "$comment": "The user typed this title, so the AI does not replace it (DECISIONS 177)"
+    },
     "autopilotRun": {
       "type": "object",
       "$comment": "Finish on Autopilot is under way (the UI goes on with it when the ONE Video is opened again)",

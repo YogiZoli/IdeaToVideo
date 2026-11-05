@@ -45,7 +45,10 @@
 
 <style>
   .menu { position: relative; margin-right: 8px; flex-shrink: 1; min-width: 0; }
-  /* the top bar is one row: on a smaller window the name alone (DECISIONS 175) */
+  /* the top bar is one row, with the Jobs button too: the handle goes first, on a smaller window all but the name (DECISIONS 175) */
+  @media (max-width: 1400px) {
+    .current .handle { display: none; }
+  }
   @media (max-width: 1180px) {
     .menu { margin-right: 2px; }
     .current .label, .current .handle { display: none; }

@@ -383,6 +383,10 @@ Wizards, Identity, Settings (`app/src/lib/pages.ts`); Video Recording Editing st
 
 Changed on 2026-11-05 (DECISIONS 175): top menu Home, ONE Video, Identity, Wizards, Playlist, Publishing, Video Recording Editing, Settings, on one row. Home: Today's video, Latest videos, Identity, The recipe, A new video, Week batch. Playlist: Keyword Research first, then the Planner, which reads what it found.
 
+## Night shift (2026-11-05, outside the phases)
+
+Home, Night shift: pick videos of the active Identity, a whole playlist or a week's batch, press Start. One at a time, each to the finished MP4, with the app open. `app/src/lib/videoRun.ts` holds a video's steps, shared with `ProjectView`; `night.svelte.ts` runs them; `<videos folder>/night-shift.json` holds the shift, so a restart goes on. DECISIONS 182.
+
 ## YouTube Brand Channel Wizard (2026-11-04, outside the phases)
 
 The first page of Wizards: 13 questions for the active Identity, "Write it with AI" on the texts, a kit to copy, the Identity's fields after a preview, the same Evergreen Traffic Card as the Import. `docs/wizards/brand-channel.md`, DECISIONS 174. For later: `kit.mjs` makes every text with no AI, `cardMarkdown` writes a card of version 1.
@@ -391,10 +395,9 @@ The first page of Wizards: 13 questions for the active Identity, "Write it with 
 
 In the order he liked them. Each one starts only when he says so.
 
-1. **Night shift.** A queue runs while he sleeps, one video at a time: voice, scenes, render, then it stops at the Preview. Scope: a week's batch, or a whole playlist from the Playlist Planner, finished by the morning. **His own ElevenLabs voice may run at night and may cost credits, he approved that** (no other paid service). Needed: the run must leave the window (`recipeRun` lives in `ProjectView.svelte`) and go through the job queue; the computer stays awake and on power; a restart goes on from the last stage; room is checked first; a morning list of what is ready and what failed. Estimate: 2 to 3 sessions, and about 2 to 4 hours of night for 7 videos (a render takes about twice the video's length). Still open: a limit on credits per night.
-2. **Inbox.** Google Drive's local folder is watched, no Drive login. **One folder per file type, not one big folder (his choice):** `G:/My Drive/IdeaToVideo Inbox/<Identity>/Audio`, `/Video`, `/Text`. Audio is written out on this computer and becomes notes for a script video, text becomes notes, video goes to the recording engine. Wait until a file stops growing. The original moves to `Done`, never deleted. Everything stops at the Preview. Hungarian speech has not been tried yet. Feeds the night shift. The path needs an adapter, the Mac has another one.
-3. **Morning list.** On top of Home, instead of Today's video: one row per Identity with what waits. A click switches to that Identity. Reuses the runner's `channel-board`.
-4. **A documentary style for recordings,** the app's own preset, chosen once in Kind of recording, so editing stays one button. Never separate tool buttons. Built from its own spec, not from any skill. Real material found online is allowed for it (DECISIONS 179).
+1. **Inbox.** Google Drive's local folder is watched, no Drive login. **One folder per file type, not one big folder (his choice):** `G:/My Drive/IdeaToVideo Inbox/<Identity>/Audio`, `/Video`, `/Text`. Audio is written out on this computer and becomes notes for a script video, text becomes notes, video goes to the recording engine. Wait until a file stops growing. The original moves to `Done`, never deleted. Everything stops at the Preview. Hungarian speech has not been tried yet. Feeds the night shift. The path needs an adapter, the Mac has another one.
+2. **Morning list across Identities.** On top of Home, instead of Today's video: one row per Identity with what waits. A click switches to that Identity. Reuses the runner's `channel-board`.
+3. **A documentary style for recordings,** the app's own preset, chosen once in Kind of recording, so editing stays one button. Never separate tool buttons. Built from its own spec, not from any skill. Real material found online is allowed for it (DECISIONS 179).
 
 **Not for this app, or not now:** the numbers of published videos and the check before publishing belong to the PDT, and publishing regularly comes first. A cost and time log: later. A learning style: not needed for now.
 

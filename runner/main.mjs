@@ -74,6 +74,7 @@ import { channelBoard, setUpload, markSent } from "./course/board.mjs";
 import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
 import { wizardState, saveDraft as saveWizardDraft, wizardKit, wizardSave, wizardExport } from "./channelwizard/index.mjs";
+import { nightCandidates, loadShift, saveShift, clearShift, prepareForNight } from "./channels/night.mjs";
 import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, saveResearch, loadResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import * as thumbnail from "./thumbnail/index.mjs";
 import { listPresets, loadPreset, presetCard, presetLook } from "./presets/index.mjs";
@@ -1511,6 +1512,12 @@ const commands = {
   // A new video of a channel: its recipe copied into it, its idea or its own
   // script in. With a script the Script step is done; with an idea it comes
   // next. The UI's run (ProjectView) does the rest.
+  // The Night shift (channels/night.mjs, DECISIONS 182)
+  "night-candidates": async ({ projectsDir }) => nightCandidates(projectsDir),
+  "night-load": async ({ projectsDir }) => ({ shift: loadShift(projectsDir) }),
+  "night-save": async ({ projectsDir, shift }) => ({ shift: saveShift(projectsDir, shift) }),
+  "night-clear": async ({ projectsDir }) => clearShift(projectsDir),
+  "night-prepare": async ({ projectDir, identityDir }) => prepareForNight(projectDir, identityDir),
   "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "" }) => {
     const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
     // a style whose scripts are fact-checked has research on, whatever was asked (DECISIONS 159)

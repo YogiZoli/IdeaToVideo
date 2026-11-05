@@ -20,6 +20,9 @@
   import Home from "$lib/Home.svelte";
   import TodayVideo from "$lib/TodayVideo.svelte";
   import ChannelStudio from "$lib/channels/ChannelStudio.svelte";
+  import NightShift from "$lib/NightShift.svelte";
+  import { night, loadNight, stopNight } from "$lib/night.svelte";
+  import { counts } from "$lib/night";
   import "../app.css";
 
   let app = $state<AppState | null>(null);
@@ -77,7 +80,11 @@
         version: s.version,
       });
       if (!s.app?.onboarded || !s.identity) setScreen("setup");
-      else silentHealth(s);
+      else {
+        silentHealth(s);
+        // a night shift cut off by a restart goes on by itself
+        loadNight(s, true);
+      }
     } catch (e) {
       fatal = errorText(e);
       log("fatal", { message: fatal }, "error");
@@ -212,6 +219,10 @@
     {#if notice}
       <div class="notice"><span>{notice}</span><button type="button" class="ghost" onclick={() => (notice = "")}>Close</button></div>
     {/if}
+    {#if night.running && night.shift}
+      {@const c = counts(night.shift)}
+      <div class="notice night"><span>Night shift: {c.done + 1} of {c.total}{night.step ? `. ${night.step}...` : ""}</span><button type="button" class="ghost" disabled={night.stopping} onclick={stopNight}>{night.stopping ? "Stopping..." : "Stop"}</button></div>
+    {/if}
     {#if healthIssues}
       <div class="notice"><span>{healthIssues === 1 ? "One thing the app needs is not right." : `${healthIssues} things the app needs are not right.`}</span><button type="button" class="ghost" onclick={() => { healthIssues = 0; goto("health"); }}>Open Health check</button></div>
     {/if}
@@ -232,6 +243,7 @@
         <TodayVideo {app} {openProject} videos={() => show("projects")} />
         <Home {app} {openProject} videos={() => show("projects")} />
         <ChannelStudio {app} saved={take} {openProject} {goto} only="script" />
+        <NightShift {app} {openProject} />
       {/key}
     {:else if view === "edit"}
       {#key app.identity.id}
@@ -282,6 +294,7 @@
   }
   .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
+  .notice.night { background: var(--primary-surface); color: var(--primary-surface-foreground); }
   .muted { color: var(--muted-foreground); }
   .crash { max-width: 640px; margin: 48px auto; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); display: grid; gap: 12px; }
   .crash h2, .crash p { margin: 0; }
