@@ -12,7 +12,8 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **His list for later** is in `docs/BUILD_PLAN.md`, "Later": night shift, inbox, morning list, documentary preset. Nothing built.
 - **The clean room rule** on outside material is lifted for the future documentary preset only (DECISIONS 179). Open: whether wider.
 - Tests: Node 687 of 689 (2 live tests skipped, none red), UI check 0 errors, Rust not touched, 50 of 50 earlier today. Screens clicked in `scripts/ui-mock`, no console error: the dropdown, Home, Add Identity on Manage Identity. Local installer built 2026-11-05 18:17 and installed over the old app, the app was opened; no screen clicked in the installed window. Old build outputs removed, only the newest installer kept. Merged into `main` from `ui-identity-simplify` and pushed, no PR, no GitHub Actions run.
-- **Scene Timing** is the Shot map's new name on screen (DECISIONS 180). Merged and pushed; not in the installed app until the next installer.
+- **Scene Timing** is the Shot map's new name on screen (DECISIONS 180). Merged, pushed and installed.
+- **Installers (2026-11-05, build `c13d047`):** Windows built here 18:40, installed, the app opened. macOS on GitHub Actions, by hand, because Zoltan asked for it now: `gh workflow run build -f platforms=macos`, about 15 minutes, its tests and smoke test green (the app starts and stays up 15 s on the runner). Unsigned, Apple Silicon, in `C:/Users/gdp/ITV-sandbox/share/`. **Nobody has run it on a real Mac,** so Phase 9 stays todo. The push rule is unchanged: a push still starts nothing.
 - **Open for Zoltan:** a name for the Identity called New Identity, or delete it; a credit limit per night.
 
 ## Earlier (2026-11-05, Playlist and Connections after his answer, DECISIONS 176)

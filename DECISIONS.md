@@ -2845,3 +2845,5 @@
     - **The rest went on the list in `docs/BUILD_PLAN.md`, "Later":** night shift, inbox with one folder per file type, morning list, documentary preset, a new name for the Shot map. Nothing built.
 
 180. **On screen the Shot map is called Scene Timing** (Zoltan, 2026-11-05, Claude proposed the name). It says what the step does: which word each picture changes on. Tab, headings, progress lines, the Jobs list, one error sentence. In the code it stays `shots`, `shot-map-make` and `ShotMapTab`, so older videos open as before.
+
+181. **A macOS build on GitHub Actions, by hand, this once** (Zoltan, 2026-11-05: "ha ehhez kell GH CI akkor az ha van rá keret"). The exact balance could not be read (the token has no `user` scope); private repos had run about one minute this month, so the free minutes were there. Only `platforms=macos`, on `main`, no PR. Phase 9 stays todo until it runs on a real Mac. Standing rule unchanged: no Actions without his word.
