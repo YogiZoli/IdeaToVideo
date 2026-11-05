@@ -269,7 +269,7 @@
           {/each}
         </div>
         <input bind:value={recTitle} aria-label="Working title" placeholder="Working title (optional)" />
-        <p class="hint">A name for your list while it is being made. Empty: the file's name. With an AI key, the AI replaces it with a title from what you said.</p>
+        <p class="hint">What you type here stays. Empty: the file's name, and with an AI key the AI gives it a title from what you said.</p>
         <div class="actions">
           <span class="hint">{missing ?? "It stops at the preview for your approval. Nothing is ever published by itself."}</span>
           <button type="button" class="primary big" disabled={starting || !!missing} onclick={makeRecorded}>{starting ? "Starting..." : "Edit the recording"}</button>

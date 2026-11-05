@@ -11,7 +11,7 @@
   import ErrorBox from "../ErrorBox.svelte";
   import Progress from "../Progress.svelte";
 
-  let { app, goto }: { app: AppState; goto: (id: "connections" | "planner") => void } = $props();
+  let { app, goto }: { app: AppState; goto: (id: "connections") => void } = $props();
 
   type Kw = { keyword: string; volume: number | null; competition: number | null; score: number | null; seed?: string };
   type Saved = { seeds: string[]; keywords: Kw[]; failed: string[]; creditsUsed: number | null; at: string | null };
@@ -73,7 +73,6 @@
   <section class="card">
     <div class="head">
       <h2>{saved.keywords.length} keywords{saved.at ? `, ${new Date(saved.at).toLocaleDateString()}` : ""}</h2>
-      <button type="button" class="primary" onclick={() => goto("planner")}>Next: plan the playlist</button>
     </div>
     <div class="box">
       <table>

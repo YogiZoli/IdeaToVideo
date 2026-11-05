@@ -39,12 +39,7 @@
       {
         "id": "camera",
         "label": "Camera file",
-        "hint": "You talking to the camera."
-      },
-      {
-        "id": "combined",
-        "label": "Or one combined file",
-        "hint": "Instead of the file above: one video that already has the picture and the sound together, for example from your phone. Video only, no pictures."
+        "hint": "You talking to the camera: one video file with picture and sound, for example from your phone."
       }
     ]
   },

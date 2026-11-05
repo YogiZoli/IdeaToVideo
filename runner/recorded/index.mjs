@@ -53,7 +53,7 @@ export function filesProblem(preset, files = {}) {
   const has = (s) => !!files[s];
   switch (preset.id) {
     case "talking-head":
-      return has("camera") || has("combined") ? null : "Choose the camera file, or one combined file.";
+      return has("camera") || has("combined") ? null : "Choose the camera file.";
     case "screen-recording":
       return has("screen") || has("combined") ? null : "Choose the screen file, or one combined file.";
     case "screen-share":
@@ -103,8 +103,11 @@ export async function newRecordedVideo({ projectsDir, identity, language = "en",
   for (const [slot, role] of Object.entries(pictureRoles(preset, clean))) if (!probes[role]?.hasVideo) throw new Error(`The ${slot} file has no picture: ${clean[role]}`);
   const voice = voiceSource(clean, probes);
   if (!voice) throw new Error("None of these files has sound, and the edit works from what is said.");
-  const name = String(title).trim() || titleOf(clean.camera ?? clean.screen ?? clean.combined);
+  const typed = String(title).trim();
+  const name = typed || titleOf(clean.camera ?? clean.screen ?? clean.combined);
   const { dir, id } = createProject({ projectsDir, title: name, language, identity, recipe });
+  // a title the user typed stays: the AI only names a video that has none (DECISIONS 177)
+  if (typed) saveProject(dir, { ...loadProject(dir), titleTyped: true });
   fs.mkdirSync(work(dir), { recursive: true });
   writeJson(work(dir, INPUT_FILE), { schema: "recorded-input/1", preset: preset.id, files: clean, probes, voice, offsets: {}, notes: [] });
   appendLog(dir, `recorded: ${preset.id}, ${Object.keys(clean).join(" + ")}, the voice from ${voice}`);
@@ -273,7 +276,7 @@ export async function planVideo({ projectDir, llm = null, env = process.env, onP
   saveProject(projectDir, setGate(project, "scenes", { state: "running", mode: "custom" }));
   try {
     const total = pictures.kept;
-    const plan = await planRecording({ llm, sentences, words, total, title: project.title, preset, language: project.language, cutout: project.recipe?.recorded?.cutout === true, onProgress });
+    const plan = await planRecording({ llm, sentences, words, total, title: project.title, keepTitle: project.titleTyped === true, preset, language: project.language, cutout: project.recipe?.recorded?.cutout === true, onProgress });
     writeJson(work(projectDir, "plan.json"), plan);
     writeAtomic(path.join(projectDir, "script.md"), scriptFromPlan(plan, sentences, words));
     // the table the B-roll engine, the Preview and the Publishing Card read

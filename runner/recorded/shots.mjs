@@ -222,7 +222,10 @@ export function scriptFromPlan(plan, sentences, words) {
 }
 
 /** `llm`: { provider, apiKey, model, effort }, or null for the rule. */
-export async function planRecording({ llm = null, sentences, words, total, title, preset, language = "en", cutout = false, onProgress = () => {} }) {
+/** The video's title: what the user typed stays, otherwise the AI's, otherwise the file's name. Pure. */
+export const planTitle = (answer, title, keepTitle = false) => (keepTitle ? title : String(answer ?? "").trim() || title);
+
+export async function planRecording({ llm = null, sentences, words, total, title, keepTitle = false, preset, language = "en", cutout = false, onProgress = () => {} }) {
   let answer = null;
   const data = { language, total: r3(total), wants: preset.recorded ?? {}, sentences: sentences.map((s) => ({ id: s.id, at: Math.round(s.start), text: s.text })) };
   const payload = JSON.stringify(data);
@@ -249,5 +252,5 @@ export async function planRecording({ llm = null, sentences, words, total, title
   }
   const chapters = answer?.chapters ?? ruleChapters(sentences, total);
   const bigWords = answer?.bigWords ?? ruleBigWords(sentences, words);
-  return { ...finishPlan({ title: String(answer?.title ?? "").trim() || title, chapters, bigWords, sentences, words, total, preset, cutout }), plannedBy: answer ? llm.provider : "rule" };
+  return { ...finishPlan({ title: planTitle(answer?.title, title, keepTitle), chapters, bigWords, sentences, words, total, preset, cutout }), plannedBy: answer ? llm.provider : "rule" };
 }

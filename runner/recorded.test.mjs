@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { checkWords, envelope, fillerMarks, finalWords, frameOf, keepsOf, keptSeconds, makeMarks, phrasesOf, repeatedTakes, runsOf, sameTake, snapWords, soundMarks, speechChunks, stutters, toFinal, voicedMask, ENVELOPE_RATE, FPS } from "./recorded/cuts.mjs";
 import { joinSound, selectExpression, soundLag } from "./recorded/edit.mjs";
-import { beatPlan, chapterCount, finishPlan, layoutPlan, locate, planIssues, planRecording, ruleBigWords, ruleChapters, scriptFromPlan, shotRows } from "./recorded/shots.mjs";
+import { beatPlan, chapterCount, finishPlan, layoutPlan, locate, planIssues, planRecording, planTitle, ruleBigWords, ruleChapters, scriptFromPlan, shotRows } from "./recorded/shots.mjs";
 import { blobsOf, chooseTrack, cursorRect, fillGaps, findClicks, findStops, smoothPath, transitOf, viewPath, zoomPlan, TRACK_FPS } from "./recorded/cursor.mjs";
 import { inputSize, toInput, toMask } from "./recorded/matte.mjs";
 import { fitBox, placeInBox, recordedHtml, wordSize, LAYOUT_BOXES } from "./recorded/compose.mjs";
@@ -325,6 +325,15 @@ test("a dead AI still gives a plan; a repaired answer is used", async () => {
   assert.equal(rule.plannedBy, "rule");
   assert.equal(rule.title, "My title");
   assert.ok(rule.chapters.length >= 3);
+});
+
+test("a typed title stays, the AI only names a video with none; Talking Head asks for one file (DECISIONS 177)", () => {
+  assert.equal(planTitle("The AI's title", "My typed title", true), "My typed title");
+  assert.equal(planTitle("The AI's title", "file name", false), "The AI's title");
+  assert.equal(planTitle("  ", "file name", false), "file name");
+  assert.equal(planTitle(undefined, "file name"), "file name");
+  assert.deepEqual(loadPreset("talking-head").recorded.slots.map((s) => s.id), ["camera"]);
+  assert.ok(loadPreset("screen-recording").recorded.slots.some((s) => s.id === "combined"), "Screen Recording keeps it");
 });
 
 test("layouts change about every 8 s, on a sentence, never twice alike", () => {

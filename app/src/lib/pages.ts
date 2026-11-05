@@ -40,7 +40,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   // one evergreen playlist from keyword research (DECISIONS 127)
   { id: "planner", title: "Playlist Planner", menu: "playlist", scope: "identity", steps: [] },
   // a course or playlist as one prepared video per entry (DECISIONS 121)
-  { id: "courses", title: "Course or Playlist File", menu: "playlist", scope: "identity", steps: [] },
+  { id: "courses", title: "Create Playlist File", menu: "playlist", scope: "identity", steps: [] },
   // after the video: its thumbnail and the way to the publishing app
   { id: "thumbnail", title: "Thumbnail", menu: "publishing", scope: "identity", steps: [] },
   { id: "pdt", title: "PDT Connection", menu: "publishing", scope: "app", steps: [] },
@@ -81,10 +81,9 @@ export const SETTINGS_PAGES: SettingsPage[] = [
 export type SubPage = { id: string; title: string; page?: PageId };
 export const SUB_PAGES: Partial<Record<PageId, SubPage[]>> = {
   connections: [
-    { id: "ai", title: "AI" },
-    { id: "providers", title: "AI providers" },
-    { id: "services", title: "Services" },
-    { id: "publishing", title: "Publishing", page: "pdt" },
+    { id: "providers", title: "AI Apps" },
+    { id: "services", title: "AI Services" },
+    { id: "ai", title: "Which AI for which job" },
     { id: "keys", title: "Remove all keys" },
   ],
   footage: [

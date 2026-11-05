@@ -74,7 +74,7 @@ export function filesMissing(preset: string, files: Record<string, string>): str
   const has = (s: string) => !!files[s];
   switch (preset) {
     case "talking-head":
-      return has("camera") || has("combined") ? null : "Choose the camera file, or one combined file.";
+      return has("camera") || has("combined") ? null : "Choose the camera file.";
     case "screen-recording":
       return has("screen") || has("combined") ? null : "Choose the screen file, or one combined file.";
     case "screen-share":
