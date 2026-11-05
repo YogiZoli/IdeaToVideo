@@ -155,21 +155,6 @@
     return show("settings", "thumbnail");
   }
 
-  // The Channels board (DECISIONS 127): a video of any Identity, opened in
-  // its own Identity, on the step it is at.
-  async function openFor(id: string, d: string) {
-    try {
-      if (id !== app?.identity?.id) {
-        take(await setActiveIdentity(id));
-        settingsEpoch++;
-      }
-      view = "projects";
-      await openProject(d);
-    } catch (e) {
-      notice = errorText(e);
-    }
-  }
-
   async function choose(id: string) {
     if (id === app?.identity?.id) return show("projects");
     try {
@@ -237,7 +222,7 @@
         settings={() => show("settings", "identity")}
       />
       {#each MENUS as m (m.id)}
-        <button type="button" class:active={current === m.id} onclick={() => menu(m.id)}>{m.title}</button>
+        <button type="button" class:active={current === m.id} class:stack={!!m.lines} aria-label={m.title} onclick={() => menu(m.id)}>{#if m.lines}{#each m.lines as l}<span>{l}</span>{/each}{:else}{m.title}{/if}</button>
       {/each}
       <Jobs {openJob} />
     </nav>
@@ -273,8 +258,8 @@
     {:else if view === "home"}
       {#key app.identity.id}
         <TodayVideo {app} {openProject} videos={() => show("projects")} />
+        <Home {app} {openProject} videos={() => show("projects")} />
         <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="script" />
-        <Home {app} {goto} {openProject} {openFor} videos={() => show("projects")} />
       {/key}
     {:else if view === "edit"}
       {#key app.identity.id}
@@ -307,13 +292,22 @@
   .shell { display: flex; flex-direction: column; height: 100vh; }
   .view { flex: 1; min-height: 0; overflow: auto; }
   .center { display: grid; place-items: center; min-height: 100vh; }
-  .brandbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .brandbar { display: flex; flex-wrap: nowrap; gap: 2px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
   .brandbar { position: relative; }
   .brandbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--hairline); }
-  .name { display: inline-flex; align-items: center; gap: 10px; margin-right: 18px; font-weight: 700; font-size: var(--text-lg); }
+  .name { display: inline-flex; align-items: center; gap: 8px; margin-right: 8px; font-weight: 700; font-size: var(--text-lg); white-space: nowrap; }
   .name img { width: 26px; height: 26px; }
   .brandbar > button { border: none; background: none; padding: 6px 10px; white-space: nowrap; }
+  /* the long title on three short lines, so the whole menu stays on one row (DECISIONS 175) */
+  .brandbar > button.stack { display: inline-flex; flex-direction: column; align-items: center; font-size: 12px; line-height: 1.15; padding: 2px 8px; min-height: 0; }
   .brandbar > button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
+  /* the smallest window still has one row: the same menu, tighter */
+  @media (max-width: 1180px) {
+    .brandbar { padding: 8px 8px; }
+    .name { font-size: 15px; margin-right: 4px; }
+    .brandbar > button { padding: 6px 6px; font-size: 13px; }
+    .brandbar > button.stack { font-size: 11px; padding: 2px 5px; }
+  }
   .restorebar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 10px 24px 0; max-width: 1040px; margin: 0 auto; font-size: 14px; color: var(--muted-foreground); flex-wrap: wrap; }
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
   .muted { color: var(--muted-foreground); }

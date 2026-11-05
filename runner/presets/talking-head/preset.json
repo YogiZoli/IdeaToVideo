@@ -44,7 +44,7 @@
       {
         "id": "combined",
         "label": "Or one combined file",
-        "hint": "One file with picture and sound."
+        "hint": "Instead of the file above: one video that already has the picture and the sound together, for example from your phone. Video only, no pictures."
       }
     ]
   },

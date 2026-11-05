@@ -1,6 +1,6 @@
 // pages.ts: the top menu and its pages (UI simplification, Zoltan,
-// 2026-10-08, DECISIONS 119; new order 2026-11-04, DECISIONS 168, 172). Eight menus:
-// Home, Videos, Video Recording Editing, Playlist, Publishing, Wizards, Identity, Settings. Nothing waits
+// 2026-10-08, DECISIONS 119; new order 2026-11-05, DECISIONS 175). Eight menus:
+// Home, ONE Video, Identity, Wizards, Playlist, Publishing, Video Recording Editing, Settings. Nothing waits
 // behind a switch: every menu is always there. `scope` says what a page edits:
 // the App (every Identity on this computer) or the active Identity
 // (docs/identity.md 2). A big page has sub pages (SUB_PAGES) in the left column.
@@ -14,29 +14,31 @@ export type PageId =
   | "planner" | "research" | "courses"
   | "thumbnail" | "pdt"
   | "brandchannel" | "cta" | "look" | "motion" | "scenes"
-  | "channel" | "voice" | "avatar" | "photos" | "footage" | "dictionary" | "identity"
+  | "channel" | "voice" | "avatar" | "footage" | "dictionary" | "identity"
   | "health" | "connections" | "transfer" | "folders" | "backup" | "plan" | "legal";
 export type Scope = "app" | "identity";
 
 export type SettingsPage = { id: PageId; title: string; menu: PageMenu; scope: Scope; steps: StepId[] };
 
-export const MENUS: { id: MenuId; title: string }[] = [
+// `lines`: a long title drawn on several lines, so the whole menu fits on one row (DECISIONS 175)
+export const MENUS: { id: MenuId; title: string; lines?: string[] }[] = [
   { id: "home", title: "Home" },
-  { id: "videos", title: "Videos" },
-  // a video from a recording you already have: another way in, with no script steps (DECISIONS 172)
-  { id: "edit", title: "Video Recording Editing" },
+  { id: "videos", title: "ONE Video" },
+  { id: "identity", title: "Identity" },
+  { id: "wizards", title: "Wizards" },
   { id: "playlist", title: "Playlist" },
   { id: "publishing", title: "Publishing" },
-  { id: "wizards", title: "Wizards" },
-  { id: "identity", title: "Identity" },
+  // a video from a recording you already have: another way in, with no script steps (DECISIONS 172)
+  { id: "edit", title: "Video Recording Editing", lines: ["Video", "Recording", "Editing"] },
   { id: "settings", title: "Settings" },
 ];
 
 export const SETTINGS_PAGES: SettingsPage[] = [
-  // the whole channel's plan, never one video
+  // the whole channel's plan, never one video. Keywords first, the planner reads what they found (DECISIONS 175)
+  // `vidiq`: the setup step of its key. The page itself does not show it, the key is on Connections
+  { id: "research", title: "Keyword Research", menu: "playlist", scope: "identity", steps: ["vidiq"] },
   // one evergreen playlist from keyword research (DECISIONS 127)
   { id: "planner", title: "Playlist Planner", menu: "playlist", scope: "identity", steps: [] },
-  { id: "research", title: "Keyword Research", menu: "playlist", scope: "identity", steps: ["vidiq"] },
   // a course or playlist as one prepared video per entry (DECISIONS 121)
   { id: "courses", title: "Course or Playlist File", menu: "playlist", scope: "identity", steps: [] },
   // after the video: its thumbnail and the way to the publishing app
@@ -58,8 +60,6 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "channel", title: "YouTube Channel & Audience", menu: "identity", scope: "identity", steps: ["audience", "brandVoice", "profile", "youtube", "landing", "language"] },
   { id: "voice", title: "Audio Voice", menu: "identity", scope: "identity", steps: ["narrator"] },
   { id: "avatar", title: "AI Avatar", menu: "identity", scope: "identity", steps: ["heygen"] },
-  // the profile photos a thumbnail "with my face" uses (DECISIONS 131)
-  { id: "photos", title: "Thumbnail", menu: "identity", scope: "identity", steps: [] },
   // your own clips as B-roll (DECISIONS 82)
   { id: "footage", title: "Footage", menu: "identity", scope: "identity", steps: [] },
   { id: "dictionary", title: "Dictionary", menu: "identity", scope: "identity", steps: [] },

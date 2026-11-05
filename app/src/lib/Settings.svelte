@@ -35,7 +35,6 @@
   import CtaPage from "./cta/CtaPage.svelte";
   import ChannelWizard from "./channelwizard/ChannelWizard.svelte";
   import FootagePage from "./footage/FootagePage.svelte";
-  import PhotosPanel from "./PhotosPanel.svelte";
   import ScenesPage from "./scenes/ScenesPage.svelte";
   import ScenesWizard from "./scenes/ScenesWizard.svelte";
   import { ensureFonts } from "./brand/fontsDom";
@@ -43,7 +42,7 @@
   import TrafficCard from "./planner/TrafficCard.svelte";
   import PlaylistPlanner from "./planner/PlaylistPlanner.svelte";
   import CourseImport from "./course/CourseImport.svelte";
-  import KeywordIdeas from "./planner/KeywordIdeas.svelte";
+  import KeywordResearch from "./planner/KeywordResearch.svelte";
   import ThumbnailPage from "./publishing/ThumbnailPage.svelte";
   import PublishingCards from "./publishing/PublishingCards.svelte";
   import WizardMap from "./wizard/WizardMap.svelte";
@@ -154,7 +153,7 @@
     else subId = s.id;
   }
   // the page's save button and its "run setup again": only where that part has fields
-  const NO_SAVE: PageId[] = ["brandchannel", "look","dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "planner", "health", "courses", "thumbnail", "photos", "legal"];
+  const NO_SAVE: PageId[] = ["brandchannel", "look","dictionary", "motion", "cta", "footage", "scenes", "transfer", "plan", "research", "planner", "health", "courses", "thumbnail", "legal"];
   const hasFields = $derived(!NO_SAVE.includes(pageId) && !(pageId === "connections" && sub !== "ai"));
 
   let dupName = $state(untrack(() => copyName(app.identity?.name ?? "", app.identities.map((i) => i.name))));
@@ -389,7 +388,7 @@
         <CourseImport {app} off={busy} />
       </section>
     {:else if pageId === "transfer"}
-      <TransferPage {app} {busy} saved={(s, text) => after(s, text)} {importCard} exportCardFile={exportCard} />
+      <TransferPage {app} {busy} saved={(s, text) => after(s, text)} {importCard} exportCardFile={exportCard} goto={(id) => openPage(id)} />
     {:else if pageId === "folders"}
       <section class="card">
         <h2>Projects folder</h2>
@@ -452,22 +451,13 @@
     {:else if pageId === "planner"}
       <PlaylistPlanner {app} goto={(id) => openPage(id)} />
     {:else if pageId === "research"}
-      <section class="card">
-        <p class="hint">What people search for on YouTube, from vidIQ with your own key. It feeds the <button type="button" class="link" onclick={() => openPage("planner")}>Playlist Planner</button>; for a single video the same search is on its Research tab.</p>
-        <KeywordIdeas {app} goto={(id) => openPage(id)} />
-      </section>
-    {:else if pageId === "photos"}
-      <section class="card">
-        <h2>Your face on thumbnails</h2>
-        <PhotosPanel />
-        <p class="hint">The thumbnails themselves are made in <button type="button" class="link" onclick={() => openPage("thumbnail")}>Publishing, Thumbnail</button>.</p>
-      </section>
+      <KeywordResearch {app} goto={(id) => openPage(id)} />
     {:else if pageId === "channel"}
       <p class="hint">New channel, or not sure what to write here? <button type="button" class="link" onclick={() => openPage("brandchannel")}>The YouTube Brand Channel Wizard</button> asks 13 questions and fills these fields for you.</p>
       <TrafficCard bind:config />
     {/if}
 
-    {#each STEPS.filter((s) => page.scope === "identity" && page.steps.includes(s.id) && s.id !== "brand") as s (s.id)}
+    {#each STEPS.filter((s) => page.scope === "identity" && page.steps.includes(s.id) && s.id !== "brand" && s.id !== "vidiq") as s (s.id)}
       <section class="card">
         <div class="head">
           <h2>{s.id === "name" ? "Name" : s.title}</h2>

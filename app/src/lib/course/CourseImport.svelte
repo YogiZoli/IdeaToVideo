@@ -138,7 +138,7 @@
 {#if result}
   <div class="box">
     <h3>{result.course.title}: {result.again ? "imported again" : "imported"}</h3>
-    <p class="good">{videos(result.created)} created, {result.updated} updated, {result.unchanged} left as they were. Find them on Videos, under Course. Nothing was started: write each script when you are ready.</p>
+    <p class="good">{videos(result.created)} created, {result.updated} updated, {result.unchanged} left as they were. Find them on ONE Video, under Course. Nothing was started: write each script when you are ready.</p>
     <ol>
       {#each result.lessons as l (l.id)}
         <li value={l.position}>

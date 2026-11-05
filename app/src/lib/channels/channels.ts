@@ -124,6 +124,16 @@ export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVo
   ];
 }
 
+/** What each line of the recipe decides, in a few plain words (Home, DECISIONS 175). */
+export const RECIPE_HELP: Record<string, string> = {
+  Style: "How the video looks",
+  Voice: "Who reads the script",
+  Avatar: "A person on screen, from HeyGen",
+  Music: "What plays under the voice",
+  "B-roll": "Extra clips between the scenes",
+  Length: "How long a video should be",
+};
+
 /** What one video of this recipe costs: said before it starts, never hidden. */
 export function costLine(r: Recipe, aiProvider: string): string {
   if (r.engine === "recorded") return `0 USD for the words, the cuts and the render, all on this computer.${aiProvider === "gemini" ? " Chapters and big words on Gemini's free tier." : " Chapters and big words use your AI key's credits, or a rule without a key."}`;

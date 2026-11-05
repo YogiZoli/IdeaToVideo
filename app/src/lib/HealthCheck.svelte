@@ -8,8 +8,10 @@
   import type { AppState } from "./api";
   import { runner, errorText } from "./api";
   import { LLM_PROVIDERS } from "./catalog";
+  import type { PageId } from "./pages";
+  import VideoNeeds from "./VideoNeeds.svelte";
 
-  let { app, goto }: { app: AppState; goto?: (page: "connections") => void } = $props();
+  let { app, goto }: { app: AppState; goto: (page: PageId) => void } = $props();
 
   type Item = { id: string; label: string; state: "ok" | "note" | "fix"; detail?: string; fix?: string };
   let items = $state<Item[] | null>(null);
@@ -83,11 +85,13 @@
   {/if}
 </section>
 
+<VideoNeeds {app} {goto} />
+
 <section class="card">
   <h2>Test my keys</h2>
   <p class="hint">Asks each service whether your saved key works. A one-word AI answer can cost a tiny amount of your AI key's credits. The others are free.</p>
   <button type="button" disabled={testing} onclick={testKeys}>{testing ? "Testing..." : "Test my keys"}</button>
-  {#if goto}<button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>{/if}
+  <button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>
   {#if results.length}
     <ul class="items">
       {#each results as r (r.id)}

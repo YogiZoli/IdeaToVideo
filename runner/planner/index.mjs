@@ -17,6 +17,8 @@
 // Every paid call is its own runner command, so the UI asks before each one.
 // Nothing here makes a ONE Video: the import does that, after "Create".
 
+import fs from "node:fs";
+import path from "node:path";
 import { chat, extractJson } from "../providers/llm.mjs";
 import { VidiqSession } from "../providers/research/vidiq.mjs";
 
@@ -99,6 +101,29 @@ export async function research({ apiKey, seeds, country = null, fetchImpl, onPro
   const left = (b) => (typeof b?.totalCredits === "number" ? b.totalCredits : null);
   const [b0, b1] = [left(before), left(after)];
   return { keywords, failed, creditsBefore: b0, creditsAfter: b1, creditsUsed: b0 !== null && b1 !== null ? Math.max(0, b0 - b1) : null };
+}
+
+// The last research of an Identity, kept in its folder: Keyword Research writes it, the
+// Playlist Planner reads it, and it stays there after the app closes (DECISIONS 175).
+export const RESEARCH_FILE = "keyword-research.json";
+export function saveResearch(identityDir, { seeds = [], keywords = [], failed = [], creditsUsed = null } = {}, at = new Date().toISOString()) {
+  if (!identityDir) return null;
+  const saved = { seeds, keywords, failed, creditsUsed, at };
+  const file = path.join(identityDir, RESEARCH_FILE);
+  fs.mkdirSync(identityDir, { recursive: true });
+  fs.writeFileSync(`${file}.part`, `${JSON.stringify(saved, null, 2)}\n`);
+  fs.renameSync(`${file}.part`, file);
+  return saved;
+}
+export function loadResearch(identityDir) {
+  if (!identityDir) return null;
+  try {
+    const r = JSON.parse(fs.readFileSync(path.join(identityDir, RESEARCH_FILE), "utf8"));
+    return Array.isArray(r?.keywords) && r.keywords.length ? { seeds: Array.isArray(r.seeds) ? r.seeds : [], keywords: r.keywords, failed: Array.isArray(r.failed) ? r.failed : [], creditsUsed: r.creditsUsed ?? null, at: r.at ?? null } : null;
+  } catch {
+    // none yet, or a damaged file: the research is simply run again
+    return null;
+  }
 }
 
 // What the AI knows about the channel: from the card or the typed answers.

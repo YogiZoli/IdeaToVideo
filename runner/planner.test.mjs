@@ -8,11 +8,24 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { seedsFrom, research, planIssues, planRows, checkRows, outlineIssues, buildStructure, slugOf, contextOf, MIN_VIDEOS } from "./planner/index.mjs";
+import { saveResearch, loadResearch, RESEARCH_FILE, seedsFrom, research, planIssues, planRows, checkRows, outlineIssues, buildStructure, slugOf, contextOf, MIN_VIDEOS } from "./planner/index.mjs";
 import { parseTrafficCard } from "./planner/traffic-card.mjs";
 import { parseCourse, importCourse, listCourses } from "./course/index.mjs";
 
 const CARD = parseTrafficCard(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", "example-traffic-card.md"), "utf8"));
+
+test("planner: the keyword research stays with the Identity, and the planner reads it back (DECISIONS 175)", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv kulcsszó "));
+  assert.equal(loadResearch(dir), null, "none yet");
+  assert.equal(loadResearch(null), null);
+  const keywords = [{ keyword: "sourdough starter", volume: 5000, competition: 20, score: 70, seed: "sourdough" }];
+  saveResearch(dir, { seeds: ["sourdough"], keywords, failed: [], creditsUsed: 3 }, "2026-11-05T10:00:00.000Z");
+  assert.deepEqual(loadResearch(dir), { seeds: ["sourdough"], keywords, failed: [], creditsUsed: 3, at: "2026-11-05T10:00:00.000Z" });
+  assert.ok(!fs.existsSync(path.join(dir, `${RESEARCH_FILE}.part`)), "no half file left");
+  fs.writeFileSync(path.join(dir, RESEARCH_FILE), "{ not json");
+  assert.equal(loadResearch(dir), null, "a damaged file: the research is run again");
+  fs.rmSync(dir, { recursive: true, force: true });
+});
 
 test("planner: seeds from the card, playlists first, Start here skipped", () => {
   assert.deepEqual(seedsFrom({ card: CARD }), ["sourdough starter", "sourdough for beginners", "why is my sourdough dense"]);

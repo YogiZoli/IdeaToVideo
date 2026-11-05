@@ -381,6 +381,8 @@ it: an empty brief says nothing was checked, and the Publishing Card says `unche
 Zoltan walked through the app and asked for a new order (DECISIONS 168 to 171). It changes Phase 1's Advanced toggle: there is no toggle any more, every menu is always there. Top menu: Home, Videos, Video Recording Editing, Playlist, Publishing,
 Wizards, Identity, Settings (`app/src/lib/pages.ts`); Video Recording Editing starts a video from a recording (DECISIONS 172, 173). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). The Thumbnail is on the Publishing menu and can be made before the video.
 
+Changed on 2026-11-05 (DECISIONS 175): top menu Home, ONE Video, Identity, Wizards, Playlist, Publishing, Video Recording Editing, Settings, on one row. Home: Today's video, Latest videos, Identity, The recipe, A new video, Week batch. Playlist: Keyword Research first, then the Planner, which reads what it found.
+
 ## YouTube Brand Channel Wizard (2026-11-04, outside the phases)
 
 The first page of Wizards: 13 questions for the active Identity, "Write it with AI" on the texts, a kit to copy, the Identity's fields after a preview, the same Evergreen Traffic Card as the Import. `docs/wizards/brand-channel.md`, DECISIONS 174. For later: `kit.mjs` makes every text with no AI, `cardMarkdown` writes a card of version 1.

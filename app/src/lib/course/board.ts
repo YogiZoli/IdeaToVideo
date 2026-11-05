@@ -1,4 +1,4 @@
-// board.ts: the Channels board on Home (DECISIONS 127), the UI's side: the
+// board.ts: the Uploaded tick's data (DECISIONS 127; the board on Home left in DECISIONS 175): the
 // types the runner's channel-board command answers with
 // (runner/course/board.mjs) and the words the board shows. Pure data, no
 // Tauri imports, so the Node tests load it.
