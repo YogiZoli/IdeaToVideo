@@ -1,13 +1,12 @@
 <script lang="ts">
   // App shell: first run shows the setup, afterwards the top menu (pages.ts,
-  // DECISIONS 119, 168), the Identity menu and the Jobs list. "New Identity"
-  // runs the setup's Identity steps (docs/identity.md 7).
+  // DECISIONS 119, 168), the Identity switch and the Jobs list.
   import { open } from "@tauri-apps/plugin-dialog";
   import { appState, saveSettings, setActiveIdentity, restoreSettings, errorText, runner, type AppState, type Config, type Job } from "$lib/api";
   import { installLogger, log, setScreen, setIdentity } from "$lib/logger";
-  import { defaultConfig, cleanConfig } from "$lib/catalog";
+  import { defaultConfig } from "$lib/catalog";
   import { appFromConfig, identityFromConfig } from "$lib/identity";
-  import { IDENTITY_STEPS, QUICK_SETUP } from "$lib/steps";
+  import { QUICK_SETUP } from "$lib/steps";
   import { setKeySources, refreshKeySources } from "$lib/keystate.svelte";
   import { PRODUCT, ONE_VIDEO } from "$lib/edition";
   import { MENUS, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
@@ -25,7 +24,7 @@
 
   let app = $state<AppState | null>(null);
   let fatal = $state("");
-  let view = $state<"home" | "edit" | "projects" | "settings" | "new-identity">("home");
+  let view = $state<"home" | "edit" | "projects" | "settings">("home");
   // Home's "Make a video": the list opens with the new ONE Video form
   let startNew = $state(false);
   let projectDir = $state<string | null>(null);
@@ -156,22 +155,14 @@
   }
 
   async function choose(id: string) {
-    if (id === app?.identity?.id) return show("projects");
+    if (id === app?.identity?.id) return;
     try {
       take(await setActiveIdentity(id));
       settingsEpoch++;
       projectDir = null;
-      if (view === "new-identity") view = "home";
     } catch (e) {
       notice = errorText(e);
     }
-  }
-
-  function newIdentity() {
-    draft = { ...defaultConfig(), name: "", llm: { ...app!.app!.llm } };
-    setScreen("new-identity");
-    view = "new-identity";
-    projectDir = null;
   }
 
   async function openJob(j: Job) {
@@ -184,13 +175,11 @@
 
   // first run: the App settings and the first Identity, in one save
   const saveFirst = (c: Config) => saveSettings(appFromConfig(c, null), identityFromConfig(c, null, null));
-  // New Identity: only the Identity; the core makes it the active one
   // a page that broke while drawing (the boundary above): into the log, in full
   function crashed(error: unknown) {
     const e = error as { message?: string; stack?: string };
     log("ui_crash", { message: errorText(error), stack: String(e?.stack ?? "").slice(0, 1500), view, project: projectDir }, "error");
   }
-  const saveNew = (c: Config) => saveSettings(null, identityFromConfig(cleanConfig(c), null, null));
 </script>
 
 {#if fatal}
@@ -214,13 +203,7 @@
   <main class="shell">
     <nav class="brandbar">
       <span class="name"><img src="/icon.png" alt="" />{PRODUCT}</span>
-      <IdentityMenu
-        {app}
-        {choose}
-        {newIdentity}
-        duplicate={() => show("settings", "identity")}
-        settings={() => show("settings", "identity")}
-      />
+      <IdentityMenu {app} {choose} />
       {#each MENUS as m (m.id)}
         <button type="button" class:active={current === m.id} class:stack={!!m.lines} aria-label={m.title} onclick={() => menu(m.id)}>{#if m.lines}{#each m.lines as l}<span>{l}</span>{/each}{:else}{m.title}{/if}</button>
       {/each}
@@ -236,18 +219,7 @@
     <!-- A page that breaks while it draws never leaves a blank window: the
          top bar stays, the user reads what happened and can go on (2026-10-06). -->
     <svelte:boundary onerror={crashed}>
-    {#if view === "new-identity"}
-      <Onboarding
-        bind:config={draft}
-        bind:keys
-        only={IDENTITY_STEPS}
-        save={saveNew}
-        done={(s) => { take(s); view = "home"; }}
-        cancel={() => (view = "home")}
-        title="New Identity"
-        newIdentity
-      />
-    {:else if view === "settings"}
+    {#if view === "settings"}
       {#key settingsEpoch}
         <Settings {app} saved={take} startPage={settingsPage} {goto} {openVideoAt} {thumbnailVideo} />
       {/key}
@@ -259,11 +231,11 @@
       {#key app.identity.id}
         <TodayVideo {app} {openProject} videos={() => show("projects")} />
         <Home {app} {openProject} videos={() => show("projects")} />
-        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="script" />
+        <ChannelStudio {app} saved={take} {openProject} {goto} only="script" />
       {/key}
     {:else if view === "edit"}
       {#key app.identity.id}
-        <ChannelStudio {app} {choose} saved={take} {openProject} {goto} only="recorded" />
+        <ChannelStudio {app} saved={take} {openProject} {goto} only="recorded" />
       {/key}
     {:else}
       {#key app.identity.id}

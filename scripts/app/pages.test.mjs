@@ -67,8 +67,13 @@ test("Home's order, and the recording page has only the recording (DECISIONS 175
   const health = fs.readFileSync(new URL("../../app/src/lib/HealthCheck.svelte", import.meta.url), "utf8");
   assert.match(health, /<VideoNeeds/, "what a video needs lives on the Health check");
   const s = fs.readFileSync(new URL("../../app/src/lib/channels/ChannelStudio.svelte", import.meta.url), "utf8");
-  assert.ok(s.indexOf('{#if direction === "script"}') < s.indexOf("<h2>Identity</h2>"));
-  assert.ok(s.lastIndexOf('{#if direction === "script"}', s.indexOf("<h2>The recipe</h2>")) > 0);
+  assert.doesNotMatch(s, /<h2>Identity<\/h2>/, "Home has no Identity section (DECISIONS 179)");
+  assert.ok(s.lastIndexOf('{#if direction === "script"}', s.indexOf("The recipe of")) > 0);
+  const menu = fs.readFileSync(new URL("../../app/src/lib/IdentityMenu.svelte", import.meta.url), "utf8");
+  assert.equal(menu.match(/role="menuitem"/g).length, 1, "the switch only lists the Identities");
+  const settings = fs.readFileSync(new URL("../../app/src/lib/Settings.svelte", import.meta.url), "utf8");
+  for (const h of ["Add Identity", "Duplicate", "Export and import", "Delete"]) assert.ok(settings.includes(`<h2>${h}</h2>`), h);
+  assert.match(settings, /<IdentityTransfer/);
 });
 
 test("Import & Export lists everything, and every Open goes to a page that exists (DECISIONS 175)", () => {

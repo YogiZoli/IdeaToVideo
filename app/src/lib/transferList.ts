@@ -8,7 +8,7 @@ import type { PageId } from "./pages";
 export type TransferRow = { what: string; files: string; where: string; page?: PageId; here?: boolean };
 
 export const IMPORTS: TransferRow[] = [
-  { what: "A whole Identity", files: ".zip", where: "This page", here: true },
+  { what: "A whole Identity", files: ".zip", where: "This page; or Identity, Manage Identity", here: true },
   { what: "Your look", files: ".zip, .json, .css", where: "This page", here: true },
   { what: "Extra scene designs", files: ".itvpack", where: "This page", here: true },
   { what: "Evergreen Traffic Card", files: ".md", where: "Identity, YouTube Channel & Audience", page: "channel" },
@@ -28,7 +28,7 @@ export const IMPORTS: TransferRow[] = [
 ];
 
 export const EXPORTS: TransferRow[] = [
-  { what: "A whole Identity", files: ".zip", where: "This page", here: true },
+  { what: "A whole Identity", files: ".zip", where: "This page; or Identity, Manage Identity", here: true },
   { what: "Your look", files: ".zip", where: "This page", here: true },
   { what: "Extra scene designs", files: ".itvpack", where: "This page", here: true },
   { what: "Diagnostics for the person helping you", files: ".zip", where: "This page", here: true },

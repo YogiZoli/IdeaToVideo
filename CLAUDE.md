@@ -42,7 +42,7 @@ locked recipe (`<identity>/recipe.json`): engine, preset, voice, avatar, music, 
 On screen a script video has eight tabs: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video.
 The Thumbnail is not one of them: it is on the Publishing menu, for any video, at any time. The top menu is Home, ONE Video, Identity, Wizards, Playlist,
 Publishing, Video Recording Editing, Settings, on one row, and nothing hides behind a switch (DECISIONS 168, 169, 172, 173, 175). Home
-starts a video from a script, Video Recording Editing one from a recording. Home's order: Today's video, Latest videos, Identity, The recipe, A new video, Week batch. On Playlist the Keyword Research comes first and the Planner reads what it found (`<identity>/keyword-research.json`). Every import and export of the app is listed on Settings, Import & Export (`lib/transferList.ts`): a new import or export gets a row there. On screen the word is Identity, not channel: one Identity has 0 or 1
+starts a video from a script, Video Recording Editing one from a recording. Home's order: Today's video, Latest videos, The recipe, A new video, Week batch. The dropdown before Home only switches the Identity; adding, duplicating, exporting and deleting one are on Identity, Manage Identity (DECISIONS 179). On Playlist the Keyword Research comes first and the Planner reads what it found (`<identity>/keyword-research.json`). Every import and export of the app is listed on Settings, Import & Export (`lib/transferList.ts`): a new import or export gets a row there. On screen the word is Identity, not channel: one Identity has 0 or 1
 YouTube channel. The Brand wizard is called Design on screen; the code still says `brand` and `channels`. The first page of Wizards is the YouTube Brand Channel Wizard, which prepares the channel itself: 13 questions, a kit to paste into YouTube, the Evergreen Traffic Card (DECISIONS 174). It is not the Design wizard.
 
 A preset is three things: a style sheet (JSON tokens, a PNG rendered by code), scene templates, shot rules. At runtime
@@ -60,6 +60,7 @@ the LLM only outputs scene JSON that fills the templates; it is checked, repaire
   of Congress ("no known restrictions"), Prelinger on the Internet Archive (only an item that says PD or CC0), NASA or
   other US federal works. Maps: Natural Earth, bundled.
 - Two named exceptions: Pixabay (logged "free license, not CC0") and Kie AI outputs (logged with model and prompt). No Pexels.
+- Zoltan's change (2026-11-05, DECISIONS 179): a future documentary style for recordings may use real material found online, not only CC0 and public domain. Nothing of it is built, and how wide this goes is his to say.
 - Never a source that asks for attribution or a credit line. Nothing about sources in the YouTube description.
 - Every external asset goes into the project's `assets_license.json`: source URL or model, license or terms, author,
   prompt (AI), cost, date. Anything without a clear license is rejected.

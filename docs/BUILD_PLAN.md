@@ -387,6 +387,18 @@ Changed on 2026-11-05 (DECISIONS 175): top menu Home, ONE Video, Identity, Wizar
 
 The first page of Wizards: 13 questions for the active Identity, "Write it with AI" on the texts, a kit to copy, the Identity's fields after a preview, the same Evergreen Traffic Card as the Import. `docs/wizards/brand-channel.md`, DECISIONS 174. For later: `kit.mjs` makes every text with no AI, `cardMarkdown` writes a card of version 1.
 
+## Later (Zoltan's list, 2026-11-05, nothing of it is built)
+
+In the order he liked them. Each one starts only when he says so.
+
+1. **Night shift.** A queue runs while he sleeps, one video at a time: voice, scenes, render, then it stops at the Preview. Scope: a week's batch, or a whole playlist from the Playlist Planner, finished by the morning. **His own ElevenLabs voice may run at night and may cost credits, he approved that** (no other paid service). Needed: the run must leave the window (`recipeRun` lives in `ProjectView.svelte`) and go through the job queue; the computer stays awake and on power; a restart goes on from the last stage; room is checked first; a morning list of what is ready and what failed. Estimate: 2 to 3 sessions, and about 2 to 4 hours of night for 7 videos (a render takes about twice the video's length). Still open: a limit on credits per night.
+2. **Inbox.** Google Drive's local folder is watched, no Drive login. **One folder per file type, not one big folder (his choice):** `G:/My Drive/IdeaToVideo Inbox/<Identity>/Audio`, `/Video`, `/Text`. Audio is written out on this computer and becomes notes for a script video, text becomes notes, video goes to the recording engine. Wait until a file stops growing. The original moves to `Done`, never deleted. Everything stops at the Preview. Hungarian speech has not been tried yet. Feeds the night shift. The path needs an adapter, the Mac has another one.
+3. **Morning list.** On top of Home, instead of Today's video: one row per Identity with what waits. A click switches to that Identity. Reuses the runner's `channel-board`.
+4. **A documentary style for recordings,** the app's own preset, chosen once in Kind of recording, so editing stays one button. Never separate tool buttons. Built from its own spec, not from any skill. Real material found online is allowed for it (DECISIONS 179).
+5. **Rename the Shot map tab,** Claude's proposal: Scene Timing. Waits for his yes.
+
+**Not for this app, or not now:** the numbers of published videos and the check before publishing belong to the PDT, and publishing regularly comes first. A cost and time log: later. A learning style: not needed for now.
+
 ## Next step
 
 Phase 9: macOS build, done on a Mac with Claude Code, no CI. It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
