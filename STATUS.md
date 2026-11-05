@@ -1,12 +1,35 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-04 (YouTube Brand Channel Wizard, DECISIONS 174)
+Frissítve: 2026-11-05 (menu, Home, recordings, Playlist, Import & Export, DECISIONS 175)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-04, YouTube Brand Channel Wizard, DECISIONS 174)
+## Now (2026-11-05, Zoltan's second walk through the app, DECISIONS 175)
+
+**Done in one change. Phase 9, the macOS build, is still next, and it needs a Mac.**
+
+- **Top menu on one row:** Home, ONE Video, Identity, Wizards, Playlist, Publishing, Video Recording Editing (on three short lines), Settings. Measured at 900, 1100, 1181 and 1280 px wide in `scripts/ui-mock`: no overflow. **His call:** his list did not place ONE Video; Claude put it after Home (one line in `pages.ts`).
+- **Home:** Today's video, Latest videos, Identity, The recipe, A new video, Week batch. The Channels board is gone. What a video needs moved to Settings, Health check.
+- **The recipe:** always open, six tiles with a few plain words each, a primary Change the recipe.
+- **"New Identity" twice:** one was a real Identity with that name, `identities/new-identity`. Not deleted, it is his. The button now says Add Identity.
+- **Video Recording Editing:** only Your recording, with one small line for the kind of recording, which decides what files it asks for.
+- **Playlist:** Keyword Research first, Playlist Planner second. The result stays in `<identity>/keyword-research.json`, and that is how the Planner knows it.
+- **Identity, Thumbnail is gone:** the same photos are on Publishing, Thumbnail.
+- **Import & Export:** two new lists, everything that can come in and go out (`lib/transferList.ts`).
+- Tests: Node 686 of 688 (2 live tests skipped, none red), Rust 50, UI check 0 errors. Screens clicked in `scripts/ui-mock`, no console error: the menu, Home, the recording page and Change the kind, Keyword Research to the Planner with a stand-in vidIQ answer, the Health check, Import & Export. `npm run audit:quick` was not run: this change touches no video stage.
+- Local installer built 2026-11-05 16:34 and installed over the old app: `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` (110 MiB). The installed copy has the new runner code. The app was opened. **No screen was clicked in the installed window** (screen access was declined this session).
+- Housekeeping: old build outputs removed, only the newest installer kept, so the next build compiles Rust from scratch (about 15 minutes).
+- Merged into `main` from branch `ui-walkthrough-home-menu` and pushed. No PR, no GitHub Actions run.
+
+**Not tried:** a real vidIQ search from the new page, a real AI plan from the kept keywords.
+
+**Open for Zoltan:** a typed working title is replaced by the AI's title; keep the typed one? Whether a real Identity named New Identity should stay. His wish list (blind spots) is answered in the chat of 2026-11-05, nothing of it is built.
+
+**Next:** Zoltan tries the new menu on the installer. Then Phase 9 in a new chat, on a Mac.
+
+## Earlier (2026-11-04, YouTube Brand Channel Wizard, DECISIONS 174)
 
 **The wizard is in the app: Wizards, first page. Phase 9, the macOS build, is still next, and it needs a Mac.**
 
