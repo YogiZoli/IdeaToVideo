@@ -330,7 +330,7 @@
       </section>
     {/if}
 
-    {#if page.steps.length && pageId !== "look" && hasFields}
+    {#if page.steps.length && pageId !== "look" && (hasFields || pageId === "research")}
       <div class="rerun">
         <p class="hint">Want to rethink this part? The setup wizard walks you through it again, step by step.</p>
         <button type="button" disabled={busy} onclick={() => { message = ""; wizard = true; }}>Run setup for this part again</button>

@@ -13,6 +13,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **ONE Video stays after Home**, he confirmed it.
 - **Recordings (DECISIONS 177):** Talking Head asks only for the camera file. A typed working title stays, the AI only names a video with none.
 - Tests: Node 687 of 689 (2 live tests skipped, none red), UI check 0 errors, Rust not touched since its 50 of 50. Screens clicked in `scripts/ui-mock`, no console error. Local installer built 2026-11-05 17:37 and installed over the old app, the app was opened; no screen clicked in the installed window. Old build outputs removed, only the newest installer kept. Merged into `main` from `ui-playlist-connections` and pushed, no PR, no GitHub Actions run.
+- **Run setup for this part again** is back on Keyword Research (DECISIONS 178).
 - **Waits for Zoltan:** how to simplify the Identity dropdown, the Identity menu and Home's Identity section. Claude's plan is in the chat of 2026-11-05, nothing of it is built. The Identity named New Identity holds real settings: his to rename or delete.
 
 ## Earlier (2026-11-05, Zoltan's second walk through the app, DECISIONS 175)

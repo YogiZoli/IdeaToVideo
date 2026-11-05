@@ -2836,3 +2836,5 @@
     - **Not changed, waits for his answer:** the Identity dropdown, the Identity menu and Home's Identity section. He asked for the plan in words first. The Identity called New Identity holds real settings, so it was not deleted or renamed. Name, Duplicate, Export and import and Delete on Manage Identity must stay, he marked them as critical.
 
 177. **Two small answers from Zoltan, the same day.** Talking Head asks only for the camera file: the combined slot did the same thing and only confused (`preset.json`). The runner still reads it, so an older video and a test that used it work, and Screen Recording keeps its own. A typed working title now stays: `titleTyped` in `project.json`, `planTitle` in `runner/recorded/shots.mjs`. With nothing typed the AI still names the video from what was said. This closes the "found, not changed" line of DECISIONS 175.
+
+178. **"Run setup for this part again" is back on Keyword Research** (Zoltan, the same day: "ez mégis jó, maradjon"). It walks through the vidIQ key step. This takes back that one line of DECISIONS 175.
