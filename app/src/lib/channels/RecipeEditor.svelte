@@ -11,7 +11,8 @@
   import PaidClips from "./PaidClips.svelte";
   import type { ChannelState, Recipe } from "./channels";
 
-  let { app, state: st, done, cancel }: { app: AppState; state: ChannelState; done: (r: Recipe) => void; cancel?: () => void } = $props();
+  // direction: which side it opens on, Home a script video, Video Recording Editing a recording
+  let { app, state: st, direction, done, cancel }: { app: AppState; state: ChannelState; direction?: "script" | "recorded"; done: (r: Recipe) => void; cancel?: () => void } = $props();
 
   // the editor works on a copy until Lock
   let r = $state<Recipe>(untrack(() => ({ broll: { on: false }, ...JSON.parse(JSON.stringify(st.recipe)) })));
@@ -99,6 +100,8 @@
   // the style sheet PNG, made by code from the preset's tokens
   let sheet = $state("");
   let sheeting = $state(false);
+  // after `sheet`, which chooseEngine clears
+  untrack(() => direction && chooseEngine(direction));
   async function showSheet() {
     sheeting = true;
     error = "";

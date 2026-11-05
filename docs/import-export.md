@@ -1,5 +1,8 @@
 # Import és Export az IdeaToVideo-ban (2026-10-07)
 
+**A teljes, friss lista az appban van:** Settings, Import & Export, "Everything you can import" és
+"Everything you can export" (`app/src/lib/transferList.ts`, DECISIONS 175). Az alábbi helyek egy része azóta máshova került.
+
 Röviden: mit lehet egy fájlba kimenteni, mit lehet beolvasni, és hogyan
 kapja meg Zoltan a saját 39 archetípusát.
 

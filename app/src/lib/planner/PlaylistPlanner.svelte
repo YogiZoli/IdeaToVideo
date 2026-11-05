@@ -1,10 +1,10 @@
 <script lang="ts">
-  // Playlist, Playlist Planner (DECISIONS 127, 168): the YT Evergreen Flywheel for
-  // the app's own user. Card or typed answers, seed keywords, vidIQ keyword
-  // research, the AI's plan as a table the user edits and approves, then the
-  // outline, and the Course Content Structure goes straight into the course
-  // import ("Create N videos"). Every vidIQ and AI step asks first and says
-  // what it uses. The file is the contract (runner/planner/index.mjs).
+  // Playlist, Playlist Planner (DECISIONS 127, 168, 175): the YT Evergreen Flywheel for
+  // the app's own user. Card or typed answers, the keywords of the Keyword Research page
+  // (kept in the Identity's folder), the AI's plan as a table the user edits and approves,
+  // then the outline, and the Course Content Structure goes straight into the course
+  // import ("Create N videos"). Every AI step asks first and says what it uses.
+  // The file is the contract (runner/planner/index.mjs).
   import { onMount } from "svelte";
   import { ask } from "@tauri-apps/plugin-dialog";
   import type { AppState } from "../api";
@@ -16,23 +16,22 @@
   import { videos } from "../course/course";
   import type { TrafficCard } from "./planner";
 
-  let { app, goto }: { app: AppState; goto: (id: "channel" | "connections") => void } = $props();
+  let { app, goto }: { app: AppState; goto: (id: "channel" | "connections" | "research") => void } = $props();
 
   type Kw = { keyword: string; volume: number | null; competition: number | null; score: number | null; seed?: string };
   type Row = { position: number; title: string; keyword: string; volume: number | null; competition: number | null };
   type Context = Record<string, unknown>;
 
   const llm = $derived(llmFor(app.config, "texts"));
-  const hasVidiq = $derived(!!app.keys["vidiq"]);
   const hasAi = $derived(!!app.keys[llm.provider]);
   const language = $derived(app.config?.channel.contentLanguage ?? "en");
 
   let card = $state<TrafficCard | null>(null);
   let answers = $state({ audience: "", promise: "", topic: "" });
-  let seedsText = $state("");
   let context = $state<Context | null>(null);
   let keywords = $state<Kw[] | null>(null);
-  let researchNote = $state("");
+  let researchedAt = $state<string | null>(null);
+  let loaded = $state(false);
   let title = $state("");
   let promise = $state("");
   let why = $state("");
@@ -46,46 +45,26 @@
   async function start() {
     error = "";
     try {
-      const r = await runner<{ card: TrafficCard | null; seeds: string[]; context: Context }>("planner-start", { answers, channel: app.config?.channel ?? {}, language });
+      const r = await runner<{ card: TrafficCard | null; context: Context; research: { keywords: Kw[]; at: string | null } | null }>("planner-start", { answers, channel: app.config?.channel ?? {}, language });
       card = r.card;
       context = r.context;
+      keywords = r.research?.keywords ?? null;
+      researchedAt = r.research?.at ?? null;
+      loaded = true;
       // no card: what the Identity already knows is filled in, never typed twice
       if (!card) {
         answers.audience ||= app.config?.channel.audience ?? "";
         answers.topic ||= app.config?.channel.profile ?? "";
       }
-      if (!seedsText.trim()) seedsText = r.seeds.join("\n");
     } catch (e) {
       error = errorText(e);
     }
   }
   onMount(start);
 
-  const seeds = $derived(seedsText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).slice(0, 10));
-
-  async function doResearch() {
-    error = "";
-    busy = "Checking your vidIQ credits...";
-    try {
-      await start();
-      const { credits } = await runner<{ credits: number | null }>("planner-balance", { service: "vidiq" });
-      busy = "";
-      const ok = await ask(`vidIQ keyword research for ${seeds.length} seed ${seeds.length === 1 ? "keyword" : "keywords"}: ${seeds.length} ${seeds.length === 1 ? "call" : "calls"}. It uses vidIQ credits from your plan${credits === null ? "" : `; you have ${credits} now`}. No AI tokens. Go on?`, { title: "Keyword research", kind: "info" });
-      if (!ok) return;
-      busy = "vidIQ is researching the keywords...";
-      const r = await runner<{ keywords: Kw[]; failed: string[]; creditsUsed: number | null }>("planner-research", { service: "vidiq", seeds });
-      keywords = r.keywords;
-      researchNote = `${r.keywords.length} keywords found${r.creditsUsed === null ? "" : `, ${r.creditsUsed} vidIQ credits used`}.${r.failed.length ? ` No data for: ${r.failed.map((f) => f.split(":")[0]).join(", ")}.` : ""}`;
-      log("planner_research", { seeds: seeds.length, keywords: r.keywords.length, credits: r.creditsUsed });
-      rows = null;
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busy = "";
-    }
-  }
-
   async function doPlan() {
+    // what was typed above counts
+    await start();
     if (!keywords || !context) return;
     const ok = await ask(`The AI picks one video per strong keyword from ${keywords.length} keywords (usually 8 to 16) and says why. It uses AI tokens from your AI key (${describeLlm(llm)}, a few cents at most). No vidIQ credits. Go on?`, { title: "Plan the playlist", kind: "info" });
     if (!ok) return;
@@ -172,8 +151,8 @@
 </script>
 
 <section class="card">
-  <p class="lead">A plan for a whole playlist, not for one video: which videos to make, in what order, each on a keyword people really search for. The result is one prepared video per row on Videos, with nothing started yet.</p>
-  <p class="hint">Four steps: what it is about, keyword research, the plan you can edit, the videos.</p>
+  <p class="lead">A plan for a whole playlist, not for one video: which videos to make, in what order, each on a keyword people really search for. The result is one prepared video per row on ONE Video, with nothing started yet.</p>
+  <p class="hint">It uses the keywords you found on Keyword Research. Then three steps: what it is about, the plan you can edit, the videos.</p>
 </section>
 
 <section class="card">
@@ -186,22 +165,22 @@
   <div class="grid">
     <label>Audience <input bind:value={answers.audience} placeholder={card?.audience || "Who the videos are for"} /></label>
     <label>Promise <input bind:value={answers.promise} placeholder={card?.result || "What they can do after the playlist"} /></label>
-    <label>Topic <input bind:value={answers.topic} placeholder={card?.topic || "The playlist's topic"} onchange={() => { if (!seedsText.trim()) start(); }} /></label>
+    <label>Topic <input bind:value={answers.topic} placeholder={card?.topic || "The playlist's topic"} /></label>
   </div>
 </section>
 
-<section class="card">
-  <h2>2. Keyword research</h2>
-  <p class="hint">Seed keywords, one per line (at most 10). vidIQ researches each one with your vidIQ key.</p>
-  <textarea rows="5" bind:value={seedsText} aria-label="Seed keywords" spellcheck="false"></textarea>
-  {#if !hasVidiq}<p class="hint">Add your vidIQ key first: <button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>.</p>{/if}
-  <div class="acts"><button type="button" class="primary" disabled={!!busy || !hasVidiq || !seeds.length} onclick={doResearch}>Research {seeds.length} with vidIQ</button></div>
-  {#if researchNote}<p class="good">{researchNote}</p>{/if}
-</section>
+{#if loaded && !keywords}
+  <section class="card">
+    <h2>2. The plan</h2>
+    <p class="hint">The plan is built from real keyword data, and {app.identity?.name} has none yet.</p>
+    <div class="acts"><button type="button" class="primary" onclick={() => goto("research")}>Go to Keyword Research</button></div>
+  </section>
+{/if}
 
 {#if keywords}
   <section class="card">
-    <h2>3. The plan</h2>
+    <h2>2. The plan</h2>
+    <p class="good">Uses {keywords.length} keywords from your Keyword Research{researchedAt ? `, ${new Date(researchedAt).toLocaleDateString()}` : ""}. <button type="button" class="link" onclick={() => goto("research")}>See or change them</button></p>
     {#if !hasAi}<p class="hint">Add your AI key first: <button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>.</p>{/if}
     <div class="acts"><button type="button" class:primary={!rows} disabled={!!busy || !hasAi} onclick={doPlan}>{rows ? "Plan again" : "Plan the playlist"}</button></div>
     {#if rows}
@@ -242,7 +221,7 @@
 
 {#if preview}
   <section class="card">
-    <h2>4. Create the videos</h2>
+    <h2>3. Create the videos</h2>
     <p class="hint">{preview.course.title}: {videos(preview.lessons.length)}, in playlist order. The import only prepares: no AI, no voice, no HeyGen and no render starts by itself.</p>
     <ol>{#each preview.lessons as l (l.id)}<li value={l.position}>{l.title} <span class="hint">{l.minutes} min{l.exists ? ", already here: will be updated" : ""}</span></li>{/each}</ol>
     {#each preview.warnings as w}<p class="hint">{w}</p>{/each}
@@ -253,14 +232,13 @@
   </section>
 {/if}
 
-{#if result}<p class="good">{result.created} created, {result.updated} updated. They are on Videos, Course or playlist filter, and on the Home board.</p>{/if}
+{#if result}<p class="good">{result.created} created, {result.updated} updated. They are on ONE Video, Course or playlist filter.</p>{/if}
 {#if busy}<p class="hint">{busy}</p>{/if}
 {#if error}<ErrorBox message={error} context={{ step: "playlist-planner", provider: llm.provider, model: llm.model }} />{/if}
 
 <style>
   .grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 8px; }
   .grid label { display: grid; gap: 4px; font-size: 13px; }
-  textarea { width: 100%; box-sizing: border-box; }
   .acts { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
   .row-acts { display: flex; gap: 2px; white-space: nowrap; }
   .row-acts button { padding: 4px 6px; font-size: 12px; }

@@ -6,6 +6,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { SETTINGS_PAGES, SUB_PAGES, MENUS, firstPage, menuOf } from "../../app/src/lib/pages.ts";
+import { IMPORTS, EXPORTS } from "../../app/src/lib/transferList.ts";
 
 test("every step is on exactly one Settings page", () => {
   const src = fs.readFileSync(new URL("../../app/src/lib/steps.ts", import.meta.url), "utf8");
@@ -22,18 +23,19 @@ test("the App's pages hold only the App's AI step", () => {
   assert.ok(SETTINGS_PAGES.some((p) => p.scope === "identity" && p.steps.includes("name")));
 });
 
-test("the top menu (DECISIONS 119, 168, 172): eight menus, at most seven pages each, every old page kept", () => {
-  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "Videos", "Video Recording Editing", "Playlist", "Publishing", "Wizards", "Identity", "Settings"]);
+test("the top menu (DECISIONS 119, 168, 172, 175): eight menus, at most seven pages each, every old page kept", () => {
+  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "ONE Video", "Identity", "Wizards", "Playlist", "Publishing", "Video Recording Editing", "Settings"]);
+  assert.deepEqual(MENUS.find((m) => m.id === "edit").lines, ["Video", "Recording", "Editing"]);
   for (const m of ["playlist", "publishing", "wizards", "identity", "settings"]) {
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
   }
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Playlist Planner", "Keyword Research", "Course or Playlist File"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Keyword Research", "Playlist Planner", "Course or Playlist File"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "publishing").map((p) => p.title), ["Thumbnail", "PDT Connection"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["YouTube Brand Channel Wizard", "CTA", "Design", "Motion", "Scenes"]);
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Audio Voice", "AI Avatar", "Thumbnail", "Footage", "Dictionary", "Manage Identity"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Audio Voice", "AI Avatar", "Footage", "Dictionary", "Manage Identity"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "settings").map((p) => p.title), ["Health check", "Connections", "Import & Export", "Folders", "Backup", "Account Plan", "Legal"]);
-  for (const id of ["folders", "backup", "plan", "legal", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "avatar", "photos", "research", "connections", "transfer", "planner", "courses", "thumbnail", "pdt"]) {
+  for (const id of ["folders", "backup", "plan", "legal", "identity", "channel", "look", "motion", "cta", "scenes", "footage", "dictionary", "voice", "avatar", "research", "connections", "transfer", "planner", "courses", "thumbnail", "pdt"]) {
     assert.ok(SETTINGS_PAGES.some((p) => p.id === id), id);
   }
   assert.equal(firstPage("wizards"), "brandchannel");
@@ -55,6 +57,29 @@ test("a video from a script starts on Home, from a recording on Edit: no switch 
   assert.match(page, /only="recorded"/);
   const studio = fs.readFileSync(new URL("../../app/src/lib/channels/ChannelStudio.svelte", import.meta.url), "utf8");
   assert.doesNotMatch(studio, /aria-label="Direction"/);
+});
+
+test("Home's order, and the recording page has only the recording (DECISIONS 175)", () => {
+  const page = fs.readFileSync(new URL("../../app/src/routes/+page.svelte", import.meta.url), "utf8");
+  const [today, latest, studio] = ["<TodayVideo", "<Home ", 'only="script"'].map((x) => page.indexOf(x));
+  assert.ok(today >= 0 && today < latest && latest < studio, "Today's video, the latest videos, then the Identity and the rest");
+  const home = fs.readFileSync(new URL("../../app/src/lib/Home.svelte", import.meta.url), "utf8");
+  assert.doesNotMatch(home, /<ChannelsBoard/);
+  const health = fs.readFileSync(new URL("../../app/src/lib/HealthCheck.svelte", import.meta.url), "utf8");
+  assert.match(health, /<VideoNeeds/, "what a video needs lives on the Health check");
+  const s = fs.readFileSync(new URL("../../app/src/lib/channels/ChannelStudio.svelte", import.meta.url), "utf8");
+  assert.ok(s.indexOf('{#if direction === "script"}') < s.indexOf("<h2>Identity</h2>"));
+  assert.ok(s.lastIndexOf('{#if direction === "script"}', s.indexOf("<h2>The recipe</h2>")) > 0);
+});
+
+test("Import & Export lists everything, and every Open goes to a page that exists (DECISIONS 175)", () => {
+  assert.ok(IMPORTS.length >= 10 && EXPORTS.length >= 10);
+  for (const r of [...IMPORTS, ...EXPORTS]) {
+    assert.ok(r.what && r.files && r.where, r.what);
+    if (r.page) assert.ok(SETTINGS_PAGES.some((p) => p.id === r.page), r.page);
+  }
+  assert.equal(new Set(IMPORTS.map((r) => r.what)).size, IMPORTS.length);
+  assert.equal(new Set(EXPORTS.map((r) => r.what)).size, EXPORTS.length);
 });
 
 test("nothing asks the user to turn on Advanced any more (DECISIONS 168)", () => {

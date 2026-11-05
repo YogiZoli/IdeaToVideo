@@ -65,7 +65,13 @@
 </div>
 
 <style>
-  .menu { position: relative; margin-right: 14px; }
+  .menu { position: relative; margin-right: 8px; flex-shrink: 1; min-width: 0; }
+  /* the top bar is one row: on a smaller window the name alone (DECISIONS 175) */
+  @media (max-width: 1180px) {
+    .menu { margin-right: 2px; }
+    .current .label, .current .handle { display: none; }
+    .current .name { max-width: 130px; font-size: 14px; }
+  }
   .current { display: inline-flex; gap: 8px; align-items: baseline; border: 1px solid var(--border); background: var(--background); padding: 5px 10px; border-radius: 8px; max-width: 360px; }
   .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
   .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

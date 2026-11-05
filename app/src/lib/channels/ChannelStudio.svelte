@@ -6,7 +6,7 @@
   // the brief, if there is one, then at the existing Preview step: approve, render,
   // Publishing Card, Thumbnail, publishing app. The week batch works with the same
   // choices, and queues what it writes.
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import { open as pickFile } from "@tauri-apps/plugin-dialog";
   import { filesMissing } from "./recorded";
@@ -21,11 +21,11 @@
   import { llmFor, aiWithKey } from "../llm";
   import { setScreen, log } from "../logger";
   import { fullPlanText } from "../edition";
-  import { blocker, costLine, recipeLines, recipeSide, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
+  import { blocker, costLine, recipeLines, recipeSide, RECIPE_HELP, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
 
   let { app, choose, saved, openProject, goto, only = "script" }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void; only?: Direction } = $props();
 
-  setScreen("channel");
+  setScreen(untrack(() => only) === "script" ? "home" : "edit");
   startWork();
 
   let st = $state<ChannelState | null>(null);
@@ -194,10 +194,11 @@
 </script>
 
 <div class="studio">
+  {#if direction === "script"}
   <section class="card channels">
     <div class="head">
       <h2>Identity</h2>
-      <button type="button" disabled={!room} title={room ? "" : fullPlanText(app.edition)} onclick={() => (creating = !creating)}>{creating ? "Cancel" : "New Identity"}</button>
+      <button type="button" disabled={!room} title={room ? "" : fullPlanText(app.edition)} onclick={() => (creating = !creating)}>{creating ? "Cancel" : "Add Identity"}</button>
     </div>
     <div class="cards">
       {#each app.identities as i (i.id)}
@@ -216,27 +217,36 @@
       </div>
     {/if}
   </section>
+  {/if}
 
   {#if error}<ErrorBox message={error} context={{ step: "channel" }} />{/if}
 
   {#if !st}
     {#if !error}<p class="hint">Loading...</p>{/if}
   {:else if editing}
-    <RecipeEditor {app} state={st} done={locked} cancel={st.saved ? () => (editing = false) : undefined} />
+    <RecipeEditor {app} state={st} {direction} done={locked} cancel={st.saved ? () => (editing = false) : undefined} />
   {:else}
-    <details class="card recipe">
-      <summary><b>The recipe</b> <span class="hint">{recipeLines(side ?? st.recipe, st.presets, st.freeVoices).slice(0, 3).map((l) => l.value).join(", ")}</span></summary>
+    {#if direction === "script"}
+    <section class="card recipe">
       <div class="head">
-        <h2>{app.identity?.name}: the recipe</h2>
-        <button type="button" class="ghost" onclick={() => (editing = true)}>Change</button>
+        <div>
+          <h2>The recipe</h2>
+          <p class="hint">How every video of {app.identity?.name} is made. You can change any of these.</p>
+        </div>
+        <button type="button" class="primary change" onclick={() => (editing = true)}>Change the recipe</button>
       </div>
-      <dl>
-        {#each recipeLines(side ?? st.recipe, st.presets, st.freeVoices) as l (l.label)}
-          <div><dt>{l.label}</dt><dd>{l.value}</dd></div>
+      <div class="lines">
+        {#each recipeLines(side ?? st.recipe, st.presets, st.freeVoices).filter((l) => l.label !== "Engine") as l (l.label)}
+          <button type="button" class="line" title="Change the recipe" onclick={() => (editing = true)}>
+            <span class="what-label">{l.label}</span>
+            <b>{l.value}</b>
+            <span class="what-help">{RECIPE_HELP[l.label] ?? ""}</span>
+          </button>
         {/each}
-      </dl>
+      </div>
       <p class="hint">{costLine(side ?? st.recipe, aiProvider)}</p>
-    </details>
+    </section>
+    {/if}
 
     {#if !side}
       <section class="card direction">
@@ -248,6 +258,7 @@
       <section class="card make">
         <h2>Your recording</h2>
         <p class="hint">Words, cuts and render all happen on this computer. Your files are read, never changed.</p>
+        <p class="kind"><span>Kind of recording: <b>{card?.label ?? side?.preset}</b></span> <button type="button" onclick={() => (editing = true)}>Change the kind</button></p>
         <div class="slots">
           {#each card?.recorded?.slots ?? [] as s (s.id)}
             <div class="slot">
@@ -257,7 +268,8 @@
             </div>
           {/each}
         </div>
-        <input bind:value={recTitle} aria-label="Working title" placeholder="Working title (optional, the AI names it from what you said)" />
+        <input bind:value={recTitle} aria-label="Working title" placeholder="Working title (optional)" />
+        <p class="hint">A name for your list while it is being made. Empty: the file's name. With an AI key, the AI replaces it with a title from what you said.</p>
         <div class="actions">
           <span class="hint">{missing ?? "It stops at the preview for your approval. Nothing is ever published by itself."}</span>
           <button type="button" class="primary big" disabled={starting || !!missing} onclick={makeRecorded}>{starting ? "Starting..." : "Edit the recording"}</button>
@@ -327,7 +339,7 @@
 </div>
 
 <style>
-  .studio { display: grid; gap: 16px; padding: 24px; max-width: 900px; margin: 0 auto; }
+  .studio { display: grid; gap: 16px; padding: 16px 24px 24px; max-width: 900px; margin: 0 auto; }
   .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   details summary { cursor: pointer; }
   details .head { margin-top: 12px; }
@@ -337,9 +349,14 @@
   .channel.on { background: var(--primary-surface); color: var(--primary-surface-foreground); border-color: var(--primary); }
   .new { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 160px) auto; gap: 8px; align-items: center; margin-top: 12px; }
   .new label { font-size: 14px; font-weight: 600; }
-  dl { margin: 12px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; }
-  dt { font-size: 12px; color: var(--muted-foreground); }
-  dd { margin: 0; font-weight: 600; font-size: 14px; }
+  .recipe .head { align-items: flex-start; }
+  .change { flex: none; font-size: 15px; padding: 10px 20px; }
+  .lines { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 4px; }
+  .line { display: grid; gap: 2px; justify-content: stretch; justify-items: start; text-align: left; white-space: normal; height: auto; min-height: 0; padding: 10px 12px; }
+  .line b { font-size: 15px; overflow-wrap: anywhere; }
+  .what-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); }
+  .what-help { font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
+  .kind { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 0 0; padding-top: 8px; font-size: 14px; }
   textarea, .batch input, .make > input { width: 100%; box-sizing: border-box; }
   .batch textarea { margin-top: 8px; }
   .make { display: grid; gap: 6px; }
@@ -365,6 +382,6 @@
   .what b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .what .hint { margin: 0; }
   @media (max-width: 980px) {
-    dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lines { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>

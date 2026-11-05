@@ -4,7 +4,8 @@
   // Import, Export. A course or playlist went to the Playlist menu, a HeyGen clip to
   // Wizards, CTA, a publishing card to the Publishing menu, Back up now to Settings,
   // Backup. Your look's import and export come from Settings (they also write the
-  // Identity's light logo). One Import takes both kinds of look file.
+  // Identity's light logo). One Import takes both kinds of look file. Below them, every
+  // import and every export of the whole app in one list (transferList.ts, DECISIONS 175).
   import { onMount } from "svelte";
   import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -14,6 +15,8 @@
   import { fullPlanText } from "./edition";
   import { fileName } from "./brand";
   import { log } from "./logger";
+  import type { PageId } from "./pages";
+  import { IMPORTS, EXPORTS, type TransferRow } from "./transferList";
   import ErrorBox from "./ErrorBox.svelte";
 
   let {
@@ -22,12 +25,14 @@
     busy: outerBusy = false,
     importCard,
     exportCardFile,
+    goto,
   }: {
     app: AppState;
     saved: (s: AppState, text: string) => void;
     busy?: boolean;
     importCard: (path: string) => void;
     exportCardFile: () => void;
+    goto: (page: PageId) => void;
   } = $props();
 
   let busy = $state("");
@@ -168,7 +173,38 @@
   </div>
 </section>
 
+{#snippet list(title: string, note: string, rows: TransferRow[])}
+  <section class="card">
+    <h2>{title}</h2>
+    <p class="hint">{note}</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>What</th><th>Form</th><th>Where</th><th></th></tr></thead>
+        <tbody>
+          {#each rows as r (r.what)}
+            <tr>
+              <td><b>{r.what}</b></td>
+              <td class="soft">{r.files}</td>
+              <td class="soft">{r.where}</td>
+              <td class="go">{#if r.page}<button type="button" class="ghost" onclick={() => goto(r.page!)}>Open</button>{/if}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{/snippet}
+
+{@render list("Everything you can import", "All of it, wherever it is done. No import ever brings an API key.", IMPORTS)}
+{@render list("Everything you can export", "All of it, wherever it is done. No export ever holds an API key.", EXPORTS)}
+
 <style>
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted-foreground); font-weight: 600; padding: 6px; }
+  td { padding: 6px; border-top: 1px solid var(--border); vertical-align: top; }
+  .soft { color: var(--muted-foreground); }
+  .go { text-align: right; white-space: nowrap; }
   h2 { margin: 0 0 8px; font-size: 17px; }
   .top { border-width: 2px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; }

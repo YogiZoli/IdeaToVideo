@@ -363,9 +363,9 @@ window.__TAURI_INTERNALS__ = {
         if (args.command === "traffic-card-load") return { card: q.get("card") ? mockCard : null };
         if (args.command === "traffic-card-preview") return { card: mockCard, fields: [{ field: "name", label: "Channel name", now: "My Identity", value: "TEST Sourdough Weekend" }, { field: "audience", label: "Audience", now: "", value: "TEST home bakers" }] };
         if (args.command === "traffic-card-save") return { card: mockCard };
-        if (args.command === "planner-start") return { card: q.get("card") ? mockCard : null, seeds: ["sourdough starter", "sourdough for beginners"], context: { audience: "TEST home bakers" } };
+        if (args.command === "planner-start") return { card: q.get("card") ? mockCard : null, seeds: ["sourdough starter", "sourdough for beginners"], context: { audience: "TEST home bakers" }, research: window.__research ?? null };
         if (args.command === "planner-balance") return { credits: 480 };
-        if (args.command === "planner-research") return { keywords: Array.from({ length: 12 }, (_, i) => ({ keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i, score: 70 - i })), failed: [], creditsBefore: 480, creditsAfter: 474, creditsUsed: 6 };
+        if (args.command === "planner-research") return window.__research = { seeds: args.request?.seeds ?? [], at: new Date().toISOString(), keywords: Array.from({ length: 12 }, (_, i) => ({ keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i, score: 70 - i })), failed: [], creditsBefore: 480, creditsAfter: 474, creditsUsed: 6 };
         if (args.command === "planner-plan") return { title: "TEST Sourdough Basics", promise: "Bake a loaf in a weekend", why: "Ten keywords have real volume and low competition; two are near duplicates, so 10 videos.", rows: Array.from({ length: 10 }, (_, i) => ({ position: i + 1, title: `Sourdough video ${i + 1}`, keyword: `sourdough kw ${i + 1}`, volume: 5000 - i * 300, competition: 20 + i })) };
         if (args.command === "planner-outline") return { outline: [] };
         if (args.command === "planner-build") return { text: "{}" };

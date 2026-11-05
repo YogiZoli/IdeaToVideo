@@ -74,7 +74,7 @@ import { channelBoard, setUpload, markSent } from "./course/board.mjs";
 import { bridgeLines } from "./course/bridge.mjs";
 import { previewCard as previewTrafficCard, saveCard as saveTrafficCard, loadCard as loadTrafficCard } from "./planner/traffic-card.mjs";
 import { wizardState, saveDraft as saveWizardDraft, wizardKit, wizardSave, wizardExport } from "./channelwizard/index.mjs";
-import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
+import { seedsFrom, contextOf, vidiqBalance, research as plannerResearch, saveResearch, loadResearch, planPlaylist, outlineVideos, buildStructure } from "./planner/index.mjs";
 import * as thumbnail from "./thumbnail/index.mjs";
 import { listPresets, loadPreset, presetCard, presetLook } from "./presets/index.mjs";
 import { renderStylesheet, tokensFor } from "./presets/stylesheet.mjs";
@@ -551,10 +551,13 @@ const commands = {
   // is its own command, so the UI asks before each one.
   "planner-start": async ({ identityDir, answers = {}, channel = {}, language = "en" }) => {
     const card = loadTrafficCard(identityDir);
-    return { card, seeds: seedsFrom({ card, topic: answers.topic }), context: contextOf({ card, answers, channel, language }) };
+    return { card, seeds: seedsFrom({ card, topic: answers.topic }), context: contextOf({ card, answers, channel, language }), research: loadResearch(identityDir) };
   },
   "planner-balance": async () => vidiqBalance({ apiKey: key() }),
-  "planner-research": async ({ seeds, country = null }) => plannerResearch({ apiKey: key(), seeds, country, onProgress: (p) => emit({ event: "progress", ...p }) }),
+  "planner-research": async ({ identityDir, seeds, country = null }) => {
+    const r = await plannerResearch({ apiKey: key(), seeds, country, onProgress: (p) => emit({ event: "progress", ...p }) });
+    return { ...r, saved: saveResearch(identityDir, { seeds, keywords: r.keywords, failed: r.failed, creditsUsed: r.creditsUsed }) };
+  },
   "planner-plan": async ({ llm, context, keywords }) =>
     planPlaylist({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, context, keywords, onProgress: (p) => emit({ event: "progress", ...p }) }),
   "planner-outline": async ({ llm, context, rows }) =>
