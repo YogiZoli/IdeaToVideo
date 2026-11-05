@@ -6,10 +6,14 @@ End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz 
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-05, simpler Identity, DECISIONS 179)
+## Now (2026-11-05, Night shift, DECISIONS 182)
+
+**On Home, under Week batch: pick videos, press Start, in the morning they are ready to watch.** One at a time, to the finished MP4, with the app open and the computer on power. Its own ElevenLabs voice may cost credits (he approved); HeyGen and paid clips never run; nothing is published. The morning list is on the same card. Also fixed: a recording with a typed title stopped with a "damaged project" error in the 17:37 and 18:40 installers (DECISIONS 177's mark was not in the schema); the channel e2e caught it. **Not tried:** a real night with a real AI and ElevenLabs; the shift clicked in the installed window; going on after a real restart (the logic has a test, it was not clicked).
+
+## Earlier (2026-11-05, simpler Identity, DECISIONS 179)
 
 - **The dropdown** before Home only lists and switches the Identities. **Home** has no Identity section. **Manage Identity:** Name, Add Identity, Duplicate, Export and import with real buttons, Delete.
-- **His list for later** is in `docs/BUILD_PLAN.md`, "Later": night shift, inbox, morning list, documentary preset. Nothing built.
+- **His list for later** is in `docs/BUILD_PLAN.md`, "Later": inbox, morning list across Identities, documentary preset. Nothing built.
 - **The clean room rule** on outside material is lifted for the future documentary preset only (DECISIONS 179). Open: whether wider.
 - Tests: Node 687 of 689 (2 live tests skipped, none red), UI check 0 errors, Rust not touched, 50 of 50 earlier today. Screens clicked in `scripts/ui-mock`, no console error: the dropdown, Home, Add Identity on Manage Identity. Local installer built 2026-11-05 18:17 and installed over the old app, the app was opened; no screen clicked in the installed window. Old build outputs removed, only the newest installer kept. Merged into `main` from `ui-identity-simplify` and pushed, no PR, no GitHub Actions run.
 - **Scene Timing** is the Shot map's new name on screen (DECISIONS 180). Merged, pushed and installed.

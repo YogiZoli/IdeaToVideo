@@ -28,12 +28,11 @@
   import ShotMapTab from "./channels/ShotMapTab.svelte";
   import { avatarLooks } from "./avatars";
   import { llmFor, describeLlm, aiWithKey } from "./llm";
-  import { errorCode } from "./errors";
   import { ask } from "@tauri-apps/plugin-dialog";
   import type { Series } from "./course/course";
   import type { Recipe } from "./channels/channels";
   import { notifyDone } from "./notify";
-  import { findBroll } from "./brollRun";
+  import { runRecipeVideo, runRecordedVideo, scriptOrOffline as scriptOrOfflineStep, addMusic as addMusicStep, stoppedByUser, type RunCtx, type RunEnd } from "./videoRun";
 
   // saved: new settings from a tab (the AI of a step, StepModel)
   let { app, dir: dirProp, startTab = null, back, saved, openPage, openThumbnail }: { app: AppState; dir: string; startTab?: TabId | null; back: () => void; saved: (s: AppState) => void; openPage?: (page: PageId) => void; openThumbnail?: (dir: string) => void } = $props();
@@ -140,7 +139,6 @@
   let pilotNote = $state("");
   // offline mode: why the Script tab waits for the user, until the next run
   let offlineNote = $state("");
-  const stoppedByUser = (e: unknown) => errorCode(errorText(e)) === "ITV-STOPPED" || /you stopped it/.test(errorText(e));
   const usableAi = (step: "script" | "scenes" | "texts") => aiWithKey(llmFor(app.config, step), app.keys);
   const noteOn = (kind: string, text: string) => runner("project-note", { projectDir: dir, kind, text }).catch(() => {});
   // Every plan gets its Scene Timing. It needs no AI; if it cannot be made the plan stands.
@@ -148,31 +146,20 @@
     if (stoppedByUser(e)) throw e;
     log("shot_map_failed", { error: errorText(e) }, "warn");
   });
-  // The script, or the hand-written way when no AI can write it. True: go on.
-  async function scriptOrOffline(input: Record<string, unknown>): Promise<boolean> {
-    const ai = usableAi("script");
-    let failure = ai ? "" : "No AI key is set.";
-    if (ai) {
-      setPilot("Writing the script");
-      show("script", "recipe");
-      try {
-        await runner("write-script", { projectDir: dir, llm: ai, input, channel: app.config!.channel });
-      } catch (e) {
-        if (stoppedByUser(e)) throw e;
-        failure = errorText(e);
-      }
-    }
-    if (failure) {
-      await runner("script-offline", { projectDir: dir, reason: failure });
-      await load();
-      show("script", "offline");
-      offlineNote = `${failure} Write or paste your script on this tab, save it, then press Make the video. Everything after the script runs on this computer.`;
-      await runner("autopilot-mark", { projectDir: dir, on: false });
-      return false;
-    }
-    await load();
-    return true;
-  }
+  // The steps of a video are in videoRun.ts, the Night shift runs the same ones (DECISIONS 182)
+  const runCtx = (): RunCtx => ({
+    dir,
+    config: app.config,
+    keys: app.keys,
+    look,
+    data: () => data,
+    load,
+    show,
+    step: setPilot,
+    offline: (text) => (offlineNote = text),
+    approveAvatar: (price) => ask(`This Identity's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }),
+  });
+  const scriptOrOffline = (input: Record<string, unknown>) => scriptOrOfflineStep(runCtx(), input);
   let resumePilot = $state(false);
   // a cut-off Autopilot waits for the step still running, then goes on
   $effect(() => {
@@ -293,223 +280,18 @@
       setPilot("");
     }
   }
-  // A channel video (docs/BUILD_PLAN.md): the locked recipe, step by step, with
-  // the same commands as the tabs, up to the existing Preview step, which waits
-  // for the user. Nothing is asked on the way but the avatar's price. A cut-off
-  // run goes on from where it stopped; what is made is never made again.
-  async function recipeRun() {
+  // A channel video or a Recorded video: videoRun.ts, up to the existing Preview step, which waits
+  // for the user. Nothing is asked on the way but the avatar's price.
+  async function makeVideo(run: (c: RunCtx) => Promise<RunEnd>) {
     if (!data?.project.recipe || pilots[dir]) return;
-    const recipe = data.project.recipe;
     pilotError = "";
     pilotNote = "";
-    const gates = () => data!.project.gates;
-    const approved = (g: string) => gates()[g]?.state === "approved";
-    const made = (g: string) => gates()[g]?.state === "pending";
-    const approveGate = async (gate: string) => {
-      if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
-      await load();
-    };
-    setPilot("Starting");
     offlineNote = "";
-    try {
-      await runner("autopilot-mark", { projectDir: dir, on: true });
-      // Research comes first, and the run waits for the brief: one click goes on
-      if (data.project.start?.research && data.researchState !== "approved") {
-        if (!data.researchState) {
-          setPilot("Researching");
-          show("research", "recipe");
-          const ai = usableAi("script");
-          if (ai) await runner("research-make", { projectDir: dir, llm: ai, channel: app.config!.channel });
-          else await runner("research-offline", { projectDir: dir });
-          await load();
-        }
-        show("research", "recipe");
-        await runner("autopilot-mark", { projectDir: dir, on: false });
-        notifyDone("Your research brief is ready", data?.project.title ?? "");
-        return;
-      }
-      if (!approved("script")) {
-        if (!data.scriptMarkdown && !(await scriptOrOffline({ topic: data.project.title, targetLengthMin: recipe.targetLengthMin }))) return;
-        await approveGate("script");
-      }
-      // a pasted script: its title ideas and summary, for the Publishing Card
-      const textAi = usableAi("texts");
-      if (textAi && gates().script?.mode === "custom") {
-        const has = await runner<{ packaging: unknown }>("packaging-state", { projectDir: dir });
-        if (!has.packaging) {
-          setPilot("Writing the title and the summary");
-          await runner("packaging-make", { projectDir: dir, llm: textAi }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
-        }
-      }
-      if (!approved("voice") && made("voice")) await approveGate("voice");
-      if (!approved("voice")) {
-        setPilot(recipe.voice.provider === "kokoro" ? "The free voice is reading the script" : "Reading the script aloud");
-        show("voice", "recipe");
-        await runner("make-voice", { projectDir: dir, narrator: { provider: recipe.voice.provider, voice: recipe.voice.voice }, music: null });
-        if (recipe.music.on) {
-          setPilot("Adding the music");
-          await addMusic(recipe);
-        }
-        await approveGate("voice");
-      }
-      if (!approved("scenes")) {
-        if (!made("scenes")) {
-          setPilot("Filling the scene templates");
-          show("scenes", "recipe");
-          const ai = usableAi("scenes");
-          if (ai) await runner("make-template-scenes", { projectDir: dir, llm: ai, look });
-          else await runner("simple-template-scenes", { projectDir: dir, look });
-        }
-        // after the voice: every shot starts on its word (runner/shots)
-        setPilot("Making the scene timing");
-        show("shots", "recipe");
-        await runner("shot-map-make", { projectDir: dir, look });
-        await approveGate("scenes");
-      }
-      const avatar = gates().avatar?.state;
-      if (avatar !== "approved" && avatar !== "skipped") {
-        // no key or a service that fails: the video goes on without the avatar, and says so
-        const noAvatar = async (why: string) => {
-          await noteOn("avatar", `This video has no avatar: ${why}`);
-          await runner("skip-gate", { projectDir: dir, gate: "avatar" });
-          await load();
-        };
-        if (recipe.avatar.on && !hasHeygen) await noAvatar("no HeyGen key is set.");
-        else if (recipe.avatar.on && recipe.avatar.lookId) {
-          try {
-            if (avatar !== "pending") {
-              setPilot("Asking about the avatar");
-              show("avatar", "recipe");
-              const plan = await runner<{ estimate?: { low: number; high: number } }>("avatar-plan", { projectDir: dir, service: "heygen", engine: "avatar_iii" });
-              const price = plan.estimate ? `about $${plan.estimate.low.toFixed(2)} to $${plan.estimate.high.toFixed(2)}` : "some";
-              if (!(await ask(`This Identity's recipe has the avatar on. HeyGen makes the opening and the closing with Avatar III, which costs ${price} of your HeyGen credits. Go on?`, { title: "The avatar", kind: "info" }))) throw new Error("you stopped it before the avatar; nothing was spent on it. Press Make the video to go on");
-              setPilot("HeyGen is making the avatar");
-              await runner("make-avatar", { projectDir: dir, service: "heygen", lookId: recipe.avatar.lookId, lookName: recipe.avatar.name ?? null, which: ["open", "close"], look, layout: { style: "overlay", position: "bottom-right", size: "medium" }, engine: "avatar_iii", lookEngines: [] });
-              await load();
-            }
-            await approveGate("avatar");
-          } catch (e) {
-            if (stoppedByUser(e)) throw e;
-            await noAvatar(errorText(e));
-          }
-        } else {
-          await runner("skip-gate", { projectDir: dir, gate: "avatar" });
-          await load();
-        }
-      }
-      if (!approved("review") && !made("review")) {
-        if (recipe.broll?.on) {
-          show("scenes", "recipe");
-          // the video goes on without it: a source that is down is only fewer clips
-          await findBroll(dir, usableAi("scenes") ?? llmFor(app.config, "scenes"), app.keys, setPilot).catch(async (e) => {
-            if (stoppedByUser(e)) throw e;
-            log("broll_engine_failed", { error: errorText(e) }, "warn");
-            await noteOn("broll", `The B-roll search stopped, so this video has less B-roll: ${errorText(e)} You can start it again on the Preview tab.`);
-          });
-        }
-        setPilot("Building the preview");
-        show("preview", "recipe");
-        await runner("build-video", { projectDir: dir, look });
-        await load();
-      }
-      await runner("autopilot-mark", { projectDir: dir, on: false });
-      show(approved("review") ? "video" : "preview", "recipe");
-      notifyDone("Your preview is ready", data?.project.title ?? "");
-    } catch (e) {
-      pilotError = `The video stopped: ${errorText(e)}`;
-      await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
-      await load().catch(() => {});
-    } finally {
-      setPilot("");
-    }
-  }
-
-  // A Recorded video (runner/recorded, docs/BUILD_PLAN.md phase 2): the words, the
-  // cuts, the plan and what the pictures need, with the commands of the Recording
-  // tab, up to the existing Preview step, which waits for the user. A cut-off run
-  // goes on from where it stopped; what is made is never made again.
-  async function recordedRun() {
-    if (!data?.project.recipe || pilots[dir]) return;
-    const recipe = data.project.recipe;
-    pilotError = "";
-    pilotNote = "";
-    const gates = () => data!.project.gates;
-    const approved = (g: string) => gates()[g]?.state === "approved";
-    const made = (g: string) => gates()[g]?.state === "pending";
-    const approveGate = async (gate: string) => {
-      if (!approved(gate)) await runner("approve-gate", { projectDir: dir, gate });
-      await load();
-    };
     setPilot("Starting");
     try {
-      await runner("autopilot-mark", { projectDir: dir, on: true });
-      show("recording", "recorded");
-      if (!approved("script")) {
-        if (!made("script")) {
-          setPilot("Listening to the recording");
-          await runner("recorded-transcribe", { projectDir: dir });
-          await load();
-        }
-        await approveGate("script");
-      }
-      if (!approved("voice")) {
-        if (!made("voice")) {
-          setPilot("Cutting the recording");
-          await runner("recorded-apply-cuts", { projectDir: dir });
-          if (recipe.music.on) {
-            setPilot("Adding the music");
-            await addMusic(recipe);
-          }
-          await load();
-        }
-        await approveGate("voice");
-      }
-      if (!approved("scenes")) {
-        if (!made("scenes")) {
-          setPilot("Planning what is on screen");
-          const ai = usableAi("scenes");
-          if (ai) await runner("recorded-plan", { projectDir: dir, llm: ai }).catch(async (e) => {
-            if (stoppedByUser(e)) throw e;
-            await noteOn("plan", `The chapters and big words were made by rule, without the AI: ${errorText(e)}`);
-            await runner("recorded-plan-rule", { projectDir: dir });
-          });
-          else await runner("recorded-plan-rule", { projectDir: dir });
-          await load();
-        }
-        // what the pictures need: the cursor, the person. Slow, so it runs once per plan
-        setPilot("Preparing the pictures");
-        await runner("recorded-prepare", { projectDir: dir });
-        await approveGate("scenes");
-      }
-      const textAi = usableAi("texts");
-      if (textAi) {
-        const has = await runner<{ packaging: unknown }>("packaging-state", { projectDir: dir });
-        if (!has.packaging) {
-          setPilot("Writing the title and the summary");
-          await runner("packaging-make", { projectDir: dir, llm: textAi }).catch((e) => log("packaging_failed", { error: errorText(e) }, "warn"));
-        }
-      }
-      const avatar = gates().avatar?.state;
-      if (avatar !== "approved" && avatar !== "skipped") {
-        await runner("skip-gate", { projectDir: dir, gate: "avatar" });
-        await load();
-      }
-      if (!approved("review") && !made("review")) {
-        if (recipe.broll?.on) {
-          await findBroll(dir, usableAi("scenes") ?? llmFor(app.config, "scenes"), app.keys, setPilot).catch(async (e) => {
-            if (stoppedByUser(e)) throw e;
-            log("broll_engine_failed", { error: errorText(e) }, "warn");
-            await noteOn("broll", `The B-roll search stopped, so this video has less B-roll: ${errorText(e)} You can start it again on the Preview tab.`);
-          });
-        }
-        setPilot("Building the preview");
-        show("preview", "recorded");
-        await runner("build-video", { projectDir: dir, look });
-        await load();
-      }
-      await runner("autopilot-mark", { projectDir: dir, on: false });
-      show(approved("review") ? "video" : "preview", "recorded");
-      notifyDone("Your preview is ready", data?.project.title ?? "");
+      const end = await run(runCtx());
+      if (end === "brief") notifyDone("Your research brief is ready", data?.project.title ?? "");
+      else if (end === "preview" || end === "video") notifyDone("Your preview is ready", data?.project.title ?? "");
     } catch (e) {
       pilotError = `The video stopped: ${errorText(e)}`;
       await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
@@ -518,14 +300,10 @@
       setPilot("");
     }
   }
+  const recipeRun = () => makeVideo(runRecipeVideo);
+  const recordedRun = () => makeVideo(runRecordedVideo);
 
-  // The recipe's music. Own files missing or a bad file: no music, and the Preview says so.
-  async function addMusic(recipe: Recipe) {
-    await runner("make-music", { projectDir: dir, music: { provider: recipe.music.source, mood: recipe.music.mood } }).catch(async (e) => {
-      if (stoppedByUser(e)) throw e;
-      await noteOn("music", `This video has no music: ${errorText(e)}`);
-    });
-  }
+  const addMusic = (recipe: Recipe) => addMusicStep(runCtx(), recipe);
 
   // The render belongs to the ONE Video, not to a tab: started from the
   // Preview ("Approve and render") or from Your video, it goes on whichever

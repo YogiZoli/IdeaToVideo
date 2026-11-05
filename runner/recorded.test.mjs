@@ -3,12 +3,16 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { checkWords, envelope, fillerMarks, finalWords, frameOf, keepsOf, keptSeconds, makeMarks, phrasesOf, repeatedTakes, runsOf, sameTake, snapWords, soundMarks, speechChunks, stutters, toFinal, voicedMask, ENVELOPE_RATE, FPS } from "./recorded/cuts.mjs";
 import { joinSound, selectExpression, soundLag } from "./recorded/edit.mjs";
 import { beatPlan, chapterCount, finishPlan, layoutPlan, locate, planIssues, planRecording, planTitle, ruleBigWords, ruleChapters, scriptFromPlan, shotRows } from "./recorded/shots.mjs";
 import { blobsOf, chooseTrack, cursorRect, fillGaps, findClicks, findStops, smoothPath, transitOf, viewPath, zoomPlan, TRACK_FPS } from "./recorded/cursor.mjs";
 import { inputSize, toInput, toMask } from "./recorded/matte.mjs";
 import { fitBox, placeInBox, recordedHtml, wordSize, LAYOUT_BOXES } from "./recorded/compose.mjs";
+import { createProject, loadProject, saveProject } from "./project.mjs";
 import { filesProblem, pictureRoles, voiceSource } from "./recorded/index.mjs";
 import { makeTokenizer, medianFilter, melFilters, warp, wordsFromTokens } from "./recorded/whisper.mjs";
 import { promptFor } from "./recorded/transcribe.mjs";
@@ -334,6 +338,14 @@ test("a typed title stays, the AI only names a video with none; Talking Head ask
   assert.equal(planTitle(undefined, "file name"), "file name");
   assert.deepEqual(loadPreset("talking-head").recorded.slots.map((s) => s.id), ["camera"]);
   assert.ok(loadPreset("screen-recording").recorded.slots.some((s) => s.id === "combined"), "Screen Recording keeps it");
+});
+
+test("a recording with a typed title can be saved: the mark is in the project's schema (DECISIONS 177)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "itv cím "));
+  const { dir } = createProject({ projectsDir: root, title: "My typed title", language: "en", identity: "x" });
+  saveProject(dir, { ...loadProject(dir), titleTyped: true });
+  assert.equal(loadProject(dir).titleTyped, true);
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test("layouts change about every 8 s, on a sentence, never twice alike", () => {
