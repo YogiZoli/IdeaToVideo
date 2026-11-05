@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The Shot map (runner/shots, docs/BUILD_PLAN.md phase 3): every shot with its
+  // The Scene Timing (runner/shots, docs/BUILD_PLAN.md phase 3): every shot with its
   // time, what it shows, its camera and change, and the word each thing on screen
   // enters on. A block chosen on the Scenes tab stays that block. Per shot, off by
   // default: a Google Flow slot, with a ready prompt, a copy button and the exact
@@ -91,14 +91,14 @@
 
 <section class="card shots">
   <div class="head">
-    <h2>Shot map</h2>
+    <h2>Scene Timing</h2>
     <button type="button" class="ghost" onclick={() => goto("scenes")}>Change a block on the Scenes tab</button>
   </div>
   <p class="hint">The detailed plan behind the Scenes: every shot with its length and camera, and the exact word each thing on screen appears on. Made on this computer, it costs nothing. The Preview, the next big step, shows what it looks like.</p>
   {#if error}<ErrorBox message={error} context={{ step: "shot-map" }} />{/if}
   {#if !map || !map.shots.length}
-    <p class="hint">{map?.warning ?? (planned ? "This video has no shot map yet." : "The shot map comes after the voice and the scene plan. Plan the scenes first.")}</p>
-    {#if planned}<div class="actions"><button type="button" class="primary" disabled={off} onclick={makeMap}>{working === "make" ? "Making..." : "Make the shot map"}</button></div>{/if}
+    <p class="hint">{map?.warning ?? (planned ? "This video has no scene timing yet." : "The scene timing comes after the voice and the scene plan. Plan the scenes first.")}</p>
+    {#if planned}<div class="actions"><button type="button" class="primary" disabled={off} onclick={makeMap}>{working === "make" ? "Making..." : "Make the scene timing"}</button></div>{/if}
   {:else}
     {#if map.warning}<p class="warn">{map.warning}</p>{/if}
     {#if map.summary}

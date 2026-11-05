@@ -47,7 +47,7 @@
     "week-batch-local": "Week batch",
     "make-template-scenes": "Scene plan",
     "simple-template-scenes": "Scene plan",
-    "shot-map-make": "Shot map",
+    "shot-map-make": "Scene Timing",
     "recorded-transcribe": "Words of the recording",
     "recorded-apply-cuts": "Cutting the recording",
     "recorded-plan": "Plan of the recording",

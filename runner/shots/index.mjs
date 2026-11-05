@@ -337,7 +337,7 @@ export async function writeShotMap({ projectDir, env = process.env, warning = nu
 export async function setFlow({ projectDir, identityDir = null, id, on, prompt, env = process.env }) {
   const view = await shotMapView({ projectDir, env });
   const shot = view.shots.find((s) => s.id === id);
-  if (!shot) throw new Error("This shot is not in the map any more. Open the Shot map again.");
+  if (!shot) throw new Error("This shot is not in the map any more. Open Scene Timing again.");
   const flow = flowOf(projectDir);
   const slot = flow[id] ?? {};
   if (typeof prompt === "string") {
