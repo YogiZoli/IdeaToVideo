@@ -56,7 +56,7 @@ test("one recipe, either direction", () => {
 
 test("every script video: Research first, the Shot map after the Scenes, no Thumbnail tab (DECISIONS 169)", () => {
   for (const list of [videoTabs(false), videoTabs(true)]) {
-    assert.deepEqual(list.map((t) => t.label), ["Research", "Script", "Voice and music", "Scenes", "Shot map", "Avatar", "Preview", "Your video"]);
+    assert.deepEqual(list.map((t) => t.label), ["Research", "Script", "Voice and music", "Scenes", "Scene Timing", "Avatar", "Preview", "Your video"]);
     assert.deepEqual(list.map((t) => t.n), [1, 2, 3, 4, 5, 6, 7, 8]);
   }
   const gates = { script: { state: "approved" }, voice: { state: "approved" }, scenes: { state: "todo" }, avatar: { state: "todo" }, review: { state: "todo" } };

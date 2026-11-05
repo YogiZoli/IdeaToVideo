@@ -143,7 +143,7 @@
   const stoppedByUser = (e: unknown) => errorCode(errorText(e)) === "ITV-STOPPED" || /you stopped it/.test(errorText(e));
   const usableAi = (step: "script" | "scenes" | "texts") => aiWithKey(llmFor(app.config, step), app.keys);
   const noteOn = (kind: string, text: string) => runner("project-note", { projectDir: dir, kind, text }).catch(() => {});
-  // Every plan gets its Shot map. It needs no AI; if it cannot be made the plan stands.
+  // Every plan gets its Scene Timing. It needs no AI; if it cannot be made the plan stands.
   const shotMap = () => runner("shot-map-make", { projectDir: dir, look }).catch((e) => {
     if (stoppedByUser(e)) throw e;
     log("shot_map_failed", { error: errorText(e) }, "warn");
@@ -259,7 +259,7 @@
           await noteOn("scenes", `The scenes were planned by rule, without the AI: ${errorText(e)}`);
           await runner("simple-scenes", { projectDir: dir, look });
         });
-        setPilot("Making the shot map");
+        setPilot("Making the scene timing");
         await shotMap();
         await approveGate("scenes");
       }
@@ -361,7 +361,7 @@
           else await runner("simple-template-scenes", { projectDir: dir, look });
         }
         // after the voice: every shot starts on its word (runner/shots)
-        setPilot("Making the shot map");
+        setPilot("Making the scene timing");
         show("shots", "recipe");
         await runner("shot-map-make", { projectDir: dir, look });
         await approveGate("scenes");

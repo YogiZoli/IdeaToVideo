@@ -22,7 +22,7 @@ export const IMPORTS: TransferRow[] = [
   { what: "Your photos for thumbnails", files: ".jpg, .png, .webp", where: "Publishing, Thumbnail, With my face", page: "thumbnail" },
   { what: "Your own music for one video", files: ".mp3, .wav, .m4a, .aac, .ogg, .flac", where: "A video's Voice and music step" },
   { what: "Your own music for every video", files: "audio files in the Identity's music folder", where: "Home, The recipe, Music: My own files" },
-  { what: "A clip for one shot", files: ".mp4, .mov, .webm, .m4v", where: "A video's Shot map step, per shot" },
+  { what: "A clip for one shot", files: ".mp4, .mov, .webm, .m4v", where: "A video's Scene Timing step, per shot" },
   { what: "A backup of one video", files: "from your backup folder", where: "ONE Video, Restore from backup" },
   { what: "A backup of everything", files: "your backup folder", where: "The first screen on a new computer: Restore from a backup" },
 ];

@@ -1,5 +1,5 @@
 // tabs.ts: the steps of a ONE Video as tabs (Zoltan, 2026-10-05, DECISIONS
-// 85; Research first and the Shot map for every video, the Thumbnail out to
+// 85; Research first and the Scene Timing for every video, the Thumbnail out to
 // Publishing, 2026-11-04, DECISIONS 169), and the one word each tab shows. Pure
 // functions, no Tauri imports, so the Node tests load it.
 //   done      the step is approved (the avatar: approved or left out; the
@@ -22,7 +22,7 @@ export const TABS: Tab[] = [
   { id: "script", n: 2, label: "Script", gate: "script", commands: ["write-script", "save-script"] },
   { id: "voice", n: 3, label: "Voice and music", gate: "voice", commands: ["make-voice", "make-music", "set-music"] },
   { id: "scenes", n: 4, label: "Scenes", gate: "scenes", commands: ["make-scenes", "simple-scenes", "make-template-scenes", "simple-template-scenes", "refill-scene", "save-scenes"] },
-  { id: "shots", n: 5, label: "Shot map", gate: "scenes", commands: ["shot-map-make", "shot-flow-clip"] },
+  { id: "shots", n: 5, label: "Scene Timing", gate: "scenes", commands: ["shot-map-make", "shot-flow-clip"] },
   { id: "avatar", n: 6, label: "Avatar", gate: "avatar", commands: ["make-avatar", "avatar-layout", "remove-avatar"] },
   { id: "preview", n: 7, label: "Preview", gate: "review", commands: ["build-video"] },
   { id: "video", n: 8, label: "Your video", gate: null, commands: ["render-video"] },

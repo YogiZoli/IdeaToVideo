@@ -39,7 +39,7 @@ Stages, in order: Direction, Research (optional), Script, Voice with word timest
 (shows paid costs), B-roll and assets, Render, Publishing Card, PDT export. A channel is an Identity plus one
 locked recipe (`<identity>/recipe.json`): engine, preset, voice, avatar, music, length.
 
-On screen a script video has eight tabs: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video.
+On screen a script video has eight tabs: Research, Script, Voice and music, Scenes, Scene Timing (the code says `shots`, Shot map), Avatar, Preview, Your video.
 The Thumbnail is not one of them: it is on the Publishing menu, for any video, at any time. The top menu is Home, ONE Video, Identity, Wizards, Playlist,
 Publishing, Video Recording Editing, Settings, on one row, and nothing hides behind a switch (DECISIONS 168, 169, 172, 173, 175). Home
 starts a video from a script, Video Recording Editing one from a recording. Home's order: Today's video, Latest videos, The recipe, A new video, Week batch. The dropdown before Home only switches the Identity; adding, duplicating, exporting and deleting one are on Identity, Manage Identity (DECISIONS 179). On Playlist the Keyword Research comes first and the Planner reads what it found (`<identity>/keyword-research.json`). Every import and export of the app is listed on Settings, Import & Export (`lib/transferList.ts`): a new import or export gets a row there. On screen the word is Identity, not channel: one Identity has 0 or 1

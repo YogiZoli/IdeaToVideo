@@ -379,7 +379,7 @@ it: an empty brief says nothing was checked, and the Publishing Card says `unche
 ## Menu and steps (2026-11-04, outside the phases)
 
 Zoltan walked through the app and asked for a new order (DECISIONS 168 to 171). It changes Phase 1's Advanced toggle: there is no toggle any more, every menu is always there. Top menu: Home, Videos, Video Recording Editing, Playlist, Publishing,
-Wizards, Identity, Settings (`app/src/lib/pages.ts`); Video Recording Editing starts a video from a recording (DECISIONS 172, 173). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). The Thumbnail is on the Publishing menu and can be made before the video.
+Wizards, Identity, Settings (`app/src/lib/pages.ts`); Video Recording Editing starts a video from a recording (DECISIONS 172, 173). Every script video has eight steps: Research, Script, Voice and music, Scenes, Shot map, Avatar, Preview, Your video (`app/src/lib/tabs.ts`). On screen the Shot map is called Scene Timing since DECISIONS 180. The Thumbnail is on the Publishing menu and can be made before the video.
 
 Changed on 2026-11-05 (DECISIONS 175): top menu Home, ONE Video, Identity, Wizards, Playlist, Publishing, Video Recording Editing, Settings, on one row. Home: Today's video, Latest videos, Identity, The recipe, A new video, Week batch. Playlist: Keyword Research first, then the Planner, which reads what it found.
 
@@ -395,7 +395,6 @@ In the order he liked them. Each one starts only when he says so.
 2. **Inbox.** Google Drive's local folder is watched, no Drive login. **One folder per file type, not one big folder (his choice):** `G:/My Drive/IdeaToVideo Inbox/<Identity>/Audio`, `/Video`, `/Text`. Audio is written out on this computer and becomes notes for a script video, text becomes notes, video goes to the recording engine. Wait until a file stops growing. The original moves to `Done`, never deleted. Everything stops at the Preview. Hungarian speech has not been tried yet. Feeds the night shift. The path needs an adapter, the Mac has another one.
 3. **Morning list.** On top of Home, instead of Today's video: one row per Identity with what waits. A click switches to that Identity. Reuses the runner's `channel-board`.
 4. **A documentary style for recordings,** the app's own preset, chosen once in Kind of recording, so editing stays one button. Never separate tool buttons. Built from its own spec, not from any skill. Real material found online is allowed for it (DECISIONS 179).
-5. **Rename the Shot map tab,** Claude's proposal: Scene Timing. Waits for his yes.
 
 **Not for this app, or not now:** the numbers of published videos and the check before publishing belong to the PDT, and publishing regularly comes first. A cost and time log: later. A learning style: not needed for now.
 
