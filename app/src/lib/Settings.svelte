@@ -9,7 +9,7 @@
   import { open, save as saveDialog, ask } from "@tauri-apps/plugin-dialog";
   import type { Config, AppState, AppConfig, Llm } from "./api";
   import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity } from "./api";
-  import { cleanConfig, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
+  import { cleanConfig, defaultConfig, LANGUAGES, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
   import { SETTINGS_PAGES, SUB_PAGES, MENU_NOTE, MENUS, menuOf, type PageId, type SubPage } from "./pages";
   import type { TabId } from "./tabs";
@@ -21,6 +21,7 @@
   import KeyField from "./KeyField.svelte";
   import ConnectionRow from "./ConnectionRow.svelte";
   import TransferPage from "./TransferPage.svelte";
+  import IdentityTransfer from "./IdentityTransfer.svelte";
   import Onboarding from "./Onboarding.svelte";
   import ErrorBox from "./ErrorBox.svelte";
   import BackupSettings from "./BackupSettings.svelte";
@@ -258,6 +259,19 @@
       pageId = "identity";
     });
 
+  // A new Identity: a name and a language. The core makes it the active one, its recipe comes on Home.
+  let newName = $state("");
+  let newLanguage = $state("en");
+  const addIdentity = () =>
+    run(async () => {
+      const name = newName.trim();
+      const base = defaultConfig();
+      const c = { ...base, name, llm: { ...app.app!.llm }, channel: { ...base.channel, contentLanguage: newLanguage }, narrator: newLanguage === "en" ? { provider: "kokoro" as const, voice: "am_michael" } : base.narrator };
+      const s = await saveSettings(null, identityFromConfig(cleanConfig(c), null, null));
+      newName = "";
+      after(s, `Made "${s.identity?.name}". You are now working in it. Its recipe is the next thing on Home.`);
+    });
+
   async function remove() {
     const name = app.identity!.name;
     if (!(await ask(`Delete the Identity "${name}"? Its settings and its own keys are removed. Its videos stay on your disk, in the folder "${app.identity!.folder}".`, { title: "Delete Identity", kind: "warning" }))) return;
@@ -471,6 +485,21 @@
 
     {#if pageId === "identity"}
       <section class="card">
+        <h2>Add Identity</h2>
+        <p class="hint">A new, empty Identity, for example for another YouTube channel.</p>
+        {#if room}
+          <div class="row">
+            <input bind:value={newName} maxlength="80" aria-label="Name of the new Identity" placeholder="The Identity's name" />
+            <select bind:value={newLanguage} aria-label="Language of the new Identity">
+              {#each LANGUAGES as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
+            </select>
+            <button type="button" disabled={busy || !newName.trim()} onclick={addIdentity}>Add Identity</button>
+          </div>
+        {:else}
+          <p class="hint">{fullPlanText(app.edition)}</p>
+        {/if}
+      </section>
+      <section class="card">
         <h2>Duplicate</h2>
         <p class="hint">A new Identity with the same settings, for example a second YouTube channel. The videos are not copied.</p>
         {#if room}
@@ -485,7 +514,8 @@
       </section>
       <section class="card">
         <h2>Export and import</h2>
-        <p class="hint">One file with this Identity's settings, logo and look, for another computer or another person: <button type="button" class="link" onclick={() => openPage("transfer")}>Settings, Import & Export</button>.</p>
+        <IdentityTransfer {app} saved={(s, text) => after(s, text)} off={busy} />
+        <p class="hint">Everything else that can go in or out: <button type="button" class="link" onclick={() => openPage("transfer")}>Settings, Import & Export</button>.</p>
       </section>
       <section class="card">
         <h2>Delete</h2>

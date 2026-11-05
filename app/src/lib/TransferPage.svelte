@@ -10,14 +10,13 @@
   import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
   import type { AppState, BrandState, BrandCard } from "./api";
-  import { runner, errorText, importIdentity, exportIdentity, exportDiagnostics, readTokensFile } from "./api";
-  import { roomForIdentity } from "./identity";
-  import { fullPlanText } from "./edition";
+  import { runner, errorText, exportDiagnostics, readTokensFile } from "./api";
   import { fileName } from "./brand";
   import { log } from "./logger";
   import type { PageId } from "./pages";
   import { IMPORTS, EXPORTS, type TransferRow } from "./transferList";
   import ErrorBox from "./ErrorBox.svelte";
+  import IdentityTransfer from "./IdentityTransfer.svelte";
 
   let {
     app,
@@ -39,7 +38,6 @@
   let message = $state("");
   let error = $state("");
   let path = $state("");
-  const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
 
   type Pack = { id: string; name: string };
   let packs = $state<Pack[]>([]);
@@ -67,24 +65,6 @@
     } finally {
       busy = "";
     }
-  }
-
-  async function identityIn() {
-    const file = await open({ multiple: false, directory: false, filters: [{ name: "Identity", extensions: ["zip"] }] });
-    if (typeof file !== "string") return;
-    await run("Importing the Identity...", async () => {
-      const s = await importIdentity(file);
-      saved(s, `Imported "${s.identity?.name}". You are now working in it. Its own API keys are not in the file: add them on Settings, Connections if it needs any.`);
-    });
-  }
-
-  async function identityOut() {
-    const file = await saveDialog({ defaultPath: `${app.identity!.name}.identity.zip`, filters: [{ name: "Identity", extensions: ["zip"] }] });
-    if (typeof file !== "string") return;
-    await run("Exporting the Identity...", async () => {
-      path = await exportIdentity(app.identity!.id, file);
-      message = "Exported. No API key is in the file.";
-    });
   }
 
   // A look file: this app's own (.zip, .json), or a .css from another design tool, whose
@@ -145,12 +125,7 @@
 
 <section class="card top">
   <h2>Identity</h2>
-  <p class="hint">One file with everything of an Identity: its settings, logo, look and extra scene designs, to start it on another computer or for another person. API keys are never in it.</p>
-  <div class="row">
-    <button type="button" class="primary" disabled={off || !room} title={room ? "" : fullPlanText(app.edition)} onclick={identityIn}>Import Identity</button>
-    <button type="button" disabled={off} onclick={identityOut}>Export {app.identity?.name}</button>
-  </div>
-  {#if !room}<p class="hint">{fullPlanText(app.edition)}</p>{/if}
+  <IdentityTransfer {app} {saved} {off} />
 </section>
 
 <section class="card">
@@ -207,7 +182,6 @@
   .go { text-align: right; white-space: nowrap; }
   h2 { margin: 0 0 8px; font-size: 17px; }
   .top { border-width: 2px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; }
   .rows { display: grid; }
   .r { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--border); }
   .r:first-child { border-top: none; padding-top: 0; }

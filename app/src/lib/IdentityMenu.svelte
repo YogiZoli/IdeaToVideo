@@ -1,31 +1,15 @@
 <script lang="ts">
-  // The Identity menu in the top bar (docs/identity.md 7): the active
-  // Identity's name and YouTube handle; open, it lists every Identity and
-  // offers New, Duplicate and Manage Identity. On a full plan (Solo) New and
-  // Duplicate are greyed out, with the reason. Import is on Settings, Import
-  // & Export (DECISIONS 119).
+  // The Identity switch in the top bar (DECISIONS 179): the active Identity's name and YouTube
+  // handle; open, the list of every Identity and nothing else. Adding, duplicating, exporting and
+  // deleting one are on Identity, Manage Identity.
   import type { AppState } from "./api";
-  import { youtubeHandle, roomForIdentity } from "./identity";
-  import { fullPlanText, IDENTITY } from "./edition";
+  import { youtubeHandle } from "./identity";
+  import { IDENTITY } from "./edition";
 
-  let {
-    app,
-    choose,
-    newIdentity,
-    duplicate,
-    settings,
-  }: {
-    app: AppState;
-    choose: (id: string) => void;
-    newIdentity: () => void;
-    duplicate: () => void;
-    settings: () => void;
-  } = $props();
+  let { app, choose }: { app: AppState; choose: (id: string) => void } = $props();
 
   let open = $state(false);
   let root: HTMLDivElement;
-  const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
-  const full = $derived(room ? "" : fullPlanText(app.edition));
   const handle = $derived(youtubeHandle(app.identity?.channel?.youtubeUrl));
 
   function act(fn: () => void) {
@@ -55,11 +39,6 @@
           {#if youtubeHandle(i.youtubeUrl)}<span class="handle">{youtubeHandle(i.youtubeUrl)}</span>{/if}
         </button>
       {/each}
-      <hr />
-      <button type="button" role="menuitem" class="item" disabled={!room} title={full} onclick={() => act(newIdentity)}>New Identity</button>
-      <button type="button" role="menuitem" class="item" disabled={!room} title={full} onclick={() => act(duplicate)}>Duplicate this Identity</button>
-      <button type="button" role="menuitem" class="item" onclick={() => act(settings)}>Manage Identity</button>
-      {#if !room}<p class="note">{full}</p>{/if}
     </div>
   {/if}
 </div>
@@ -80,6 +59,4 @@
   .pop { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; min-width: 260px; display: grid; gap: 2px; padding: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.12); }
   .item { display: flex; justify-content: space-between; gap: 12px; width: 100%; text-align: left; border: none; background: none; padding: 7px 10px; border-radius: 6px; }
   .item.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }
-  hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; width: 100%; }
-  .note { margin: 4px 10px; font-size: 12px; color: var(--muted-foreground); max-width: 260px; }
 </style>

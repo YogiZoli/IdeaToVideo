@@ -6,7 +6,14 @@ End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz 
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-05, Playlist and Connections after his answer, DECISIONS 176)
+## Now (2026-11-05, simpler Identity, DECISIONS 179)
+
+- **The dropdown** before Home only lists and switches the Identities. **Home** has no Identity section. **Manage Identity:** Name, Add Identity, Duplicate, Export and import with real buttons, Delete.
+- **His list for later** is in `docs/BUILD_PLAN.md`, "Later": night shift, inbox, morning list, documentary preset, a new name for the Shot map. Nothing built.
+- **The clean room rule** on outside material is lifted for the future documentary preset only (DECISIONS 179). Open: whether wider.
+- **Open for Zoltan:** a name for the Identity called New Identity, or delete it; a credit limit per night; Scene Timing as the Shot map's name.
+
+## Earlier (2026-11-05, Playlist and Connections after his answer, DECISIONS 176)
 
 - **Playlist:** no numbers, no buttons between its pages. Keyword Research, Playlist Planner, Create Playlist File. The Planner is one section.
 - **Connections:** AI Apps, AI Services, Which AI for which job, Remove all keys. The Publishing link is gone.
@@ -14,7 +21,6 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 - **Recordings (DECISIONS 177):** Talking Head asks only for the camera file. A typed working title stays, the AI only names a video with none.
 - Tests: Node 687 of 689 (2 live tests skipped, none red), UI check 0 errors, Rust not touched since its 50 of 50. Screens clicked in `scripts/ui-mock`, no console error. Local installer built 2026-11-05 17:37 and installed over the old app, the app was opened; no screen clicked in the installed window. Old build outputs removed, only the newest installer kept. Merged into `main` from `ui-playlist-connections` and pushed, no PR, no GitHub Actions run.
 - **Run setup for this part again** is back on Keyword Research (DECISIONS 178).
-- **Waits for Zoltan:** how to simplify the Identity dropdown, the Identity menu and Home's Identity section. Claude's plan is in the chat of 2026-11-05, nothing of it is built. The Identity named New Identity holds real settings: his to rename or delete.
 
 ## Earlier (2026-11-05, Zoltan's second walk through the app, DECISIONS 175)
 

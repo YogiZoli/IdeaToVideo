@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The start screen (docs/BUILD_PLAN.md, phases 1 and 3). Pick an Identity; its locked
+  // The start screen (docs/BUILD_PLAN.md, phases 1 and 3). The active Identity's locked
   // recipe says how. Three choices, each starting from the recipe: the direction,
   // the text (empty for a topic, else a finished script or notes), and research. A
   // new video opens with its run already going (ProjectView recipeRun) and stops at
@@ -16,14 +16,11 @@
   import RecipeEditor from "./RecipeEditor.svelte";
   import type { AppState } from "../api";
   import { runner, errorText, onProgress, saveSettings } from "../api";
-  import { defaultConfig, cleanConfig, LANGUAGES } from "../catalog";
-  import { identityFromConfig, roomForIdentity } from "../identity";
   import { llmFor, aiWithKey } from "../llm";
   import { setScreen, log } from "../logger";
-  import { fullPlanText } from "../edition";
   import { blocker, costLine, recipeLines, recipeSide, RECIPE_HELP, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
 
-  let { app, choose, saved, openProject, goto, only = "script" }: { app: AppState; choose: (id: string) => void; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void; only?: Direction } = $props();
+  let { app, saved, openProject, goto, only = "script" }: { app: AppState; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void; only?: Direction } = $props();
 
   setScreen(untrack(() => only) === "script" ? "home" : "edit");
   startWork();
@@ -49,7 +46,6 @@
   const factChecked = $derived(direction === "script" && !!st?.presets.find((p) => p.id === side?.preset)?.factChecked);
   const researching = $derived(research || factChecked);
   const stop = $derived(side ? blocker(side, app.keys, aiProvider, mode, researching, factChecked) : null);
-  const room = $derived(roomForIdentity(app.identities.length, app.edition.identityLimit));
 
   async function load() {
     error = "";
@@ -127,27 +123,6 @@
     }
   }
 
-  // ---- a new channel: a name and a language, the recipe comes next ---------------
-  let creating = $state(false);
-  let newName = $state("");
-  let newLanguage = $state("en");
-  let busyNew = $state(false);
-  async function createChannel() {
-    if (!newName.trim()) return;
-    busyNew = true;
-    error = "";
-    try {
-      const c = { ...defaultConfig(), name: newName.trim(), llm: { ...app.app!.llm }, channel: { ...defaultConfig().channel, contentLanguage: newLanguage }, narrator: newLanguage === "en" ? { provider: "kokoro" as const, voice: "am_michael" } : defaultConfig().narrator };
-      saved(await saveSettings(null, identityFromConfig(cleanConfig(c), null, null)));
-      creating = false;
-      newName = "";
-    } catch (e) {
-      error = errorText(e);
-    } finally {
-      busyNew = false;
-    }
-  }
-
   // ---- week batch -------------------------------------------------------------------
   let theme = $state("");
   let pasted = $state("");
@@ -194,31 +169,6 @@
 </script>
 
 <div class="studio">
-  {#if direction === "script"}
-  <section class="card channels">
-    <div class="head">
-      <h2>Identity</h2>
-      <button type="button" disabled={!room} title={room ? "" : fullPlanText(app.edition)} onclick={() => (creating = !creating)}>{creating ? "Cancel" : "Add Identity"}</button>
-    </div>
-    <div class="cards">
-      {#each app.identities as i (i.id)}
-        <button type="button" class="channel" class:on={i.id === app.identity?.id} aria-pressed={i.id === app.identity?.id} onclick={() => i.id !== app.identity?.id && choose(i.id)}>{i.name}</button>
-      {/each}
-    </div>
-    {#if creating}
-      <div class="new">
-        <label for="cname">Name</label>
-        <input id="cname" bind:value={newName} placeholder="The Identity's name" />
-        <label for="clang">Language</label>
-        <select id="clang" bind:value={newLanguage}>
-          {#each LANGUAGES as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
-        </select>
-        <button type="button" class="primary" disabled={busyNew || !newName.trim()} onclick={createChannel}>{busyNew ? "Making it..." : "Make the Identity"}</button>
-      </div>
-    {/if}
-  </section>
-  {/if}
-
   {#if error}<ErrorBox message={error} context={{ step: "channel" }} />{/if}
 
   {#if !st}
@@ -230,8 +180,8 @@
     <section class="card recipe">
       <div class="head">
         <div>
-          <h2>The recipe</h2>
-          <p class="hint">How every video of {app.identity?.name} is made. You can change any of these.</p>
+          <h2>The recipe of {app.identity?.name}</h2>
+          <p class="hint">How every video of this Identity is made. You can change any of these.</p>
         </div>
         <button type="button" class="primary change" onclick={() => (editing = true)}>Change the recipe</button>
       </div>
@@ -344,11 +294,6 @@
   details summary { cursor: pointer; }
   details .head { margin-top: 12px; }
   h2 { margin: 0; font-size: 17px; }
-  .cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .channel { padding: 10px 18px; font-weight: 600; }
-  .channel.on { background: var(--primary-surface); color: var(--primary-surface-foreground); border-color: var(--primary); }
-  .new { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 160px) auto; gap: 8px; align-items: center; margin-top: 12px; }
-  .new label { font-size: 14px; font-weight: 600; }
   .recipe .head { align-items: flex-start; }
   .change { flex: none; font-size: 15px; padding: 10px 20px; }
   .lines { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 4px; }
