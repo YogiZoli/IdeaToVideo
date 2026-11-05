@@ -12,7 +12,7 @@ export const IMPORTS: TransferRow[] = [
   { what: "Your look", files: ".zip, .json, .css", where: "This page", here: true },
   { what: "Extra scene designs", files: ".itvpack", where: "This page", here: true },
   { what: "Evergreen Traffic Card", files: ".md", where: "Identity, YouTube Channel & Audience", page: "channel" },
-  { what: "A course or playlist", files: ".json, or pasted text", where: "Playlist, Course or Playlist File", page: "courses" },
+  { what: "A course or playlist", files: ".json, or pasted text", where: "Playlist, Create Playlist File", page: "courses" },
   { what: "A script or notes", files: "pasted text", where: "Home, A new video; or pasted texts on Home, Week batch" },
   { what: "A recording to edit", files: ".mp4, .mov, .m4v, .mkv, .webm, .avi", where: "Video Recording Editing" },
   { what: "Your own clips as B-roll", files: ".mp4, .mov, .webm, .m4v", where: "Identity, Footage", page: "footage" },
@@ -39,7 +39,7 @@ export const EXPORTS: TransferRow[] = [
   { what: "The YouTube texts", files: "copied", where: "A video's Your video step" },
   { what: "Evergreen Traffic Card", files: ".md", where: "Wizards, YouTube Brand Channel Wizard, Download as .md", page: "brandchannel" },
   { what: "The channel kit's texts", files: "copied", where: "Wizards, YouTube Brand Channel Wizard", page: "brandchannel" },
-  { what: "A course or playlist", files: ".json", where: "Playlist, Course or Playlist File; or ONE Video, Course or playlist filter", page: "courses" },
+  { what: "A course or playlist", files: ".json", where: "Playlist, Create Playlist File; or ONE Video, Course or playlist filter", page: "courses" },
   { what: "The planned playlist", files: "copied", where: "Playlist, Playlist Planner, Copy the file", page: "planner" },
   { what: "Backup of every video and the settings", files: "a folder you choose", where: "Settings, Backup", page: "backup" },
 ];

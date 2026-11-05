@@ -16,7 +16,7 @@
   import { videos } from "../course/course";
   import type { TrafficCard } from "./planner";
 
-  let { app, goto }: { app: AppState; goto: (id: "channel" | "connections" | "research") => void } = $props();
+  let { app, goto }: { app: AppState; goto: (id: "channel" | "connections") => void } = $props();
 
   type Kw = { keyword: string; volume: number | null; competition: number | null; score: number | null; seed?: string };
   type Row = { position: number; title: string; keyword: string; volume: number | null; competition: number | null };
@@ -30,8 +30,6 @@
   let answers = $state({ audience: "", promise: "", topic: "" });
   let context = $state<Context | null>(null);
   let keywords = $state<Kw[] | null>(null);
-  let researchedAt = $state<string | null>(null);
-  let loaded = $state(false);
   let title = $state("");
   let promise = $state("");
   let why = $state("");
@@ -49,8 +47,6 @@
       card = r.card;
       context = r.context;
       keywords = r.research?.keywords ?? null;
-      researchedAt = r.research?.at ?? null;
-      loaded = true;
       // no card: what the Identity already knows is filled in, never typed twice
       if (!card) {
         answers.audience ||= app.config?.channel.audience ?? "";
@@ -152,11 +148,7 @@
 
 <section class="card">
   <p class="lead">A plan for a whole playlist, not for one video: which videos to make, in what order, each on a keyword people really search for. The result is one prepared video per row on ONE Video, with nothing started yet.</p>
-  <p class="hint">It uses the keywords you found on Keyword Research. Then three steps: what it is about, the plan you can edit, the videos.</p>
-</section>
-
-<section class="card">
-  <h2>1. What the playlist is about</h2>
+  <h2>What the playlist is about</h2>
   {#if card}
     <p class="good">From the Traffic Card of {app.identity?.name}: {card.keywords.length} keywords, {card.playlists.length} playlist ideas.</p>
   {:else}
@@ -167,22 +159,13 @@
     <label>Promise <input bind:value={answers.promise} placeholder={card?.result || "What they can do after the playlist"} /></label>
     <label>Topic <input bind:value={answers.topic} placeholder={card?.topic || "The playlist's topic"} /></label>
   </div>
+  {#if !keywords}<p class="hint">The plan is built from real keyword data: run Keyword Research first.</p>{/if}
+  {#if keywords && !hasAi}<p class="hint">Add your AI key first: <button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>.</p>{/if}
+  <div class="acts"><button type="button" class:primary={!rows} disabled={!!busy || !hasAi || !keywords} onclick={doPlan}>{rows ? "Plan again" : keywords ? `Plan the playlist from ${keywords.length} keywords` : "Plan the playlist"}</button></div>
 </section>
 
-{#if loaded && !keywords}
+{#if keywords && rows}
   <section class="card">
-    <h2>2. The plan</h2>
-    <p class="hint">The plan is built from real keyword data, and {app.identity?.name} has none yet.</p>
-    <div class="acts"><button type="button" class="primary" onclick={() => goto("research")}>Go to Keyword Research</button></div>
-  </section>
-{/if}
-
-{#if keywords}
-  <section class="card">
-    <h2>2. The plan</h2>
-    <p class="good">Uses {keywords.length} keywords from your Keyword Research{researchedAt ? `, ${new Date(researchedAt).toLocaleDateString()}` : ""}. <button type="button" class="link" onclick={() => goto("research")}>See or change them</button></p>
-    {#if !hasAi}<p class="hint">Add your AI key first: <button type="button" class="link" onclick={() => goto("connections")}>Settings, Connections</button>.</p>{/if}
-    <div class="acts"><button type="button" class:primary={!rows} disabled={!!busy || !hasAi} onclick={doPlan}>{rows ? "Plan again" : "Plan the playlist"}</button></div>
     {#if rows}
       {#if why}<p class="why"><b>Why {videos(rows.length)}:</b> {why}</p>{/if}
       <div class="grid">
@@ -221,7 +204,7 @@
 
 {#if preview}
   <section class="card">
-    <h2>3. Create the videos</h2>
+    <h2>Create the videos</h2>
     <p class="hint">{preview.course.title}: {videos(preview.lessons.length)}, in playlist order. The import only prepares: no AI, no voice, no HeyGen and no render starts by itself.</p>
     <ol>{#each preview.lessons as l (l.id)}<li value={l.position}>{l.title} <span class="hint">{l.minutes} min{l.exists ? ", already here: will be updated" : ""}</span></li>{/each}</ol>
     {#each preview.warnings as w}<p class="hint">{w}</p>{/each}
@@ -237,6 +220,8 @@
 {#if error}<ErrorBox message={error} context={{ step: "playlist-planner", provider: llm.provider, model: llm.model }} />{/if}
 
 <style>
+  h2 { margin: 16px 0 0; font-size: 17px; }
+  section > h2:first-child { margin-top: 0; }
   .grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 8px; }
   .grid label { display: grid; gap: 4px; font-size: 13px; }
   .acts { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }

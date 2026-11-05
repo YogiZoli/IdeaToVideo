@@ -342,7 +342,7 @@
     {:else if pageId === "connections"}
       {#if sub === "ai"}
         <section class="card">
-          <p class="hint">The AI that writes the scripts, plans the scenes and the small texts, for every Identity.</p>
+          <p class="hint">Which AI writes the scripts, plans the scenes and writes the small texts, for every Identity. Its keys are on AI Apps.</p>
           <AiSection bind:llm={appCfg.llm} bind:keys keyScope="app" steps />
           <label class="radio own"><input type="checkbox" checked={ownLlm} onchange={(e) => (ownLlm = e.currentTarget.checked)} /> Use a different AI for this Identity ({app.identity?.name})</label>
           {#if ownLlm}
@@ -352,7 +352,7 @@
         </section>
       {:else if sub === "providers"}
         <section class="card">
-          <p class="hint">Gemini and the other AI providers, for example when one step of the script uses another model.</p>
+          <p class="hint">Your keys for Gemini and the other AI apps. Which one does which job: Which AI for which job.</p>
           {#each LLM_PROVIDERS as p (p.id)}
             <ConnectionRow name={p.id} label={p.label} keyUrl={p.keyUrl} identityName={app.identity?.name} bind:isSet={keys[p.id]} test={() => ({ command: "test-llm", provider: p.id, model: p.id === appCfg.llm.provider ? appCfg.llm.model : p.model })} />
           {/each}

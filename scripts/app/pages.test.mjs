@@ -30,7 +30,7 @@ test("the top menu (DECISIONS 119, 168, 172, 175): eight menus, at most seven pa
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
   }
-  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Keyword Research", "Playlist Planner", "Course or Playlist File"]);
+  assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "playlist").map((p) => p.title), ["Keyword Research", "Playlist Planner", "Create Playlist File"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "publishing").map((p) => p.title), ["Thumbnail", "PDT Connection"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "wizards").map((p) => p.title), ["YouTube Brand Channel Wizard", "CTA", "Design", "Motion", "Scenes"]);
   assert.deepEqual(SETTINGS_PAGES.filter((p) => p.menu === "identity").map((p) => p.title), ["YouTube Channel & Audience", "Audio Voice", "AI Avatar", "Footage", "Dictionary", "Manage Identity"]);
@@ -45,9 +45,8 @@ test("the top menu (DECISIONS 119, 168, 172, 175): eight menus, at most seven pa
 });
 
 test("a big page has its parts as sub links (DECISIONS 168), and a link to another page goes to one that exists", () => {
-  assert.deepEqual(SUB_PAGES.connections.map((s) => s.title), ["AI", "AI providers", "Services", "Publishing", "Remove all keys"]);
+  assert.deepEqual(SUB_PAGES.connections.map((s) => s.title), ["AI Apps", "AI Services", "Which AI for which job", "Remove all keys"]);
   assert.deepEqual(SUB_PAGES.footage.map((s) => s.title), ["Your footage", "AI B-roll", "Stock photos and videos", "Free images"]);
-  assert.equal(SUB_PAGES.connections.find((s) => s.id === "publishing").page, "pdt");
   for (const subs of Object.values(SUB_PAGES)) for (const s of subs) if (s.page) assert.ok(SETTINGS_PAGES.some((p) => p.id === s.page), s.page);
 });
 

@@ -6,7 +6,15 @@ End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz 
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-05, Zoltan's second walk through the app, DECISIONS 175)
+## Now (2026-11-05, Playlist and Connections after his answer, DECISIONS 176)
+
+- **Playlist:** no numbers, no buttons between its pages. Keyword Research, Playlist Planner, Create Playlist File. The Planner is one section.
+- **Connections:** AI Apps, AI Services, Which AI for which job, Remove all keys. The Publishing link is gone.
+- **ONE Video stays after Home**, he confirmed it.
+- **Recordings (DECISIONS 177):** Talking Head asks only for the camera file. A typed working title stays, the AI only names a video with none.
+- **Waits for Zoltan:** how to simplify the Identity dropdown, the Identity menu and Home's Identity section. Claude's plan is in the chat of 2026-11-05, nothing of it is built. The Identity named New Identity holds real settings: his to rename or delete.
+
+## Earlier (2026-11-05, Zoltan's second walk through the app, DECISIONS 175)
 
 **Done in one change. Phase 9, the macOS build, is still next, and it needs a Mac.**
 
@@ -25,7 +33,7 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 
 **Not tried:** a real vidIQ search from the new page, a real AI plan from the kept keywords.
 
-**Open for Zoltan:** a typed working title is replaced by the AI's title; keep the typed one? Whether a real Identity named New Identity should stay. His wish list (blind spots) is answered in the chat of 2026-11-05, nothing of it is built.
+**Open for Zoltan:** whether a real Identity named New Identity should stay. His wish list (blind spots) is answered in the chat of 2026-11-05, nothing of it is built.
 
 **Next:** Zoltan tries the new menu on the installer. Then Phase 9 in a new chat, on a Mac.
 
