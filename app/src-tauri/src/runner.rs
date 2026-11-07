@@ -24,6 +24,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("load-project", None),
     ("write-script", Some(&["llm", "provider"])),
     ("keyword-ideas", Some(&["service"])),
+    ("wizard-keywords", Some(&["service"])),
     ("save-script", None),
     ("approve-gate", None),
     ("tools-status", None),

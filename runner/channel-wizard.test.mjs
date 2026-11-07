@@ -160,7 +160,7 @@ test("the card is the same Evergreen Traffic Card: the parser and the Playlist P
   assert.equal(c.proof, ANSWERS.proof);
   assert.equal(c.language, "hu");
   assert.equal(c.nameOptions[0], "Studio Growth Lab");
-  assert.deepEqual(c.keywords[0], { keyword: "yoga / marketing", volume: 1200, competition: "30", score: 62 });
+  assert.deepEqual(c.keywords[0], { keyword: "yoga / marketing", volume: 1200, competition: "30", score: 62, seed: "yoga" });
   assert.equal(c.keywords.length, 3, "vidIQ's, then the searches typed");
   assert.equal(c.keywords[1].volume, null, "a typed search has no invented number");
   assert.equal(c.keywords[1].score, null);
@@ -188,7 +188,7 @@ test("the card: text that looks like a heading cannot break it, a checklist tick
   assert.match(md, /- \[x\] Decide which Google account/);
   assert.match(md, /- \[ \] Turn on 2-Step/);
   assert.ok(parseTrafficCard(cardMarkdown({})));
-  assert.deepEqual(keywordRows({ phrases: "a\nA\nb\nc\nd" }).map((k) => k.keyword), ["a", "b", "c"], "at most 3 typed searches, no doubles");
+  assert.deepEqual(keywordRows({ phrases: "a\nA\nb\nc\nd" }).map((k) => k.keyword), ["a", "b", "c", "d"], "every typed search, no doubles (DECISIONS 183)");
 });
 
 test("Save: the card lands where the Import keeps it, the answers next to it, the research of an old card stays", () => {

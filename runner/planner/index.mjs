@@ -20,13 +20,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { chat, extractJson } from "../providers/llm.mjs";
-import { VidiqSession } from "../providers/research/vidiq.mjs";
+import { VidiqSession, countryCode } from "../providers/research/vidiq.mjs";
 
 export const MIN_VIDEOS = 8;
 export const MAX_VIDEOS = 16;
 export const MIN_MINUTES = 10;
 export const MAX_MINUTES = 20;
-export const MAX_SEEDS = 10;
+export const MAX_SEEDS = 20;
 
 const str = (v, max = 1000) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) : "");
 const norm = (k) => str(k, 200).toLowerCase();
@@ -43,8 +43,8 @@ export function slugOf(text) {
   return s || "playlist";
 }
 
-// The seed keywords: the card's best (by score), its playlists' target
-// keywords, else the typed topic. At most 10, the user can edit them.
+// The seed keywords: the searches typed in the wizard, the card's best (by score), its playlists' target
+// keywords, else the typed topic. At most 20, the user can edit them.
 export function seedsFrom({ card = null, topic = "" } = {}) {
   const out = [];
   const add = (k) => {
@@ -52,6 +52,8 @@ export function seedsFrom({ card = null, topic = "" } = {}) {
     if (t && !out.some((o) => o.toLowerCase() === t.toLowerCase())) out.push(t);
   };
   if (card) {
+    // the searches the user typed in the wizard first: none of them is ever dropped (DECISIONS 183)
+    for (const k of card.keywords ?? []) if (/^your words$/i.test(k.seed ?? "")) add(k.keyword);
     for (const p of card.playlists ?? []) if (!/^start here$/i.test(p.title)) add(p.keyword);
     for (const k of [...(card.keywords ?? [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))) add(k.keyword);
   }
@@ -68,7 +70,8 @@ export async function vidiqBalance({ apiKey, fetchImpl }) {
 
 const kw = (k) => ({
   keyword: str(k?.keyword, 200),
-  volume: typeof k?.estimatedMonthlySearch === "number" ? Math.round(k.estimatedMonthlySearch) : typeof k?.volume === "number" ? Math.round(k.volume) : null,
+  // "<750" from vidIQ's Markdown answer is read as { value: 750, below: true }
+  volume: typeof k?.estimatedMonthlySearch === "number" ? Math.round(k.estimatedMonthlySearch) : typeof k?.estimatedMonthlySearch?.value === "number" ? Math.round(k.estimatedMonthlySearch.value) : typeof k?.volume === "number" ? Math.round(k.volume) : null,
   competition: typeof k?.competition === "number" ? Math.round(k.competition) : null,
   score: typeof k?.overall === "number" ? Math.round(k.overall) : null,
 });
@@ -86,7 +89,8 @@ export async function research({ apiKey, seeds, country = null, fetchImpl, onPro
   for (let i = 0; i < list.length; i++) {
     onProgress({ step: "research", done: i, of: list.length, seed: list[i] });
     try {
-      const d = await s.tool("vidiq_keyword_research", { keyword: list[i], mode: "research", ...(country ? { country } : {}) });
+      const code = countryCode(country);
+      const d = await s.tool("vidiq_keyword_research", { keyword: list[i], mode: "research", ...(code ? { country: code } : {}) });
       for (const raw of [d?.seedKeyword, ...(d?.relatedKeywords ?? [])]) {
         const r = kw(raw);
         if (r.keyword && !rows.has(norm(r.keyword))) rows.set(norm(r.keyword), { ...r, seed: list[i] });

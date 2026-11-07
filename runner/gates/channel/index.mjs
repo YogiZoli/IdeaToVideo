@@ -35,7 +35,7 @@ const WIZARD_FIELDS = {
   who: { ask: "Write who this channel helps, one clear group, so that it finishes the sentence 'I help ...'. Only the words after 'I help'. At most 15 words.", maxChars: 200 },
   result: { ask: "Write the result this channel helps them get, so that it finishes the sentence 'I help them ...'. Only the words after 'I help them'. Say a result people search for. At most 15 words.", maxChars: 200 },
   topic: { ask: "Write the channel's plain topic in two or three words, the way people search for it.", maxChars: 80 },
-  phrases: { ask: "Write up to 3 searches this viewer would really type into YouTube today, in their words, one per line, nothing else.", maxChars: 300 },
+  phrases: { ask: "Write up to 10 searches this viewer would really type into YouTube today, in their words, one per line, nothing else. No numbers, no search counts, no notes.", maxChars: 1500 },
   pain: { ask: "Write what frustrates these viewers most right now, in their own words, one line.", maxChars: 300 },
   proof: { ask: "Tidy this into one honest line of experience or results, using only what yourWords says. Add no years, no clients, no results and no titles. If yourWords says nothing about experience, return yourWords as it is.", maxChars: 300 },
   names: { ask: "Write 5 ideas for the channel's name, one per line, nothing else. Build them only from the words in DATA, and if answers.name is given keep it in them. No other person's name, no brand or trademark.", maxChars: 400 },

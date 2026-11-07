@@ -34,7 +34,7 @@
     }
   });
 
-  const seeds = $derived(seedsText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).slice(0, 10));
+  const seeds = $derived(seedsText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).slice(0, 20));
 
   async function research() {
     error = "";
@@ -59,7 +59,7 @@
 </script>
 
 <section class="card">
-  <p class="hint">What people really search for on YouTube, from vidIQ. Write one topic or phrase per line, at most 10. The result stays here for {app.identity?.name}, and the Playlist Planner builds its plan from it.</p>
+  <p class="hint">What people really search for on YouTube, from vidIQ. Write one topic or phrase per line, at most 20. The result stays here for {app.identity?.name}, and the Playlist Planner builds its plan from it.</p>
   <textarea rows="5" bind:value={seedsText} aria-label="Topics to research" placeholder="sourdough for beginners" spellcheck="false"></textarea>
   {#if !hasKey}<p class="hint">This needs your vidIQ key. <button type="button" class="link" onclick={() => goto("connections")}>Add it in Settings, Connections</button></p>{/if}
   <div class="acts"><button type="button" class="primary" disabled={!!busy || !hasKey || !seeds.length} onclick={research}>Research {seeds.length} with vidIQ</button></div>

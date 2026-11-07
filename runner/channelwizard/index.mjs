@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { writeAtomic } from "../project.mjs";
 import { cardPath, parseTrafficCard, saveCard, sections } from "../planner/traffic-card.mjs";
-import { PHASES, QUESTIONS, PATH_NOTE, buildKit, cardMarkdown, checklist, checklistText, fieldsFrom, missingAnswers } from "./kit.mjs";
+import { PHASES, QUESTIONS, PATH_NOTE, buildKit, cardMarkdown, channelKeywords, checklist, checklistText, fieldsFrom, missingAnswers } from "./kit.mjs";
 
 export const DRAFT_FILE = "channel-wizard.json";
 const draftPath = (identityDir) => path.join(identityDir, DRAFT_FILE);
@@ -70,6 +70,7 @@ export function wizardKit(identityDir, { channel = {}, ...input } = {}) {
   const k = keptResearch(identityDir);
   return {
     ...buildKit(d.answers, d.texts),
+    channelKeywords: channelKeywords(d.answers, d.keywords),
     checklist: checklist(d.answers),
     checklistText: checklistText(d.answers, d.checks),
     pathNote: PATH_NOTE,
