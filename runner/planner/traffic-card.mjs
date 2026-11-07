@@ -96,7 +96,7 @@ export function parseTrafficCard(text) {
     if (m) profile[m[1].trim().toLowerCase()] = m[2].trim();
   }
   const keywords = readTable(h2.get("keywords"))
-    .map((r) => ({ keyword: cut(col(r, "keyword"), 200), volume: num(col(r, "volume", "search")), competition: cut(col(r, "competition"), 40), score: num(col(r, "score")) }))
+    .map((r) => ({ keyword: cut(col(r, "keyword"), 200), volume: num(col(r, "volume", "search")), competition: cut(col(r, "competition"), 40), score: num(col(r, "score")), seed: cut(col(r, "seed"), 200) }))
     .filter((k) => k.keyword);
   const playlists = readTable(h2.get("playlists"))
     .map((r) => ({ title: cut(col(r, "playlist"), 200), pillar: cut(col(r, "pillar"), 200), keyword: cut(col(r, "keyword"), 200), description: cut(col(r, "description"), 500) }))

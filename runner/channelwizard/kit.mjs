@@ -15,13 +15,13 @@ export const QUESTIONS = [
   { id: "topic", short: "Topic", phase: 1, type: "text", key: "topic", ai: true, title: "What is your course about, in two or three words?", why: "I ask because YouTube needs a plain topic to file your channel under.", label: "Your topic", ph: "yoga studio marketing" },
   { id: "face", short: "You or brand", phase: 1, type: "face", key: "face", title: "Is the channel you, or a brand?", why: "I ask because it decides the name, the handle and the profile picture.", opts: [["person", "It is me", "My own name and my face"], ["brand", "It is a brand", "A business or course name"]] },
   { id: "team", short: "Team", phase: 2, type: "choice", key: "team", title: "Will anyone else ever touch this channel?", why: "I ask because a Brand Channel lets you add a helper, or hand the channel over later, without sharing your Google password.", opts: [["solo", "Just me, for now", ""], ["team", "A helper or a team", ""], ["sell", "I may sell or hand it over one day", ""]] },
-  { id: "phrases", short: "Searches", phase: 3, type: "area", key: "phrases", ai: true, title: "What would your student type into YouTube today?", why: "I ask because these are the seeds for your keyword research. Their words, not yours.", label: "Up to 3 searches, one per line", ph: "how to get more yoga students\nyoga studio marketing ideas\nhow to fill a yoga class" },
+  { id: "phrases", short: "Searches", phase: 3, type: "area", key: "phrases", ai: true, title: "What would your student type into YouTube today?", why: "I ask because these are the seeds for your keyword research. Their words, not yours.", label: "As many searches as you like, one per line. Each one is looked up in vidIQ. At most 20 are used.", ph: "how to get more yoga students\nyoga studio marketing ideas\nhow to fill a yoga class" },
   { id: "pain", short: "Frustration", phase: 3, type: "text", key: "pain", ai: true, title: "What frustrates them most right now?", why: "I ask because the best videos start from a problem the viewer already feels.", label: "In their own words", ph: "posting every day and still teaching to empty rooms" },
   { id: "proof", short: "Proof", phase: 3, type: "text", key: "proof", ai: true, title: "Why should they listen to you?", why: "I ask because one honest line of experience makes a stranger trust your About section.", label: "One line of real experience or results", ph: "12 years running a studio, 300 teachers trained" },
   { id: "market", short: "Market", phase: 3, type: "market", title: "Which language and country are you aiming at?", why: "I ask because search numbers change a lot between languages and countries." },
   { id: "links", short: "Links", phase: 4, type: "links", title: "Where should a viewer go after watching?", why: "I ask because the first link on your channel should be your free gift, so views turn into email subscribers. Leave blank what you do not have yet." },
   { id: "look", short: "Feel", phase: 4, type: "look", key: "style", title: "How should the channel feel?", why: "I ask because your logo and banner prompts need one clear style to look like they belong together.", opts: [["Clean and minimal", "Clean and minimal", "Lots of space, calm, simple shapes"], ["Bold and energetic", "Bold and energetic", "Strong contrast, big type"], ["Warm and personal", "Warm and personal", "Soft, friendly, human"], ["Premium and dark", "Premium and dark", "Dark background, refined accents"]] },
-  { id: "pace", short: "Pace", phase: 5, type: "choice", key: "pace", title: "How often can you really publish?", why: "I ask because a pace you keep beats a pace you promise. It goes into your About text and your video plan.", opts: [["every two weeks", "Every two weeks", ""], ["every week", "Every week", ""], ["twice a week", "Twice a week", ""]] },
+  { id: "pace", short: "Pace", phase: 5, type: "choice", key: "pace", title: "How often can you really publish?", why: "I ask because a pace you keep beats a pace you promise. It goes into your About text and your video plan.", opts: [["every two weeks", "Every two weeks", ""], ["every week", "Every week", ""], ["twice a week", "Twice a week", ""], ["several times a week", "Several times a week", ""], ["every day", "Every day", ""]] },
   { id: "mod", short: "Comments", phase: 5, type: "choice", key: "mod", title: "How hands-on do you want to be with comments?", why: "I ask because YouTube can hold risky comments for you. This sets your moderation default.", opts: [["basic", "Light touch", "Hold only the clearly bad ones"], ["strict", "Careful", "Hold more comments for my review"]] },
 ];
 
@@ -233,8 +233,11 @@ const safe = (s) => String(s ?? "").replace(/\r/g, "").split("\n").map((l) => l.
 
 // The keywords of a card: what it had, then vidIQ's, then the searches typed. The typed ones have no
 // numbers on purpose: nothing is ever guessed. They also give the Playlist Planner its seeds.
+export const MAX_SEARCHES = 20;
+export const searchesOf = (a = {}) => uniq(lines(a.phrases)).slice(0, MAX_SEARCHES);
 export function keywordRows(a = {}, found = [], kept = []) {
-  const typed = uniq(lines(a.phrases)).slice(0, 3).map((keyword) => ({ keyword, volume: null, competition: "", score: null, seed: "your words" }));
+  found = (found ?? []).filter((k) => k?.keep !== false);
+  const typed = searchesOf(a).map((keyword) => ({ keyword, volume: null, competition: "", score: null, seed: "your words" }));
   const seen = new Map();
   for (const k of [...kept, ...found, ...typed]) {
     const key = cell(k.keyword).toLowerCase();
@@ -277,4 +280,23 @@ export function cardMarkdown({ answers: a = {}, texts = {}, keywords = [], check
   });
   M.push("## Notes", "", kept.notes?.trim() || "_None._", "");
   return M.join("\n");
+}
+
+// The text for YouTube Studio, Settings > Channel > Basic info > Keywords: comma separated
+// values (a quoted phrase list on one line fails there with "One or more of your keywords are
+// too long"), within YouTube's 500 characters. The topic and the typed searches first, then the
+// kept vidIQ keywords in their rank order. A keyword that does not fit whole is left out.
+export const CHANNEL_KEYWORDS_MAX = 500;
+export function channelKeywords(a = {}, keywords = []) {
+  const kept = (keywords ?? []).filter((k) => k?.keep !== false && k?.keyword);
+  const words = uniq([clean(a.topic), ...searchesOf(a), ...kept.map((k) => k.keyword)].map((w) => String(w ?? "").replace(/[,"<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100)).filter(Boolean));
+  const out = [];
+  let len = 0;
+  for (const w of words) {
+    const add = (out.length ? 2 : 0) + w.length;
+    if (len + add > CHANNEL_KEYWORDS_MAX) continue;
+    out.push(w);
+    len += add;
+  }
+  return out.join(", ");
 }

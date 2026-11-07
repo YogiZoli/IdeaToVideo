@@ -17,14 +17,15 @@
   import WizardMap from "../wizard/WizardMap.svelte";
   import ErrorBox from "../ErrorBox.svelte";
   import Progress from "../Progress.svelte";
-  import KeywordIdeas from "../planner/KeywordIdeas.svelte";
+  import WizardKeywords from "./WizardKeywords.svelte";
+  import type { WKw } from "./WizardKeywords.svelte";
 
   type Field = { field: string; label: string; now: string; value: string; editable: boolean };
   type Question = { id: string; short: string; phase: number; type: string; key?: string; ai?: boolean; title: string; why: string; label?: string; ph?: string; opts?: string[][] };
   type Kept = { keywords: number; playlists: number; videos: number } | null;
-  type Kw = { keyword: string; volume: number | null; competition: string; score: number | null; seed: string };
+  type Kw = WKw;
   type KitTexts = { names: string; tagline: string; description: string; about: string; links: string; logoPrompt: string; bannerPrompt: string };
-  type Kit = { auto: KitTexts; kit: KitTexts; name: string; handles: string[]; checklist: { name: string; items: { id: string; text: string; path: string }[] }[]; checklistText: string; pathNote: string; fields: Field[]; missing: string[]; markdown: string; hasCard: boolean; kept: Kept };
+  type Kit = { auto: KitTexts; kit: KitTexts; name: string; handles: string[]; checklist: { name: string; items: { id: string; text: string; path: string }[] }[]; checklistText: string; pathNote: string; fields: Field[]; channelKeywords: string; missing: string[]; markdown: string; hasCard: boolean; kept: Kept };
 
   let { app, config, onclose, onsaved, goto }: {
     app: AppState;
@@ -57,7 +58,8 @@
   // any saved key will do: chat() goes on to the next one too
   const ai = $derived(aiWithKey(llmFor(config, "texts"), app.keys));
   const hasWords = $derived(Object.values(a).some((v) => typeof v === "string" && v.trim()));
-  const search = $derived((a.phrases ?? "").split(/\r?\n/)[0]?.trim() || a.topic || "");
+  // every typed search, each once, at most 20: the same rule as searchesOf in kit.mjs
+  const searches = $derived([...new Map((a.phrases ?? "").split(/\r?\n/).map((s) => s.replace(/\s+/g, " ").trim()).filter(Boolean).map((s) => [s.toLowerCase(), s] as [string, string])).values()].slice(0, 20));
 
   const input = () => ({ answers: $state.snapshot(a), texts: $state.snapshot(texts), keywords: $state.snapshot(keywords), checks: $state.snapshot(checks) });
 
@@ -147,12 +149,6 @@
   async function writeField(f: Field) {
     await write(FIELD_TEXT[f.field], f.value, (text) => (texts[FIELD_TEXT[f.field]] = text));
     refresh();
-  }
-
-  function found(list: { keyword: string; monthlySearches: number | null; competition: number | null; score: number | null }[], seed: string) {
-    const known = new Set(keywords.map((k) => k.keyword.toLowerCase()));
-    keywords = [...keywords, ...list.filter((k) => !known.has(k.keyword.toLowerCase())).map((k) => ({ keyword: k.keyword, volume: k.monthlySearches, competition: k.competition === null ? "" : String(k.competition), score: k.score, seed }))];
-    changed();
   }
 
   async function copy(id: string, text: string) {
@@ -299,10 +295,10 @@
       {/if}
     {:else if current === "keywords"}
       <h2>What do people search for?</h2>
-      <p class="hint">Optional: skip it with Next. It uses your vidIQ key and asks first, because it uses credits. What you find goes into your card, and the Playlist Planner starts from it. Without it the card has the searches you typed, with no numbers.</p>
-      <KeywordIdeas {app} topic={search} goto={(id) => goto(id)} onfound={found} />
+      <p class="hint">Optional: skip it with Next. It uses your vidIQ key and asks first, with your credits, because it uses them. What you tick goes into your card and your channel keywords, and the Playlist Planner starts from it. Every search you typed goes into the card either way, with no numbers.</p>
+      <WizardKeywords {app} {searches} topic={a.topic ?? ""} country={a.country ?? ""} bind:keywords onchange={changed} goto={(id) => goto(id)} />
       {#if keywords.length}
-        <p class="good">{keywords.length} {keywords.length === 1 ? "keyword goes" : "keywords go"} into your card. <button type="button" class="link" onclick={() => { keywords = []; changed(); }}>Remove them</button></p>
+        <p class="hint"><button type="button" class="link" onclick={() => { keywords = []; changed(); }}>Remove all found keywords</button></p>
       {/if}
     {:else if current === "kit"}
       <h2>Your channel kit</h2>
@@ -331,6 +327,11 @@
             </section>
           {/if}
         {/each}
+        <section class="card kit">
+          <div class="head"><h3>Channel keywords</h3><button type="button" disabled={!kit.channelKeywords} onclick={() => copy("channelKeywords", kit!.channelKeywords)}>{copied === "channelKeywords" ? "Copied" : "Copy"}</button></div>
+          <p class="hint">Paste it into studio.youtube.com &gt; Settings &gt; Channel &gt; Basic info &gt; Keywords. Comma separated, {kit.channelKeywords.length} of 500 characters. Your topic and searches first, then the keywords you ticked.</p>
+          <textarea rows="3" readonly aria-label="Channel keywords" value={kit.channelKeywords}></textarea>
+        </section>
         <section class="card kit">
           <div class="head"><h3>Checklist</h3><button type="button" onclick={() => copy("checklist", kit!.checklistText)}>{copied === "checklist" ? "Copied" : "Copy"}</button></div>
           <p class="hint">{kit.pathNote}</p>
@@ -394,7 +395,6 @@
   .for { margin: 0; font-size: 13px; color: var(--muted-foreground); }
   .hint { font-size: 13px; color: var(--muted-foreground); margin: 0; }
   .note { margin: 0; font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--primary-surface); color: var(--primary-surface-foreground); }
-  .good { color: var(--success); font-size: 13px; margin: 0; }
   .field { display: grid; gap: 4px; }
   .field > span:first-child { font-weight: 600; font-size: 14px; }
   .field.color input { width: 64px; height: 36px; padding: 2px; }
