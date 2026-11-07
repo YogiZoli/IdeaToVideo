@@ -1,10 +1,21 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-05 (menu, Home, recordings, Playlist, Import & Export, DECISIONS 175)
+Frissítve: 2026-11-07 (Brand Channel Wizard keresések és vidIQ, DECISIONS 183)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-07, the wizard's searches and vidIQ, DECISIONS 183)
+
+- **vidIQ works again everywhere.** vidIQ now answers keyword research in Markdown tables; the app only read JSON, so every search said "no keyword data". Fixed in `runner/providers/research/vidiq.mjs` (`readToolResult`), for Keyword ideas, Playlist Keyword Research and the wizard. The country goes as a 2 letter code ("United States" is US).
+- **Searches question:** any number of lines, at most 20 used, said on screen. All kept: draft, Traffic Card, Planner seeds (first). AI suggests up to 10.
+- **Keywords screen:** one vidIQ research call per typed search, plus matching terms and questions for the topic, rising as an extra tick. Each keyword once, ranked by monthly searches times (100 minus competition), a tick on each row. The dialog shows the calls and credits; the result shows credits used and left.
+- **Kit:** a new Channel keywords text with Copy, comma separated, at most 500 characters, for YouTube Studio Basic info Keywords.
+- **Pace:** "several times a week" and "every day" added.
+- Tests: Node 703 green (10 new in `runner/wizard-keywords.test.mjs`), UI check 0 errors, Rust 50 of 50. The Keywords and kit screens clicked in `scripts/ui-mock`, no console error. Merged into `main` from `wizard-keywords` and pushed, no PR, no GitHub Actions run. Card format unchanged (version 1).
+- **Installer:** built here 2026-11-07 15:26, installed over the old app, the app opened. No screen clicked in the installed window.
+- **Not tried:** a real vidIQ deep research inside the app (the Markdown answer was checked against the live vidIQ server through Claude's connector, 5 credits, and is recorded as a fixture).
 
 ## Now (2026-11-05, Night shift, DECISIONS 182)
 
