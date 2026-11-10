@@ -2,6 +2,7 @@
   // Publishing, Thumbnail (DECISIONS 169): the thumbnail of any video of this
   // Identity, at any time, before the video too. Pick the video, the rest is the
   // Thumbnail step as it was (ThumbnailTab, DECISIONS 131).
+  import { ofThisApp } from "../split";
   import { onMount, untrack } from "svelte";
   import type { AppState, ProjectSummary } from "../api";
   import { runner, errorText } from "../api";
@@ -18,7 +19,7 @@
 
   onMount(async () => {
     try {
-      const all = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects;
+      const all = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects.filter(ofThisApp);
       videos = [...all].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
       if (!videos.some((v) => v.dir === dir)) dir = videos[0]?.dir ?? "";
     } catch (e) {

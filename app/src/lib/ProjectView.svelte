@@ -366,7 +366,7 @@
 
     <div class="body" bind:this={body}>
       {#if active === "recording"}
-        <RecordingTab {dir} busy={!!pilot || anyJob} changed={load} redo={() => recordedRun()} />
+        <RecordingTab {app} {dir} busy={!!pilot || anyJob} changed={load} redo={() => recordedRun()} />
       {:else if active === "research"}
         <ResearchTab {app} {dir} busy={!!pilot} kind={data.project.start?.kind ?? "topic"} recipe={!!data.project.recipe} keyword={data.project.keyword ?? null} title={data.project.title} ai={usableAi("script")} made={load} goOn={() => (data?.project.recipe ? recipeRun() : show("script", "research"))} skip={() => show("script", "research-skipped")} {openPage} />
       {:else if active === "shots"}

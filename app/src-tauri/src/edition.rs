@@ -8,6 +8,37 @@ use serde_json::{json, Value};
 
 pub const PRODUCT_NAME: &str = "IdeaToVideo";
 
+// ITV Editor (DECISIONS 184): the second app built from this same crate, with its own
+// identifier, window and installer. It reads IdeaToVideo's settings and Identities
+// folder, so nothing is set up twice; only its own few settings are in its own folder.
+pub const EDITOR_NAME: &str = "ITV Editor";
+pub const EDITOR_IDENTIFIER: &str = "app.itveditor.desktop";
+pub const MAIN_IDENTIFIER: &str = "app.ideatovideo.desktop";
+
+static EDITOR: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/** Set once at start from the app's identifier. */
+pub fn set_editor(on: bool) {
+    EDITOR.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+pub fn is_editor() -> bool {
+    EDITOR.load(std::sync::atomic::Ordering::Relaxed)
+}
+/// The name on the window, the tray and the messages.
+pub fn product() -> &'static str {
+    if is_editor() { EDITOR_NAME } else { PRODUCT_NAME }
+}
+
+/// The settings folder both apps share: IdeaToVideo's. `own` is this app's own
+/// config folder; the Editor's sits next to IdeaToVideo's on every system.
+pub fn shared_dir(own: &std::path::Path) -> std::path::PathBuf {
+    if is_editor() {
+        own.parent().map(|p| p.join(MAIN_IDENTIFIER)).unwrap_or_else(|| own.to_path_buf())
+    } else {
+        own.to_path_buf()
+    }
+}
+
 // Solo is only reachable in debug builds until the licence file (phase 4).
 #[cfg_attr(not(debug_assertions), allow(dead_code))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -88,5 +119,20 @@ mod tests {
         assert_eq!(info(Tier::Agency)["identityLimit"], Value::Null);
         assert_eq!(info(Tier::Solo)["identityLimit"], 1);
         assert_eq!(info(Tier::Agency)["copyKeysDefault"], true);
+    }
+}
+
+#[cfg(test)]
+mod editor_tests {
+    use super::*;
+    #[test]
+    fn the_editor_reads_the_main_apps_folder() {
+        let own = std::path::Path::new("/x/AppData/Roaming").join(EDITOR_IDENTIFIER);
+        set_editor(true);
+        assert_eq!(shared_dir(&own), std::path::Path::new("/x/AppData/Roaming").join(MAIN_IDENTIFIER));
+        assert_eq!(product(), "ITV Editor");
+        set_editor(false);
+        assert_eq!(shared_dir(&own), own);
+        assert_eq!(product(), "IdeaToVideo");
     }
 }

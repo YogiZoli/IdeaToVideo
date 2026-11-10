@@ -4,13 +4,16 @@
 // core in AppState.edition, never from a settings file.
 
 import type { Edition } from "./api";
+// the same switch as pages.ts (a value import between .ts files does not load in the Node tests)
+const EDITOR: boolean = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ITV_APP === "editor";
 
-export const PRODUCT = "IdeaToVideo";
+export const PRODUCT = EDITOR ? "ITV Editor" : "IdeaToVideo";
+export const MAIN_PRODUCT = "IdeaToVideo";
 export const IDENTITY = "Identity";
 export const IDENTITIES = "Identities";
 // Always singular (Zoltan, 2026-10-01): "ONE Videos" is not English. Where
 // a sentence needs a plural, it says "videos".
-export const ONE_VIDEO = "ONE Video";
+export const ONE_VIDEO = EDITOR ? "video" : "ONE Video";
 
 /** The plan line in Settings, Plan. */
 export function planText(e: Edition, count: number): string {

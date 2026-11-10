@@ -9,7 +9,7 @@ import { runner, errorText, jobList, stopJob } from "./api";
 import { log } from "./logger";
 import { notifyDone } from "./notify";
 import { pilots } from "./work.svelte";
-import { runRecipeVideo, runRecordedVideo, stoppedByUser, type RunCtx, type RunData } from "./videoRun";
+import { runRecipeVideo, stoppedByUser, type RunCtx, type RunData } from "./videoRun";
 import { counts, morningLine, newShift, nextItem, WAITS, type NightItem, type NightShift } from "./night";
 
 export const night = $state<{ shift: NightShift | null; running: boolean; step: string; stopping: boolean }>({ shift: null, running: false, step: "", stopping: false });
@@ -45,7 +45,9 @@ async function makeOne(item: NightItem, b: Base): Promise<Partial<NightItem>> {
     offline: () => {},
     approveAvatar: async () => "wait",
   };
-  const end = data!.project.recipe?.engine === "recorded" ? await runRecordedVideo(ctx) : await runRecipeVideo(ctx);
+  // recordings never run at night (DECISIONS 184): nightCandidates leaves them out
+  if (data!.project.recipe?.engine === "recorded") throw new Error("A recording is edited in ITV Editor, not at night.");
+  const end = await runRecipeVideo(ctx);
   if (end === "brief" || end === "offline" || end === "avatar") return { status: "waiting", ...WAITS[end] };
   await load();
   if (data!.project.render?.state === "done" && end === "video") return { status: "ready", page: "video" };

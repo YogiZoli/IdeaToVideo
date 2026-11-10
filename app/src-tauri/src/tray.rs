@@ -13,12 +13,14 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Manager, Window};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
-use crate::edition::PRODUCT_NAME;
+use crate::edition::product;
 
 const TRAY_ID: &str = "main";
 const NOTICE_FLAG: &str = "tray-notice-shown";
 
 pub fn setup(app: &tauri::App) -> tauri::Result<()> {
+    #[allow(non_snake_case)]
+    let PRODUCT_NAME = product();
     let open_item = MenuItem::with_id(app, "open", format!("Open {PRODUCT_NAME}"), true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", format!("Quit {PRODUCT_NAME}"), true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open_item, &quit_item])?;
@@ -54,6 +56,8 @@ pub fn show(app: &AppHandle) {
 
 /// The close button: hide, never quit. The first time, say where it went.
 pub fn on_close(window: &Window) {
+    #[allow(non_snake_case)]
+    let PRODUCT_NAME = product();
     let _ = window.hide();
     let app = window.app_handle();
     let Ok(dir) = app.path().app_local_data_dir() else { return };
@@ -74,6 +78,8 @@ pub fn on_close(window: &Window) {
 
 /// Quit from the tray menu; asks first when a job is running.
 fn quit(app: &AppHandle) {
+    #[allow(non_snake_case)]
+    let PRODUCT_NAME = product();
     let running = running_jobs(app);
     if running.is_empty() {
         app.exit(0);
@@ -121,6 +127,8 @@ fn running_jobs(app: &AppHandle) -> Vec<String> {
 
 /// The tooltip: what runs, with the render's percent when it is known.
 pub fn status(app: &AppHandle, render_percent: Option<i64>) {
+    #[allow(non_snake_case)]
+    let PRODUCT_NAME = product();
     let Some(tray) = app.tray_by_id(TRAY_ID) else { return };
     let running = running_jobs(app);
     let text = match (running.first(), render_percent) {

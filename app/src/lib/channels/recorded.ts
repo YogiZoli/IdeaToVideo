@@ -14,7 +14,7 @@ export type Plan = {
   beats: { start: number; color: string }[];
 };
 export type RecordedState = {
-  input: { files: Record<string, string>; voice: string; notes?: string[] } | null;
+  input: { files: Record<string, string>; voice: string; notes?: string[]; kind?: string | null; bubble?: { mode: "camera" | "box" | "avatar"; box?: { x: number; y: number; w: number; h: number } | null; skipped?: boolean; source?: string; state?: string } | null } | null;
   preset?: string;
   cuts: Cuts | null;
   plan: Plan | null;

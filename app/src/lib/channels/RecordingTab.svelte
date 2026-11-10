@@ -8,7 +8,9 @@
   import { onDestroy } from "svelte";
   import { cutLine, checkLine, stepText, type RecordedState } from "./recorded";
 
-  let { dir, busy, redo, changed }: { dir: string; busy: boolean; redo: () => void; changed: () => Promise<void> } = $props();
+  import BubblePanel from "../editor/BubblePanel.svelte";
+  import type { AppState } from "../api";
+  let { app, dir, busy, redo, changed }: { app: AppState; dir: string; busy: boolean; redo: () => void; changed: () => Promise<void> } = $props();
 
   let st = $state<RecordedState | null>(null);
   let error = $state("");
@@ -93,6 +95,9 @@
       </ul>
       {#each st.input.notes ?? [] as n (n)}<p class="hint">{n}</p>{/each}
     </section>
+    {#if st.input.bubble && st.input.bubble.mode !== "camera"}
+      <BubblePanel {app} {dir} bubble={st.input.bubble} screenFile={st.input.files.screen} changed={async () => { await load(); await changed(); }} />
+    {/if}
   {/if}
 
   {#if st?.cuts}

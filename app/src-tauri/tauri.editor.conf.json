@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ITV Editor",
+  "mainBinaryName": "itv-editor",
+  "identifier": "app.itveditor.desktop",
+  "build": {
+    "beforeDevCommand": "node ../scripts/fetch-sidecars.mjs && npm run dev:editor",
+    "devUrl": "http://localhost:1430",
+    "beforeBuildCommand": "node ../scripts/fetch-sidecars.mjs && npm ci --prefix ../runner --no-audit --no-fund && node ../scripts/prune-runner.mjs && npm run build:editor",
+    "frontendDist": "../build-editor"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ITV Editor",
+        "width": 1100,
+        "height": 760,
+        "minWidth": 900,
+        "minHeight": 620,
+        "maximized": true
+      }
+    ]
+  },
+  "bundle": {
+    "shortDescription": "A recording in, a finished video out, on your own machine"
+  }
+}

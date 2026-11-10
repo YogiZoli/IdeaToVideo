@@ -15,6 +15,7 @@
   import { log } from "./logger";
   import type { PageId } from "./pages";
   import { IMPORTS, EXPORTS, type TransferRow } from "./transferList";
+  import { EDITOR } from "./pages";
   import ErrorBox from "./ErrorBox.svelte";
   import IdentityTransfer from "./IdentityTransfer.svelte";
 
@@ -123,14 +124,17 @@
 {#if error}<ErrorBox message={error} context={{ step: "import-export" }} />{/if}
 {#if busy}<p class="busy">{busy}</p>{/if}
 
+{#if !EDITOR}
 <section class="card top">
   <h2>Identity</h2>
   <IdentityTransfer {app} {saved} {off} />
 </section>
+{/if}
 
 <section class="card">
-  <h2>Parts of it</h2>
+  <h2>{EDITOR ? "For the person helping you" : "Parts of it"}</h2>
   <div class="rows">
+    {#if !EDITOR}
     <div class="r">
       <div><b>Your look</b><span>Only the look of this Identity: colors, fonts, shapes, name on screen and logos. The whole Identity above has this and everything else. Import replaces the look: a file saved here, or a .css file from another design tool (your logo stays then). Export saves a .zip.</span></div>
       <div class="acts"><button type="button" disabled={off} onclick={lookIn}>Import</button><button type="button" disabled={off} onclick={exportCardFile}>Export</button></div>
@@ -141,6 +145,7 @@
       </div>
       <div class="acts"><button type="button" disabled={off} onclick={packIn}>Import</button><button type="button" disabled={off || !packId} onclick={packOut}>Export</button></div>
     </div>
+    {/if}
     <div class="r">
       <div><b>Diagnostics</b><span>One zip with the log, the settings and every ONE Video's state, for the person helping you. No key, no video, no script text.</span></div>
       <div class="acts"><span class="na">Export only</span><button type="button" disabled={off} onclick={diagnostics}>Export</button></div>

@@ -35,6 +35,7 @@ import { planRecording, scriptFromPlan, shotRows } from "./shots.mjs";
 import { recordedHtml, linkInto, WIDTH, HEIGHT } from "./compose.mjs";
 import { trackFile, analyzeTrack, paintOutCursor, TRACK_FPS } from "./cursor.mjs";
 import { personMasks, cutoutClip, silhouetteClip, releaseMatte } from "./matte.mjs";
+import { INPUT_SCHEMA, kindOf, kindProblem, bubbleFor, migrateInput, zoomAllowed, bubbleMount, NO_ZOOM_NOTE } from "./bubble.mjs";
 
 export const INPUT_FILE = "input.json";
 export const SLOTS = ["camera", "screen", "combined", "front"];
@@ -90,10 +91,15 @@ export function pictureRoles(preset, files) {
 const titleOf = (file) => path.basename(String(file)).replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "Recording";
 
 /** A new video of a recording: files checked, the recipe copied in. No work yet. */
-export async function newRecordedVideo({ projectsDir, identity, language = "en", recipe, files, title = "", env = process.env }) {
+export async function newRecordedVideo({ projectsDir, identity, language = "en", recipe, files, title = "", kind = null, mark = null, broll = null, env = process.env }) {
+  // ITV Editor says what was recorded (DECISIONS 184): the kind picks the preset for this
+  // one video; IdeaToVideo's older way, the recipe's preset, still works without a kind.
+  const k = kind ? kindOf(kind) : null;
+  if (kind && !k) throw new Error("Choose what you recorded.");
+  if (k) recipe = { ...recipe, preset: k.preset, ...(broll === null ? {} : { broll: { ...(recipe.broll ?? {}), on: !!broll } }) };
   const preset = loadPreset(recipe.preset);
   const clean = Object.fromEntries(SLOTS.filter((s) => files?.[s]).map((s) => [s, String(files[s])]));
-  const problem = filesProblem(preset, clean);
+  const problem = k ? kindProblem(k.id, clean) : filesProblem(preset, clean);
   if (problem) throw new Error(problem);
   const probes = {};
   for (const [slot, file] of Object.entries(clean)) {
@@ -109,7 +115,7 @@ export async function newRecordedVideo({ projectsDir, identity, language = "en",
   // a title the user typed stays: the AI only names a video that has none (DECISIONS 177)
   if (typed) saveProject(dir, { ...loadProject(dir), titleTyped: true });
   fs.mkdirSync(work(dir), { recursive: true });
-  writeJson(work(dir, INPUT_FILE), { schema: "recorded-input/1", preset: preset.id, files: clean, probes, voice, offsets: {}, notes: [] });
+  writeJson(work(dir, INPUT_FILE), { schema: INPUT_SCHEMA, preset: preset.id, kind: k?.id ?? migrateInput({ preset: preset.id, files: clean }).kind, bubble: k ? bubbleFor(k.id, clean, mark) : migrateInput({ preset: preset.id, files: clean }).bubble, files: clean, probes, voice, offsets: {}, notes: [] });
   appendLog(dir, `recorded: ${preset.id}, ${Object.keys(clean).join(" + ")}, the voice from ${voice}`);
   return { id, dir };
 }
@@ -117,7 +123,8 @@ export async function newRecordedVideo({ projectsDir, identity, language = "en",
 export const loadInput = (projectDir) => {
   const v = readJson(work(projectDir, INPUT_FILE));
   if (!v) throw new Error("This video has no recording. Start it again from the channel screen.");
-  return v;
+  // a recording from before ITV Editor reads as schema 2, its file stays as it is
+  return migrateInput(v);
 };
 export const loadCuts = (projectDir) => readJson(work(projectDir, "cuts.json"));
 export const loadPlan = (projectDir) => readJson(work(projectDir, "plan.json"));
@@ -318,7 +325,10 @@ export async function preparePictures({ projectDir, env = process.env, signal, o
   const total = pictures.kept;
   const rec = preset.recorded;
   const done = { notes: [] };
-  if (rec.zoom) {
+  if (rec.zoom && !zoomAllowed(input)) {
+    fs.rmSync(work(projectDir, "motion.json"), { force: true });
+    addNote(projectDir, "zoom", NO_ZOOM_NOTE);
+  } else if (rec.zoom) {
     const screen = pictures.pictures.screen;
     const file = path.join(projectDir, screen.file);
     onProgress({ step: "recorded-cursor", percent: 0 });
@@ -400,6 +410,9 @@ export async function buildRecorded(projectDir, { env = process.env, language, t
     mounted.figure = place("recorded/figure.webm", "pictures/figure.webm");
   } else {
     if (pictures.pictures.camera) mounted.camera = place(pictures.pictures.camera.file, "pictures/camera.mp4");
+    const bubble = bubbleMount(input);
+    if (bubble?.kind === "lift" && pictures.pictures.screen) mounted.lift = { file: place(pictures.pictures.screen.file, "pictures/screen-original.mp4"), box: bubble.box };
+    if (bubble?.kind === "clip" && fs.existsSync(path.join(projectDir, bubble.file))) mounted.bubbleClip = place(bubble.file, `pictures/bubble${path.extname(bubble.file)}`);
     if (pictures.pictures.screen) mounted.screen = motion?.painted ? place("recorded/screen-clean.mp4", "pictures/screen.mp4") : place(pictures.pictures.screen.file, "pictures/screen.mp4");
   }
   const fonts = fontFaces([...new Set([preset.tokens.fonts.display, preset.tokens.fonts.body])], { dir: libraryDir(env) });
@@ -441,7 +454,7 @@ export function recordedState(projectDir) {
   const motion = readJson(work(projectDir, "motion.json"));
   const pictures = readJson(work(projectDir, "pictures.json"));
   const { view, cursor, ...motionInfo } = motion ?? {};
-  return { input, preset: input.preset, cuts: cutSummary(projectDir), plan: loadPlan(projectDir), after: pictures?.after ?? null, kept: pictures?.kept ?? null, motion: motion ? motionInfo : null };
+  return { input: migrateInput(input), preset: input.preset, cuts: cutSummary(projectDir), plan: loadPlan(projectDir), after: pictures?.after ?? null, kept: pictures?.kept ?? null, motion: motion ? motionInfo : null };
 }
 
-export { narrationFromMarkdown, duration, FPS, maskFromJson };
+export { narrationFromMarkdown, duration, FPS, maskFromJson, probeMedia };

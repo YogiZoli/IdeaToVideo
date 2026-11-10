@@ -22,6 +22,9 @@ const { values: args } = parseArgs({
   options: {
     work: { type: "string" },
     preset: { type: "string", default: "talking-head" },
+    // ITV Editor (DECISIONS 184): what was recorded, and a marked bubble box "x,y,w,h"
+    kind: { type: "string" },
+    box: { type: "string" },
     camera: { type: "string" },
     screen: { type: "string" },
     front: { type: "string" },
@@ -180,7 +183,7 @@ check("the four recorded presets are offered", ["talking-head", "screen-recordin
 const saved = step("the recipe is locked in", "recipe-save", { identityDir, language: args.language, recipe: { ...state.recipe, engine: "recorded", preset, music: { on: false, source: "synth", mood: "calm" }, broll: { on: args.broll }, recorded: { cutout: args.cutout, smoothCursor: true } } }, (d) => `${d.recipe.engine}, ${d.recipe.preset}`);
 check("the recipe asks for no voice and no avatar", saved.recipe.avatar.on === false && saved.recipe.voice.provider === "recording");
 
-const video = step("a recording makes a video", "recorded-video-new", { projectsDir, identityDir, identity: "test", language: args.language, files }, (d) => d.id);
+const video = step("a recording makes a video", "recorded-video-new", { projectsDir, identityDir, identity: "test", language: args.language, files, ...(args.kind ? { kind: args.kind, mark: args.box ? { box: Object.fromEntries(args.box.split(",").map(Number).map((v, i) => ["xywh"[i], v])) } : null } : {}) }, (d) => d.id);
 const projectDir = video.dir;
 const read = () => JSON.parse(fs.readFileSync(path.join(projectDir, "project.json"), "utf8"));
 const input = JSON.parse(fs.readFileSync(path.join(projectDir, "recorded", "input.json"), "utf8"));

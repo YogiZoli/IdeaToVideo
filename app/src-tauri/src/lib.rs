@@ -59,7 +59,30 @@ const AUTO_BACKUP_AFTER: &[&str] = &["approve-gate", "render-video", "make-avata
 const BACKUP_COMMANDS: &[&str] = &["backup-project", "backup-all", "backup-estimate", "list-backups", "restore-project"];
 
 fn config_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    app.path().app_config_dir().map_err(|e| format!("No config folder: {e}"))
+    shared_config_dir(app)
+}
+
+/// IdeaToVideo's settings and Identities folder, for both apps (DECISIONS 184).
+fn shared_config_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path().app_config_dir().map(|d| edition::shared_dir(&d)).map_err(|e| format!("No config folder: {e}"))
+}
+
+/// The same for the data folder (the brand cards).
+fn shared_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path().app_data_dir().map(|d| edition::shared_dir(&d)).map_err(|e| format!("No data folder: {e}"))
+}
+
+/// ITV Editor's own settings: only what the Editor needs, in its own folder.
+#[tauri::command(async)]
+fn editor_settings(app: AppHandle, value: Option<Value>) -> Result<Value, String> {
+    let dir = app.path().app_config_dir().map_err(|e| format!("No config folder: {e}"))?;
+    let file = dir.join("editor.json");
+    if let Some(v) = value {
+        std::fs::create_dir_all(&dir).map_err(|e| format!("Could not save the Editor settings: {e}"))?;
+        config::write_atomic(&file, serde_json::to_string_pretty(&v).unwrap_or_default().as_bytes())?;
+        return Ok(v);
+    }
+    Ok(config::load(&file)?.unwrap_or_else(|| json!({})))
 }
 
 fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -85,7 +108,8 @@ fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
     let ffmpeg = Some(runner::plain_path(resources.join("ffmpeg")));
     let engine = Some(runner::plain_path(resources.join("engine")));
     // local, not roaming: the render browser alone is about 280 MB
-    let data = app.path().app_local_data_dir().ok().map(runner::plain_path);
+    // shared with ITV Editor: the models and the render browser download once (DECISIONS 184)
+    let data = app.path().app_local_data_dir().ok().map(|d| runner::plain_path(edition::shared_dir(&d)));
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));
     }
@@ -179,8 +203,8 @@ async fn run_command(
         // the system refuses, the work runs anyway.
         let _awake = keepawake::Builder::default()
             .idle(true)
-            .reason(format!("{} is making your video", edition::PRODUCT_NAME))
-            .app_name(edition::PRODUCT_NAME)
+            .reason(format!("{} is making your video", edition::product()))
+            .app_name(edition::product())
             .app_reverse_domain("app.ideatovideo.desktop")
             .create()
             .ok();
@@ -1072,6 +1096,9 @@ fn import_music(app: AppHandle, project_dir: String, path: String) -> Result<Str
 /// settings over once, silently; a failure only means starting fresh.
 fn migrate_from_studio(app: &AppHandle) {
     keys::migrate_legacy();
+    if edition::is_editor() {
+        return;
+    }
     if let Ok(new_dir) = app.path().app_config_dir() {
         if let Some(old_dir) = new_dir.parent().map(|p| p.join(config::LEGACY_IDENTIFIER)) {
             let docs = app.path().document_dir().ok();
@@ -1084,7 +1111,7 @@ fn migrate_from_studio(app: &AppHandle) {
 /// Identity, "My Identity" (docs/identity.md 5).
 fn migrate_to_identities(app: &AppHandle) {
     note(app, "info", "migration_check", json!({}));
-    let (Ok(dir), Ok(data)) = (app.path().app_config_dir(), app.path().app_data_dir()) else { return };
+    let (Ok(dir), Ok(data)) = (shared_config_dir(app), shared_data_dir(app)) else { return };
     let result = identity::migrate_v1(&dir, &data.join("brand"), |cfg| projects_dir(app, Some(cfg)).ok());
     let notice = match result {
         Ok(n) => n,
@@ -1107,6 +1134,7 @@ pub fn run() {
         .manage(Core::default())
         .setup(|app| {
             let h = app.handle();
+            edition::set_editor(h.config().identifier == edition::EDITOR_IDENTIFIER);
             if let Ok(d) = h.path().app_local_data_dir() {
                 h.state::<Core>().log.open(d.join("logs"));
             }
@@ -1114,14 +1142,14 @@ pub fn run() {
                 "version": h.package_info().version.to_string(),
                 "os": std::env::consts::OS,
                 "arch": std::env::consts::ARCH,
-                "product": edition::PRODUCT_NAME,
+                "product": edition::product(),
                 "tier": edition::tier().name(),
             }));
             tray::setup(app)?;
             let h = app.handle();
             migrate_from_studio(h);
             migrate_to_identities(h);
-            if let Ok(dir) = h.path().app_config_dir() {
+            if let Ok(dir) = shared_config_dir(h) {
                 let cfg = config::load(&dir.join(config::FILE_NAME)).ok().flatten();
                 let get = |f: &str| cfg.as_ref().and_then(|c| c.get(f)).cloned();
                 note(h, "info", "app_ready", json!({
@@ -1168,7 +1196,8 @@ pub fn run() {
             log_event,
             log_status,
             export_diagnostics,
-            delete_logs
+            delete_logs,
+            editor_settings
         ])
         // the close button hides the window; the app keeps working in the tray
         .on_window_event(|window, event| {

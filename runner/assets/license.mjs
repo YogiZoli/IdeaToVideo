@@ -23,6 +23,8 @@ export const LICENSES = {
   "heygen-terms": "HeyGen terms of use (AI output)",
   "gemini-terms": "Google Gemini terms of use (AI output)",
   "own-generation": "Google Flow (Veo), own generation",
+  // ITV Editor: a lip sync clip the user made from the video's own voice (DECISIONS 184)
+  "own-generation-outside": "Own generation, outside tool",
 };
 
 // Hosts of US federal agencies, whose own works are public domain. Not every
@@ -54,6 +56,8 @@ export const SOURCES = {
   gemini: { label: "Gemini", licenses: ["gemini-terms"], ai: true },
   // the manual slot of a shot (docs/BUILD_PLAN.md phase 3): the user's own clip
   flow: { label: "Google Flow (Veo), own generation", licenses: ["own-generation"], ai: true },
+  // ITV Editor: the face bubble made in any outside tool from the exported voice (DECISIONS 184)
+  outside: { label: "Own generation, outside tool", licenses: ["own-generation-outside"], ai: true },
 };
 
 // Words in a title or tags that point to a person: such an image is refused,
