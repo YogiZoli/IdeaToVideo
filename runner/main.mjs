@@ -1632,9 +1632,11 @@ const commands = {
   "recorded-bubble-box": async ({ projectDir, box, skip }) => bubble.setBubbleBox({ projectDir, box, skip }),
   "recorded-voice-export": async ({ projectDir, out }) => bubble.exportVoice({ projectDir, out }),
   "recorded-bubble-clip": async ({ projectDir, file, source, tool }) => bubble.importBubbleClip({ projectDir, file, source, tool, probe: recorded.probeMedia }),
+  // the price shows after the cuts; before them there is no length yet, and no price
   "recorded-bubble-cost": async ({ projectDir }) => {
-    const p = JSON.parse(fs.readFileSync(path.join(projectDir, "recorded", "pictures.json"), "utf8"));
-    return bubble.avatarCost(p.kept ?? 0);
+    const file = path.join(projectDir, "recorded", "pictures.json");
+    if (!fs.existsSync(file)) return { usd: null, seconds: null };
+    return bubble.avatarCost(JSON.parse(fs.readFileSync(file, "utf8")).kept ?? 0);
   },
   "recorded-avatar-bubble": async ({ projectDir, lookId, approved }) => logged(projectDir, "avatar bubble", () => bubble.makeAvatarBubble({ projectDir, apiKey: key(), lookId, approved, onProgress: (p) => emit({ event: "progress", ...p }) })),
   "recorded-state": async ({ projectDir }) => recorded.recordedState(projectDir),

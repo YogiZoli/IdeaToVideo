@@ -24,6 +24,8 @@
   import NightShift from "$lib/NightShift.svelte";
   import { night, loadNight, stopNight } from "$lib/night.svelte";
   import { counts } from "$lib/night";
+  import { startWork, work, pilots } from "$lib/work.svelte";
+  import { wokeText } from "$lib/progressInfo";
   import "../app.css";
 
   let app = $state<AppState | null>(null);
@@ -66,6 +68,28 @@
   }
 
   installLogger();
+  // The lid was closed: a gap in this clock. Logged, and said when work was running (DECISIONS 186).
+  startWork();
+  {
+    let last = Date.now();
+    let wasBusy = false;
+    setInterval(() => {
+      const now = Date.now();
+      const gap = now - last;
+      const busy = work.jobs.length > 0 || Object.values(pilots).some(Boolean);
+      if (gap > 60000) {
+        log("computer_slept", { seconds: Math.round(gap / 1000), busyBefore: wasBusy, busyAfter: busy, jobs: work.jobs.map((j) => j.command) }, wasBusy ? "warn" : "info");
+        // the jobs come back a moment after waking: look again in 5 s
+        setTimeout(() => {
+          const still = work.jobs.length > 0 || Object.values(pilots).some(Boolean);
+          const t = wokeText(gap / 1000, wasBusy, still);
+          if (t) notice = t;
+        }, 5000);
+      }
+      wasBusy = busy;
+      last = now;
+    }, 10000);
+  }
   async function init() {
     try {
       const s = await appState();

@@ -62,3 +62,19 @@ test("the check-in: working, waiting for a service, seems stuck; the sleep; a bu
   assert.equal(t.expect, 30 + 35);
   assert.ok(measure(t, Date.now()).percent < 99);
 });
+
+// RecCut reliability (DECISIONS 186): the top bar always says if the lid may close
+import { lidState, wokeText, workPlace as placeOf } from "../../app/src/lib/progressInfo.ts";
+test("the status line: idle, HeyGen only, local work, a run between steps", () => {
+  assert.deepEqual(lidState([]), { busy: false, lid: true, text: "Nothing is running. You can close the laptop." });
+  assert.equal(lidState(["recorded-avatar-bubble"]).lid, true, "HeyGen works on its own computers");
+  assert.equal(lidState(["recorded-transcribe"]).lid, false);
+  assert.equal(lidState(["recorded-avatar-bubble", "render-video"]).lid, false);
+  assert.equal(lidState([], 1).lid, false, "a run between two steps still needs the laptop");
+  assert.equal(placeOf("recorded-avatar-bubble"), "service");
+});
+test("after a sleep: nothing said when idle, what to do when a step was running", () => {
+  assert.equal(wokeText(300, false, false), "");
+  assert.match(wokeText(300, true, true), /goes on now/);
+  assert.match(wokeText(300, true, false), /Go on from where it stopped/);
+});

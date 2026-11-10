@@ -19,6 +19,9 @@ const MAX_FILE: u64 = 4 * 1024 * 1024;
 
 pub struct Sources<'a> {
     pub logs: Option<&'a Path>,
+    /// RecCut: the runner's error log and IdeaToVideo's log, in the shared data folder
+    /// (DECISIONS 186), so one zip shows both sides of a run.
+    pub shared_logs: Option<&'a Path>,
     pub config_dir: &'a Path,
     pub projects_root: &'a Path,
     pub about: String,
@@ -86,6 +89,17 @@ pub fn export(src: &Sources, out: &Path) -> Result<usize, String> {
             }
         }
     }
+    if let Some(shared) = src.shared_logs.filter(|d| Some(*d) != src.logs) {
+        let mut files: Vec<PathBuf> = fs::read_dir(shared)
+            .map(|r| r.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "jsonl" || x == "log")).collect())
+            .unwrap_or_default();
+        files.sort();
+        for p in files.iter().rev().take(LOG_DAYS) {
+            if let (Some(name), Some(bytes)) = (p.file_name(), read_capped(p)) {
+                put(&mut zip, &format!("logs-shared/{}", name.to_string_lossy()), &bytes)?;
+            }
+        }
+    }
     if let Some(bytes) = read_capped(&src.config_dir.join(crate::config::FILE_NAME)) {
         put(&mut zip, "settings/config.json", &bytes)?;
     }
@@ -136,7 +150,7 @@ mod tests {
         fs::write(video.join("audio").join("vo.mp3"), "AUDIO").unwrap();
         fs::write(video.join("script.md"), "the script").unwrap();
         let out = base.join("out").join("diag.zip");
-        let n = export(&Sources { logs: Some(&logs), config_dir: &cfg, projects_root: &root, about: "about".into() }, &out).unwrap();
+        let n = export(&Sources { logs: Some(&logs), shared_logs: None, config_dir: &cfg, projects_root: &root, about: "about".into() }, &out).unwrap();
         let mut z = zip::ZipArchive::new(fs::File::open(&out).unwrap()).unwrap();
         let names: Vec<String> = (0..z.len()).map(|i| z.by_index(i).unwrap().name().to_string()).collect();
         assert_eq!(n, names.len());

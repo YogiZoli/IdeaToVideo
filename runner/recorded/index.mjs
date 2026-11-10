@@ -35,6 +35,7 @@ import { planRecording, scriptFromPlan, shotRows } from "./shots.mjs";
 import { recordedHtml, linkInto, WIDTH, HEIGHT } from "./compose.mjs";
 import { trackFile, analyzeTrack, paintOutCursor, TRACK_FPS } from "./cursor.mjs";
 import { personMasks, cutoutClip, silhouetteClip, releaseMatte } from "./matte.mjs";
+import { ensureRoom, roomForFiles } from "../disk.mjs";
 import { INPUT_SCHEMA, kindOf, kindProblem, bubbleFor, migrateInput, zoomAllowed, bubbleMount, NO_ZOOM_NOTE } from "./bubble.mjs";
 
 export const INPUT_FILE = "input.json";
@@ -220,6 +221,8 @@ export async function applyCuts({ projectDir, music = null, env = process.env, s
   const c = loadCuts(projectDir);
   if (!t || !c) throw new Error("Transcribe the recording first.");
   const preset = loadPreset(input.preset);
+  // every picture is written anew: ask for room first, a full disk says so in a sentence (DECISIONS 186)
+  ensureRoom(projectDir, roomForFiles(Object.values(input.files), 1.5), "the cut recording");
   saveProject(projectDir, setGate(project, "voice", { state: "running", mode: "custom" }));
   try {
     const keeps = keepsOf(t.words, c.marks, { off: c.off, seconds: t.seconds, keepPauses: c.keepPauses });
@@ -325,6 +328,7 @@ export async function preparePictures({ projectDir, env = process.env, signal, o
   const total = pictures.kept;
   const rec = preset.recorded;
   const done = { notes: [] };
+  if (rec.zoom || rec.silhouette || (plan.bigWords ?? []).some((b) => b.behind)) ensureRoom(projectDir, roomForFiles(Object.values(pictures.pictures).map((p) => path.join(projectDir, p.file)), 1.5), "the prepared pictures");
   if (rec.zoom && !zoomAllowed(input)) {
     fs.rmSync(work(projectDir, "motion.json"), { force: true });
     addNote(projectDir, "zoom", NO_ZOOM_NOTE);

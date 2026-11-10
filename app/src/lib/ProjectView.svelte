@@ -294,6 +294,7 @@
       else if (end === "preview" || end === "video") notifyDone("Your preview is ready", data?.project.title ?? "");
     } catch (e) {
       pilotError = `The video stopped: ${errorText(e)}`;
+      log("video_run_stopped", { engine: data?.project.recipe?.engine, error: errorText(e), byUser: stoppedByUser(e) }, stoppedByUser(e) ? "info" : "error");
       await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
       await load().catch(() => {});
     } finally {
@@ -356,7 +357,13 @@
         </button>
       {/each}
     </nav>
-    {#if pilotError}<ErrorBox message={pilotError} context={{ step: "autopilot" }} />{/if}
+    {#if pilotError}
+      <ErrorBox message={pilotError} context={{ step: "autopilot" }} />
+      {#if data?.project.recipe}
+        <!-- every finished step is kept: this goes on from the one that stopped (DECISIONS 186) -->
+        <p class="goon"><span class="hint">Everything done so far is kept.</span> <button type="button" class="primary" disabled={!!pilot || anyJob} onclick={() => { log("run_go_on", { engine: data?.project.recipe?.engine }); (data?.project.recipe?.engine === "recorded" ? recordedRun : recipeRun)(); }}>Go on from where it stopped</button></p>
+      {/if}
+    {/if}
     {#if pilotNote && pilot}<p class="note">{pilotNote}</p>{/if}
     {#if offlineNote && !pilot}<p class="note">{offlineNote}</p>{/if}
     {#if barless}<Progress command={barless} project={dir} label={pilot || "Working"} reveal={false} />{/if}
@@ -415,4 +422,5 @@
   @media (max-width: 980px) {
     .tab { padding: 6px 8px; font-size: 12px; }
   }
+  .goon { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin: 6px 0 0; }
 </style>

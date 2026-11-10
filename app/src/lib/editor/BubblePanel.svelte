@@ -5,6 +5,7 @@
   import { open as pickFile, save as saveFile } from "@tauri-apps/plugin-dialog";
   import { runner, errorText, type AppState } from "../api";
   import ErrorBox from "../ErrorBox.svelte";
+  import { log } from "../logger";
   import BubbleMarker from "./BubbleMarker.svelte";
 
   type Box = { x: number; y: number; w: number; h: number };
@@ -25,18 +26,21 @@
   const hasHeygen = $derived(!!app.keys["heygen"]);
 
   $effect(() => {
-    if (bubble.mode === "avatar") runner<{ usd: number; seconds: number }>("recorded-bubble-cost", { projectDir: dir }).then((c) => (cost = c)).catch(() => (cost = null));
+    if (bubble.mode === "avatar") runner<{ usd: number | null; seconds: number | null }>("recorded-bubble-cost", { projectDir: dir }).then((c) => (cost = c.usd === null ? null : (c as { usd: number; seconds: number }))).catch(() => (cost = null));
   });
 
   async function act(label: string, f: () => Promise<unknown>) {
     error = "";
     note = "";
     busy = label;
+    log("bubble_action", { step: label, mode: bubble.mode, source: bubble.source ?? null });
     try {
       await f();
       await changed();
+      log("bubble_action_done", { step: label });
     } catch (e) {
       error = errorText(e);
+      log("bubble_action_failed", { step: label, error });
     } finally {
       busy = "";
     }

@@ -1,4 +1,8 @@
-# IdeaToVideo
+# IdeaToVideo and RecCut
+
+**Two apps, one code base.** IdeaToVideo makes a video from a script. **RecCut** edits a recording into a finished video: start at [reccut/README.md](reccut/README.md), install steps for Windows and Mac in [reccut/INSTALL.md](reccut/INSTALL.md).
+
+## IdeaToVideo
 
 From idea to video, on your own machine. A desktop app (Windows, macOS later)
 that turns a topic into a finished explainer video: script, narration, music,

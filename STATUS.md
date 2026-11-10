@@ -1,10 +1,18 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-10 (RecCut: új név és saját ikon, DECISIONS 185)
+Frissítve: 2026-11-10 (RecCut megbízhatóság és saját repó, DECISIONS 186)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-10, RecCut megbízhatóság, DECISIONS 186)
+
+- **Javított hibák:** a buborék kijelölés első kockája nem jelent meg RecCutban (a mappa nem volt engedélyezve, és az előnézetek rossz mappára mutattak); a felvétel vágása előtt nem volt lemezhely ellenőrzés; sérült felvételnél az ffmpeg szövege jött; az újra kijelölt buborék után a régi jóváhagyott preview maradt; a buborék ára a vágás előtt hibát dobott; a diagnosztikai zipből hiányzott a közös napló.
+- **Új, mindkét appban:** a felső sorban mindig ott áll, fut-e valami és lecsukható-e a gép; alvás után egy mondat, mi a teendő (`computer_slept` a naplóban); "Go on from where it stopped" gomb, ha egy videó megállt.
+- **Tesztek:** Node 719 zöld (2 élő kihagyva), `npm run audit:quick` 823 ellenőrzés zöld 40 perc alatt, 0 USD, benne minden felvételes preset offline a PDT exportig, kevés lemezhely, Stop és bezárás közben. UI check és Rust: lásd a commit után.
+- **Repó:** a teljes kód a github.com/YogiZoli/RecCut repóba is felkerült; `reccut/` alatt README, INSTALL (Windows és MacBook), STATUS, DECISIONS.
+- **Nem próbáltam:** valódi lecsukás munka közben a telepített appban, Mac build.
 
 ## Now (2026-11-10, RecCut, DECISIONS 185)
 

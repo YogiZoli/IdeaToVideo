@@ -32,6 +32,7 @@ It reads IdeaToVideo's settings and Identities folder; only `editor.json` is its
 | `library/` | The pinned HyperFrames registry catalog, fonts index. |
 | `engine/`, `app/src-tauri/engine/` | The pinned render engine (HyperFrames, GSAP). Fetched, not edited. |
 | `scripts/` | Fetchers (`fetch-*.mjs`), `audit/` (reliability tests), `phase2/*-e2e.mjs` (real render tests), `ui-mock/` (the window in a browser), `make-*-blocks.mjs` (preset packs). |
+| `reccut/` | RecCut's own README, INSTALL (Windows and Mac), STATUS and DECISIONS. Its code is in `app/src/lib/editor/`, `runner/recorded/`. The repo is also pushed to github.com/YogiZoli/RecCut (DECISIONS 186). |
 | `docs/` | `BUILD_PLAN.md`, `AUDIT_REPORT.md`, wizards, older plans. |
 
 ## The engines and presets
