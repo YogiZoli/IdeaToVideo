@@ -8,11 +8,11 @@ use serde_json::{json, Value};
 
 pub const PRODUCT_NAME: &str = "IdeaToVideo";
 
-// ITV Editor (DECISIONS 184): the second app built from this same crate, with its own
+// RecCut (DECISIONS 184): the second app built from this same crate, with its own
 // identifier, window and installer. It reads IdeaToVideo's settings and Identities
 // folder, so nothing is set up twice; only its own few settings are in its own folder.
-pub const EDITOR_NAME: &str = "ITV Editor";
-pub const EDITOR_IDENTIFIER: &str = "app.itveditor.desktop";
+pub const EDITOR_NAME: &str = "RecCut";
+pub const EDITOR_IDENTIFIER: &str = "app.reccut.desktop";
 pub const MAIN_IDENTIFIER: &str = "app.ideatovideo.desktop";
 
 static EDITOR: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -130,7 +130,7 @@ mod editor_tests {
         let own = std::path::Path::new("/x/AppData/Roaming").join(EDITOR_IDENTIFIER);
         set_editor(true);
         assert_eq!(shared_dir(&own), std::path::Path::new("/x/AppData/Roaming").join(MAIN_IDENTIFIER));
-        assert_eq!(product(), "ITV Editor");
+        assert_eq!(product(), "RecCut");
         set_editor(false);
         assert_eq!(shared_dir(&own), own);
         assert_eq!(product(), "IdeaToVideo");

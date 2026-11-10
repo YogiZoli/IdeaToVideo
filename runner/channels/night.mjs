@@ -24,7 +24,7 @@ export function nightCandidates(projectsDir) {
       continue; // not a project folder
     }
     if (p.render?.state === "done" && p.gates?.review?.state === "approved") continue;
-    // recordings are edited in ITV Editor, never at night (DECISIONS 184)
+    // recordings are edited in RecCut, never at night (DECISIONS 184)
     if (p.recipe?.engine === "recorded") continue;
     const key = p.series ? `playlist:${p.series.courseSlug}` : p.queue ? `batch:${p.queue.batch}` : "other";
     const title = p.series ? `Playlist: ${p.series.courseTitle ?? p.series.courseSlug}` : p.queue ? `Week batch ${String(p.queue.batch).slice(0, 10)}` : "Other videos";

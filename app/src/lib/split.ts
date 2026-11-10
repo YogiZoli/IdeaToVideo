@@ -1,5 +1,5 @@
 // split.ts: which videos belong to which app (DECISIONS 184). A video made from a
-// recording opens in ITV Editor, a video made from a script in IdeaToVideo; both read
+// recording opens in RecCut, a video made from a script in IdeaToVideo; both read
 // the same projects folder. Pure, no Tauri imports, so the Node tests load it.
 
 // the same switch as pages.ts (a value import between .ts files does not load in the Node tests)

@@ -26,7 +26,7 @@ test("the App's pages hold only the App's AI step", () => {
 
 test("the top menu (DECISIONS 119, 168, 172, 175, 184): seven menus, at most seven pages each, every old page kept", () => {
   assert.deepEqual(MENUS.map((m) => m.title), ["Home", "ONE Video", "Identity", "Wizards", "Playlist", "Publishing", "Settings"]);
-  assert.ok(!MENUS.some((m) => m.id === "edit"), "Video Recording Editing is ITV Editor now");
+  assert.ok(!MENUS.some((m) => m.id === "edit"), "Video Recording Editing is RecCut now");
   for (const m of ["playlist", "publishing", "wizards", "identity", "settings"]) {
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
@@ -51,11 +51,11 @@ test("a big page has its parts as sub links (DECISIONS 168), and a link to anoth
   for (const subs of Object.values(SUB_PAGES)) for (const s of subs) if (s.page) assert.ok(SETTINGS_PAGES.some((p) => p.id === s.page), s.page);
 });
 
-test("a video from a script starts on Home; a recording in ITV Editor (DECISIONS 172, 184)", () => {
+test("a video from a script starts on Home; a recording in RecCut (DECISIONS 172, 184)", () => {
   const page = fs.readFileSync(new URL("../../app/src/routes/+page.svelte", import.meta.url), "utf8");
   assert.match(page, /only="script"/);
   assert.doesNotMatch(page, /only="recorded"/);
-  assert.match(page, /To edit a recording, open ITV Editor\./);
+  assert.match(page, /To edit a recording, open RecCut\./);
   assert.match(page, /<NewRecording/);
   const studio = fs.readFileSync(new URL("../../app/src/lib/channels/ChannelStudio.svelte", import.meta.url), "utf8");
   assert.doesNotMatch(studio, /aria-label="Direction"/);
@@ -108,7 +108,7 @@ test("setup's preset list is the shipped one (library/presets.map.json)", async 
   for (const p of PRESETS) assert.equal(p.label, map[p.id].label);
 });
 
-test("ITV Editor's menu is short, and its own Import & Export lists the recording (DECISIONS 184)", () => {
+test("RecCut's menu is short, and its own Import & Export lists the recording (DECISIONS 184)", () => {
   assert.deepEqual(menusFor(true).map((m) => m.title), ["Home", "Identity", "Publishing", "Settings"]);
   const pages = pagesFor(true);
   const of = (m) => pages.filter((p) => p.menu === m).map((p) => p.title);

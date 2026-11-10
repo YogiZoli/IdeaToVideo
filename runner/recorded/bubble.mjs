@@ -1,4 +1,4 @@
-// recorded/bubble.mjs: the face bubble of a screen video in ITV Editor (DECISIONS 184).
+// recorded/bubble.mjs: the face bubble of a screen video in RecCut (DECISIONS 184).
 //
 // "What did you record?" picks a kind. Every kind is one of the existing Recorded
 // presets plus, for a screen, where its face bubble comes from:
@@ -12,7 +12,7 @@
 //            sync clip made in any outside tool from the voice the Editor exports
 //
 // input.json carries it as `bubble`, from schema recorded-input/2. An older input
-// (recorded-input/1, every recording made before ITV Editor) is read as it was:
+// (recorded-input/1, every recording made before RecCut) is read as it was:
 // `migrateInput` gives it the kind its preset and files mean, and changes nothing else.
 
 import fs from "node:fs";
@@ -214,7 +214,7 @@ export async function importBubbleClip({ projectDir, file, source = "outside", t
   const today = new Date().toISOString().slice(0, 10);
   logAsset(projectDir, source === "heygen"
     ? { file: `recorded/bubble.${ext}`, title: "Avatar bubble", source: "heygen", license: "heygen-terms", author: "HeyGen (own account)", model: "HeyGen avatar, a clip already made in HeyGen", prompt: "the video's own voice, lip synced", costUsd: 0, date: today }
-    : { file: `recorded/bubble.${ext}`, title: "Avatar bubble", source: "outside", license: "own-generation-outside", author: "own generation", model: String(tool).trim() || "outside tool", prompt: "lip sync of this video's own cut voice, exported by ITV Editor", costUsd: 0, date: today });
+    : { file: `recorded/bubble.${ext}`, title: "Avatar bubble", source: "outside", license: "own-generation-outside", author: "own generation", model: String(tool).trim() || "outside tool", prompt: "lip sync of this video's own cut voice, exported by RecCut", costUsd: 0, date: today });
   saveInput(projectDir, { ...input, bubble: { ...input.bubble, source, state: "made", file: `recorded/bubble.${ext}`, seconds } });
   if (kept && seconds && Math.abs(seconds - kept) > 0.5) addNote(projectDir, "bubble", `The bubble clip is ${seconds.toFixed(1)} s and the video ${kept.toFixed(1)} s, so they drift apart. Make the clip from the voice the Editor exported, after the cuts.`);
   invalidateReview(projectDir);
@@ -247,7 +247,7 @@ export async function makeAvatarBubble({ projectDir, apiKey, lookId, approved = 
     onProgress({ step: "bubble-upload" });
     const asset = await api.uploadAudio({ apiKey, file: vo });
     onProgress({ step: "bubble-make" });
-    const id = await api.createVideo({ apiKey, avatarId: lookId, audioAssetId: asset, title: "ITV Editor bubble", format: "webm", engine: "avatar_iii" });
+    const id = await api.createVideo({ apiKey, avatarId: lookId, audioAssetId: asset, title: "RecCut bubble", format: "webm", engine: "avatar_iii" });
     const out = bubbleFile(projectDir, "webm");
     const part = `${out}.part`;
     await api.waitAndDownload({ apiKey, id, out: part, onStatus: (s) => onProgress({ step: "bubble-wait", status: s }) });

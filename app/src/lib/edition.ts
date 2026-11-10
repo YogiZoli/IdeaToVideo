@@ -7,7 +7,7 @@ import type { Edition } from "./api";
 // the same switch as pages.ts (a value import between .ts files does not load in the Node tests)
 const EDITOR: boolean = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ITV_APP === "editor";
 
-export const PRODUCT = EDITOR ? "ITV Editor" : "IdeaToVideo";
+export const PRODUCT = EDITOR ? "RecCut" : "IdeaToVideo";
 export const MAIN_PRODUCT = "IdeaToVideo";
 export const IDENTITY = "Identity";
 export const IDENTITIES = "Identities";

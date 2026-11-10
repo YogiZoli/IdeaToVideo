@@ -72,7 +72,7 @@ fn shared_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     app.path().app_data_dir().map(|d| edition::shared_dir(&d)).map_err(|e| format!("No data folder: {e}"))
 }
 
-/// ITV Editor's own settings: only what the Editor needs, in its own folder.
+/// RecCut's own settings: only what the Editor needs, in its own folder.
 #[tauri::command(async)]
 fn editor_settings(app: AppHandle, value: Option<Value>) -> Result<Value, String> {
     let dir = app.path().app_config_dir().map_err(|e| format!("No config folder: {e}"))?;
@@ -108,7 +108,7 @@ fn runner_paths(app: &AppHandle) -> Result<runner::Paths, String> {
     let ffmpeg = Some(runner::plain_path(resources.join("ffmpeg")));
     let engine = Some(runner::plain_path(resources.join("engine")));
     // local, not roaming: the render browser alone is about 280 MB
-    // shared with ITV Editor: the models and the render browser download once (DECISIONS 184)
+    // shared with RecCut: the models and the render browser download once (DECISIONS 184)
     let data = app.path().app_local_data_dir().ok().map(|d| runner::plain_path(edition::shared_dir(&d)));
     if !script.exists() {
         return Err(format!("The runner is missing ({}). Reinstall the app.", script.display()));

@@ -1,6 +1,6 @@
 // pages.ts: the top menu and its pages (UI simplification, Zoltan,
 // 2026-10-08, DECISIONS 119; new order 2026-11-05, DECISIONS 175). Eight menus:
-// Home, ONE Video, Identity, Wizards, Playlist, Publishing, Settings (Video Recording Editing moved to ITV Editor, DECISIONS 184). Nothing waits
+// Home, ONE Video, Identity, Wizards, Playlist, Publishing, Settings (Video Recording Editing moved to RecCut, DECISIONS 184). Nothing waits
 // behind a switch: every menu is always there. `scope` says what a page edits:
 // the App (every Identity on this computer) or the active Identity
 // (docs/identity.md 2). A big page has sub pages (SUB_PAGES) in the left column.
@@ -8,7 +8,7 @@
 
 import type { StepId } from "./steps";
 
-// ITV Editor is built from this same source (DECISIONS 184): VITE_ITV_APP=editor at
+// RecCut is built from this same source (DECISIONS 184): VITE_ITV_APP=editor at
 // build time. In Node (the tests) there is no import.meta.env, so it is IdeaToVideo.
 export const EDITOR: boolean = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ITV_APP === "editor";
 
@@ -33,7 +33,7 @@ const MAIN_MENUS: { id: MenuId; title: string; lines?: string[] }[] = [
   { id: "wizards", title: "Wizards" },
   { id: "playlist", title: "Playlist" },
   { id: "publishing", title: "Publishing" },
-  // editing a recording is its own app now, ITV Editor (DECISIONS 184)
+  // editing a recording is its own app now, RecCut (DECISIONS 184)
   { id: "settings", title: "Settings" },
 ];
 
@@ -81,7 +81,7 @@ const MAIN_PAGES: SettingsPage[] = [
   { id: "legal", title: "Legal", menu: "settings", scope: "app", steps: [] },
 ];
 
-// ITV Editor's short menu (Zoltan, 2026-11-09, DECISIONS 184): Home, Identity,
+// RecCut's short menu (Zoltan, 2026-11-09, DECISIONS 184): Home, Identity,
 // Publishing, Settings. Nothing else.
 const EDITOR_MENUS: { id: MenuId; title: string; lines?: string[] }[] = [
   { id: "home", title: "Home" },

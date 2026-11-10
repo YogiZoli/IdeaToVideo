@@ -1,5 +1,5 @@
 <script lang="ts">
-  // BubblePanel: the face bubble of a screen video, on the Recording tab (ITV Editor,
+  // BubblePanel: the face bubble of a screen video, on the Recording tab (RecCut,
   // DECISIONS 184). A marked box: mark it again or skip. The avatar bubble: three ways,
   // and the paid one shows its price and spends nothing until the button is pressed.
   import { open as pickFile, save as saveFile } from "@tauri-apps/plugin-dialog";

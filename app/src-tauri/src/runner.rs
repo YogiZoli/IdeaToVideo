@@ -208,7 +208,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("recorded-plan-rule", None),
     ("recorded-plan-save", None),
     ("recorded-prepare", None),
-    // ITV Editor's face bubble (DECISIONS 184): the box, a still, the voice out, a clip in;
+    // RecCut's face bubble (DECISIONS 184): the box, a still, the voice out, a clip in;
     // only the avatar bubble calls HeyGen, after the user approved its price
     ("recorded-kinds", None),
     ("recorded-still", None),

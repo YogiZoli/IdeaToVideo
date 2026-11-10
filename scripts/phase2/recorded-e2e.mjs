@@ -22,7 +22,7 @@ const { values: args } = parseArgs({
   options: {
     work: { type: "string" },
     preset: { type: "string", default: "talking-head" },
-    // ITV Editor (DECISIONS 184): what was recorded, and a marked bubble box "x,y,w,h"
+    // RecCut (DECISIONS 184): what was recorded, and a marked bubble box "x,y,w,h"
     kind: { type: "string" },
     box: { type: "string" },
     camera: { type: "string" },

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // NewRecording: ITV Editor's "A new recording" on Home (DECISIONS 184). What did you
+  // NewRecording: RecCut's "A new recording" on Home (DECISIONS 184). What did you
   // record? Six choices in Zoltan's order; each asks only for its own files. The run
   // then goes as before: words on this computer, cuts by rule, the AI only improves the
   // plan, it stops at the Preview, nothing is published by itself.

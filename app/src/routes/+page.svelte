@@ -83,7 +83,7 @@
       if (!s.app?.onboarded || !s.identity) setScreen("setup");
       else {
         silentHealth(s);
-        // a night shift cut off by a restart goes on by itself; ITV Editor has none
+        // a night shift cut off by a restart goes on by itself; RecCut has none
         if (!EDITOR) loadNight(s, true);
       }
     } catch (e) {
@@ -198,7 +198,7 @@
   <main class="center"><p class="muted">Starting...</p></main>
 {:else if !app.app?.onboarded || !app.identity}
   <main>
-    <div class="brandbar"><span class="name"><img src="/icon.png" alt="" />{PRODUCT}</span><span class="muted">Setup</span></div>
+    <div class="brandbar"><span class="name"><img src={EDITOR ? "/icon-reccut.png" : "/icon.png"} alt="" />{PRODUCT}</span><span class="muted">Setup</span></div>
     <div class="restorebar">
       <span>New computer, with a backup from the old one?</span>
       <button type="button" disabled={restoring} onclick={restoreFromBackup}>{restoring ? "Restoring..." : "Restore from a backup"}</button>
@@ -212,7 +212,7 @@
 {:else}
   <main class="shell">
     <nav class="brandbar">
-      <span class="name"><img src="/icon.png" alt="" />{PRODUCT}</span>
+      <span class="name"><img src={EDITOR ? "/icon-reccut.png" : "/icon.png"} alt="" />{PRODUCT}</span>
       <IdentityMenu {app} {choose} />
       {#each MENUS as m (m.id)}
         <button type="button" class:active={current === m.id} class:stack={!!m.lines} aria-label={m.title} onclick={() => menu(m.id)}>{#if m.lines}{#each m.lines as l}<span>{l}</span>{/each}{:else}{m.title}{/if}</button>
@@ -244,14 +244,14 @@
     {:else if view === "home"}
       {#key app.identity.id}
         {#if EDITOR}
-          <!-- ITV Editor's Home: Today's recording, Latest videos, A new recording (DECISIONS 184) -->
+          <!-- RecCut's Home: Today's recording, Latest videos, A new recording (DECISIONS 184) -->
           <TodayVideo {app} {openProject} videos={() => show("projects")} label="Today's recording" />
           <Home {app} {openProject} videos={() => show("projects")} />
           <div class="editorhome"><NewRecording {app} {openProject} /></div>
         {:else}
           <TodayVideo {app} {openProject} videos={() => show("projects")} />
           <Home {app} {openProject} videos={() => show("projects")} />
-          <p class="editorline">To edit a recording, open ITV Editor.</p>
+          <p class="editorline">To edit a recording, open RecCut.</p>
           <ChannelStudio {app} saved={take} {openProject} {goto} only="script" />
           <NightShift {app} {openProject} />
         {/if}

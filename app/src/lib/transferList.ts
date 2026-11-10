@@ -45,7 +45,7 @@ const MAIN_EXPORTS: TransferRow[] = [
   { what: "Backup of every video and the settings", files: "a folder you choose", where: "Settings, Backup", page: "backup" },
 ];
 
-// ITV Editor's own lists (DECISIONS 184): the recording rows moved here. Same rule: every
+// RecCut's own lists (DECISIONS 184): the recording rows moved here. Same rule: every
 // import and export of the Editor has a row.
 const EDITOR_IMPORTS: TransferRow[] = [
   { what: "A recording to edit", files: ".mp4, .mov, .m4v, .mkv, .webm, .avi", where: "Home, A new recording" },
