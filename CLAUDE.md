@@ -6,7 +6,7 @@ channel presets, 0 USD per video at runtime, fully copyright clean. ITV does not
 key works, the default is the free Gemini model, the render is local (HyperFrames). With no AI at all it still works:
 scripts are written by hand, everything else runs on this computer.
 
-**Two apps, one repo (DECISIONS 184):** IdeaToVideo makes a video from a script; **ITV Editor** edits a recording
+**Two apps, one repo (DECISIONS 184):** IdeaToVideo makes a video from a script; **RecCut** edits a recording
 (a recording in, a 16:9 MP4 and a Publishing Card out). Same Svelte source, same Rust crate, same runner; the Editor is
 built with `VITE_ITV_APP=editor` and `app/src-tauri/tauri.editor.conf.json`, its own pieces are in `app/src/lib/editor/`.
 It reads IdeaToVideo's settings and Identities folder; only `editor.json` is its own.
@@ -46,8 +46,8 @@ locked recipe (`<identity>/recipe.json`): engine, preset, voice, avatar, music, 
 
 On screen a script video has eight tabs: Research, Script, Voice and music, Scenes, Scene Timing (the code says `shots`, Shot map), Avatar, Preview, Your video.
 The Thumbnail is not one of them: it is on the Publishing menu, for any video, at any time. The top menu is Home, ONE Video, Identity, Wizards, Playlist,
-Publishing, Settings, on one row (Video Recording Editing is ITV Editor now, DECISIONS 184), and nothing hides behind a switch (DECISIONS 168, 169, 172, 173, 175). Home
-starts a video from a script; a recording is edited in ITV Editor (Home: Today's recording, Latest videos, A new recording,
+Publishing, Settings, on one row (Video Recording Editing is RecCut now, DECISIONS 184), and nothing hides behind a switch (DECISIONS 168, 169, 172, 173, 175). Home
+starts a video from a script; a recording is edited in RecCut (Home: Today's recording, Latest videos, A new recording,
 with "What did you record?"; menu Home, Identity, Publishing, Settings). Home's order: Today's video, Latest videos, The recipe, A new video, Week batch, Night shift. The dropdown before Home only switches the Identity; adding, duplicating, exporting and deleting one are on Identity, Manage Identity (DECISIONS 179). On Playlist the Keyword Research comes first and the Planner reads what it found (`<identity>/keyword-research.json`). Every import and export of the app is listed on Settings, Import & Export (`lib/transferList.ts`): a new import or export gets a row there. On screen the word is Identity, not channel: one Identity has 0 or 1
 YouTube channel. The Brand wizard is called Design on screen; the code still says `brand` and `channels`. The first page of Wizards is the YouTube Brand Channel Wizard, which prepares the channel itself: 13 questions, a kit to paste into YouTube (with Channel keywords), the Evergreen Traffic Card (DECISIONS 174). Its Keywords screen looks up every typed search in vidIQ (DECISIONS 183). vidIQ answers in Markdown tables; `readToolResult` in `runner/providers/research/vidiq.mjs` reads them, use it for any new vidIQ call. It is not the Design wizard.
 
@@ -60,7 +60,7 @@ the LLM only outputs scene JSON that fills the templates; it is checked, repaire
 - Build only from the specs and your own knowledge. Never open, read or copy any third-party skill, code, prompt, style
   sheet or image, including the editor and faceless skills in Zoltan's `.claude\skills` folder and any "Vox" files in Downloads.
 - One exception (Zoltan, 2026-11-09, DECISIONS 184): the skills `/edit`, `/edit-v1` and `/edit-v2` in `.claude\skills` may be
-  read and their ideas and features used in ITV Editor, if they carry no license that forbids it. Own code only, never their
+  read and their ideas and features used in RecCut, if they carry no license that forbids it. Own code only, never their
   files, names, branding, author's name, logos, sample media, fonts or other assets. Every other skill stays under the rule.
 - Own preset names and palettes. No brand names, channel names or trademarks in the app or the output. Never "Vox" or
   any other brand name in the app, titles or descriptions.
@@ -137,8 +137,8 @@ npm run tauri -- build --bundles nsis
 ```
 
 `beforeBuildCommand` in `tauri.conf.json` fetches the pinned sidecars, the runner's dependencies, the engine and the
-library. The result: `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`. ITV Editor, from `app/` too:
+library. The result: `app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe`. RecCut, from `app/` too:
 `npm run tauri -- build --bundles nsis --config src-tauri/tauri.editor.conf.json`, giving
-`app/src-tauri/target/release/bundle/nsis/ITV Editor_0.1.0_x64-setup.exe`. Afterwards delete old
+`app/src-tauri/target/release/bundle/nsis/RecCut_0.1.0_x64-setup.exe`. Afterwards delete old
 build outputs and keep only that file (`docs/BUILD_PLAN.md`, housekeeping). The macOS build is Phase 9: on a Mac, with
 Claude Code, no CI.

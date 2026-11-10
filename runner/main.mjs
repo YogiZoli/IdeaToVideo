@@ -1626,7 +1626,7 @@ const commands = {
     const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "recorded", { language });
     return recorded.newRecordedVideo({ projectsDir, identity, language, recipe, files, title, kind, mark, broll });
   },
-  // ITV Editor's face bubble (recorded/bubble.mjs, DECISIONS 184)
+  // RecCut's face bubble (recorded/bubble.mjs, DECISIONS 184)
   "recorded-kinds": async () => ({ kinds: bubble.KINDS, defaultBox: bubble.DEFAULT_BOX }),
   "recorded-still": async ({ file }) => bubble.stillOf({ file, out: path.join(dataDir(), "stills", `still-${Date.now()}.png`) }),
   "recorded-bubble-box": async ({ projectDir, box, skip }) => bubble.setBubbleBox({ projectDir, box, skip }),

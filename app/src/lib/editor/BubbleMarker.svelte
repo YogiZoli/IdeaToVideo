@@ -1,6 +1,6 @@
 <script lang="ts">
   // BubbleMarker: drag a box around the face bubble on a still of the recording
-  // (ITV Editor, DECISIONS 184). The box is kept as parts of the frame (0 to 1), so it
+  // (RecCut, DECISIONS 184). The box is kept as parts of the frame (0 to 1), so it
   // fits the original at any size. A sensible corner is preselected.
   import { untrack } from "svelte";
   import { convertFileSrc } from "@tauri-apps/api/core";

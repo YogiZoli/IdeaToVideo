@@ -46,7 +46,7 @@ async function makeOne(item: NightItem, b: Base): Promise<Partial<NightItem>> {
     approveAvatar: async () => "wait",
   };
   // recordings never run at night (DECISIONS 184): nightCandidates leaves them out
-  if (data!.project.recipe?.engine === "recorded") throw new Error("A recording is edited in ITV Editor, not at night.");
+  if (data!.project.recipe?.engine === "recorded") throw new Error("A recording is edited in RecCut, not at night.");
   const end = await runRecipeVideo(ctx);
   if (end === "brief" || end === "offline" || end === "avatar") return { status: "waiting", ...WAITS[end] };
   await load();

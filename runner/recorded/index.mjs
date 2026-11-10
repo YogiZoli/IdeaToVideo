@@ -92,7 +92,7 @@ const titleOf = (file) => path.basename(String(file)).replace(/\.[^.]+$/, "").re
 
 /** A new video of a recording: files checked, the recipe copied in. No work yet. */
 export async function newRecordedVideo({ projectsDir, identity, language = "en", recipe, files, title = "", kind = null, mark = null, broll = null, env = process.env }) {
-  // ITV Editor says what was recorded (DECISIONS 184): the kind picks the preset for this
+  // RecCut says what was recorded (DECISIONS 184): the kind picks the preset for this
   // one video; IdeaToVideo's older way, the recipe's preset, still works without a kind.
   const k = kind ? kindOf(kind) : null;
   if (kind && !k) throw new Error("Choose what you recorded.");
@@ -123,7 +123,7 @@ export async function newRecordedVideo({ projectsDir, identity, language = "en",
 export const loadInput = (projectDir) => {
   const v = readJson(work(projectDir, INPUT_FILE));
   if (!v) throw new Error("This video has no recording. Start it again from the channel screen.");
-  // a recording from before ITV Editor reads as schema 2, its file stays as it is
+  // a recording from before RecCut reads as schema 2, its file stays as it is
   return migrateInput(v);
 };
 export const loadCuts = (projectDir) => readJson(work(projectDir, "cuts.json"));

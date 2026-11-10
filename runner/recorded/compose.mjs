@@ -87,7 +87,7 @@ export function recordedHtml({ plan, preset, total, language = "en", fontCss = "
     parts.push(`    <div id="stage" class="clip" data-start="0" data-duration="${total}" data-track-index="0" style="position:absolute;inset:0;background:${esc(c.background)};z-index:0"></div>`);
     parts.push(videoTag("screen", pictures.screen, total, `left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px;object-fit:contain;transform-origin:0 0;z-index:1`));
     if (motion?.cursor && motion?.painted) parts.push(`    ${CURSOR_SVG}`);
-    // ITV Editor: the bubble that was in the recording, lifted out and pinned, so the zoom
+    // RecCut: the bubble that was in the recording, lifted out and pinned, so the zoom
     // never cuts or moves the face; a patch hides the same face in the zoomed screen
     if (pictures.lift) {
       const l = liftBox(pictures.lift.box, box);

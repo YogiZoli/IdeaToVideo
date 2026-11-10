@@ -1,12 +1,17 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-10 (ITV Editor, a felvétel szerkesztése külön app, DECISIONS 184)
+Frissítve: 2026-11-10 (RecCut: új név és saját ikon, DECISIONS 185)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
-## Now (2026-11-10, ITV Editor, DECISIONS 184)
+## Now (2026-11-10, RecCut, DECISIONS 185)
+
+- **Az ITV Editor neve RecCut.** Saját ikon: fehér olló, ami filmszalagot vág, meleg korall háttéren, betű nélkül; a tálcán első ránézésre más, mint az IdeaToVideo sötétkék ikonja. Új azonosító (`app.reccut.desktop`), a régi ITV Editor telepítés eltávolítva; beállítása nem volt külön, minden az IdeaToVideo mappájából jön.
+- **Claude skillek a Downloads-ból**, csak ami megéri: `canvas`, `nextphase-screenshare`, `nextphase-persa-shorts` telepítve a `C:/Users/gdp/.claude/skills` alá. Kimaradt: `persa-short-editing` (a NextPhase régebbi másolata), `faceless-videos` (az IdeaToVideo ezt tudja), `carousel` (Instagram kép), `niche-content-engine` (helyi cégek short ötletei). `editor-v2` vagy `editor-v3` egyik zipben sincs. A skillek Claude-ban futnak, az appokba nem kerül belőlük semmi.
+
+
 
 - **Kész: a felvétel szerkesztése külön app, ITV Editor.** Ugyanaz a repó, ugyanaz a Svelte forrás, Rust core és runner, két kiadás. Saját ablak, menü, NSIS telepítő (`tauri.editor.conf.json`, `VITE_ITV_APP=editor`). Az IdeaToVideo beállításait, Identity mappáját, kulcsait és modelljeit olvassa, semmit nem kell kétszer beállítani; csak az `editor.json` a sajátja.
 - **Editor menü:** Home (Today's recording, Latest videos, A new recording), Identity (váltó, Footage, Thumbnail photos), Publishing (Thumbnail, PDT Connection), Settings (Connections, Health check, Backup, Import & Export, Legal).

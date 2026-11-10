@@ -1,4 +1,4 @@
-// ITV Editor's face bubble (recorded/bubble.mjs, DECISIONS 184): the box lift and pin,
+// RecCut's face bubble (recorded/bubble.mjs, DECISIONS 184): the box lift and pin,
 // the avatar bubble's paid gate and its fallback, and an old recording opening as before.
 import test from "node:test";
 import assert from "node:assert/strict";

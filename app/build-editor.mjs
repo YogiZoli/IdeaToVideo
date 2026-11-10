@@ -1,4 +1,4 @@
-// build-editor.mjs: the window of ITV Editor, from the same source as IdeaToVideo's
+// build-editor.mjs: the window of RecCut, from the same source as IdeaToVideo's
 // (DECISIONS 184). Sets VITE_ITV_APP=editor on every system, then runs Vite.
 import { spawnSync } from "node:child_process";
 import process from "node:process";
