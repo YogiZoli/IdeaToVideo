@@ -163,3 +163,21 @@ test("an old recording (recorded-input/1) opens in the Editor as it was", () => 
   for (const [preset, kind] of [["talking-head", "talking-head"], ["screen-share", "screen-share"], ["profile-silhouette", "profile-silhouette"]]) assert.equal(migrateInput({ preset, files: {} }).kind, kind);
   assert.equal(migrateInput({ preset: "screen-recording", files: { screen: "s" } }).kind, "screen");
 });
+
+import { friendlyMessage } from "./friendly.mjs";
+test("a damaged or unfinished recording gets a plain sentence, not ffmpeg's words", () => {
+  for (const m of ["ffprobe failed: C:/a b/x.mp4: Invalid data found when processing input", "moov atom not found"]) {
+    const t = friendlyMessage(new Error(m));
+    assert.match(t, /damaged or was not saved to the end/);
+    assert.doesNotMatch(t, /ffprobe|moov/);
+  }
+});
+
+test("marking the bubble again sends an approved preview back to be built", () => {
+  const dir = project({ schema: INPUT_SCHEMA, preset: "screen-recording", kind: "screen-bubble", bubble: { mode: "box", box: DEFAULT_BOX }, files: { screen: "s.mp4" } });
+  const p = loadProject(dir);
+  fs.writeFileSync(path.join(dir, "project.json"), JSON.stringify({ ...p, gates: { ...p.gates, scenes: { state: "approved" }, review: { state: "approved" } } }));
+  setBubbleBox({ projectDir: dir, skip: true });
+  assert.equal(loadProject(dir).gates.review.state, "todo");
+  assert.equal(loadProject(dir).gates.scenes.state, "todo");
+});

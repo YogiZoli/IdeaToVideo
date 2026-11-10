@@ -29,6 +29,8 @@ export function friendlyMessage(error) {
   if (MEMORY.test(m)) return "This computer ran out of memory in this step. Close other programs and press the button again; nothing is lost.";
   if (LONG_PATH.test(m)) return "A file path is too long for this computer. Choose a shorter projects folder in Settings and press the button again.";
   if (/spawn.*(UNKNOWN|ENOENT|EACCES|EPERM|EINVAL)|spawn UNKNOWN/.test(m)) return "A program the app needs would not start. Check that your antivirus has not blocked it, or reinstall the app; the Health check in Settings shows which one.";
+  // a recording the recorder did not finish writing, or a broken file (RecCut, DECISIONS 186)
+  if (/Invalid data found when processing input|moov atom not found|Error opening input|could not find codec parameters|Invalid NAL unit|partial file/i.test(m)) return "This video file is damaged or was not saved to the end, so it cannot be read. Play it in a video player first. If it does not play, save it again from the recorder, or record again.";
   if (DAMAGED.test(m)) return "This video's project file is damaged, so it cannot be opened. Restore it from a backup in Settings, or start the video again.";
   if (said) return m;
   if (TIMEOUT.test(m)) {

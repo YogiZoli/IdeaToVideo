@@ -7,6 +7,8 @@
   import { onMount } from "svelte";
   import { jobList, onJobsChanged, stopJob, type Job } from "./api";
   import { log } from "./logger";
+  import { lidState } from "./progressInfo";
+  import { pilots } from "./work.svelte";
 
   let { openJob }: { openJob: (j: Job) => void } = $props();
 
@@ -53,6 +55,8 @@
     "recorded-plan": "Plan of the recording",
     "recorded-plan-rule": "Plan of the recording",
     "recorded-prepare": "Pictures of the recording",
+    "recorded-avatar-bubble": "Avatar bubble",
+    "recorded-still": "First frame",
     "broll-auto-plan": "B-roll plan",
     "broll-auto-plan-rule": "B-roll plan",
     "broll-auto-find": "Free B-roll",
@@ -69,6 +73,15 @@
   const label = (c: string) => LABELS[c] ?? c;
   const video = (p: string | null) => (p ? p.split(/[\\/]/).pop() : "");
   const running = $derived(jobs.filter((j) => j.state === "running").length);
+  // always said: may the lid close (DECISIONS 186)
+  const lid = $derived(lidState(jobs.map((j) => j.command), Object.values(pilots).filter(Boolean).length));
+  let lastLid = "";
+  $effect(() => {
+    if (lid.text !== lastLid) {
+      lastLid = lid.text;
+      log("status_line", { busy: lid.busy, lid: lid.lid, jobs: jobs.map((j) => j.command) });
+    }
+  });
 
   function outside(e: MouseEvent) {
     if (open && root && !root.contains(e.target as Node)) open = false;
@@ -77,11 +90,14 @@
 
 <svelte:window onclick={outside} />
 
-{#if jobs.length}
+{#if !jobs.length}
+  <div class="jobs"><span class="idle" class:busy={lid.busy} role="status" title={lid.text}>{lid.text}</span></div>
+{:else}
   <div class="jobs" bind:this={root}>
     <button type="button" class="pill" onclick={() => (open = !open)} aria-expanded={open}>
       Jobs: {running} running{jobs.length > running ? `, ${jobs.length - running} waiting` : ""}
     </button>
+    <span class="idle" class:busy={lid.busy} class:lidok={lid.lid} role="status" title={lid.text}>{lid.text}</span>
     {#if open}
       <div class="pop">
         {#each jobs as j (j.id)}
@@ -100,7 +116,10 @@
 {/if}
 
 <style>
-  .jobs { position: relative; margin-left: auto; }
+  .jobs { position: relative; margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .idle { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  .idle.busy { color: var(--warning-text); font-weight: 600; }
+  .idle.busy.lidok { color: var(--success); }
   .pill { border: 1px solid var(--border); background: var(--primary-surface); color: var(--primary-surface-foreground); padding: 4px 12px; border-radius: 99px; font-size: 13px; }
   .pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 420px; display: grid; gap: 2px; padding: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.12); }
   .row { display: grid; grid-template-columns: 1fr auto; gap: 4px; align-items: center; }

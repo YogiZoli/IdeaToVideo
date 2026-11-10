@@ -48,6 +48,9 @@ export function phaseText(command: string, step: string | undefined): string | n
     "batch-script": "The AI is writing the week's scripts",
     "broll-order": "Ordering the B-roll clips from HeyGen",
     "broll-clip": "HeyGen is making the B-roll clips",
+    "bubble-upload": "Sending the voice to HeyGen",
+    "bubble-make": "Ordering the avatar bubble at HeyGen",
+    "bubble-wait": "HeyGen is making the avatar bubble",
   };
   if (command === "make-template-scenes" && s === "planning") return "The AI is filling the scene templates";
   if (command === "simple-template-scenes" && s === "planning") return "Planning the scenes by rule, no AI";
@@ -99,7 +102,7 @@ export function costText(command: string, provider?: string): string {
 /** Where a step does its work: on this computer, with a service over a live
  * connection, or at a service that keeps working without the app. */
 export function workPlace(command: string): "local" | "online" | "service" {
-  if (command === "make-avatar" || command === "segment-make" || command === "broll-make") return "service";
+  if (command === "make-avatar" || command === "segment-make" || command === "broll-make" || command === "recorded-avatar-bubble") return "service";
   if (["research-make", "broll-plan", "write-script", "make-scenes", "refill-scene", "visual-check", "make-voice", "make-music", "suggest-channel", "packaging-make", "footage-describe", "segment-voice", "keyword-ideas", "avatar-looks", "planner-research", "planner-plan", "planner-outline"].includes(command)) return "online";
   return "local";
 }
@@ -288,3 +291,23 @@ export function measure(t: Track, now: number) {
   return { percent, left, late, elapsed };
 }
 
+
+/**
+ * The line that is always in the top bar (DECISIONS 186): is anything running, and may the
+ * lid close. `commands`: the jobs now; `videoRuns`: videos whose run is between two steps.
+ * A run between steps counts as local work: its next step starts by itself.
+ */
+export function lidState(commands: string[], videoRuns = 0): { busy: boolean; lid: boolean; text: string } {
+  if (!commands.length && !videoRuns) return { busy: false, lid: true, text: "Nothing is running. You can close the laptop." };
+  const places = commands.map(workPlace);
+  if (!videoRuns && places.every((p) => p === "service")) return { busy: true, lid: true, text: "HeyGen is working on its own computers. You may close the lid." };
+  return { busy: true, lid: false, text: "Working. Keep the laptop open and on until this is done." };
+}
+
+/** After the computer slept (the lid was closed): what to tell the user. Pure. */
+export function wokeText(seconds: number, wasBusy: boolean, stillBusy: boolean): string {
+  const t = span(seconds);
+  if (!wasBusy) return "";
+  if (stillBusy) return `The computer slept for ${t}. The work paused meanwhile and goes on now; nothing needs doing.`;
+  return `The computer slept for ${t} while a step was running. If a video stopped, open it and press Go on from where it stopped: everything done so far is kept.`;
+}

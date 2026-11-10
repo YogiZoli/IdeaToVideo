@@ -20,6 +20,7 @@ import path from "node:path";
 import { ffmpegRun } from "../audio.mjs";
 import { addNote, appendLog, loadProject, saveProject, setGate, writeJson } from "../project.mjs";
 import { logAsset } from "../assets/license.mjs";
+import { ensureRoom, roomForFiles } from "../disk.mjs";
 import * as heygen from "../providers/avatar/heygen.mjs";
 
 export const INPUT_SCHEMA = "recorded-input/2";
@@ -157,8 +158,11 @@ export function setBubbleBox({ projectDir, box, skip = false }) {
   const clean = skip ? null : cleanBox(box);
   if (!skip && !clean) throw new Error("The marked box is too small. Drag a box around the whole face bubble.");
   saveInput(projectDir, { ...input, bubble: clean ? { mode: "box", box: clean } : { mode: "box", box: null, skipped: true } });
-  const project = loadProject(projectDir);
-  if (project.gates.scenes?.state === "approved" || project.gates.scenes?.state === "pending") saveProject(projectDir, setGate(project, "scenes", { state: "todo" }));
+  // the pictures are prepared again, and an approved preview or render no longer counts
+  let project = loadProject(projectDir);
+  if (project.gates.scenes?.state === "approved" || project.gates.scenes?.state === "pending") project = setGate(project, "scenes", { state: "todo" });
+  if (project.gates.review && project.gates.review.state !== "todo") project = setGate(project, "review", { state: "todo" });
+  saveProject(projectDir, project);
   appendLog(projectDir, clean ? `recorded: bubble marked ${JSON.stringify(clean)}` : "recorded: bubble not marked, no zoom");
   return { bubble: readInput(projectDir).bubble };
 }
@@ -166,9 +170,28 @@ export function setBubbleBox({ projectDir, box, skip = false }) {
 /** One still of a file, for marking the bubble: a PNG at `out`. */
 export async function stillOf({ file, out, at = 0.5, env = process.env }) {
   if (!fs.existsSync(file)) throw new Error(`This file is not there any more: ${file}. Choose it again.`);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const dir = path.dirname(out);
+  fs.mkdirSync(dir, { recursive: true });
+  // only the newest few stills are kept: each marking makes one
+  try {
+    const old = fs.readdirSync(dir).filter((f) => f.startsWith("still-")).sort().slice(0, -10);
+    for (const f of old) fs.rmSync(path.join(dir, f), { force: true });
+  } catch {
+    // a still that cannot be removed only takes a little room
+  }
   const part = `${out}.part.png`;
-  await ffmpegRun(["-ss", String(at), "-i", file, "-frames:v", "1", "-vf", "scale='min(1280,iw)':-2", part], env);
+  // a very short file has no frame at 0.5 s: then the first frame
+  for (const t of [at, 0]) {
+    fs.rmSync(part, { force: true });
+    try {
+      await ffmpegRun(["-ss", String(t), "-i", file, "-frames:v", "1", "-vf", "scale='min(1280,iw)':-2", part], env);
+    } catch (e) {
+      if (t === 0) throw new Error(`The first frame of this file could not be read, so the bubble cannot be marked on it: ${path.basename(file)}. Choose the file again, or skip marking.`);
+      continue;
+    }
+    if (fs.existsSync(part) && fs.statSync(part).size > 0) break;
+  }
+  if (!fs.existsSync(part) || !fs.statSync(part).size) throw new Error(`This file has no picture to mark the bubble on: ${path.basename(file)}.`);
   fs.renameSync(part, out);
   return { file: out };
 }
@@ -204,6 +227,7 @@ export async function importBubbleClip({ projectDir, file, source = "outside", t
   const input = migrateInput(readInput(projectDir));
   if (input.bubble?.mode !== "avatar") throw new Error("This video has no avatar bubble.");
   const ext = path.extname(file).toLowerCase() === ".webm" ? "webm" : "mp4";
+  ensureRoom(projectDir, roomForFiles([file], 1.2), "the bubble clip");
   const out = bubbleFile(projectDir, ext);
   const part = `${out}.part`;
   fs.copyFileSync(file, part);
@@ -244,6 +268,8 @@ export async function makeAvatarBubble({ projectDir, apiKey, lookId, approved = 
   try {
     if (!apiKey) throw new Error("There is no HeyGen key. Add it on Settings, Connections.");
     if (!lookId) throw new Error("This Identity has no HeyGen avatar yet. Choose one on Identity, AI Avatar in IdeaToVideo.");
+    // a download cut off earlier (Stop, the app closed) left a half file: it goes first
+    fs.rmSync(`${bubbleFile(projectDir, "webm")}.part`, { force: true });
     onProgress({ step: "bubble-upload" });
     const asset = await api.uploadAudio({ apiKey, file: vo });
     onProgress({ step: "bubble-make" });

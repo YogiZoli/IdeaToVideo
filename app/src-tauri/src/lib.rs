@@ -269,7 +269,10 @@ fn write_app_config(app: &AppHandle, cfg: &Value) -> Result<(), String> {
 fn allow_media(app: &AppHandle, projects: &Path) {
     let scope = app.asset_protocol_scope();
     let _ = scope.allow_directory(projects, true);
-    if let Ok(d) = app.path().app_local_data_dir() {
+    // the runner's data folder: shared with RecCut, so the same folder in both apps (DECISIONS 184)
+    if let Ok(d) = app.path().app_local_data_dir().map(|d| edition::shared_dir(&d)) {
+        // RecCut's first frame for marking the face bubble (runner/recorded/bubble.mjs)
+        let _ = scope.allow_directory(d.join("stills"), true);
         let _ = scope.allow_directory(d.join("voice-previews"), true);
         let _ = scope.allow_directory(d.join("avatar-previews"), true);
         // the stock search's preview pictures (runner/stock/, DECISIONS 111)
@@ -487,13 +490,14 @@ fn export_diagnostics(app: AppHandle, path: String) -> Result<String, String> {
     let logs = app.path().app_local_data_dir().ok().map(|d| d.join("logs"));
     let about = format!(
         "{} diagnostics\nVersion {} on {} {}\nMade {} (UTC)\n\nInside: the app's log (logs/), the settings without any key (settings/), and for every ONE Video its state, its log and the video engine's logs (videos/). No key, no audio, no video, no script text.\n",
-        edition::PRODUCT_NAME,
+        edition::product(),
         app.package_info().version,
         std::env::consts::OS,
         std::env::consts::ARCH,
         log::now_ms(),
     );
-    let n = diagnostics::export(&diagnostics::Sources { logs: logs.as_deref(), config_dir: &config_dir(&app)?, projects_root: &root, about }, &out)?;
+    let shared = app.path().app_local_data_dir().ok().map(|d| edition::shared_dir(&d).join("logs"));
+    let n = diagnostics::export(&diagnostics::Sources { logs: logs.as_deref(), shared_logs: shared.as_deref(), config_dir: &config_dir(&app)?, projects_root: &root, about }, &out)?;
     note(&app, "info", "diagnostics_exported", json!({ "file": out, "files": n }));
     Ok(out.to_string_lossy().to_string())
 }
