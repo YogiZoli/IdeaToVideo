@@ -1,10 +1,23 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-07 (Brand Channel Wizard keresések és vidIQ, DECISIONS 183)
+Frissítve: 2026-11-10 (ITV Editor, a felvétel szerkesztése külön app, DECISIONS 184)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-10, ITV Editor, DECISIONS 184)
+
+- **Kész: a felvétel szerkesztése külön app, ITV Editor.** Ugyanaz a repó, ugyanaz a Svelte forrás, Rust core és runner, két kiadás. Saját ablak, menü, NSIS telepítő (`tauri.editor.conf.json`, `VITE_ITV_APP=editor`). Az IdeaToVideo beállításait, Identity mappáját, kulcsait és modelljeit olvassa, semmit nem kell kétszer beállítani; csak az `editor.json` a sajátja.
+- **Editor menü:** Home (Today's recording, Latest videos, A new recording), Identity (váltó, Footage, Thumbnail photos), Publishing (Thumbnail, PDT Connection), Settings (Connections, Health check, Backup, Import & Export, Legal).
+- **What did you record?** hat választás a kért sorrendben. Új: egy fájl, amiben már benne a buborék: az első kockán kijelölöd (bal alsó sarok előre kijelölve), az app kiemeli és rögzíti, így a zoom soha nem vágja az arcot. Kihagyva: nincs zoom, és egy mondat megmondja, miért. Új: AI avatar buborék (alapból ki): HeyGen `avatar_iii`, az ár a gombon, jóváhagyás előtt semmi nem költődik, hibánál Screen only egy megjegyzéssel; vagy kész HeyGen klip (a CTA klipek közül is); vagy API nélkül: a vágott hang kimentése, külső lip sync, visszahozás ("Own generation, outside tool" a licenc listában). Saját Footage mint B-roll: videónként, alapból ki.
+- **IdeaToVideo:** a Video Recording Editing menü és oldala eltűnt; Home-on egy sor: "To edit a recording, open ITV Editor." A Footage maradt. Mindkét app csak a saját videóit listázza. A Night shift felvételt soha nem vesz fel.
+- **Régi felvételek:** az `input.json` `recorded-input/1` olvasva `/2` lesz (`migratedFrom` jelöli), a fájl a lemezen változatlan; az Editorban nyílnak, a régi zoom és kamera buborék marad.
+- **A /edit skillek:** `edit`: nincs licenc, README vagy feltétel, a SKILL.md elolvasva, új ötletet nem kellett átvenni (a vágás, töltelékszó, ismételt felvétel, zoom már megvolt). `edit-v1`, `edit-v2`: nincs ilyen mappa; `editor-v1` van, saját licenc nélkül (csak a fontok OFL licence), nem nyitottam meg tovább, a dokumentumfilm stílus nem ennek a résznek a dolga. A tisztatéri kivétel a CLAUDE.md-ben és a BUILD_PLAN.md-ben pontosan erre a három skillre szól.
+- **Tesztek:** Node 715 zöld (2 élő teszt kihagyva), 10 új a buborékra (`runner/recorded-bubble.test.mjs`: kiemelés és rögzítés, fizetős kapu és visszaesés, régi projekt), 2 új a menükre. UI check 0 hiba. Rust 51 zöld (1 új). Recorded e2e valódi renderrel: talking head 42, screen recording 44, egy fájl kijelölt buborékkal 44 lépés, mind zöld. Mindkét ablak kattintva a `scripts/ui-mock`-ban, konzol hiba nincs.
+- **Telepítők:** `C:/Users/gdp/projects/IdeaToVideo/app/src-tauri/target/release/bundle/nsis/IdeaToVideo_0.1.0_x64-setup.exe` és `C:/Users/gdp/projects/IdeaToVideo/app/src-tauri/target/release/bundle/nsis/ITV Editor_0.1.0_x64-setup.exe`, helyben építve, telepítve, megnyitva.
+- **Nem próbáltam:** valódi HeyGen avatar buborékot (pénzbe kerül), valódi külső lip sync klipet, egy valódi Loom fájlt, kattintást a telepített ablakokban.
+- **Nyitott neked:** próbáld ki az Editort egy saját felvétellel; döntsd el, kell-e saját ikon az Editornak (most ugyanaz).
 
 ## Now (2026-11-07, the wizard's searches and vidIQ, DECISIONS 183)
 
