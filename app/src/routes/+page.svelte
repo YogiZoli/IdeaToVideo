@@ -9,7 +9,8 @@
   import { QUICK_SETUP } from "$lib/steps";
   import { setKeySources, refreshKeySources } from "$lib/keystate.svelte";
   import { PRODUCT, ONE_VIDEO } from "$lib/edition";
-  import { MENUS, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
+  import { MENUS, EDITOR, menuOf, firstPage, type PageId, type MenuId } from "$lib/pages";
+  import NewRecording from "$lib/editor/NewRecording.svelte";
   import type { TabId } from "$lib/tabs";
   import Onboarding from "$lib/Onboarding.svelte";
   import Projects from "$lib/Projects.svelte";
@@ -82,8 +83,8 @@
       if (!s.app?.onboarded || !s.identity) setScreen("setup");
       else {
         silentHealth(s);
-        // a night shift cut off by a restart goes on by itself
-        loadNight(s, true);
+        // a night shift cut off by a restart goes on by itself; ITV Editor has none
+        if (!EDITOR) loadNight(s, true);
       }
     } catch (e) {
       fatal = errorText(e);
@@ -189,6 +190,8 @@
   }
 </script>
 
+<svelte:head><title>{PRODUCT}</title></svelte:head>
+
 {#if fatal}
   <main class="center"><p class="bad">{PRODUCT} could not start: {fatal}</p></main>
 {:else if !app}
@@ -240,14 +243,18 @@
       {/key}
     {:else if view === "home"}
       {#key app.identity.id}
-        <TodayVideo {app} {openProject} videos={() => show("projects")} />
-        <Home {app} {openProject} videos={() => show("projects")} />
-        <ChannelStudio {app} saved={take} {openProject} {goto} only="script" />
-        <NightShift {app} {openProject} />
-      {/key}
-    {:else if view === "edit"}
-      {#key app.identity.id}
-        <ChannelStudio {app} saved={take} {openProject} {goto} only="recorded" />
+        {#if EDITOR}
+          <!-- ITV Editor's Home: Today's recording, Latest videos, A new recording (DECISIONS 184) -->
+          <TodayVideo {app} {openProject} videos={() => show("projects")} label="Today's recording" />
+          <Home {app} {openProject} videos={() => show("projects")} />
+          <div class="editorhome"><NewRecording {app} {openProject} /></div>
+        {:else}
+          <TodayVideo {app} {openProject} videos={() => show("projects")} />
+          <Home {app} {openProject} videos={() => show("projects")} />
+          <p class="editorline">To edit a recording, open ITV Editor.</p>
+          <ChannelStudio {app} saved={take} {openProject} {goto} only="script" />
+          <NightShift {app} {openProject} />
+        {/if}
       {/key}
     {:else}
       {#key app.identity.id}
@@ -296,6 +303,8 @@
   .notice { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
   .notice.night { background: var(--primary-surface); color: var(--primary-surface-foreground); }
   .muted { color: var(--muted-foreground); }
+  .editorline { max-width: 900px; margin: 4px auto 0; padding: 0 24px; box-sizing: border-box; font-size: 13px; color: var(--muted-foreground); }
+  .editorhome { max-width: 900px; margin: 0 auto; padding: 16px 24px 24px; box-sizing: border-box; }
   .crash { max-width: 640px; margin: 48px auto; padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); display: grid; gap: 12px; }
   .crash h2, .crash p { margin: 0; }
   .crash .row { display: flex; gap: 10px; flex-wrap: wrap; }

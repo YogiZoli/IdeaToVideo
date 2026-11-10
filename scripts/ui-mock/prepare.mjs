@@ -32,7 +32,8 @@ if (!out) {
   console.error("Usage: node scripts/ui-mock/prepare.mjs <dir>");
   process.exit(2);
 }
-const build = path.join(here, "..", "..", "app", "build");
+// ITV_MOCK_EDITOR=1: the Editor's window instead (app/build-editor, `npm run build:editor`, DECISIONS 184)
+const build = path.join(here, "..", "..", "app", process.env.ITV_MOCK_EDITOR ? "build-editor" : "build");
 if (!fs.existsSync(path.join(build, "index.html"))) {
   console.error("No app/build yet: run `npm run build` in app/ first.");
   process.exit(1);

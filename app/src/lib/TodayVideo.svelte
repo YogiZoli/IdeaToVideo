@@ -1,17 +1,18 @@
 <script lang="ts">
   // Today's video, on top of Home (DECISIONS 173): the one video to go on with, and the
   // step it is at. One button. A new video is right under it. Nothing here starts a step.
+  import { ofThisApp } from "./split";
   import { onMount } from "svelte";
   import type { AppState, ProjectSummary } from "./api";
   import { runner } from "./api";
   import { nextVideo } from "./tabs";
 
-  let { app, openProject, videos }: { app: AppState; openProject: (dir: string) => void; videos: () => void } = $props();
+  let { app, openProject, videos, label = "Today's video" }: { app: AppState; openProject: (dir: string) => void; videos: () => void; label?: string } = $props();
 
   let list = $state<ProjectSummary[] | null>(null);
   onMount(async () => {
     try {
-      list = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects;
+      list = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects.filter(ofThisApp);
     } catch {
       list = [];
     }
@@ -23,7 +24,7 @@
   <div class="wrap">
     <section class="card today">
       <div class="text">
-        <span class="label">Today's video</span>
+        <span class="label">{label}</span>
         <h1 title={next.video.title}>{next.video.title}</h1>
         <p class="hint">Next step: {next.step}.{#if next.others} <button type="button" class="link" onclick={videos}>{next.others} more not finished</button>{/if}</p>
       </div>

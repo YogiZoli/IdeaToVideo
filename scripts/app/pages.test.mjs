@@ -5,8 +5,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { SETTINGS_PAGES, SUB_PAGES, MENUS, firstPage, menuOf } from "../../app/src/lib/pages.ts";
-import { IMPORTS, EXPORTS } from "../../app/src/lib/transferList.ts";
+import { SETTINGS_PAGES, SUB_PAGES, MENUS, firstPage, menuOf, menusFor, pagesFor } from "../../app/src/lib/pages.ts";
+import { IMPORTS, EXPORTS, transfersFor } from "../../app/src/lib/transferList.ts";
+import { ofApp } from "../../app/src/lib/split.ts";
 
 test("every step is on exactly one Settings page", () => {
   const src = fs.readFileSync(new URL("../../app/src/lib/steps.ts", import.meta.url), "utf8");
@@ -23,9 +24,9 @@ test("the App's pages hold only the App's AI step", () => {
   assert.ok(SETTINGS_PAGES.some((p) => p.scope === "identity" && p.steps.includes("name")));
 });
 
-test("the top menu (DECISIONS 119, 168, 172, 175): eight menus, at most seven pages each, every old page kept", () => {
-  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "ONE Video", "Identity", "Wizards", "Playlist", "Publishing", "Video Recording Editing", "Settings"]);
-  assert.deepEqual(MENUS.find((m) => m.id === "edit").lines, ["Video", "Recording", "Editing"]);
+test("the top menu (DECISIONS 119, 168, 172, 175, 184): seven menus, at most seven pages each, every old page kept", () => {
+  assert.deepEqual(MENUS.map((m) => m.title), ["Home", "ONE Video", "Identity", "Wizards", "Playlist", "Publishing", "Settings"]);
+  assert.ok(!MENUS.some((m) => m.id === "edit"), "Video Recording Editing is ITV Editor now");
   for (const m of ["playlist", "publishing", "wizards", "identity", "settings"]) {
     const n = SETTINGS_PAGES.filter((p) => p.menu === m).length;
     assert.ok(n >= 1 && n <= 7, `${m}: ${n} pages`);
@@ -50,10 +51,12 @@ test("a big page has its parts as sub links (DECISIONS 168), and a link to anoth
   for (const subs of Object.values(SUB_PAGES)) for (const s of subs) if (s.page) assert.ok(SETTINGS_PAGES.some((p) => p.id === s.page), s.page);
 });
 
-test("a video from a script starts on Home, from a recording on Edit: no switch between them (DECISIONS 172)", () => {
+test("a video from a script starts on Home; a recording in ITV Editor (DECISIONS 172, 184)", () => {
   const page = fs.readFileSync(new URL("../../app/src/routes/+page.svelte", import.meta.url), "utf8");
   assert.match(page, /only="script"/);
-  assert.match(page, /only="recorded"/);
+  assert.doesNotMatch(page, /only="recorded"/);
+  assert.match(page, /To edit a recording, open ITV Editor\./);
+  assert.match(page, /<NewRecording/);
   const studio = fs.readFileSync(new URL("../../app/src/lib/channels/ChannelStudio.svelte", import.meta.url), "utf8");
   assert.doesNotMatch(studio, /aria-label="Direction"/);
 });
@@ -103,4 +106,27 @@ test("setup's preset list is the shipped one (library/presets.map.json)", async 
   const shipped = Object.keys(map).filter((k) => !k.startsWith("$"));
   assert.deepEqual(PRESETS.map((p) => p.id), shipped);
   for (const p of PRESETS) assert.equal(p.label, map[p.id].label);
+});
+
+test("ITV Editor's menu is short, and its own Import & Export lists the recording (DECISIONS 184)", () => {
+  assert.deepEqual(menusFor(true).map((m) => m.title), ["Home", "Identity", "Publishing", "Settings"]);
+  const pages = pagesFor(true);
+  const of = (m) => pages.filter((p) => p.menu === m).map((p) => p.title);
+  assert.deepEqual(of("identity"), ["Footage", "Thumbnail photos"]);
+  assert.deepEqual(of("publishing"), ["Thumbnail", "PDT Connection"]);
+  assert.deepEqual(of("settings"), ["Connections", "Health check", "Backup", "Import & Export", "Legal"]);
+  const ed = transfersFor(true);
+  assert.ok(ed.imports.some((r) => r.what === "A recording to edit"));
+  assert.ok(ed.exports.some((r) => /cleaned voice/.test(r.what)));
+  assert.ok(!transfersFor(false).imports.some((r) => r.what === "A recording to edit"), "the recording row left IdeaToVideo");
+  for (const r of [...ed.imports, ...ed.exports]) if (r.page) assert.ok(pages.some((p) => p.id === r.page), r.page);
+  assert.ok(pagesFor(false).some((p) => p.id === "footage"), "Footage stays in IdeaToVideo");
+});
+
+test("each app lists only its own videos (DECISIONS 184)", () => {
+  const rec = { recipe: { engine: "recorded" } };
+  const script = { recipe: { engine: "script" } };
+  const old = { recipe: null };
+  assert.deepEqual([rec, script, old].filter(ofApp(true)), [rec]);
+  assert.deepEqual([rec, script, old].filter(ofApp(false)), [script, old]);
 });

@@ -2,6 +2,7 @@
   // Publishing, PDT Connection (DECISIONS 114, 115, 168): a finished video's
   // publishing card goes out from here, or from its Your video tab: sent to the
   // publishing app, or saved as a file. Each list is this Identity's videos.
+  import { ofThisApp } from "../split";
   import { onMount } from "svelte";
   import { save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -25,7 +26,7 @@
 
   onMount(async () => {
     try {
-      videos = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects;
+      videos = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects.filter(ofThisApp);
       dir = videos[0]?.dir ?? "";
     } catch {
       videos = [];

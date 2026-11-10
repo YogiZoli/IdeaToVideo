@@ -60,6 +60,7 @@ import { loadDictionary, saveDictionary, dictionaryData, checkAll } from "./gate
 import { spokenFields } from "./gates/script/index.mjs";
 import { timed } from "./timings.mjs";
 import * as recorded from "./recorded/index.mjs";
+import * as bubble from "./recorded/bubble.mjs";
 import { friendlyMessage } from "./friendly.mjs";
 import { logError, lastError } from "./errorlog.mjs";
 import { ensureRoom, ensureRenderRoom, ROOM_FOR_BUILD, ROOM_FOR_VOICE } from "./disk.mjs";
@@ -1621,10 +1622,21 @@ const commands = {
   "queue-list": async ({ projectsDir }) => ({ queue: listQueue(projectsDir) }),
 
   // ---- The Recorded engine (recorded/, docs/BUILD_PLAN.md phase 2) ----
-  "recorded-video-new": async ({ projectsDir, identityDir, identity, language = "en", files, title = "" }) => {
+  "recorded-video-new": async ({ projectsDir, identityDir, identity, language = "en", files, title = "", kind = null, mark = null, broll = null }) => {
     const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "recorded", { language });
-    return recorded.newRecordedVideo({ projectsDir, identity, language, recipe, files, title });
+    return recorded.newRecordedVideo({ projectsDir, identity, language, recipe, files, title, kind, mark, broll });
   },
+  // ITV Editor's face bubble (recorded/bubble.mjs, DECISIONS 184)
+  "recorded-kinds": async () => ({ kinds: bubble.KINDS, defaultBox: bubble.DEFAULT_BOX }),
+  "recorded-still": async ({ file }) => bubble.stillOf({ file, out: path.join(dataDir(), "stills", `still-${Date.now()}.png`) }),
+  "recorded-bubble-box": async ({ projectDir, box, skip }) => bubble.setBubbleBox({ projectDir, box, skip }),
+  "recorded-voice-export": async ({ projectDir, out }) => bubble.exportVoice({ projectDir, out }),
+  "recorded-bubble-clip": async ({ projectDir, file, source, tool }) => bubble.importBubbleClip({ projectDir, file, source, tool, probe: recorded.probeMedia }),
+  "recorded-bubble-cost": async ({ projectDir }) => {
+    const p = JSON.parse(fs.readFileSync(path.join(projectDir, "recorded", "pictures.json"), "utf8"));
+    return bubble.avatarCost(p.kept ?? 0);
+  },
+  "recorded-avatar-bubble": async ({ projectDir, lookId, approved }) => logged(projectDir, "avatar bubble", () => bubble.makeAvatarBubble({ projectDir, apiKey: key(), lookId, approved, onProgress: (p) => emit({ event: "progress", ...p }) })),
   "recorded-state": async ({ projectDir }) => recorded.recordedState(projectDir),
   "recorded-transcribe": async ({ projectDir }) => logged(projectDir, "recorded transcribe", () => recorded.recordTranscript({ projectDir, onProgress: (p) => emit({ event: "progress", ...p }) })),
   "recorded-cut-set": async ({ projectDir, id, on, keepPauses }) => recorded.setCut({ projectDir, id, on, keepPauses }),

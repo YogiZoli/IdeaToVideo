@@ -2,6 +2,7 @@
   // The latest videos on Home, right under Today's video (DECISIONS 175). The rest of Home is
   // ChannelStudio: Identity, recipe, a new video, week batch. "What a video needs" moved to
   // Settings, Health check (VideoNeeds); the Channels board is gone.
+  import { ofThisApp } from "./split";
   import { onMount } from "svelte";
   import type { AppState, ProjectSummary } from "./api";
   import { runner } from "./api";
@@ -12,7 +13,7 @@
   let recent = $state<ProjectSummary[] | null>(null);
   onMount(async () => {
     try {
-      const all = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects;
+      const all = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects.filter(ofThisApp);
       recent = [...all].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 5);
     } catch {
       recent = [];

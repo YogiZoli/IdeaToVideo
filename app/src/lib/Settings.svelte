@@ -11,6 +11,7 @@
   import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity } from "./api";
   import { cleanConfig, defaultConfig, LANGUAGES, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
+  import PhotosPanel from "./PhotosPanel.svelte";
   import { SETTINGS_PAGES, SUB_PAGES, MENU_NOTE, MENUS, menuOf, type PageId, type SubPage } from "./pages";
   import type { TabId } from "./tabs";
   import { identityFromConfig, roomForIdentity, copyName } from "./identity";
@@ -458,6 +459,8 @@
       <CtaPage {app} refresh={ctaSaved} onopen={() => { message = ""; ctaWizard = true; }} goto={(id) => openPage(id)} />
     {:else if pageId === "scenes"}
       <ScenesPage refresh={scenesSaved} onopen={() => { message = ""; scenesWizard = true; }} goto={(id) => openPage(id)} />
+    {:else if pageId === "photos"}
+      <section class="card"><p class="hint">Your photos for the thumbnails of this Identity. IdeaToVideo uses the same photos.</p><PhotosPanel /></section>
     {:else if pageId === "footage"}
       <FootagePage {app} {sub} goto={(id) => openPage(id)} />
     {:else if pageId === "dictionary"}

@@ -16,6 +16,11 @@ everything that exists, never rebuild what is already there.
   read or copy any third-party skill, code, prompt, style sheet or image,
   including the editor and faceless skills in Zoltan's `.claude\skills` folder
   and any "Vox" files in Downloads.
+- One exception (Zoltan, 2026-11-09, DECISIONS 184): the skills `/edit`,
+  `/edit-v1` and `/edit-v2` in `.claude\skills` may be read and their ideas and
+  features used in ITV Editor, if they carry no license that forbids it. Own
+  code only, never their files, names, branding, author's name, logos, sample
+  media, fonts or other assets. Every other skill stays under the rule.
 - Own preset names and own color palettes. No brand names, channel names or
   trademarks anywhere in the app or the output. Never use "Vox" or any other
   brand name in the app, titles or descriptions.
@@ -391,6 +396,14 @@ Home, Night shift: pick videos of the active Identity, a whole playlist or a wee
 
 The first page of Wizards: 13 questions for the active Identity, "Write it with AI" on the texts, a kit to copy, the Identity's fields after a preview, the same Evergreen Traffic Card as the Import. `docs/wizards/brand-channel.md`, DECISIONS 174. For later: `kit.mjs` makes every text with no AI, `cardMarkdown` writes a card of version 1.
 
+## ITV Editor (2026-11-09, outside the phases)
+
+Status: done (DECISIONS 184). Editing a recording is its own app, ITV Editor, built
+from this repo with its own installer. It reads the same Identities. What did you
+record: six kinds, the bubble in one file marked once and pinned, the AI avatar
+bubble (paid, approved first, or a clip from HeyGen, or a lip sync clip from any
+tool). IdeaToVideo keeps only the script side; its Footage stays.
+
 ## Later (Zoltan's list, 2026-11-05, nothing of it is built)
 
 In the order he liked them. Each one starts only when he says so.
@@ -403,7 +416,7 @@ In the order he liked them. Each one starts only when he says so.
 
 ## Next step
 
-Phase 9: macOS build, done on a Mac with Claude Code, no CI. It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
+Phase 9: macOS build, done on a Mac with Claude Code, no CI, for both apps (ITV Editor with `--config src-tauri/tauri.editor.conf.json`, DECISIONS 184). It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
 Chronicle, one piece of history with research on, up to the render. Phases 3 to 7 too if he has not yet (one topic with research, one set of notes, one real recording, one strange
 question, one what-if story, one explainer with real places, one true story), and his decisions on the table above if he has made them. Still open in that table's spirit: Google's
 terms on showing Search Suggestions (DECISIONS 143), the Z-Image picture size (DECISIONS 146), whether captions on Night Case File should hide forbidden words (DECISIONS 159).

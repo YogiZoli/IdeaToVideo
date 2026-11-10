@@ -5,6 +5,7 @@
   // A course (DECISIONS 121) is only a filter on this list: its lessons in
   // playlist order, each with its ONE Video's status. The work is still on
   // one video at a time.
+  import { ofThisApp } from "./split";
   import { untrack } from "svelte";
   import type { AppState, ProjectSummary } from "./api";
   import { runner, errorText } from "./api";
@@ -73,7 +74,7 @@
     loading = true;
     error = "";
     try {
-      projects = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects;
+      projects = (await runner<{ projects: ProjectSummary[] }>("list-projects", { projectsDir: app.projectsDir })).projects.filter(ofThisApp);
       courses = (await runner<{ courses: Course[] }>("course-list", { projectsDir: app.projectsDir })).courses;
       if (!courses.some((c) => c.slug === courseSlug)) courseSlug = "";
     } catch (e) {

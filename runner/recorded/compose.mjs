@@ -6,6 +6,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { liftBox } from "./bubble.mjs";
 
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
@@ -86,6 +87,14 @@ export function recordedHtml({ plan, preset, total, language = "en", fontCss = "
     parts.push(`    <div id="stage" class="clip" data-start="0" data-duration="${total}" data-track-index="0" style="position:absolute;inset:0;background:${esc(c.background)};z-index:0"></div>`);
     parts.push(videoTag("screen", pictures.screen, total, `left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px;object-fit:contain;transform-origin:0 0;z-index:1`));
     if (motion?.cursor && motion?.painted) parts.push(`    ${CURSOR_SVG}`);
+    // ITV Editor: the bubble that was in the recording, lifted out and pinned, so the zoom
+    // never cuts or moves the face; a patch hides the same face in the zoomed screen
+    if (pictures.lift) {
+      const l = liftBox(pictures.lift.box, box);
+      parts.push(`    <div id="bubblepatch" style="position:absolute;left:${l.left}px;top:${l.top}px;width:${l.width}px;height:${l.height}px;background:${esc(c.background)};transform-origin:0 0;z-index:2"></div>`);
+      parts.push(videoTag("bubblelift", pictures.lift.file, total, `left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px;object-fit:contain;clip-path:${l.clip};z-index:6`, 3));
+    }
+    if (pictures.bubbleClip && !pictures.camera) parts.push(videoTag("bubble", pictures.bubbleClip, total, "right:40px;bottom:40px;width:300px;height:300px;border-radius:50%;object-fit:cover;object-position:50% 25%;background:" + esc(c.background) + ";box-shadow:0 0 0 5px " + esc(c.primary) + ",0 12px 40px rgba(0,0,0,0.4);z-index:6", 3));
     if (pictures.camera) parts.push(videoTag("bubble", pictures.camera, total, "right:40px;bottom:40px;width:300px;height:300px;border-radius:50%;object-fit:cover;object-position:50% 30%;box-shadow:0 0 0 5px " + esc(c.primary) + ",0 12px 40px rgba(0,0,0,0.4);z-index:6", 3));
     if (motion?.view) {
       lines.push(
@@ -96,6 +105,7 @@ export function recordedHtml({ plan, preset, total, language = "en", fontCss = "
         "var clock = { t: 0 };",
         "var screenEl = document.getElementById('screen');",
         "var cursorEl = document.getElementById('cursor');",
+        "var patchEl = document.getElementById('bubblepatch');",
         "function at(list, t, k) { var f = t * FPS; var i = Math.min(list.length - 1, Math.floor(f)); var j = Math.min(list.length - 1, i + 1); return list[i][k] + (list[j][k] - list[i][k]) * (f - i); }",
         "function drawView() {",
         "  var t = clock.t; var s = at(VIEW, t, 2); var cx = BOX.x + at(VIEW, t, 0) * BOX.w; var cy = BOX.y + at(VIEW, t, 1) * BOX.h;",
@@ -103,6 +113,7 @@ export function recordedHtml({ plan, preset, total, language = "en", fontCss = "
         "  tx = Math.min(0, Math.max(" + WIDTH + " * (1 - s), tx)); ty = Math.min(0, Math.max(" + HEIGHT + " * (1 - s), ty));",
         "  if (s === 1) { tx = 0; ty = 0; }",
         "  screenEl.style.transform = 'translate(' + (tx + BOX.x * (s - 1)) + 'px,' + (ty + BOX.y * (s - 1)) + 'px) scale(' + s + ')';",
+        "  if (patchEl) { var px = parseFloat(patchEl.style.left); var py = parseFloat(patchEl.style.top); patchEl.style.transform = 'translate(' + (px * (s - 1) + tx) + 'px,' + (py * (s - 1) + ty) + 'px) scale(' + s + ')'; }",
         "  if (CUR && cursorEl) { var mx = BOX.x + at(CUR, t, 0) * BOX.w; var my = BOX.y + at(CUR, t, 1) * BOX.h; cursorEl.style.transform = 'translate(' + (mx * s + tx) + 'px,' + (my * s + ty) + 'px) scale(' + (0.7 + 0.3 * s) + ')'; }",
         "}",
         `tl.to(clock, { t: ${total}, duration: ${total}, ease: "none", onUpdate: drawView }, 0);`,

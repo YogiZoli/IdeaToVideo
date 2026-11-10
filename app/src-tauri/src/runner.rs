@@ -208,6 +208,15 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("recorded-plan-rule", None),
     ("recorded-plan-save", None),
     ("recorded-prepare", None),
+    // ITV Editor's face bubble (DECISIONS 184): the box, a still, the voice out, a clip in;
+    // only the avatar bubble calls HeyGen, after the user approved its price
+    ("recorded-kinds", None),
+    ("recorded-still", None),
+    ("recorded-bubble-box", None),
+    ("recorded-voice-export", None),
+    ("recorded-bubble-clip", None),
+    ("recorded-bubble-cost", None),
+    ("recorded-avatar-bubble", Some(&["service"])),
     // the audit (docs/AUDIT_REPORT.md): offline mode, notes on a video, Copy details,
     // the Health check. Files only, or a free look; no key
     ("research-offline", None),
