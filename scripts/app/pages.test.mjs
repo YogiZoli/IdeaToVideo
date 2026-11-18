@@ -73,9 +73,12 @@ test("Home's order, and the recording page has only the recording (DECISIONS 175
   assert.doesNotMatch(s, /<h2>Identity<\/h2>/, "Home has no Identity section (DECISIONS 179)");
   assert.ok(s.lastIndexOf('{#if direction === "script"}', s.indexOf("The recipe of")) > 0);
   const menu = fs.readFileSync(new URL("../../app/src/lib/IdentityMenu.svelte", import.meta.url), "utf8");
-  assert.equal(menu.match(/role="menuitem"/g).length, 1, "the switch only lists the Identities");
+  // the switch lists the Identities and one New Identity, which opens the one dialog (DECISIONS 187)
+  assert.equal(menu.match(/role="menuitem"/g).length, 2, "the Identities and New Identity");
+  assert.ok(menu.includes("act(create)}>New Identity<"), "New Identity is in the switch");
   const settings = fs.readFileSync(new URL("../../app/src/lib/Settings.svelte", import.meta.url), "utf8");
-  for (const h of ["Add Identity", "Duplicate", "Export and import", "Delete"]) assert.ok(settings.includes(`<h2>${h}</h2>`), h);
+  for (const h of ["New Identity", "Duplicate", "Export and import", "Delete"]) assert.ok(settings.includes(`<h2>${h}</h2>`), h);
+  assert.doesNotMatch(settings, /saveSettings\(null, identityFromConfig\(cleanConfig\(c\), null, null\)\)/, "no second way to make an Identity on the page itself");
   assert.match(settings, /<IdentityTransfer/);
 });
 

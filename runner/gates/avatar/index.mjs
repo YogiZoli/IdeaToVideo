@@ -13,6 +13,7 @@ import { spawn } from "node:child_process";
 import { sceneTimes, baseTheme } from "../build/assemble.mjs";
 import { duration, bins } from "../../audio.mjs";
 import * as heygen from "../../providers/avatar/heygen.mjs";
+import { isShort } from "../../shorts/index.mjs";
 import { patiently } from "../../providers/retry.mjs";
 import { createHash } from "node:crypto";
 
@@ -102,6 +103,13 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
   const transparent = layout.style === "cutout" || layout.style === "overlay";
   let format = transparent ? "webm" : "mp4";
   const pick = heygen.chooseEngine(wantedEngine, lookEngines);
+  // a Short's avatar is framed 9:16 by HeyGen when it is made, and composited 1:1 as it comes (DECISIONS 188)
+  let aspect = "16:9";
+  try {
+    aspect = isShort(JSON.parse(fs.readFileSync(path.join(projectDir, "project.json"), "utf8"))) ? "9:16" : "16:9";
+  } catch {
+    aspect = "16:9";
+  }
   const engine = pick.engine;
   let note = pick.note;
   if (!lookId) throw new Error("Choose an avatar first.");
@@ -132,7 +140,7 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
     let id;
     let fmt = format;
     try {
-      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", engine, fetchImpl }), retry);
+      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, full: layout.style === "full", engine, aspect, fetchImpl }), retry);
     } catch (e) {
       // the recipe's rule has no second way: a look without transparency is refused
       if (layout.style === "overlay" && heygen.noMatting(e)) throw new Error("This avatar look has no transparent output at HeyGen, and the channel's recipe needs it. Choose another look in the recipe.");
@@ -142,7 +150,7 @@ export async function makeAvatar({ projectDir, apiKey, lookId, which = ["open", 
       fmt = "mp4";
       layout.style = "card";
       note = [note, "This look has no background removal at HeyGen, so it is shown as a card instead of a cut-out."].filter(Boolean).join(" ");
-      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, engine, fetchImpl }), retry);
+      id = await patiently(() => heygen.createVideo({ apiKey, avatarId: lookId, audioAssetId: assetId, background, title, format, engine, aspect, fetchImpl }), retry);
     }
     pending[seg.name] = { key, id, format: fmt, note, at: new Date().toISOString() };
     writePending(projectDir, pending);

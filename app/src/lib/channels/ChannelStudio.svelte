@@ -18,9 +18,10 @@
   import { runner, errorText, onProgress, saveSettings } from "../api";
   import { llmFor, aiWithKey } from "../llm";
   import { setScreen, log } from "../logger";
-  import { blocker, costLine, recipeLines, recipeSide, RECIPE_HELP, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
+  import { SHORT_SECONDS, blocker, costLine, recipeLines, recipeSide, RECIPE_HELP, type ChannelState, type Direction, type Recipe, type TextKind } from "./channels";
 
-  let { app, saved, openProject, goto, only = "script" }: { app: AppState; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void; only?: Direction } = $props();
+  // startEditing: a new Identity was just made, so its recipe opens at once (DECISIONS 187)
+  let { app, saved, openProject, goto, only = "script", startEditing = false, edited = () => {} }: { app: AppState; saved: (s: AppState) => void; openProject: (dir: string) => void; goto: (page: "connections") => void; only?: Direction; startEditing?: boolean; edited?: () => void } = $props();
 
   setScreen(untrack(() => only) === "script" ? "home" : "edit");
   startWork();
@@ -28,12 +29,18 @@
   let st = $state<ChannelState | null>(null);
   let error = $state("");
   let editing = $state(false);
+  // once: a new Identity's recipe opens, also when it was copied with a recipe
+  let wantEdit = untrack(() => startEditing);
+  if (wantEdit) untrack(() => edited)();
   // Home makes a video from a script, the Edit menu from a recording (DECISIONS 172)
   const direction = $derived<Direction>(only);
   let topic = $state("");
   let text = $state("");
   let kind = $state<TextKind>("notes");
   let research = $state(false);
+  // this video's format: the recipe's, unless changed here (DECISIONS 188)
+  let format = $state<"long" | "short">("long");
+  let shortSeconds = $state(60);
   let starting = $state(false);
 
   const config = $derived(app.config!);
@@ -51,10 +58,12 @@
     error = "";
     try {
       st = await runner<ChannelState>("channel-state", { projectsDir: app.projectsDir, identity: app.identity });
-      editing = !st.saved;
+      editing = !st.saved || wantEdit;
       // the recipe's defaults; one video can change them here
       kind = st.recipe.start?.text ?? "notes";
       research = st.recipe.start?.research === true;
+      format = st.recipe.format === "short" ? "short" : "long";
+      shortSeconds = st.recipe.shortSeconds ?? 60;
     } catch (e) {
       error = errorText(e);
     }
@@ -67,6 +76,7 @@
   // comment-call clips read with the same voice.
   async function locked(r: Recipe) {
     editing = false;
+    wantEdit = false;
     try {
       // a recording has its own voice: the Identity's narrator stays as it is
       if (r.voice.provider !== "recording") saved(await saveSettings(null, { ...app.identity!, narrator: { provider: r.voice.provider, voice: r.voice.voice } }));
@@ -81,7 +91,7 @@
     starting = true;
     error = "";
     try {
-      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research: researching });
+      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research: researching, format, shortSeconds });
       await runner("autopilot-mark", { projectDir: r.dir, on: true });
       log("channel_video", { mode, research: researching, preset: side?.preset });
       topic = "";
@@ -174,7 +184,7 @@
   {#if !st}
     {#if !error}<p class="hint">Loading...</p>{/if}
   {:else if editing}
-    <RecipeEditor {app} state={st} {direction} done={locked} cancel={st.saved ? () => (editing = false) : undefined} />
+    <RecipeEditor {app} state={st} {direction} done={locked} cancel={st.saved ? () => { editing = false; wantEdit = false; } : undefined} />
   {:else}
     {#if direction === "script"}
     <section class="card recipe">
@@ -239,6 +249,10 @@
         </div>
         <p class="hint">{kind === "finished" ? "A first line starting with # is its title; lines starting with ## are its parts." : `Keeps your ideas, opinions, stories and way of speaking, in this Identity's script structure.${research ? " Only the research can add a fact." : " It never adds a claim you did not make."}`}</p>
       {/if}
+      <div class="formatrow">
+        <label>Format <select bind:value={format} aria-label="Format of this video"><option value="long">Long form 16:9</option><option value="short">Short 9:16</option></select></label>
+        {#if format === "short"}<label>Length <select bind:value={shortSeconds} aria-label="Length of this Short">{#each SHORT_SECONDS as s (s)}<option value={s}>{s} seconds</option>{/each}</select></label>{/if}
+      </div>
       <label class="research"><input type="checkbox" checked={researching} disabled={factChecked} onchange={(e) => (research = e.currentTarget.checked)} /> Research{factChecked ? ": always on for this style, its scripts are fact-checked" : ""}</label>
       <p class="hint">
         {#if !researching}Off: nothing is searched.
@@ -295,6 +309,8 @@
   details .head { margin-top: 12px; }
   h2 { margin: 0; font-size: 17px; }
   .recipe .head { align-items: flex-start; }
+  .formatrow { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; margin: 6px 0; }
+  .formatrow label { display: flex; gap: 6px; align-items: center; }
   .change { flex: none; font-size: 15px; padding: 10px 20px; }
   .lines { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 4px; }
   .line { display: grid; gap: 2px; justify-content: stretch; justify-items: start; text-align: left; white-space: normal; height: auto; min-height: 0; padding: 10px 12px; }

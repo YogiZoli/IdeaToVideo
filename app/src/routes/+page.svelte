@@ -17,6 +17,7 @@
   import ProjectView from "$lib/ProjectView.svelte";
   import Settings from "$lib/Settings.svelte";
   import IdentityMenu from "$lib/IdentityMenu.svelte";
+  import NewIdentityDialog from "$lib/NewIdentityDialog.svelte";
   import Jobs from "$lib/Jobs.svelte";
   import Home from "$lib/Home.svelte";
   import TodayVideo from "$lib/TodayVideo.svelte";
@@ -197,6 +198,19 @@
     }
   }
 
+  // New Identity (top bar or Manage Identity): one dialog; Create switches to it and opens its recipe on Home
+  let creating = $state(false);
+  let editRecipe = $state(false);
+  async function created(s: AppState) {
+    creating = false;
+    take(s);
+    settingsEpoch++;
+    projectDir = null;
+    editRecipe = true;
+    await show("home");
+    notice = `Made "${s.identity?.name}". You are working in it now. Set its recipe below.`;
+  }
+
   async function openJob(j: Job) {
     if (j.identity && j.identity !== app?.identity?.id) await choose(j.identity);
     // the thumbnails are made on the Publishing menu
@@ -237,12 +251,16 @@
   <main class="shell">
     <nav class="brandbar">
       <span class="name"><img src={EDITOR ? "/icon-reccut.png" : "/icon.png"} alt="" />{PRODUCT}</span>
-      <IdentityMenu {app} {choose} />
       {#each MENUS as m (m.id)}
-        <button type="button" class:active={current === m.id} class:stack={!!m.lines} aria-label={m.title} onclick={() => menu(m.id)}>{#if m.lines}{#each m.lines as l}<span>{l}</span>{/each}{:else}{m.title}{/if}</button>
+        <button type="button" class="menuitem" data-menu={m.id} class:active={current === m.id} class:stack={!!m.lines} aria-label={m.title} onclick={() => menu(m.id)}>{#if m.lines}{#each m.lines as l}<span>{l}</span>{/each}{:else}{m.title}{/if}</button>
       {/each}
+      <span class="spacer"></span>
+      <IdentityMenu {app} {choose} create={() => (creating = true)} />
       <Jobs {openJob} />
     </nav>
+    {#if creating}
+      <NewIdentityDialog {app} cancel={() => (creating = false)} done={created} />
+    {/if}
     {#if notice}
       <div class="notice"><span>{notice}</span><button type="button" class="ghost" onclick={() => (notice = "")}>Close</button></div>
     {/if}
@@ -259,7 +277,7 @@
     <svelte:boundary onerror={crashed}>
     {#if view === "settings"}
       {#key settingsEpoch}
-        <Settings {app} saved={take} startPage={settingsPage} {goto} {openVideoAt} {thumbnailVideo} />
+        <Settings {app} saved={take} startPage={settingsPage} {goto} {openVideoAt} {thumbnailVideo} newIdentity={() => (creating = true)} />
       {/key}
     {:else if projectDir}
       {#key projectDir}
@@ -276,7 +294,7 @@
           <TodayVideo {app} {openProject} videos={() => show("projects")} />
           <Home {app} {openProject} videos={() => show("projects")} />
           <p class="editorline">To edit a recording, open RecCut.</p>
-          <ChannelStudio {app} saved={take} {openProject} {goto} only="script" />
+          <ChannelStudio {app} saved={take} {openProject} {goto} only="script" startEditing={editRecipe} edited={() => (editRecipe = false)} />
           <NightShift {app} {openProject} />
         {/if}
       {/key}
@@ -312,7 +330,11 @@
   .brandbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--hairline); }
   .name { display: inline-flex; align-items: center; gap: 8px; margin-right: 8px; font-weight: 700; font-size: var(--text-lg); white-space: nowrap; }
   .name img { width: 26px; height: 26px; }
-  .brandbar > button { border: none; background: none; padding: 6px 10px; white-space: nowrap; }
+  /* logo, the whole menu, then on the right the Identity switch and the jobs. The menu never
+     shrinks; the switch and the status line do, so nothing overlaps down to 1280 px (DECISIONS 187) */
+  .brandbar > button { border: none; background: none; padding: 6px 10px; white-space: nowrap; flex: none; }
+  .name { flex: none; }
+  .spacer { flex: 1 1 0; min-width: 8px; }
   /* the long title on three short lines, so the whole menu stays on one row (DECISIONS 175) */
   .brandbar > button.stack { display: inline-flex; flex-direction: column; align-items: center; font-size: 12px; line-height: 1.15; padding: 2px 8px; min-height: 0; }
   .brandbar > button.active { background: var(--primary-surface); color: var(--primary-surface-foreground); font-weight: 600; }

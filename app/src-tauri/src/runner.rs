@@ -168,6 +168,11 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     // local work, except what names an AI below
     ("channel-state", None),
     ("recipe-save", None),
+    // the three languages of a video and the script's translations (DECISIONS 189)
+    ("languages-state", None),
+    ("languages-set", None),
+    ("translation-make", Some(&["llm", "provider"])),
+    ("translation-save", None),
     ("preset-stylesheet", None),
     ("channel-video-new", None),
     ("night-candidates", None),
@@ -839,6 +844,42 @@ mod tests {
     // Stop ends the run at once, with its reason. A runner that says nothing
     // is never stopped by the app: the check-in reports it stuck, the user
     // decides (Zoltan, 2026-10-06).
+    // FIX_PLAN 2026-11-19, item 4 (DECISIONS 190): a stuck AI step holds its key's place in the
+    // queue; Stop ends it within seconds and the next video's job of the same key starts.
+    #[test]
+    fn stop_ends_a_stuck_ai_job_fast_and_frees_the_queue() {
+        use crate::jobs::{Class, Info, Jobs};
+        let dir = std::env::temp_dir().join(format!("itv-stuck-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let script = dir.join("stuck.mjs");
+        std::fs::write(&script, "setInterval(() => {}, 1000);
+").unwrap();
+        let paths = Paths { node: PathBuf::from("node"), script: script.clone(), ffmpeg: None, engine: None, data: None, other_ai: None };
+        let jobs = std::sync::Arc::new(Jobs::default());
+        let info = |p: &str| Info { command: "make-scenes".into(), identity: Some("vox".into()), identity_name: Some("Vox".into()), project: Some(p.into()) };
+        let control = std::sync::Arc::new(Control::new(Some(1)));
+        let (c2, j2) = (control.clone(), jobs.clone());
+        let first = std::thread::spawn(move || {
+            let _ticket = j2.start(info("/p/A"), Class::Key("gemini@app".into()), &mut |_| {}).unwrap();
+            run_with(&paths, "make-scenes", &json!({}), None, &c2, &mut String::new(), &mut |_| {}, (60, 600))
+        });
+        std::thread::sleep(std::time::Duration::from_millis(800));
+        let j3 = jobs.clone();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let second = std::thread::spawn(move || {
+            let t = j3.start(info("/p/B"), Class::Key("gemini@app".into()), &mut |_| {});
+            tx.send(t.is_some()).unwrap();
+        });
+        assert!(rx.recv_timeout(std::time::Duration::from_millis(300)).is_err(), "the next video waits for the key");
+        let t0 = std::time::Instant::now();
+        control.stop("Stopped by you.");
+        assert_eq!(first.join().unwrap().unwrap_err(), "Stopped by you.");
+        assert!(t0.elapsed().as_secs() < 5, "Stop ends the job within a few seconds");
+        assert!(rx.recv_timeout(std::time::Duration::from_secs(5)).unwrap(), "the queue is free: the next job starts");
+        second.join().unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn a_silent_run_is_reported_not_stopped_and_stop_ends_it() {
         let dir = std::env::temp_dir().join(format!("itv-stop-test-{}", std::process::id()));

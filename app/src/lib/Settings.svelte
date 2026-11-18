@@ -9,7 +9,7 @@
   import { open, save as saveDialog, ask } from "@tauri-apps/plugin-dialog";
   import type { Config, AppState, AppConfig, Llm } from "./api";
   import { saveSettings, errorText, deleteAllKeys, duplicateIdentity, deleteIdentity } from "./api";
-  import { cleanConfig, defaultConfig, LANGUAGES, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
+  import { cleanConfig, LLM_PROVIDERS, SERVICE_KEY_URLS } from "./catalog";
   import { STEPS, recommendStep } from "./steps";
   import PhotosPanel from "./PhotosPanel.svelte";
   import { SETTINGS_PAGES, SUB_PAGES, MENU_NOTE, MENUS, menuOf, type PageId, type SubPage } from "./pages";
@@ -52,7 +52,7 @@
   import { log, setScreen, changedPaths } from "./logger";
 
 
-  let { app, saved, startPage = "identity", goto, openVideoAt, thumbnailVideo = null }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId; goto: (page: PageId) => void; openVideoAt: (dir: string, tab: TabId) => void; thumbnailVideo?: string | null } = $props();
+  let { app, saved, startPage = "identity", goto, openVideoAt, thumbnailVideo = null, newIdentity = () => {} }: { app: AppState; saved: (s: AppState) => void; startPage?: PageId; goto: (page: PageId) => void; openVideoAt: (dir: string, tab: TabId) => void; thumbnailVideo?: string | null; newIdentity?: () => void } = $props();
 
   // working copies: edits stay local until "Save settings". $state.snapshot,
   // not structuredClone: a reactive proxy cannot be cloned (DataCloneError).
@@ -258,19 +258,6 @@
       const s = await duplicateIdentity(app.identity!.id, dupName.trim() || copyName(app.identity!.name, []), dupKeys);
       after(s, `Made "${s.identity?.name}". You are now working in it. Change what is different, for example the name, the YouTube channel and the language.`);
       pageId = "identity";
-    });
-
-  // A new Identity: a name and a language. The core makes it the active one, its recipe comes on Home.
-  let newName = $state("");
-  let newLanguage = $state("en");
-  const addIdentity = () =>
-    run(async () => {
-      const name = newName.trim();
-      const base = defaultConfig();
-      const c = { ...base, name, llm: { ...app.app!.llm }, channel: { ...base.channel, contentLanguage: newLanguage }, narrator: newLanguage === "en" ? { provider: "kokoro" as const, voice: "am_michael" } : base.narrator };
-      const s = await saveSettings(null, identityFromConfig(cleanConfig(c), null, null));
-      newName = "";
-      after(s, `Made "${s.identity?.name}". You are now working in it. Its recipe is the next thing on Home.`);
     });
 
   async function remove() {
@@ -488,19 +475,9 @@
 
     {#if pageId === "identity"}
       <section class="card">
-        <h2>Add Identity</h2>
-        <p class="hint">A new, empty Identity, for example for another YouTube channel.</p>
-        {#if room}
-          <div class="row">
-            <input bind:value={newName} maxlength="80" aria-label="Name of the new Identity" placeholder="The Identity's name" />
-            <select bind:value={newLanguage} aria-label="Language of the new Identity">
-              {#each LANGUAGES as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
-            </select>
-            <button type="button" disabled={busy || !newName.trim()} onclick={addIdentity}>Add Identity</button>
-          </div>
-        {:else}
-          <p class="hint">{fullPlanText(app.edition)}</p>
-        {/if}
+        <h2>New Identity</h2>
+        <p class="hint">Another Identity, for example for another YouTube channel: a name, a language, and empty or with the settings of one you have.</p>
+        <div class="row"><button type="button" class="primary" disabled={busy} onclick={newIdentity}>New Identity</button></div>
       </section>
       <section class="card">
         <h2>Duplicate</h2>
@@ -508,7 +485,7 @@
         {#if room}
           <div class="row">
             <input bind:value={dupName} maxlength="80" aria-label="Name of the copy" />
-            <button type="button" disabled={busy} onclick={duplicate}>Duplicate this Identity</button>
+            <button type="button" disabled={busy} onclick={duplicate}>Duplicate</button>
           </div>
           <label class="radio"><input type="checkbox" bind:checked={dupKeys} /> Copy this Identity's own keys</label>
         {:else}
@@ -524,7 +501,7 @@
         <h2>Delete</h2>
         {#if app.identities.length > 1}
           <p class="hint">Removes this Identity's settings and own keys. Its videos stay on your disk.</p>
-          <div class="row"><button type="button" class="ghost" disabled={busy} onclick={remove}>Delete this Identity</button></div>
+          <div class="row"><button type="button" class="ghost" disabled={busy} onclick={remove}>Delete</button></div>
         {:else}
           <p class="hint">This is the only Identity, so it cannot be deleted.</p>
         {/if}

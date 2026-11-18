@@ -448,7 +448,9 @@ export function toScene(template, params, { from, to }) {
     // a preset with its own pack states each limit, the others share one
     else if (value.trim()) vars[id] = capFor(template, value, (template.objects && template.params?.[id]?.maxWords) || MAX_WORDS);
   }
-  return { from, ...(to !== from ? { to } : {}), component: template.draw.component, vars, template: template.id };
+  // the template's own words stay with the row: a Short draws its vertical screen from them (DECISIONS 188)
+  const kept = Object.fromEntries(Object.entries(params ?? {}).filter(([, v]) => typeof v === "string" || typeof v === "number"));
+  return { from, ...(to !== from ? { to } : {}), component: template.draw.component, vars, template: template.id, ...(Object.keys(kept).length ? { params: kept } : {}) };
 }
 
 // The templates a rule rotates through when nothing better is known.

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SHORT_SECONDS } from "./channels";
   // The channel's one recipe (runner/channels/recipe.mjs): engine, style, voice,
   // avatar, music, length. Asked once per channel; after Lock every video of
   // the channel is made with it and nothing here is asked again.
@@ -15,7 +16,7 @@
   let { app, state: st, direction, done, cancel }: { app: AppState; state: ChannelState; direction?: "script" | "recorded"; done: (r: Recipe) => void; cancel?: () => void } = $props();
 
   // the editor works on a copy until Lock
-  let r = $state<Recipe>(untrack(() => ({ broll: { on: false }, ...JSON.parse(JSON.stringify(st.recipe)) })));
+  let r = $state<Recipe>(untrack(() => ({ broll: { on: false }, format: "long", shortSeconds: 60, ...JSON.parse(JSON.stringify(st.recipe)) })));
   let busy = $state(false);
   let error = $state("");
   const language = $derived(app.config?.channel.contentLanguage ?? "en");
@@ -251,8 +252,23 @@
 
   {#if r.engine === "script"}
   <div class="row">
+    <span class="label">Format</span>
+    <div class="opts">
+      <label class="radio"><input type="radio" bind:group={r.format} value="long" /> Long form 16:9 (1920x1080)</label>
+      <label class="radio"><input type="radio" bind:group={r.format} value="short" /> Short 9:16 (1080x1920)</label>
+    </div>
+  </div>
+  <div class="row">
     <label class="label" for="rlen">Length</label>
-    <div class="inline"><input id="rlen" type="number" min="1" max="30" bind:value={r.targetLengthMin} /> minutes</div>
+    {#if r.format === "short"}
+      <div class="inline">
+        <select id="rlen" bind:value={r.shortSeconds}>
+          {#each SHORT_SECONDS as s (s)}<option value={s}>{s} seconds</option>{/each}
+        </select>
+      </div>
+    {:else}
+      <div class="inline"><input id="rlen" type="number" min="1" max="30" bind:value={r.targetLengthMin} /> minutes</div>
+    {/if}
   </div>
   {/if}
 

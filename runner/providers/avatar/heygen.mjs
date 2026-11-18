@@ -166,7 +166,7 @@ export async function uploadAudio({ apiKey, file, fetchImpl }) {
 // background value. aspect_ratio "auto" keeps the look's own proportions, so
 // nothing is ever stretched; the app only scales and crops. Full screen keeps
 // a 16:9 frame filled on the theme color.
-export async function createVideo({ apiKey, avatarId, audioAssetId, background, title, format = "mp4", full = false, engine = null, fetchImpl }) {
+export async function createVideo({ apiKey, avatarId, audioAssetId, background, title, format = "mp4", full = false, aspect = "16:9", engine = null, fetchImpl }) {
   const body = {
     type: "avatar",
     avatar_id: avatarId,
@@ -174,7 +174,7 @@ export async function createVideo({ apiKey, avatarId, audioAssetId, background, 
     audio_asset_id: audioAssetId,
     resolution: "1080p",
     title,
-    ...(format === "webm" ? { output_format: "webm", aspect_ratio: "auto" } : full ? { background: { type: "color", value: background }, aspect_ratio: "16:9", fit: "cover" } : { aspect_ratio: "auto" }),
+    ...(format === "webm" ? { output_format: "webm", aspect_ratio: aspect === "9:16" ? "9:16" : "auto" } : full ? { background: { type: "color", value: background }, aspect_ratio: aspect, fit: "cover" } : { aspect_ratio: "auto" }),
   };
   const d = await call(apiKey, "/v3/videos", { method: "POST", fetchImpl, body });
   if (!d?.video_id) throw new Error("HeyGen did not return a video id.");

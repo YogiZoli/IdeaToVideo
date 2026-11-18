@@ -388,6 +388,7 @@ export const clean = (sc) => ({
   ...(sc.cut ? { cut: true } : {}),
   ...(sc.camera ? { camera: sc.camera } : {}),
   ...(sc.template ? { template: sc.template } : {}),
+  ...(sc.params && typeof sc.params === "object" && !Array.isArray(sc.params) ? { params: sc.params } : {}),
   ...(sc.override ? { override: true } : {}),
   // the planner's ranked candidates (the visual check swaps to the next one)
   // and its one line on why this one fits (DECISIONS 130)

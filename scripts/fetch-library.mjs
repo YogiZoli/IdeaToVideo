@@ -82,7 +82,9 @@ export function fontFiles(fam, version) {
   );
 }
 
-export async function fetchFonts({ update = false, fetchImpl = fetch, log = console.log, out } = {}) {
+// add: a family new in fonts.json gets its files pinned in the lock on this first download; every
+// file already in the lock is still checked against it (DECISIONS 189, Noto Sans Khmer).
+export async function fetchFonts({ update = false, add = false, fetchImpl = fetch, log = console.log, out } = {}) {
   const list = JSON.parse(fs.readFileSync(FONT_LIST, "utf8"));
   const lock = update || !fs.existsSync(FONT_LOCK) ? { version: list.version, files: {} } : JSON.parse(fs.readFileSync(FONT_LOCK, "utf8"));
   if (!update && lock.version !== list.version) throw new Error("fonts.lock.json is for another version. Run with --update.");
@@ -97,7 +99,7 @@ export async function fetchFonts({ update = false, fetchImpl = fetch, log = cons
       const buf = await get(f.url, fetchImpl);
       const key = `${fam.id}/${f.file}`;
       const got = sha256(buf);
-      if (update) lock.files[key] = got;
+      if (update || (add && lock.files[key] === undefined)) lock.files[key] = got;
       else if (lock.files[key] !== got) throw new Error(`SHA256 mismatch for ${key}: expected ${lock.files[key]}, got ${got}`);
       fs.writeFileSync(path.join(dir, f.file), buf);
       if (f.subset) {
@@ -113,7 +115,7 @@ export async function fetchFonts({ update = false, fetchImpl = fetch, log = cons
     log(`fonts: ${fam.family}`);
   }
   fs.writeFileSync(path.join(out, "FONTS.json"), JSON.stringify({ source: list.source, version: list.version, license: list.license, families }, null, 2) + "\n");
-  if (update) fs.writeFileSync(FONT_LOCK, JSON.stringify(lock, null, 2) + "\n");
+  if (update || add) fs.writeFileSync(FONT_LOCK, JSON.stringify(lock, null, 2) + "\n");
   return families;
 }
 
@@ -187,7 +189,7 @@ async function get(url, fetchImpl) {
   return Buffer.from(await res.arrayBuffer());
 }
 
-export async function fetchLibrary({ update = false, fetchImpl = fetch, log = console.log, out = LIBRARY_DIR } = {}) {
+export async function fetchLibrary({ update = false, add = false, fetchImpl = fetch, log = console.log, out = LIBRARY_DIR } = {}) {
   const list = JSON.parse(fs.readFileSync(LIST, "utf8"));
   const lock = update || !fs.existsSync(LOCK) ? { commit: list.commit, files: {} } : JSON.parse(fs.readFileSync(LOCK, "utf8"));
   if (!update && lock.commit !== list.commit) throw new Error("library.lock.json is for another commit. Run with --update.");
@@ -263,7 +265,7 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
   }
   log(`library: ${list.motion?.backgrounds?.length ?? 0} backgrounds, ${list.motion?.files?.length ?? 0} motion files`);
   log(`library: ${list.presets?.length ?? 0} presets`);
-  await fetchFonts({ update, fetchImpl, log, out: path.join(stage, "fonts") });
+  await fetchFonts({ update, add, fetchImpl, log, out: path.join(stage, "fonts") });
   await fetchOpenDesign({ update, fetchImpl, log, out: path.join(stage, "opendesign") });
   await fetchIcons({ fetchImpl, log, out: path.join(stage, "icons") });
   // The scene catalog (library/catalog.json, DECISIONS 130): what each
@@ -283,7 +285,7 @@ export async function fetchLibrary({ update = false, fetchImpl = fetch, log = co
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  fetchLibrary({ update: process.argv.includes("--update") })
+  fetchLibrary({ update: process.argv.includes("--update"), add: process.argv.includes("--add") })
     .then((c) => console.log(`library: ${c.length} components -> ${LIBRARY_DIR}`))
     .catch((e) => {
       console.error(e.message);

@@ -12,6 +12,8 @@
 // the measurement. The key comes in as apiKey and goes nowhere else.
 
 import fs from "node:fs";
+import { videoLanguages, voiceProblem, languageLabel } from "../../language/index.mjs";
+import { translatedScriptFile } from "../../language/translate.mjs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { narrationFromMarkdown, wordCount, speakable } from "./narration.mjs";
@@ -38,11 +40,22 @@ export function musicPath(projectDir, rel) {
   return p;
 }
 
+const readProject = (dir) => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(dir, "project.json"), "utf8"));
+  } catch {
+    return null;
+  }
+};
+
 export async function makeVoice({ projectDir, narrator, apiKey, music = null, language, env = process.env, fetchImpl, sleep, onProgress = () => {} }) {
   const provider = VOICE_PROVIDERS[narrator?.provider];
   if (!provider) throw new Error(`This Narrator Voice is not available yet: ${narrator?.provider}. Choose ElevenLabs in Settings.`);
-  const md = path.join(projectDir, "script.md");
-  if (!fs.existsSync(md)) throw new Error("There is no script yet. Write and approve the script first.");
+  // the voice's own language (DECISIONS 189): its translated script when it differs from the source
+  const langs = videoLanguages(readProject(projectDir) ?? { language });
+  const voiceLang = langs.voice || language;
+  const md = voiceLang !== langs.source ? translatedScriptFile(projectDir, voiceLang) : path.join(projectDir, "script.md");
+  if (!fs.existsSync(md)) throw new Error(voiceLang !== langs.source ? `The voice speaks ${languageLabel(voiceLang)}, but the script has no ${languageLabel(voiceLang)} translation yet. Make it on the Script tab and look it over.` : "There is no script yet. Write and approve the script first.");
   const blocks = narrationFromMarkdown(fs.readFileSync(md, "utf8"));
   if (!blocks.length) throw new Error("The script has no text to read aloud.");
 
@@ -56,6 +69,10 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
   const cacheDir = path.join(audioDir, "blocks-cache");
   fs.mkdirSync(cacheDir, { recursive: true });
   const model = narrator.provider !== "elevenlabs" ? null : ELEVEN_MODELS[narrator.model] ? narrator.model : elevenlabs.DEFAULT_MODEL;
+  // never a language to a voice that does not list it (FIX_PLAN 2026-11-19, item 3): before any call is paid
+  const problem = voiceProblem(narrator.provider, model ?? (narrator.provider === "kokoro" ? "kokoro" : null), voiceLang);
+  if (problem) throw new Error(problem);
+  language = voiceLang;
 
   const files = [];
   const blockWords = [];

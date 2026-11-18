@@ -336,7 +336,7 @@ fn with_notice(mut state: Value, notice: Option<String>) -> Value {
 
 /// Saves the App settings and/or one Identity. An Identity without a known
 /// id is new: it gets an id and a folder (within the plan's limit) and
-/// becomes the active one. A new name renames the ONE Videos folder.
+/// becomes the active one. A new name is only the display name: the folder never changes.
 #[tauri::command]
 async fn save_settings(app: AppHandle, config: Option<Value>, identity: Option<Value>) -> Result<Value, String> {
     let dir = config_dir(&app)?;
@@ -346,7 +346,7 @@ async fn save_settings(app: AppHandle, config: Option<Value>, identity: Option<V
         None => load_app_config(&app)?.ok_or("Finish the setup first.")?,
     };
     let root = projects_dir(&app, Some(&cfg))?;
-    let mut notice = None;
+    let notice: Option<String> = None;
 
     if let Some(mut ident) = identity {
         let known = ident
@@ -364,17 +364,9 @@ async fn save_settings(app: AppHandle, config: Option<Value>, identity: Option<V
                 cfg["activeIdentity"] = ident["id"].clone();
             }
             Some(old) => {
-                for f in ["schema", "id", "folder", "createdAt"] {
-                    ident[f] = old[f].clone();
-                }
+                // a rename changes only the display name: the id and the folder stay (DECISIONS 187)
+                ident = identity::keep_fixed(ident, &old);
                 validate(&app, Some(&cfg), Some(&ident)).await?;
-                if identity::str_of(&ident, "name") != identity::str_of(&old, "name") {
-                    let busy = app.state::<Core>().jobs.busy_identities().contains(identity::str_of(&old, "id"));
-                    let (folder, note) =
-                        identity::rename_folder(&root, identity::str_of(&old, "folder"), identity::str_of(&ident, "name"), &all, busy);
-                    ident["folder"] = json!(folder);
-                    notice = note;
-                }
             }
         }
         identity::save(&dir, &ident)?;
