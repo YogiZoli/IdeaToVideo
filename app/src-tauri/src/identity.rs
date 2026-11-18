@@ -318,29 +318,16 @@ pub fn remove(config_dir: &Path, id: &str) -> Result<(), String> {
     fs::remove_dir_all(&d).map_err(|e| format!("Could not remove the Identity settings: {e}"))
 }
 
-/// Renames an Identity's ONE Videos folder after a name change. Returns the
-/// folder that is in use afterwards, and a sentence when the rename did not
-/// happen (the old name stays, nothing is lost).
-pub fn rename_folder(projects_root: &Path, old: &str, new_name: &str, all: &[Value], busy: bool) -> (String, Option<String>) {
-    let others: Vec<String> = folders(all).into_iter().filter(|f| !f.eq_ignore_ascii_case(old)).collect();
-    let new = make_folder(new_name, &others);
-    if new == old {
-        return (old.to_string(), None);
+/// The fields of an Identity that never change after it is made: its id (the settings folder and
+/// the keychain account) and its ONE Videos folder. The name is only the display name, so a rename
+/// works at any time, also while a job runs (DECISIONS 187). An edit keeps these from `old`.
+pub const FIXED: &[&str] = &["schema", "id", "folder", "createdAt"];
+
+pub fn keep_fixed(mut edited: Value, old: &Value) -> Value {
+    for f in FIXED {
+        edited[*f] = old[*f].clone();
     }
-    if busy {
-        return (old.to_string(), Some(format!("The folder keeps its name \"{old}\" while a job runs for this Identity. Save again later to rename it.")));
-    }
-    let (from, to) = (projects_root.join(old), projects_root.join(&new));
-    if !from.exists() {
-        return (new, None);
-    }
-    if to.exists() && !new.eq_ignore_ascii_case(old) {
-        return (old.to_string(), Some(format!("A folder named \"{new}\" already exists, so the videos stay in \"{old}\".")));
-    }
-    match fs::rename(&from, &to) {
-        Ok(()) => (new, None),
-        Err(e) => (old.to_string(), Some(format!("The folder \"{old}\" could not be renamed ({e}), so it keeps its name."))),
-    }
+    edited
 }
 
 // ---- migration from the one-file config (schema 1) ------------------------------------
@@ -794,19 +781,13 @@ mod tests {
     }
 
     #[test]
-    fn folder_rename_follows_the_name_unless_busy() {
-        let base = tmpdir("rename");
-        fs::create_dir_all(base.join("Old").join("2026-10-01_x")).unwrap();
-        let all = vec![json!({"id": "a", "folder": "Old"}), json!({"id": "b", "folder": "Taken"})];
-        let (f, note) = rename_folder(&base, "Old", "Old", &all, false);
-        assert_eq!((f.as_str(), note), ("Old", None));
-        let (f, note) = rename_folder(&base, "Old", "New", &all, true);
-        assert_eq!(f, "Old");
-        assert!(note.unwrap().contains("job runs"));
-        let (f, note) = rename_folder(&base, "Old", "Taken", &all, false);
-        assert_eq!((f.as_str(), note), ("Taken 2", None));
-        assert!(base.join("Taken 2").join("2026-10-01_x").exists());
-        fs::remove_dir_all(&base).unwrap();
+    fn a_rename_changes_only_the_display_name() {
+        let old = complete_new(json!({"name": "New Identity"}), &[]).unwrap();
+        let edited = keep_fixed(json!({"name": "Hello Cambodia AI Coach with a very long display name for the class", "id": "x", "folder": "Other"}), &old);
+        assert_eq!(edited["id"], old["id"]);
+        assert_eq!(edited["folder"], "New Identity");
+        assert_eq!(edited["createdAt"], old["createdAt"]);
+        assert_eq!(edited["name"], "Hello Cambodia AI Coach with a very long display name for the class");
     }
 
     #[test]

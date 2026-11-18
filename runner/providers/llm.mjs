@@ -145,6 +145,8 @@ async function chatProvider(opts) {
 // second link. main.mjs takes them out of the environment at the start, so no child
 // process ever sees them.
 let otherKeys = [];
+/** The other saved AI keys, in their order (the stuck-step rule tries the next one once, DECISIONS 190). */
+export const savedKeys = () => otherKeys;
 export function setOtherKeys(list) {
   otherKeys = Array.isArray(list) ? list.filter((k) => PROVIDERS[k?.provider] && k.apiKey) : [];
 }

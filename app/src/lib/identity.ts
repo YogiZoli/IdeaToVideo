@@ -65,6 +65,14 @@ export function roomForIdentity(count: number, limit: number | null): boolean {
   return limit === null || count < limit;
 }
 
+/** Why a name cannot be a new Identity's, or null when it can (the New Identity dialog). */
+export function newIdentityProblem(name: string, taken: string[]): string | null {
+  const n = name.trim();
+  if (!n) return "Type a name.";
+  if (taken.some((t) => t.trim().toLowerCase() === n.toLowerCase())) return `There is already an Identity named "${n}". Choose another name.`;
+  return null;
+}
+
 /** A free name for a copy: "VoxFlow copy", "VoxFlow copy 2". */
 export function copyName(name: string, taken: string[]): string {
   const lower = taken.map((t) => t.toLowerCase());

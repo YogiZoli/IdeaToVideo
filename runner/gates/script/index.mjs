@@ -21,6 +21,17 @@ starts, and never pad. Do not aim for a word count.
 
 `;
 
+// A Short (9:16, 15 to 90 seconds, DECISIONS 188): one idea per sentence, the hook first.
+const SHORT_LENGTH = `## Length
+
+This is a Short, a vertical video of about {{targetSeconds}} seconds: about {{targetWords}}
+spoken words in total, never fewer than {{minWords}}. The very first sentence is the hook.
+One idea per sentence, short sentences of 6 to 12 words, every sentence its own screen.
+Use 2 or 3 TEACH sections of one or two sentences each, a one-sentence recap, no padding.
+Count before you answer.
+
+`;
+
 // The data block the model sees. Brief fields win over channel defaults.
 // commentCalls: the video's comment calls (cta/profile.mjs ctaPlan), the
 // only calls the narration makes. The landing page link goes into the YouTube
@@ -34,7 +45,7 @@ starts, and never pad. Do not aim for a word count.
 // notes: the creator's own notes or cleaned transcript, turned into the script
 // and never added to (docs/BUILD_PLAN.md phase 3). research: an approved brief
 // (research/index.mjs briefForScript), the only place new facts may come from.
-export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null, styleNote = null, notes = null, research = null }) {
+export function buildData({ topic, brief = {}, channel = {}, language, targetLengthMin, format = "long", keyword, dictionary = null, commentCalls = [], angle = null, seed = null, bridge = null, styleNote = null, notes = null, research = null }) {
   const calls = (commentCalls ?? []).map((c) => ({ place: c.slot, keyword: c.keyword, temperature: c.temperature, ...(c.offer ? { offer: c.offer } : { gets: c.gets }) }));
   const cta = null;
   const data = {
@@ -52,6 +63,7 @@ export function buildData({ topic, brief = {}, channel = {}, language, targetLen
     contentLanguage: language || brief.language || channel.contentLanguage || "en",
     targetLengthMin: targetLengthMin || brief.targetLengthMin || 8,
   };
+  if (format === "short") data.format = "short 9:16";
   if (calls.length) data.commentCalls = calls;
   const own = String(angle ?? "").trim().slice(0, 1500);
   if (own) data.ownAngle = own;
@@ -88,7 +100,7 @@ export function buildMessages(data) {
     .replaceAll("{{targetWords}}", String(Math.round(minutes * WORDS_PER_MINUTE)))
     .replaceAll("{{targetMinutes}}", String(minutes))
     .replaceAll("{{minWords}}", String(Math.round(minutes * WORDS_PER_MINUTE * 0.85)))
-    .replace(/## Length[\s\S]*?(?=## Data)/, (part) => (data.notes ? NOTES_LENGTH : part));
+    .replace(/## Length[\s\S]*?(?=## Data)/, (part) => (data.notes ? NOTES_LENGTH : data.format ? SHORT_LENGTH.replaceAll("{{targetSeconds}}", String(Math.round(minutes * 60))).replaceAll("{{targetWords}}", String(Math.round(minutes * WORDS_PER_MINUTE))).replaceAll("{{minWords}}", String(Math.round(minutes * WORDS_PER_MINUTE * 0.85))) : part));
   const user = `DATA\n${JSON.stringify(data, null, 2)}\nEND DATA\n\nWrite the script now. Answer with the JSON object only.`;
   return [
     { role: "system", content: system },

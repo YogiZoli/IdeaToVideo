@@ -28,7 +28,7 @@ export const QUESTIONS = [
 const REQUIRED = ["who", "result", "topic", "phrases", "pain", "proof"];
 
 // The app's content languages (catalog.ts LANGUAGES), as the card writes them. traffic-card.mjs reads them back.
-export const LANGUAGE_NAMES = { en: "English", hu: "Hungarian", de: "German", es: "Spanish", fr: "French", it: "Italian", pt: "Portuguese", nl: "Dutch", pl: "Polish", ro: "Romanian" };
+export const LANGUAGE_NAMES = { en: "English", hu: "Hungarian", de: "German", es: "Spanish", fr: "French", it: "Italian", pt: "Portuguese", nl: "Dutch", pl: "Polish", ro: "Romanian", km: "Khmer" };
 
 export const DEFAULT_COLOR = "#17C05B";
 export const PATH_NOTE = "Click paths checked in October 2026. YouTube renames menus often. If a label is missing, look for the nearest match in the same menu.";

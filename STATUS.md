@@ -1,10 +1,22 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-10 (RecCut megbízhatóság és saját repó, DECISIONS 186)
+Frissítve: 2026-11-18 (a 2026-11-19-i javítási terv 1-4. pontja, DECISIONS 187-190)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-18, javítási terv 1-4, DECISIONS 187-190, Phase 10 a BUILD_PLAN-ben)
+
+A terv: `docs/FIX_PLAN_2026-11-19.md`. Az 1-4. pont kész, az 5-9. jön (BUILD_PLAN, Phase 10).
+
+- **1. Identity.** A felső sor: logó, a teljes menü, jobbra az Identity választó és a munkák állapota. A választó legfeljebb 220 px, a hosszú név három ponttal végződik, teljes egészében a buborékban és a lenyíló listában. Átnevezés bármikor, futó munka közben is: csak a megjelenő név változik, a mappa és az azonosító soha (a sárga "keeps its name" sáv eltűnt). Egy új Identity egyetlen ablakban: a választó listájának alján és Identity, Manage Identity: New Identity. Név, nyelv, Üres vagy egy másik beállításainak másolata; Create átvált rá, és megnyitja a receptjét a Home-on.
+- **2. Shorts 9:16.** A receptben és minden videó indító képernyőjén: Format (Long form 16:9 vagy Short 9:16), Short hossza 15, 30, 45, 60, 90 mp. Mind a hat stílus saját 9:16 elrendezést kap (saját kód, `runner/shorts/`): mondatonként egy képernyő, nagy szöveg, ikon, a stílus alakja (Stick Worldben a pálcikaember integet, sétál, ugrik), lassú kamera, felirat középen, az alsó 20 és a jobb 12 százalék üres. Avatar 9:16-ban rendelve, 1:1-ben rátéve. Publishing: egy cím, rövid leírás, hashtagek.
+- **3. Khmer és három nyelv.** A Script fülön új Languages rész: a hang, a felirat, a képernyő szövege és a forgatókönyv nyelve külön állítható; ami eltér, mondatonként fordítást kap (AI-val vagy kézzel, beillesztve), jóváhagyás után. Khmer minden nyelvlistában, Noto Sans Khmer (OFL) a csomagban. **A tény (HeyGen saját listája, 2026-11-18):** khmerül egyik ElevenLabs modell sem beszél, és a HeyGen hangszintézise sem; a HeyGen csak avatar videóban, a Fish és Mockingbird motorral. Az app most már nem küld khmer szöveget olyan hangnak, amelyik nem tudja, és megmondja, ki tudja.
+- **4. Elakadt AI.** A jelenetterv legfeljebb 90 mp-et vár, aztán egyszer a következő mentett kulcs, aztán a szabály alapú terv, megjegyzéssel a Preview fülön. Stop pár másodpercen belül leállít és felszabadítja a sort. Az "Autopilot stopped" sáv eltűnik, amint kézzel továbbmész.
+- **Tesztek:** Node 739 zöld (2 élő kihagyva), `npm run audit:quick` 823 ellenőrzés zöld 38 perc alatt, 0 USD, UI check 0 hiba, Rust 52 zöld. Új: `runner/fix-plan-1119.test.mjs` (19), a felső sor 60 karakteres névvel valódi böngészőben (`scripts/ui-mock/topbar.test.mjs`), Stop elakadt AI munkán (Rust), és `scripts/phase2/shorts-e2e.mjs`: mind a hat stílus valódi 9:16 renderrel és egy khmer feliratos Short, 132 lépés zöld, 1080x1920, a khmer betűk helyesen formázva.
+- **Telepítő:** helyben építve és telepítve. Nem kattintottam végig a telepített ablakban.
+- **Nem kész, nyitott:** a képernyő szövege más nyelven, mint a hang (a beállítás mentődik, de a jelenetek szavai még a hang mondataiból jönnek); khmer narráció HeyGen avatar videó hangjából (nincs megépítve). Az 5-9. pont.
 
 ## Now (2026-11-10, RecCut megbízhatóság, DECISIONS 186)
 

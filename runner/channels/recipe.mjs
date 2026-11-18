@@ -15,6 +15,7 @@ import path from "node:path";
 import { DEFAULT_PRESET, loadPreset } from "../presets/index.mjs";
 import { DEFAULT_VOICE, VOICES } from "../providers/tts/kokoro.mjs";
 import { DEFAULT_MOOD, MOODS } from "../providers/music/synth.mjs";
+import { cleanFormat, cleanShortSeconds, withFormat } from "../shorts/index.mjs";
 
 export const RECIPE_FILE = "recipe.json";
 export const RECIPE_SCHEMA = "channel-recipe/1";
@@ -50,6 +51,7 @@ export function defaultRecipe(identity = {}) {
     music: { on: true, source: "synth", mood: DEFAULT_MOOD },
     broll: { on: true },
     targetLengthMin: Number(identity.defaults?.targetLengthMin) || 8,
+    format: "long",
     start: cleanStart(),
   };
 }
@@ -85,8 +87,11 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
   const on = Boolean(r.avatar?.on);
   const lookId = r.avatar?.lookId ? String(r.avatar.lookId) : null;
   if (on && !lookId) throw new Error("Choose the avatar look, or turn the avatar off.");
-  const target = Number(r.targetLengthMin);
-  if (!Number.isFinite(target) || target < 1 || target > 30) throw new Error("The target length is 1 to 30 minutes.");
+  // a Short's length is in seconds (15 to 90), a long video's in minutes (DECISIONS 188)
+  const format = cleanFormat(r.format);
+  const shortSeconds = cleanShortSeconds(r.shortSeconds);
+  const target = format === "short" ? withFormat({}, { format, shortSeconds }).targetLengthMin : Number(r.targetLengthMin);
+  if (format !== "short" && (!Number.isFinite(target) || target < 1 || target > 30)) throw new Error("The target length is 1 to 30 minutes.");
   const source = MUSIC_SOURCES[r.music?.source] ? r.music.source : "synth";
   return {
     schema: RECIPE_SCHEMA,
@@ -99,6 +104,8 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
     // a recipe locked before the B-roll engine keeps what it had: no B-roll
     broll: { on: r.broll?.on === true },
     targetLengthMin: target,
+    format,
+    ...(format === "short" ? { shortSeconds } : {}),
     start: cleanStart(r.start),
     directions: { script: { preset: preset.id, voice: { provider, voice, ...(r.voice.name ? { name: String(r.voice.name).slice(0, 120) } : {}) }, avatar: { on, lookId, ...(r.avatar?.name ? { name: String(r.avatar.name).slice(0, 120) } : {}) }, targetLengthMin: target }, recorded: recordedSide(r.directions?.recorded) },
   };

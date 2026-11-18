@@ -51,6 +51,9 @@ import { adaptCaption, loadCaption } from "../../captions/index.mjs";
 import { spokenTimes, withSpoken } from "./spoken.mjs";
 import { isPackComponent, loadPackBlock, fitPackBlock } from "../../packs/index.mjs";
 import { carriedDates } from "../scenes/when.mjs";
+import { isShort } from "../../shorts/index.mjs";
+import { captionWords } from "../../language/captions.mjs";
+import { scriptFallbackCss, videoLanguages, fontFor } from "../../language/index.mjs";
 // the icon names a pack block has built in (scripts/make-pack.mjs ICON_NAMES)
 const PACK_ICON_NAMES = new Set(["comment", "client", "script", "voice", "visuals", "face", "check", "cross", "clock", "money", "place", "title", "caption", "globe", "spark", "lock", "branch", "funnel", "cycle", "gauge", "quote", "question", "warn", "heart", "code", "grid", "mail", "tag", "bang", "query", "dash", "paint"]);
 
@@ -649,6 +652,17 @@ export function sectionStartsOf(projectDir, scenes, sentences) {
 // may also come on the look (main.mjs lookOf). `sectionStarts` overrides the
 // sections read from script.md (the previews).
 export async function assemble(projectDir, { env = process.env, total, language, title, look: wanted = DEFAULT_LOOK, motion, sectionStarts } = {}) {
+  // a Short is drawn by its own vertical layer (shorts/, DECISIONS 188)
+  let proj = {};
+  try {
+    proj = JSON.parse(fs.readFileSync(path.join(projectDir, "project.json"), "utf8"));
+  } catch {
+    proj = {};
+  }
+  if (isShort(proj)) {
+    const { assembleVertical } = await import("../../shorts/build.mjs");
+    return assembleVertical(projectDir, { env, total, language, title, look: wanted });
+  }
   const look = resolveLook(wanted);
   // Without a Motion profile the video still moves: cuts between scenes and
   // the continuous camera push (Zoltan, 2026-10-06: skipping the wizard must
@@ -792,7 +806,10 @@ export async function assemble(projectDir, { env = process.env, total, language,
     fs.writeFileSync(path.join(out, made.file), made.make());
   }
   // The look's fonts, local: no font is fetched while rendering.
-  const fonts = fontFaces(look.families ?? [], { dir: libraryDir(env) });
+  // the captions' words: the voice's own, or a translation on the voice's sentences (DECISIONS 189)
+  const cap = captionWords(projectDir, { words: spoken, sentences });
+  const langs = videoLanguages(proj);
+  const fonts = fontFaces([...new Set([...(look.families ?? []), ...cap.families, fontFor(langs.voice), fontFor(langs.screen)].filter(Boolean))], { dir: libraryDir(env) });
   for (const f of fonts.files) {
     fs.mkdirSync(path.dirname(path.join(out, f.to)), { recursive: true });
     fs.copyFileSync(f.from, path.join(out, f.to));
@@ -822,7 +839,7 @@ export async function assemble(projectDir, { env = process.env, total, language,
   if (captionStyle && captionStyle !== "off") {
     const family = String(baseTheme(look)["font-display"] ?? "").split(",")[0].replace(/['"]/g, "").trim();
     const src = `compositions/components/captions-${captionStyle}.html`;
-    fs.writeFileSync(path.join(out, src), adaptCaption(captionStyle, loadCaption(captionStyle, { env }), { words: spoken, total, family, theme: { ...baseTheme(look), ...(table.theme ?? {}) }, light: Boolean(look.light) }));
+    fs.writeFileSync(path.join(out, src), adaptCaption(captionStyle, loadCaption(captionStyle, { env }), { words: cap.words, total, family, theme: { ...baseTheme(look), ...(table.theme ?? {}) }, light: Boolean(look.light) }));
     // the HyperFrames runtime asks for word-level overrides whenever there
     // are captions; none here
     fs.writeFileSync(path.join(out, "caption-overrides.json"), "[]\n");
@@ -835,8 +852,8 @@ export async function assemble(projectDir, { env = process.env, total, language,
     const windows = mp.plan.map((p, k) => ({ at: times[k + 1].start, seconds: mp.extend[k], type: p.type })).filter((w) => w.seconds > 0);
     fs.writeFileSync(path.join(out, TRANSITIONS_FILE), JSON.stringify(windows, null, 2) + "\n");
   }
-  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, sounds, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: fonts.css, motion: motionPart, captions: captionMount, pageScripts }));
-  return { out, scenes: mounts.length, seconds: total, notes: mp?.notes ?? [], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
+  fs.writeFileSync(path.join(out, "index.html"), indexHtml({ width, height, total, theme: table.theme, look, mounts, avatars, segments, sounds, footage: footage.map((f, k) => ({ ...f, n: k + 1 })), footageMode: look.footage?.mode ?? "scene", language, title, fontCss: [fonts.css, scriptFallbackCss(fonts.css, look.families ?? [])].filter(Boolean).join(NL), motion: motionPart, captions: captionMount, pageScripts }));
+  return { out, scenes: mounts.length, seconds: total, notes: [...(mp?.notes ?? []), ...(cap.note ? [cap.note] : [])], transitions: mp?.plan ?? [], icons: icons.filter(Boolean).map((i) => `${i.family}/${i.name}`) };
 }
 
 export { buildDir };

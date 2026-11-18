@@ -11,6 +11,9 @@ export type Recipe = {
   broll?: { on: boolean };
   recorded?: { cutout: boolean; smoothCursor: boolean };
   targetLengthMin: number;
+  // long form 16:9, or a Short 9:16 of 15 to 90 seconds (DECISIONS 188)
+  format?: "long" | "short";
+  shortSeconds?: number;
   updatedAt?: string;
   // what the start screen begins with, and the other direction's choices (phase 3)
   start?: { text: TextKind; research: boolean };
@@ -120,9 +123,12 @@ export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVo
     { label: "Avatar", value: r.avatar.on ? `On${r.avatar.name ? `, ${r.avatar.name}` : ""}` : "Off" },
     { label: "Music", value: !r.music.on ? "Off" : r.music.source === "own" ? "My own files" : `Made by code, ${r.music.mood}` },
     { label: "B-roll", value: r.broll?.on ? "On, free sources first" : "Off" },
-    { label: "Length", value: minutes(r.targetLengthMin) },
+    { label: "Length", value: r.format === "short" ? `Short 9:16, ${r.shortSeconds ?? 60} seconds` : minutes(r.targetLengthMin) },
   ];
 }
+
+/** The Short lengths a recipe or a video can take (runner/shorts/index.mjs SHORT_SECONDS). */
+export const SHORT_SECONDS = [15, 30, 45, 60, 90];
 
 /** What each line of the recipe decides, in a few plain words (Home, DECISIONS 175). */
 export const RECIPE_HELP: Record<string, string> = {

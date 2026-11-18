@@ -88,6 +88,12 @@
       const name = dir.split(/[\\/]/).pop();
       const states = Object.fromEntries(Object.entries(next.project.gates).map(([k, g]) => [k, g.state]));
       const first = data === null;
+      // the user went on by hand after the autopilot stopped: its banner leaves (DECISIONS 190)
+      if (stoppedAt === "next") stoppedAt = JSON.stringify(states);
+      else if (pilotError && stoppedAt && JSON.stringify(states) !== stoppedAt) {
+        pilotError = "";
+        stoppedAt = "";
+      }
       data = next;
       if (first) {
         setScreen(`video/${name}`);
@@ -136,6 +142,8 @@
     else delete pilots[dir];
   };
   let pilotError = $state("");
+  // the steps' states when the autopilot stopped: a change means the user went on by hand
+  let stoppedAt = "";
   let pilotNote = $state("");
   // offline mode: why the Script tab waits for the user, until the next run
   let offlineNote = $state("");
@@ -274,6 +282,7 @@
       pilotNote = "";
     } catch (e) {
       pilotError = `Autopilot stopped: ${errorText(e)}`;
+      stoppedAt = "next";
       await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
       await load().catch(() => {});
     } finally {
@@ -294,6 +303,7 @@
       else if (end === "preview" || end === "video") notifyDone("Your preview is ready", data?.project.title ?? "");
     } catch (e) {
       pilotError = `The video stopped: ${errorText(e)}`;
+      stoppedAt = "next";
       log("video_run_stopped", { engine: data?.project.recipe?.engine, error: errorText(e), byUser: stoppedByUser(e) }, stoppedByUser(e) ? "info" : "error");
       await runner("autopilot-mark", { projectDir: dir, on: false }).catch(() => {});
       await load().catch(() => {});

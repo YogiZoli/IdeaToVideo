@@ -116,8 +116,9 @@
 {/if}
 
 <style>
-  .jobs { position: relative; margin-left: auto; display: flex; align-items: center; gap: 8px; }
-  .idle { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  .jobs { position: relative; margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 1 auto; }
+  .pill { flex: none; }
+  .idle { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; max-width: 260px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .idle.busy { color: var(--warning-text); font-weight: 600; }
   .idle.busy.lidok { color: var(--success); }
   .pill { border: 1px solid var(--border); background: var(--primary-surface); color: var(--primary-surface-foreground); padding: 4px 12px; border-radius: 99px; font-size: 13px; }

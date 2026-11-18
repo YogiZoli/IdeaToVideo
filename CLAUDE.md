@@ -79,7 +79,7 @@ the LLM only outputs scene JSON that fills the templates; it is checked, repaire
 - Music and sound effects: synthesized by code, or Zoltan's own files. Never download music.
 - Voice: Zoltan's ElevenLabs clone, or local Kokoro as the free default. Word timestamps from a local speech model.
 - Avatar: HeyGen, engine `avatar_iii` only, transparent output composited 1:1 with no mask, resize or reposition.
-- 16:9 only. No shorts. Never publish automatically.
+- Long form 16:9 and Shorts 9:16 (Zoltan, 2026-11-18, DECISIONS 188). Never publish automatically.
 - Build the Windows installer locally. **Never trigger GitHub Actions (billing), never open a PR:** `build.yml` runs on
   `pull_request` and by hand only, so a push to `main` starts nothing, a PR would.
 

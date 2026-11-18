@@ -10,6 +10,17 @@
     "status": { "enum": ["Idea", "Scripted", "Voiced", "Scened", "Reviewed", "Rendered", "Done"] },
     "language": { "type": "string", "minLength": 2, "maxLength": 10 },
     "autopilot": { "type": "boolean" },
+    "languages": {
+      "type": "object",
+      "$comment": "the video's own languages (language/index.mjs, DECISIONS 189): the script's source, the voice, the captions, the words on screen; each the project language when not set",
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 2, "maxLength": 10 },
+        "voice": { "type": "string", "minLength": 2, "maxLength": 10 },
+        "captions": { "type": "string", "minLength": 2, "maxLength": 10 },
+        "screen": { "type": "string", "minLength": 2, "maxLength": 10 }
+      }
+    },
     "identity": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$" },
     "createdAt": { "type": "string" },
     "cardId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "$comment": "the Video Publishing Card id, made once at the first render and kept (DECISIONS 114)" },

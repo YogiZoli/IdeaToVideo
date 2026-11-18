@@ -67,6 +67,8 @@ export const LANGUAGES: { code: string; label: string; voice: string }[] = [
   { code: "nl", label: "Dutch", voice: "nl-NL-MaartenNeural" },
   { code: "pl", label: "Polish", voice: "pl-PL-MarekNeural" },
   { code: "ro", label: "Romanian", voice: "ro-RO-EmilNeural" },
+  // Khmer (DECISIONS 189): no ElevenLabs model speaks it; HeyGen does inside an avatar video
+  { code: "km", label: "Khmer", voice: "km-KH-PisethNeural" },
 ];
 
 export const DEFAULT_PRESET = "blue-professional";

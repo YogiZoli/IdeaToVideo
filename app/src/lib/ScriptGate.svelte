@@ -11,6 +11,7 @@
   import DictionaryFindings from "./brand/DictionaryFindings.svelte";
   import VideoCalls from "./cta/VideoCalls.svelte";
   import Packaging from "./Packaging.svelte";
+  import LanguagesPanel from "./LanguagesPanel.svelte";
   import HumanizeSlider from "./HumanizeSlider.svelte";
   import StepModel from "./StepModel.svelte";
   import { llmFor } from "./llm";
@@ -205,6 +206,7 @@
       <p class="hint">{words} words, about {Math.max(1, Math.round(words / 150))} minute{Math.round(words / 150) > 1 ? "s" : ""} of narration. Lines starting with ## are section titles; they are not read aloud.</p>
       <DictionaryFindings {dir} version={markdown} only="script" />
       {#if markdown}<Packaging {app} {dir} version={markdown} disabled={locked} {changed} />{/if}
+      {#if markdown}{#key markdown}<LanguagesPanel {app} {dir} narrator={app.config?.narrator ?? null} />{/key}{/if}
     </div>
   {:else}
     <p class="hint">Click "Write script" and the AI writes it in about a minute{fromCourse ? ", from the course lesson (its hook, what to teach, the exercise, the check and the closing line)" : hasBrief ? ", from the Video Brief Card too" : ""}. Your landing page link goes into the YouTube description, never into the narration. No AI at hand? Write it yourself.</p>

@@ -13,6 +13,7 @@
 //   <project>/packaging.json   { schema, titles, title, summary, tags, chosen, at }
 
 import fs from "node:fs";
+import { isShort } from "../../shorts/index.mjs";
 import path from "node:path";
 import { chat, extractJson } from "../../providers/llm.mjs";
 
@@ -183,5 +184,26 @@ export function youtubeTexts(projectDir, videoFile) {
   } catch {
     publish = null;
   }
-  return { titles: pack.titles, title: pack.title, summary: pack.summary, description: description(pack.summary, publish), tags: pack.tags };
+  let project = null;
+  try {
+    project = JSON.parse(fs.readFileSync(path.join(projectDir, "project.json"), "utf8"));
+  } catch {
+    project = null;
+  }
+  const texts = { titles: pack.titles, title: pack.title, summary: pack.summary, description: description(pack.summary, publish), tags: pack.tags };
+  return isShort(project) ? { ...texts, ...shortTexts(pack), format: "short" } : texts;
+}
+
+// The Short's variant of the card (DECISIONS 188): one title line, a short description, hashtags.
+// Nothing is published: these are texts to copy, as for a long video.
+export function shortTexts(pack) {
+  const title = String(pack.title ?? "").replace(/\s+/g, " ").trim().slice(0, 90);
+  const sentences = String(pack.summary ?? "").replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
+  let short = "";
+  for (const s of sentences) if ((short + " " + s).trim().length <= 200) short = (short + " " + s).trim();
+  const tags = (pack.tags ?? []).map((t) => String(t).replace(/[^\p{L}\p{N}]/gu, "")).filter((t) => t.length > 1).slice(0, 4);
+  const hashtags = ["#Shorts", ...tags.map((t) => `#${t}`)];
+  return { title, titles: [title], description: `${short || title}
+
+${hashtags.join(" ")}`, hashtags };
 }

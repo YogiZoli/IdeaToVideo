@@ -50,7 +50,8 @@ everything that exists, never rebuild what is already there.
   scene change lands on the right word.
 - Avatar: HeyGen API, engine `avatar_iii` only, transparent output composited
   1:1 with no mask, resize or reposition.
-- 16:9 only. No shorts. Never publish automatically.
+- Long form 16:9 and Shorts 9:16 (Zoltan, 2026-11-18, DECISIONS 188; until then 16:9 only). Never publish
+  automatically.
 - Build the Windows installer locally. Never trigger GitHub Actions (billing).
 
 ## Housekeeping rules (valid for every phase)
@@ -404,6 +405,30 @@ record: six kinds, the bubble in one file marked once and pinned, the AI avatar
 bubble (paid, approved first, or a clip from HeyGen, or a lip sync clip from any
 tool). IdeaToVideo keeps only the script side; its Footage stays.
 
+## Phase 10: the fix plan of 2026-11-19 (docs/FIX_PLAN_2026-11-19.md)
+
+After a real, time-critical run on 2026-11-18 (one 1-minute video for a class, in under an hour), the
+app could not deliver; plain code outside the app could. Nine items; 1 to 4 are the must-haves, in order.
+
+| Item | What | Status |
+|---|---|---|
+| 1 | Identity: the top bar (menu first, the switch on the right, fixed width), rename only the display name, one New Identity dialog | done (DECISIONS 187) |
+| 2 | Shorts 9:16: Format in the recipe and on each video, a 9:16 layout for every preset, 15 to 90 s, the avatar framed 9:16, the Short's Publishing Card | done (DECISIONS 188) |
+| 3 | Khmer and three languages per video: voice, captions, screen; translation on the Script tab; the voice capability table; Noto Sans Khmer | done, with one part open (DECISIONS 189) |
+| 4 | A stuck AI call never blocks a video: 90 s per try, the next key once, then the rule-made plan; Stop frees the queue; the Autopilot banner leaves | done (DECISIONS 190) |
+| 5 | The rule-made plan must look good (icons, changing layouts, characters, kinetic text, captions, motion) | todo |
+| 6 | A "Free only" switch on the recipe and the video | todo |
+| 7 | Script tab: a pasted finished script opens with the paste box and "Approve and continue" | todo |
+| 8 | Voice: choose the provider per video | todo |
+| 9 | The content language list with which voices can speak each | todo |
+
+Open in item 3: a Khmer narration itself. No ElevenLabs model and not HeyGen's voice-only speech list
+Khmer (HeyGen's own capability list, read 2026-11-18); HeyGen speaks it only inside an avatar video, on its
+Fish and Mockingbird engines. The app now refuses to send Khmer to a voice that cannot speak it and says
+who can. Making the narration from a HeyGen avatar video's sound is not built.
+
+Next step: item 5, then 6 to 9, in that order.
+
 ## Later (Zoltan's list, 2026-11-05, nothing of it is built)
 
 In the order he liked them. Each one starts only when he says so.
@@ -416,7 +441,7 @@ In the order he liked them. Each one starts only when he says so.
 
 ## Next step
 
-Phase 9: macOS build, done on a Mac with Claude Code, no CI, for both apps (RecCut with `--config src-tauri/tauri.editor.conf.json`, DECISIONS 184). It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
+Phase 10, item 5 (the free rule-made plan must look good), then 6 to 9. After them, Phase 9: macOS build, done on a Mac with Claude Code, no CI, for both apps (RecCut with `--config src-tauri/tauri.editor.conf.json`, DECISIONS 184). It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
 Chronicle, one piece of history with research on, up to the render. Phases 3 to 7 too if he has not yet (one topic with research, one set of notes, one real recording, one strange
 question, one what-if story, one explainer with real places, one true story), and his decisions on the table above if he has made them. Still open in that table's spirit: Google's
 terms on showing Search Suggestions (DECISIONS 143), the Z-Image picture size (DECISIONS 146), whether captions on Night Case File should hide forbidden words (DECISIONS 159).

@@ -11,6 +11,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { testKey, PROVIDERS, onLlmEvent, setOtherKeys, LlmError } from "./providers/llm.mjs";
+import { DeadlineError, aiStepSeconds, aiTries, withDeadline, firstInTime } from "./deadline.mjs";
+import { videoLanguages, needsTranslation, voiceProblem, speakersOf, LANGUAGE_LABELS, CHECKED_ON } from "./language/index.mjs";
+import { sourceUnits, translationOf, saveTranslation, aiTranslate } from "./language/translate.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
 import { createProject, loadProject, saveProject, recoverInterrupted, setGate, readBrief, appendLog, addNote, writeJson, writeAtomic } from "./project.mjs";
@@ -83,6 +86,7 @@ import { renderStylesheet, tokensFor } from "./presets/stylesheet.mjs";
 import { makeTemplateScenes } from "./gates/scenes/templates.mjs";
 import { defaultRecipe, loadRecipe, saveRecipe, normalizeRecipe, recipeFor, cleanStart, ownMusic, musicDir, VOICE_KINDS, MUSIC_SOURCES } from "./channels/recipe.mjs";
 import { newScriptVideo, notesOf, splitPasted, offlineDraft, WRITE_HERE } from "./channels/start.mjs";
+import { withFormat, isShort, formatOf, FORMATS, SHORT_SECONDS } from "./shorts/index.mjs";
 import { makeBrief, loadBrief, saveBrief, approveBrief, cleanEdit, briefForScript, offlineBrief } from "./research/index.mjs";
 import { makeShotMap, shotMapView, writeShotMap, setFlow, addFlowClip } from "./shots/index.mjs";
 import { runWeekBatch, listQueue, WEEK } from "./channels/batch.mjs";
@@ -406,6 +410,12 @@ function latestVideo(projectDir) {
   };
 }
 
+// a try left behind still has its own network timeout; the process ends when the command is done
+let abandoned = false;
+const abandonWork = () => {
+  abandoned = true;
+};
+
 // Gate 1: the script of one ONE Video. The Script tab, the channel screen and
 // the Week batch all come through here. Writes script.json + script.md and
 // leaves the gate pending (or approved in autopilot).
@@ -416,6 +426,8 @@ async function writeScriptGate({ projectDir, identityDir, llm, input = {}, chann
   appendLog(projectDir, `script: writing with ${llm.provider}/${llm.model || "default model"}`);
   try {
     const plan = ctaOf(identityDir, input.cta);
+    // a Short's length is the recipe's seconds, whatever the tab sent (DECISIONS 188)
+    if (isShort(project)) input = { ...input, targetLengthMin: project.recipe.targetLengthMin, format: "short" };
     const res = await timed("script", Number(input.targetLengthMin) || 8, emit, () =>
       writeScript({
         llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
@@ -1152,10 +1164,13 @@ const commands = {
     let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "recommended" });
     saveProject(projectDir, project);
     appendLog(projectDir, `scenes: planning with ${llm.provider}/${llm.model || "default model"}`);
-    try {
-      const r = await timed("scenes", jsonCount(projectDir, "sentences.json"), emit, () =>
-        makeScenes({
-          llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() },
+    // A stuck AI never blocks a video (FIX_PLAN 2026-11-19, item 4, DECISIONS 190): a hard limit per
+    // try, the next saved key once, then the free rule-made plan with a note on the Preview tab.
+    const tries = aiTries(llm, key());
+    const limit = aiStepSeconds("scenes");
+    const plan = async (ai) =>
+      makeScenes({
+          llm: ai,
           projectDir,
           language: project.language,
           name,
@@ -1167,8 +1182,28 @@ const commands = {
           identityDir: identityDir ?? null,
           videoId: path.basename(projectDir),
           onProgress: (p) => emit({ event: "progress", ...p }),
-        }),
-      );
+        });
+    try {
+      const got = await firstInTime(tries, (ai) => timed("scenes", jsonCount(projectDir, "sentences.json"), emit, () => plan(ai)), {
+        seconds: limit,
+        givesUp: (e) => e instanceof DeadlineError || e instanceof LlmError,
+        onGiveUp: (e, ai, next) => {
+          appendLog(projectDir, `scenes: ${ai.provider} gave up, ${e.message}`);
+          if (e instanceof DeadlineError) abandonWork();
+          emit({ event: "progress", step: "fallback-provider", message: next ? `${ai.provider} took too long, so the next saved AI key is trying.` : "No AI finished in time, so the free plan is made." });
+        },
+      });
+      const r = got.result;
+      const failed = got.failed;
+      if (!r) {
+        const simple = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look), pace: paceOfLook(look) });
+        brollBack(projectDir);
+        addNote(projectDir, "scenes", `The AI did not make the scene plan in time (${failed.length} ${failed.length === 1 ? "try" : "tries"}, at most ${limit} seconds each), so the free rule-made plan was used. You can plan again with AI on the Scenes tab.`);
+        project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "default" });
+        saveProject(projectDir, project);
+        appendLog(projectDir, `scenes: the rule-made plan instead, ${simple.scenes} scenes`);
+        return { ...simple, fellBack: true, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: project.gates.scenes, status: project.status };
+      }
       brollBack(projectDir);
       project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "recommended" });
       saveProject(projectDir, project);
@@ -1506,6 +1541,52 @@ const commands = {
   },
   "recipe-save": async ({ identityDir, recipe, language }) => ({ recipe: saveRecipe(identityDir, recipe, { language }) }),
 
+  // ---- the three languages of a video (language/, DECISIONS 189) ----
+  "languages-state": async ({ projectDir, narrator = null }) => {
+    const project = loadProject(projectDir);
+    const langs = videoLanguages(project);
+    const need = needsTranslation(langs);
+    const wanted = [...new Set(need.map((k) => (k === "captions" && langs.captions === langs.source ? null : langs[k])).filter(Boolean))].filter((l) => l !== langs.source);
+    let units = [];
+    try {
+      units = sourceUnits(projectDir);
+    } catch {
+      units = [];
+    }
+    const model = narrator?.provider === "elevenlabs" ? narrator.model || "eleven_v4" : narrator?.provider === "kokoro" ? "kokoro" : null;
+    return {
+      languages: langs,
+      labels: LANGUAGE_LABELS,
+      need,
+      units,
+      translations: Object.fromEntries(wanted.map((l) => [l, translationOf(projectDir, l)])),
+      voiceProblem: narrator ? voiceProblem(narrator.provider, model, langs.voice) : null,
+      speakers: speakersOf(langs.voice),
+      checkedOn: CHECKED_ON,
+      format: formatOf(project),
+    };
+  },
+  "languages-set": async ({ projectDir, languages = {} }) => {
+    const project = loadProject(projectDir);
+    const clean = {};
+    for (const k of ["source", "voice", "captions", "screen"]) if (typeof languages[k] === "string" && /^[a-z]{2,3}$/.test(languages[k])) clean[k] = languages[k];
+    saveProject(projectDir, { ...project, languages: { ...(project.languages ?? {}), ...clean } });
+    appendLog(projectDir, `languages: ${JSON.stringify(videoLanguages(loadProject(projectDir)))}`);
+    return { languages: videoLanguages(loadProject(projectDir)) };
+  },
+  "translation-make": async ({ projectDir, llm, lang }) => {
+    const project = loadProject(projectDir);
+    const langs = videoLanguages(project);
+    const units = sourceUnits(projectDir);
+    appendLog(projectDir, `translation: ${units.length} sentences into ${lang} with ${llm.provider}`);
+    const texts = await withDeadline(() => aiTranslate({ llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() }, units, from: langs.source, to: lang }), 240, "The AI did not finish the translation within 4 minutes. Try again, or type the sentences by hand").catch((e) => {
+      if (e instanceof DeadlineError) abandonWork();
+      throw e;
+    });
+    return { translation: saveTranslation(projectDir, lang, texts, { approve: false, by: "ai" }) };
+  },
+  "translation-save": async ({ projectDir, lang, texts, approve = false }) => ({ translation: saveTranslation(projectDir, lang, texts, { approve, by: "hand" }) }),
+
   // The style sheet PNG of a preset, rendered from its tokens.
   "preset-stylesheet": async ({ identityDir, preset }) => {
     const p = loadPreset(preset);
@@ -1522,8 +1603,9 @@ const commands = {
   "night-save": async ({ projectsDir, shift }) => ({ shift: saveShift(projectsDir, shift) }),
   "night-clear": async ({ projectsDir }) => clearShift(projectsDir),
   "night-prepare": async ({ projectDir, identityDir }) => prepareForNight(projectDir, identityDir),
-  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "" }) => {
-    const recipe = recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language });
+  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "", format, shortSeconds }) => {
+    // the video may change the recipe's format and a Short's length (DECISIONS 188)
+    const recipe = withFormat(recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language }), { format, shortSeconds });
     // a style whose scripts are fact-checked has research on, whatever was asked (DECISIONS 159)
     const { id, dir } = newScriptVideo({ projectsDir, identity, language, recipe, topic, text, textKind, research: research || loadPreset(recipe.preset).factChecked === true, title });
     return { id, dir };
@@ -1766,3 +1848,5 @@ async function main() {
 process.on("uncaughtException", lastResort);
 process.on("unhandledRejection", lastResort);
 process.exitCode = await main();
+// a stuck AI try that was left behind must not keep the job open (DECISIONS 190)
+if (abandoned) setTimeout(() => process.exit(process.exitCode ?? 0), 100);
