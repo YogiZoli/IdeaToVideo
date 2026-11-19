@@ -79,9 +79,36 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
   const files = [];
   const blockWords = [];
   let reused = 0;
+  // A voice that reads many blocks in one request (Gemini, DECISIONS 198): every block not yet
+  // read goes in together first, then the loop below finds each of them in the cache.
+  if (provider.speakMany) {
+    const todo = [];
+    for (let i = 0; i < blocks.length; i++) {
+      const args = { voiceId: narrator.voice, text: speakable(blocks[i].text), languageCode: language };
+      const key = createHash("sha256").update(JSON.stringify({ v: 2, provider: narrator.provider, ...args })).digest("hex").slice(0, 32);
+      if (!fs.existsSync(path.join(cacheDir, `${key}.json`))) todo.push({ i, key, text: args.text });
+    }
+    if (todo.length) {
+      const got = await provider.speakMany({
+        apiKey,
+        fetchImpl,
+        voiceId: narrator.voice,
+        texts: todo.map((t) => t.text),
+        onChunk: (n, of) => onProgress({ step: "voice", block: n, of }),
+        onRetry: (x) => onProgress({ step: "retry", ...x }),
+        ...(sleep ? { sleep } : {}),
+      });
+      todo.forEach((t, k) => {
+        fs.writeFileSync(path.join(cacheDir, `${t.key}.${got[k].ext}`), got[k].audio);
+        fs.writeFileSync(path.join(cacheDir, `${t.key}.json`), JSON.stringify({ ext: got[k].ext, words: got[k].words }));
+      });
+      // the loop below counts every cached block as reused; these were read just now
+      reused -= todo.length;
+    }
+  }
   for (let i = 0; i < blocks.length; i++) {
     onProgress({ step: "voice", block: i + 1, of: blocks.length });
-    const args = {
+    const args = provider.speakMany ? { voiceId: narrator.voice, text: speakable(blocks[i].text), languageCode: language } : {
       voiceId: narrator.voice,
       // ElevenLabs only: the model chosen at gate 2, else the default (Eleven v4)
       ...(model ? { model } : {}),
@@ -90,7 +117,7 @@ export async function makeVoice({ projectDir, narrator, apiKey, music = null, la
       nextText: blocks[i + 1] && speakable(blocks[i + 1].text),
       languageCode: language,
     };
-    const key = createHash("sha256").update(JSON.stringify({ v: 1, provider: narrator.provider, ...args })).digest("hex").slice(0, 32);
+    const key = createHash("sha256").update(JSON.stringify({ v: provider.speakMany ? 2 : 1, provider: narrator.provider, ...args })).digest("hex").slice(0, 32);
     const meta = path.join(cacheDir, `${key}.json`);
     let r = null;
     try {

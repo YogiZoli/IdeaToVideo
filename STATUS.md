@@ -6,6 +6,14 @@ End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz 
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
 
+## Now (2026-11-19, a Gemini hang egy kérésben, DECISIONS 198)
+
+- **A napi 10 ingyenes kérés most elég:** a Gemini hang eddig mondatonként külön kérést küldött, így az első Short elvitte a napi keretet. Most egy Short egyetlen kérés, egy 8 perces videó kb. 3. A mondatok helyét a hang szünetei adják.
+- **Elfogyott napi keret:** az app azonnal megmondja, és hogy mikor próbálhatod újra; nem vár hiába 3 percet.
+- **Khmer mondatvég:** a ។ eddig nem zárta a mondatot; most igen (és a hindi, kínai, arab mondatvég is). Valódi próba: két blokk, egy kérés, minden mondat a szünetnél.
+- **Tesztek:** Node 755 zöld (2 élő kihagyva), audit 823 zöld 36 perc alatt, 0 USD.
+- **DeepSeek:** nincs hangja és nincs ingyenes API-ja, ezért itt nem segít.
+
 ## Now (2026-11-19, ingyenes khmer hang, DECISIONS 197)
 
 - **Khmer kártya nélkül:** az app alap hangja, a Gemini (`gemini-3.8-flash-tts`) beszél khmerül, és a Gemini ingyenes szintjén díjmentes, kártya nélkül. Élő teszt Zoltán kulcsával: két khmer mondat rendben. A nyelvtáblából kimaradt, ezért írt mindenhol figyelmeztetést; most benne van ("Khmer: Gemini (free), Azure, HeyGen (avatar video)"). A Voice fül szolgáltató listáján és a receptben is a Gemini (free) az első választás (eddig ki sem lehetett választani).
