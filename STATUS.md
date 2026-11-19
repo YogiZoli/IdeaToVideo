@@ -10,6 +10,8 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 
 - **A napi 10 ingyenes kérés most elég:** a Gemini hang eddig mondatonként külön kérést küldött, így az első Short elvitte a napi keretet. Most egy Short egyetlen kérés, egy 8 perces videó kb. 3. A mondatok helyét a hang szünetei adják.
 - **Elfogyott napi keret:** az app azonnal megmondja, és hogy mikor próbálhatod újra; nem vár hiába 3 percet.
+- **Khmer mondatvég:** a ។ eddig nem zárta a mondatot; most igen (és a hindi, kínai, arab mondatvég is). Valódi próba: két blokk, egy kérés, minden mondat a szünetnél.
+- **Tesztek:** Node 755 zöld (2 élő kihagyva), audit 823 zöld 36 perc alatt, 0 USD.
 - **DeepSeek:** nincs hangja és nincs ingyenes API-ja, ezért itt nem segít.
 
 ## Now (2026-11-19, ingyenes khmer hang, DECISIONS 197)

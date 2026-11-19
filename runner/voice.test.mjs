@@ -176,6 +176,12 @@ test("step 3: the app's own sentence table from the voice timings", async () => 
 
 import { splitSentences, parseWav, writeWav, wordsByCharacters, speak as geminiSpeak, speakMany as geminiMany, sentenceCuts, pausesOf, CHUNK_CHARS, listVoices as geminiVoices } from "./providers/tts/gemini.mjs";
 
+test("a Khmer full stop ends a sentence, for the voice and the sentence table (DECISIONS 198)", async () => {
+  const { closesSentence } = await import("./timing/sentences.mjs");
+  assert.deepEqual(splitSentences("សួស្តី! ថ្ងៃនេះ ជាមួយ AI។ វាងាយស្រួល។"), ["សួស្តី!", "ថ្ងៃនេះ ជាមួយ AI។", "វាងាយស្រួល។"]);
+  assert.ok(closesSentence("नमस्ते।") && closesSentence("你好。") && !closesSentence("ថ្ងៃនេះ"));
+});
+
 test("gemini: sentences split like the sentence table", () => {
   assert.deepEqual(splitSentences("One idea. Two ideas? Wait... not yet! \"Quoted.\" Tail"), ["One idea.", "Two ideas?", "Wait... not yet!", "\"Quoted.\"", "Tail"]);
 });

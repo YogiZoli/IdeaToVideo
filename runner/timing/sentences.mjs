@@ -21,6 +21,8 @@ const r3 = (x) => Math.round(x * 1000) / 1000;
 export function closesSentence(word) {
   const w = String(word).trim();
   const core = w.replace(/["'”’»)\]]+$/, "");
+  // the full stops of other scripts: Khmer ។ and ៕, Devanagari । and ॥, CJK 。！？, Arabic ؟ (DECISIONS 198)
+  if (/[។៕।॥。！？؟]$/.test(core)) return true;
   if (!/[.?!]$/.test(core)) return false;
   if (/\.\.\.$|…$/.test(core)) return false;
   if (/[?!]$/.test(core)) return true;
