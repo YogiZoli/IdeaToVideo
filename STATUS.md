@@ -1,10 +1,17 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-19 (a javítási terv mind a 9 pontja, Google Cloud és Azure hang, DECISIONS 187-195)
+Frissítve: 2026-11-19 (a javítási terv mind a 9 pontja, Google Cloud és Azure hang, ingyenes khmer hang, DECISIONS 187-197)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-19, ingyenes khmer hang, DECISIONS 197)
+
+- **Khmer kártya nélkül:** az app alap hangja, a Gemini (`gemini-3.8-flash-tts`) beszél khmerül, és a Gemini ingyenes szintjén díjmentes, kártya nélkül. Élő teszt Zoltán kulcsával: két khmer mondat rendben. A nyelvtáblából kimaradt, ezért írt mindenhol figyelmeztetést; most benne van ("Khmer: Gemini (free), Azure, HeyGen (avatar video)").
+- **Tudnivaló:** az ingyenes szinten a Google felhasználhatja a szöveget. A khmer felirat "szavai" hosszú darabok, mert a khmer írás nem tesz szóközt a szavak közé.
+- **Azure és Google Cloud:** mindkettő kártyát kér, Zoltán nem kéri őket. A kód marad, kulcs nélkül nem fut.
+- **Tesztek:** Node 748 zöld (2 élő kihagyva), audit 823 zöld 40 perc alatt, 0 USD, UI check 0 hiba.
 
 ## Now (2026-11-19, javítási terv 5-9, Google Cloud és Azure hang, DECISIONS 191-195)
 

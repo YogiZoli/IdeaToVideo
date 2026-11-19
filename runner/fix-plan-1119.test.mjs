@@ -11,7 +11,7 @@ import { withFormat, formatOf, isShort, safeBox, middleThird, SHORT_SECONDS, siz
 import { contentOf, fitText, keyWords, screenHtml, captionsHtml, captionChunks, skinOf, ZONES, SKINS } from "./shorts/vertical.mjs";
 import { screensOf } from "./shorts/build.mjs";
 import { normalizeRecipe, defaultRecipe } from "./channels/recipe.mjs";
-import { canSpeak, voiceProblem, videoLanguages, needsTranslation, speakersOf, scriptFallbackCss } from "./language/index.mjs";
+import { canSpeak, voiceProblem, videoLanguages, needsTranslation, speakersOf, scriptFallbackCss, CONTENT_LANGUAGES } from "./language/index.mjs";
 import { saveTranslation, translationOf, translatedMarkdown, sourceUnits, splitSentences } from "./language/translate.mjs";
 import { captionWords, spreadWords } from "./language/captions.mjs";
 import { firstInTime, withDeadline, DeadlineError, aiTries, aiStepSeconds } from "./deadline.mjs";
@@ -127,12 +127,19 @@ test("no ElevenLabs model speaks Khmer; HeyGen does inside an avatar video", () 
   assert.equal(canSpeak("heygen", "avatar-video", "km"), true);
   assert.equal(canSpeak("elevenlabs", "eleven_v4", "hu"), true);
   assert.equal(canSpeak("kokoro", "kokoro", "hu"), false);
-  assert.equal(voiceProblem("elevenlabs", "eleven_v3", "km"), "ElevenLabs cannot speak Khmer with eleven_v3. Azure or HeyGen inside an avatar video can.");
+  assert.equal(voiceProblem("elevenlabs", "eleven_v3", "km"), "ElevenLabs cannot speak Khmer with eleven_v3. Gemini (free), Azure or HeyGen inside an avatar video can.");
   assert.equal(canSpeak("azure", null, "km"), true);
   assert.equal(canSpeak("googlecloud", null, "km"), false, "Google has no Khmer (its voice list, 2026-11-19)");
   assert.equal(voiceProblem("elevenlabs", "eleven_v4", "en"), null);
-  assert.equal(voiceProblem("gemini", null, "km"), null, "a provider the table does not know is not judged");
-  assert.deepEqual(speakersOf("km"), [{ provider: "azure", model: "azure" }, { provider: "heygen", model: "avatar-video" }]);
+  assert.equal(voiceProblem("unknown-voice", null, "km"), null, "a provider the table does not know is not judged");
+  assert.deepEqual(speakersOf("km"), [{ provider: "gemini", model: "gemini" }, { provider: "azure", model: "azure" }, { provider: "heygen", model: "avatar-video" }]);
+});
+
+test("the free Gemini voice speaks Khmer and every content language (DECISIONS 197)", () => {
+  assert.equal(canSpeak("gemini", null, "km"), true);
+  assert.equal(voiceProblem("gemini", null, "km"), null);
+  for (const l of CONTENT_LANGUAGES) assert.equal(canSpeak("gemini", null, l.code ?? l), true, l.code ?? l);
+  assert.equal(canSpeak("gemini", null, "uk"), false, "its model page lists no Ukrainian");
 });
 
 test("the three languages default to the video's language", () => {
@@ -237,7 +244,7 @@ test("the window's language list is the runner's, with who speaks each", async (
   assert.equal(fs.readFileSync(OUT, "utf8").replace(/\r\n/g, "\n"), source(), "run node scripts/make-language-list.mjs");
   const { languageList } = await import("../scripts/make-language-list.mjs");
   const km = languageList().find((l) => l.code === "km");
-  assert.deepEqual(km.voices, ["Azure", "HeyGen (avatar video)"]);
+  assert.deepEqual(km.voices, ["Gemini (free)", "Azure", "HeyGen (avatar video)"]);
   assert.ok(!languageList().find((l) => l.code === "hu").voices.includes("The free voice"), "the free voice is English only");
 });
 
