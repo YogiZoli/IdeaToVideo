@@ -78,16 +78,16 @@
   }
 
   function chooseKind(k: Recipe["voice"]["provider"]) {
-    r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : { provider: k, voice: "" };
+    r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : k === "gemini" ? { provider: "gemini", voice: "Kore" } : { provider: k, voice: "" };
     cloudVoices = [];
     sample = "";
   }
 
-  // Google Cloud and Azure voices for the channel's language (DECISIONS 194)
+  // Gemini, Google Cloud and Azure voices for the channel's language (DECISIONS 194, 197)
   let cloudVoices = $state<{ id: string; name: string; gender?: string | null }[]>([]);
   $effect(() => {
     const p = r.voice.provider;
-    if ((p !== "googlecloud" && p !== "azure") || !app.keys[p] || cloudVoices.length) return;
+    if ((p !== "googlecloud" && p !== "azure" && p !== "gemini") || !app.keys[p] || cloudVoices.length) return;
     runner<{ voices: { id: string; name: string; gender?: string | null }[] }>("list-voices", { narrator: { provider: p }, language })
       .then((v) => (cloudVoices = v.voices))
       .catch((e) => (error = errorText(e)));
@@ -173,6 +173,7 @@
     <span class="label">Voice</span>
     <div>
       <div class="opts">
+        <label class:off={!app.keys.gemini}><input type="radio" name="vkind" checked={r.voice.provider === "gemini"} disabled={!app.keys.gemini} onchange={() => chooseKind("gemini")} /> {st.voiceKinds.gemini}{app.keys.gemini ? "" : " (add the Gemini key in Settings, Connections)"}</label>
         <label class:off={!app.keys.googlecloud}><input type="radio" name="vkind" checked={r.voice.provider === "googlecloud"} disabled={!app.keys.googlecloud} onchange={() => chooseKind("googlecloud")} /> {st.voiceKinds.googlecloud}{app.keys.googlecloud ? "" : " (add the key in Settings, Connections)"}</label>
         <label><input type="radio" name="vkind" checked={r.voice.provider === "kokoro"} onchange={() => chooseKind("kokoro")} /> {st.voiceKinds.kokoro}</label>
         <label class:off={!app.keys.azure}><input type="radio" name="vkind" checked={r.voice.provider === "azure"} disabled={!app.keys.azure} onchange={() => chooseKind("azure")} /> {st.voiceKinds.azure}{app.keys.azure ? "" : " (add the key in Settings, Connections)"}</label>
@@ -187,13 +188,13 @@
         </div>
         {#if sample}<audio controls src={sample}></audio>{/if}
         <p class="hint">Reads English. The first time it downloads its model once, about 90 MB.</p>
-      {:else if r.voice.provider === "googlecloud" || r.voice.provider === "azure"}
+      {:else if r.voice.provider === "googlecloud" || r.voice.provider === "azure" || r.voice.provider === "gemini"}
         <select aria-label="Cloud voice" bind:value={r.voice.voice}>
           <option value="">Choose a voice</option>
           {#if r.voice.voice && !cloudVoices.some((v) => v.id === r.voice.voice)}<option value={r.voice.voice}>{r.voice.name ?? r.voice.voice}</option>{/if}
           {#each cloudVoices as v (v.id)}<option value={v.id}>{v.name}{v.gender ? ` (${v.gender})` : ""}</option>{/each}
         </select>
-        <p class="hint">{r.voice.provider === "googlecloud" ? "Free up to a monthly amount, then billed to your Google Cloud project. Google has no Khmer." : "Khmer and the languages Google lacks. 500,000 characters a month free; commercial use needs Azure's paid tier."}</p>
+        <p class="hint">{r.voice.provider === "gemini" ? "Free with your Gemini key, no card. Speaks Khmer and every language of the app. On the free tier Google may use the text to improve its products." : r.voice.provider === "googlecloud" ? "Free up to a monthly amount, then billed to your Google Cloud project. Google has no Khmer." : "Khmer and the languages Google lacks. 500,000 characters a month free; commercial use needs Azure's paid tier."}</p>
       {:else}
         <select aria-label="ElevenLabs voice" bind:value={r.voice.voice}>
           <option value="">Choose a voice</option>

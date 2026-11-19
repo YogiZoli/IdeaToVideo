@@ -5,7 +5,7 @@ export type Recipe = {
   schema?: string;
   engine: "script" | "recorded";
   preset: string;
-  voice: { provider: "kokoro" | "elevenlabs" | "googlecloud" | "azure" | "recording"; voice: string; name?: string };
+  voice: { provider: "kokoro" | "gemini" | "elevenlabs" | "googlecloud" | "azure" | "recording"; voice: string; name?: string };
   avatar: { on: boolean; lookId: string | null; name?: string; engine?: string; layout?: string };
   music: { on: boolean; source: "synth" | "own"; mood: string };
   broll?: { on: boolean };
@@ -121,7 +121,7 @@ export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVo
   return [
     { label: "Engine", value: "Script" },
     { label: "Style", value: preset },
-    { label: "Voice", value: r.voice.provider === "kokoro" ? `${free}, free, on this computer` : r.voice.provider === "googlecloud" ? `${r.voice.name ?? r.voice.voice}, Google Cloud` : r.voice.provider === "azure" ? `${r.voice.name ?? r.voice.voice}, Azure` : `${r.voice.name ?? "My voice"}, ElevenLabs` },
+    { label: "Voice", value: r.voice.provider === "kokoro" ? `${free}, free, on this computer` : r.voice.provider === "gemini" ? `${r.voice.name ?? r.voice.voice}, Gemini, free` : r.voice.provider === "googlecloud" ? `${r.voice.name ?? r.voice.voice}, Google Cloud` : r.voice.provider === "azure" ? `${r.voice.name ?? r.voice.voice}, Azure` : `${r.voice.name ?? "My voice"}, ElevenLabs` },
     { label: "Avatar", value: r.avatar.on ? `On${r.avatar.name ? `, ${r.avatar.name}` : ""}` : "Off" },
     { label: "Music", value: !r.music.on ? "Off" : r.music.source === "own" ? "My own files" : `Made by code, ${r.music.mood}` },
     { label: "B-roll", value: r.broll?.on ? "On, free sources first" : "Off" },

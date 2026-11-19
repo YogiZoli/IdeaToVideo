@@ -339,3 +339,15 @@ test("a video made from the ONE Video list takes its Identity's recipe: a Short 
   assert.equal(project.recipe.preset, "stick-world");
   assert.equal(project.recipe.format, "short");
 });
+
+test("a recipe can choose the free Gemini voice, also for Khmer (DECISIONS 197)", () => {
+  const r = normalizeRecipe({ ...defaultRecipe(), voice: { provider: "gemini", voice: "Kore" } }, { language: "km" });
+  assert.deepEqual([r.voice.provider, r.voice.voice], ["gemini", "Kore"]);
+  assert.throws(() => normalizeRecipe({ ...defaultRecipe(), voice: { provider: "gemini", voice: "" } }, { language: "km" }), /Gemini voice/);
+});
+
+test("the Voice tab offers Gemini first, as the free choice (DECISIONS 197)", () => {
+  const src = fs.readFileSync(new URL("../app/src/lib/catalog.ts", import.meta.url), "utf8");
+  const list = src.slice(src.indexOf("export const VOICE_SERVICES"));
+  assert.ok(list.indexOf('id: "gemini"') > 0 && list.indexOf('id: "gemini"') < list.indexOf('id: "googlecloud"'));
+});

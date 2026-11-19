@@ -8,10 +8,10 @@ Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, c
 
 ## Now (2026-11-19, ingyenes khmer hang, DECISIONS 197)
 
-- **Khmer kártya nélkül:** az app alap hangja, a Gemini (`gemini-3.8-flash-tts`) beszél khmerül, és a Gemini ingyenes szintjén díjmentes, kártya nélkül. Élő teszt Zoltán kulcsával: két khmer mondat rendben. A nyelvtáblából kimaradt, ezért írt mindenhol figyelmeztetést; most benne van ("Khmer: Gemini (free), Azure, HeyGen (avatar video)").
+- **Khmer kártya nélkül:** az app alap hangja, a Gemini (`gemini-3.8-flash-tts`) beszél khmerül, és a Gemini ingyenes szintjén díjmentes, kártya nélkül. Élő teszt Zoltán kulcsával: két khmer mondat rendben. A nyelvtáblából kimaradt, ezért írt mindenhol figyelmeztetést; most benne van ("Khmer: Gemini (free), Azure, HeyGen (avatar video)"). A Voice fül szolgáltató listáján és a receptben is a Gemini (free) az első választás (eddig ki sem lehetett választani).
 - **Tudnivaló:** az ingyenes szinten a Google felhasználhatja a szöveget. A khmer felirat "szavai" hosszú darabok, mert a khmer írás nem tesz szóközt a szavak közé.
 - **Azure és Google Cloud:** mindkettő kártyát kér, Zoltán nem kéri őket. A kód marad, kulcs nélkül nem fut.
-- **Tesztek:** Node 748 zöld (2 élő kihagyva), audit 823 zöld 40 perc alatt, 0 USD, UI check 0 hiba.
+- **Tesztek:** Node 750 zöld (2 élő kihagyva), audit 823 zöld 35 perc alatt, 0 USD, UI check 0 hiba.
 
 ## Now (2026-11-19, javítási terv 5-9, Google Cloud és Azure hang, DECISIONS 191-195)
 
