@@ -91,7 +91,8 @@ export const GEMINI_VOICES = ["Kore", "Charon", "Puck", "Zephyr", "Fenrir", "Led
 export const narratorProvider = (p: string | undefined) => (p === "edge-tts" || !p ? "gemini" : p);
 /** The voices a video can use, on the Voice tab (DECISIONS 194): Google Cloud first, the default. */
 export const VOICE_SERVICES: { id: string; label: string; note: string }[] = [
-  { id: "googlecloud", label: "Google Cloud", note: "The default. Free up to 4 million characters a month (Standard voices), then billed to your Google Cloud project. No Khmer." },
+  { id: "gemini", label: "Gemini (free)", note: "Free with your Gemini key, no card. Speaks Khmer and every language of the app." },
+  { id: "googlecloud", label: "Google Cloud", note: "Free up to 4 million characters a month (Standard voices), then billed to your Google Cloud project, which needs a card. No Khmer." },
   { id: "azure", label: "Azure", note: "For Khmer and the languages Google lacks. 500,000 characters a month free; commercial use needs Azure's paid tier." },
   { id: "elevenlabs", label: "ElevenLabs", note: "Your own cloned voice. Paid by your ElevenLabs plan. No Khmer." },
   { id: "kokoro", label: "Free voice on this computer", note: "Kokoro, English only, no key." },

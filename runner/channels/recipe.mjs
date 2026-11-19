@@ -19,7 +19,7 @@ import { cleanFormat, cleanShortSeconds, withFormat } from "../shorts/index.mjs"
 
 export const RECIPE_FILE = "recipe.json";
 export const RECIPE_SCHEMA = "channel-recipe/1";
-export const VOICE_KINDS = { googlecloud: "Google Cloud (the default, free up to a monthly amount)", kokoro: "Free voice on this computer (Kokoro, English only)", elevenlabs: "My ElevenLabs voice", azure: "Azure (Khmer and the languages Google lacks)" };
+export const VOICE_KINDS = { gemini: "Gemini (free with your Gemini key, no card; speaks Khmer)", googlecloud: "Google Cloud (free up to a monthly amount, needs a card)", kokoro: "Free voice on this computer (Kokoro, English only)", elevenlabs: "My ElevenLabs voice", azure: "Azure (Khmer and the languages Google lacks)" };
 export const MUSIC_SOURCES = { synth: "Made by code, free", own: "My own files" };
 export const ENGINES_READY = ["script", "recorded"];
 export const DEFAULT_RECORDED_PRESET = "talking-head";
@@ -80,10 +80,10 @@ export function normalizeRecipe(r, { language = "en" } = {}) {
     };
   }
   const provider = r.voice?.provider;
-  if (!VOICE_KINDS[provider]) throw new Error("Choose a voice: Google Cloud, the free voice, ElevenLabs or Azure.");
-  if (provider === "kokoro" && !String(language).toLowerCase().startsWith("en")) throw new Error("The free voice reads English only. For this channel's language choose Google Cloud, Azure or your ElevenLabs voice.");
+  if (!VOICE_KINDS[provider]) throw new Error("Choose a voice: Gemini, Google Cloud, the free voice, ElevenLabs or Azure.");
+  if (provider === "kokoro" && !String(language).toLowerCase().startsWith("en")) throw new Error("The free voice reads English only. For this channel's language choose Gemini (free), Google Cloud, Azure or your ElevenLabs voice.");
   const voice = provider === "kokoro" ? (VOICES[r.voice.voice] ? r.voice.voice : DEFAULT_VOICE) : String(r.voice.voice ?? "").trim();
-  if (!voice) throw new Error(`Choose which ${provider === "elevenlabs" ? "ElevenLabs" : provider === "googlecloud" ? "Google Cloud" : "Azure"} voice this channel uses.`);
+  if (!voice) throw new Error(`Choose which ${provider === "elevenlabs" ? "ElevenLabs" : provider === "googlecloud" ? "Google Cloud" : provider === "gemini" ? "Gemini" : "Azure"} voice this channel uses.`);
   const on = Boolean(r.avatar?.on);
   const lookId = r.avatar?.lookId ? String(r.avatar.lookId) : null;
   if (on && !lookId) throw new Error("Choose the avatar look, or turn the avatar off.");
