@@ -18,6 +18,7 @@
         "model": {"type": "string", "minLength": 1, "maxLength": 200},
         "effort": {"enum": ["low", "medium", "high", "xhigh", "max", null]},
         "perStep": {"type": "boolean"},
+        "waitSeconds": {"type": "integer", "minimum": 0, "maximum": 3600},
         "steps": {
           "type": "object",
           "additionalProperties": false,
@@ -57,7 +58,7 @@
       "required": ["provider"],
       "additionalProperties": false,
       "properties": {
-        "provider": {"enum": ["gemini", "elevenlabs", "edge-tts", "kokoro"]},
+        "provider": {"enum": ["gemini", "elevenlabs", "edge-tts", "kokoro", "googlecloud", "azure"]},
         "voice": {"type": ["string", "null"], "maxLength": 200}
       }
     },

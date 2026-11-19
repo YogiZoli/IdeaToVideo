@@ -66,6 +66,18 @@
     {/if}
   </div>
 {/if}
+{#if steps}
+  <label class="field">
+    <span>How long the AI may plan the scenes</span>
+    <select value={String(llm.waitSeconds ?? 180)} onchange={(e) => (llm = { ...llm, waitSeconds: Number(e.currentTarget.value) })}>
+      <option value="90">90 seconds</option>
+      <option value="180">3 minutes (default)</option>
+      <option value="300">5 minutes</option>
+      <option value="0">No limit, wait like before</option>
+    </select>
+    <span class="hint">Past it, your next saved AI key gets one try, then the free rule-made plan is used and the Preview tab says so. Several videos at once on one key are slower: then a longer limit helps.</span>
+  </label>
+{/if}
 <p class="warn">A ChatGPT Plus or Claude Pro subscription is not an API key. The API is a separate account with its own key.</p>
 
 <style>

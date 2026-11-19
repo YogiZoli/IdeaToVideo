@@ -64,7 +64,7 @@
   let identLlm = $state<Llm>(untrack(() => snap(app.identity?.llm ?? app.app!.llm)));
   // every key a field can bind to, false when not set (a bound prop with a
   // fallback must not get undefined)
-  const KEY_NAMES = [...LLM_PROVIDERS.map((p) => p.id), "elevenlabs", "heygen", "kie", "pixabay", "unsplash", "vidiq", "publishing"];
+  const KEY_NAMES = [...LLM_PROVIDERS.map((p) => p.id), "elevenlabs", "googlecloud", "azure", "heygen", "kie", "pixabay", "unsplash", "vidiq", "publishing"];
   const allKeys = (k: Record<string, boolean>) => ({ ...Object.fromEntries(KEY_NAMES.map((n) => [n, false])), ...k });
   let keys = $state(untrack(() => allKeys(app.keys)));
   let busy = $state(false);
@@ -361,6 +361,8 @@
         </section>
       {:else if sub === "services"}
         <section class="card">
+          <ConnectionRow name="googlecloud" label="Google Cloud Text-to-Speech" keyUrl={SERVICE_KEY_URLS.googlecloud} hint="The default voice for every language Google speaks (no Khmer). An API key of a Google Cloud project with the Text-to-Speech API turned on. Google needs a billing account on the project; the first 4 million characters a month of Standard voices cost nothing." identityName={app.identity?.name} bind:isSet={keys.googlecloud} test={() => ({ command: "test-service", service: "googlecloud" })} />
+          <ConnectionRow name="azure" label="Azure Speech" keyUrl={SERVICE_KEY_URLS.azure} hint="Khmer and the languages Google lacks. Paste it as region:key, for example southeastasia:abc123. The free F0 tier: 500,000 characters a month; commercial use of the voice needs the paid tier." identityName={app.identity?.name} bind:isSet={keys.azure} test={() => ({ command: "test-service", service: "azure" })} />
           <ConnectionRow name="elevenlabs" label="ElevenLabs" keyUrl={SERVICE_KEY_URLS.elevenlabs} hint="The narrator voice and the music." identityName={app.identity?.name} bind:isSet={keys.elevenlabs} test={() => ({ command: "test-service", service: "elevenlabs" })} />
           <ConnectionRow name="heygen" label="HeyGen" keyUrl={SERVICE_KEY_URLS.heygen} hint="Avatars, CTA clips and AI B-roll." identityName={app.identity?.name} bind:isSet={keys.heygen} test={() => ({ command: "test-service", service: "heygen" })} />
           <ConnectionRow name="kie" label="Kie AI" keyUrl={SERVICE_KEY_URLS.kie} hint="Optional: paid AI clips for hero moments, off until you turn them on in a channel's recipe. Nothing is spent without your yes on the Preview tab." identityName={app.identity?.name} bind:isSet={keys.kie} test={() => ({ command: "test-service", service: "kie" })} />

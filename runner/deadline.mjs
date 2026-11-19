@@ -5,9 +5,14 @@ import { savedKeys } from "./providers/llm.mjs";
 // Each AI step has a hard limit per try (ITV_AI_SCENES_SECONDS, default 90 s for a scene plan). The
 // configured AI first, then the next saved key once, each without the long patient waits; so one
 // step never waits much more than 3 minutes before the free path takes over.
-export const AI_STEP_SECONDS = { scenes: 90 };
+export const AI_STEP_SECONDS = { scenes: 180 };
+// the choices on Settings, AI (Zoltan, 2026-11-19: several videos at once are slower, so it is his to set)
+export const WAIT_CHOICES = [90, 180, 300, 0];
 export class DeadlineError extends Error {}
-export const aiStepSeconds = (step, env = process.env) => {
+/** The limit of one AI try in seconds: the user's choice (llm.waitSeconds, 0 = no limit), else the env, else the default. */
+export const aiStepSeconds = (step, env = process.env, chosen) => {
+  if (chosen === 0) return Infinity;
+  if (Number.isFinite(chosen) && chosen > 0) return Math.min(chosen, 3600);
   const n = Number(env[`ITV_AI_${step.toUpperCase()}_SECONDS`]);
   return Number.isFinite(n) && n > 0 ? Math.min(n, 600) : AI_STEP_SECONDS[step];
 };

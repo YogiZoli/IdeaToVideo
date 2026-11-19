@@ -11,6 +11,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { chat, extractJson } from "../../providers/llm.mjs";
+import { DeadlineError, withDeadline } from "../../deadline.mjs";
+import { keyPhrase, keyWord } from "./keyphrase.mjs";
 import { paceOf } from "./roles.mjs";
 import { callSentences, checkScenes, joinShort, isSoft, gapsOf, writeTable, audioLength, readScript, clean, withCalls, sentenceSections, MAX_WORDS, MIN_SECONDS } from "./index.mjs";
 import { callLine, simplePlan } from "./simple.mjs";
@@ -26,16 +28,17 @@ const ASK_AGAIN_SHARE = 0.34;
 
 export { whenIn };
 
-const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ %$.,:-]+/gu, " ").split(/\s+/).map((w) => w.replace(/^[.,:-]+|[.,:-]+$/g, "")).filter(Boolean);
+const wordsOf = (t) => String(t).replace(/[^\p{L}\p{M}\p{N}'’ %$.,:-]+/gu, " ").split(/\s+/).map((w) => w.replace(/^[.,:-]+|[.,:-]+$/g, "")).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;
-const cap = (text, max) => wordsOf(text).slice(0, max).join(" ");
+// never cut in the middle of a phrase: the key words instead (keyphrase.mjs, DECISIONS 191)
+const cap = (text, max) => keyPhrase(text, max);
 // A preset that asks a question on screen keeps its question mark, when the whole text fits.
 const capFor = (template, text, max) => {
   // and a line it has to cut does not stop on a word that needs the next one
   const out = template?.objects && wordsOf(text).length > max ? headlineOf(text, max) : cap(text, max);
   return template?.objects && out && /\?\s*$/.test(String(text)) && wordsOf(text).length <= max ? `${out}?` : out;
 };
-const longest = (ws) => ws.reduce((best, w) => (w.length > best.length ? w : best), "");
+const longest = (ws) => keyWord(ws);
 
 // ---- the prompt ------------------------------------------------------------------
 
@@ -194,9 +197,7 @@ const objectFor = (text, objects = []) => objectsIn(text, objects)[0]?.object.id
 // A line cut to its limit must not stop on a word that needs the next one.
 const HANGING = /^(a|an|the|and|or|but|of|to|in|on|at|for|with|from|by|is|are|was|were|be|that|this|its|your|my|when|while|if|than|as|into|onto|through|az|egy|és|de|hogy)$/i;
 function headlineOf(text, max) {
-  const ws = wordsOf(text).slice(0, max);
-  while (ws.length > 1 && HANGING.test(ws.at(-1))) ws.pop();
-  return ws.join(" ");
+  return keyPhrase(text, max);
 }
 
 // Before and after a joining word, up to `max` words each. The words nearest to it say the most.
@@ -645,7 +646,9 @@ export function estimateTemplatePlan({ projectDir, llm, preset, off = [] }) {
  * because of the AI: a part it cannot answer is planned by rule and a warning
  * says so.
  */
-export async function makeTemplateScenes({ llm, projectDir, preset, env = process.env, language = "en", title = "", off = [], identityDir = null, videoId = null, onProgress = () => {} }) {
+// budgetSeconds: how long one AI may work on the whole plan (DECISIONS 190); past it the next saved
+// key (nextLlm) gets the same once, then every part left goes by rule. A stuck AI never blocks a video.
+export async function makeTemplateScenes({ llm, nextLlm = null, budgetSeconds = Infinity, projectDir, preset, env = process.env, language = "en", title = "", off = [], identityDir = null, videoId = null, onProgress = () => {} }) {
   const sentences = JSON.parse(fs.readFileSync(path.join(projectDir, "sentences.json"), "utf8"));
   const md = fs.existsSync(path.join(projectDir, "script.md")) ? fs.readFileSync(path.join(projectDir, "script.md"), "utf8") : "";
   const total = await audioLength(projectDir, sentences, env);
@@ -660,7 +663,24 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
   const warnings = [];
   let byRule = 0;
   let ai = llm;
+  let spare = nextLlm;
+  let until = Date.now() + budgetSeconds * 1000;
+  let timedOut = false;
+  // past the budget: the next key once, then no AI for the parts left
+  const giveUp = () => {
+    timedOut = true;
+    if (spare) {
+      warnings.push(`${ai.provider} took too long, so ${spare.provider} planned the rest.`);
+      ai = spare;
+      spare = null;
+      until = Date.now() + budgetSeconds * 1000;
+    } else {
+      warnings.push("No AI finished the plan in time, so the rest of it was made by rule.");
+      ai = null;
+    }
+  };
   for (const [k, part] of parts.entries()) {
+    if (ai && Date.now() > until) giveUp();
     onProgress({ step: "planning", provider: llm?.provider ?? null, part: k + 1, of: parts.length });
     if (calls.has(part[0].id)) {
       const { keyword } = calls.get(part[0].id);
@@ -673,13 +693,23 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
     let note = "";
     for (let round = 0; ai && round < 2; round++) {
       try {
-        const text = await chat({ ...ai, messages: planMessages({ templates, sentences: part, title, language, pace, previous: planned.at(-1)?.template ?? null, shotRules: preset.shotRules, note }), json: true, temperature: 0.3 });
+        const left = (until - Date.now()) / 1000;
+        if (left <= 0) throw new DeadlineError("out of time");
+        const text = await withDeadline(() => chat({ ...ai, messages: planMessages({ templates, sentences: part, title, language, pace, previous: planned.at(-1)?.template ?? null, shotRules: preset.shotRules, note }), json: true, temperature: 0.3 }), Math.min(left, budgetSeconds), "out of time");
         const got = mendPart({ answer: extractJson(text), part, templates, previous, pace, title, atStart, off });
         if (!best || got.mended < best.mended) best = got;
         if (got.mended / Math.max(1, got.scenes.length) <= ASK_AGAIN_SHARE) break;
         note = got.problems.slice(0, 8).join("\n");
         onProgress({ step: "repairing", part: k + 1, of: parts.length });
       } catch (e) {
+        if (e instanceof DeadlineError) {
+          giveUp();
+          if (ai) {
+            round--;
+            continue;
+          }
+          break;
+        }
         // a rate limit, a dead key, an unreadable answer: this part goes by rule
         warnings.push(`Part ${k + 1} of the plan was made without the AI (${String(e.message).slice(0, 160)}).`);
         // no AI answers at all: the other parts do not wait for it, one after the other
@@ -707,5 +737,5 @@ export async function makeTemplateScenes({ llm, projectDir, preset, env = proces
   const previousTable = fs.existsSync(path.join(projectDir, "scenes.json")) ? JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8")) : {};
   writeTable(projectDir, { ...(previousTable.theme ? { theme: previousTable.theme } : {}), scenes, gaps: [], warnings: [...warnings, ...seen], planner: { steps: 1, preset: preset.id, parts: parts.length, byRule } });
   recordHistory(identityDir, videoId ?? path.basename(projectDir), scenes);
-  return { scenes: scenes.length, gaps: [], warnings: [...warnings, ...seen], parts: parts.length, byRule, minSeconds: MIN_SECONDS };
+  return { scenes: scenes.length, gaps: [], warnings: [...warnings, ...seen], parts: parts.length, byRule, minSeconds: MIN_SECONDS, timedOut };
 }

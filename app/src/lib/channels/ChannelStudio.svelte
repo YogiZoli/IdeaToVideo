@@ -41,6 +41,8 @@
   // this video's format: the recipe's, unless changed here (DECISIONS 188)
   let format = $state<"long" | "short">("long");
   let shortSeconds = $state(60);
+  // Free only for this video: the recipe's, unless changed here (DECISIONS 192)
+  let freeOnly = $state(false);
   let starting = $state(false);
 
   const config = $derived(app.config!);
@@ -64,6 +66,7 @@
       research = st.recipe.start?.research === true;
       format = st.recipe.format === "short" ? "short" : "long";
       shortSeconds = st.recipe.shortSeconds ?? 60;
+      freeOnly = st.recipe.freeOnly === true;
     } catch (e) {
       error = errorText(e);
     }
@@ -91,7 +94,7 @@
     starting = true;
     error = "";
     try {
-      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research: researching, format, shortSeconds });
+      const r = await runner<{ id: string; dir: string }>("channel-video-new", { projectsDir: app.projectsDir, identity: app.identity?.id, language, topic, text, textKind: kind, research: researching, format, shortSeconds, freeOnly });
       await runner("autopilot-mark", { projectDir: r.dir, on: true });
       log("channel_video", { mode, research: researching, preset: side?.preset });
       topic = "";
@@ -251,6 +254,7 @@
       {/if}
       <div class="formatrow">
         <label>Format <select bind:value={format} aria-label="Format of this video"><option value="long">Long form 16:9</option><option value="short">Short 9:16</option></select></label>
+        <label><input type="checkbox" bind:checked={freeOnly} /> Free only</label>
         {#if format === "short"}<label>Length <select bind:value={shortSeconds} aria-label="Length of this Short">{#each SHORT_SECONDS as s (s)}<option value={s}>{s} seconds</option>{/each}</select></label>{/if}
       </div>
       <label class="research"><input type="checkbox" checked={researching} disabled={factChecked} onchange={(e) => (research = e.currentTarget.checked)} /> Research{factChecked ? ": always on for this style, its scripts are fact-checked" : ""}</label>

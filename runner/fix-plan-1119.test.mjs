@@ -127,10 +127,12 @@ test("no ElevenLabs model speaks Khmer; HeyGen does inside an avatar video", () 
   assert.equal(canSpeak("heygen", "avatar-video", "km"), true);
   assert.equal(canSpeak("elevenlabs", "eleven_v4", "hu"), true);
   assert.equal(canSpeak("kokoro", "kokoro", "hu"), false);
-  assert.equal(voiceProblem("elevenlabs", "eleven_v3", "km"), "ElevenLabs cannot speak Khmer with eleven_v3. HeyGen can, inside an avatar video, with a voice on its Fish or Mockingbird engine.");
+  assert.equal(voiceProblem("elevenlabs", "eleven_v3", "km"), "ElevenLabs cannot speak Khmer with eleven_v3. Azure or HeyGen inside an avatar video can.");
+  assert.equal(canSpeak("azure", null, "km"), true);
+  assert.equal(canSpeak("googlecloud", null, "km"), false, "Google has no Khmer (its voice list, 2026-11-19)");
   assert.equal(voiceProblem("elevenlabs", "eleven_v4", "en"), null);
   assert.equal(voiceProblem("gemini", null, "km"), null, "a provider the table does not know is not judged");
-  assert.deepEqual(speakersOf("km"), [{ provider: "heygen", model: "avatar-video" }]);
+  assert.deepEqual(speakersOf("km"), [{ provider: "azure", model: "azure" }, { provider: "heygen", model: "avatar-video" }]);
 });
 
 test("the three languages default to the video's language", () => {
@@ -220,11 +222,113 @@ test("a refused scene table is an error, not a stuck AI", async () => {
   await assert.rejects(withDeadline(() => new Promise(() => {}), 0.05, "too slow"), DeadlineError);
 });
 
-test("at most two tries, without the long patient waits, about 3 minutes in all", () => {
+test("at most two tries, without the long patient waits; the limit is the user's choice", () => {
   const tries = aiTries({ provider: "gemini", model: "x" }, "k1", [{ provider: "gemini", apiKey: "k2" }, { provider: "claude", apiKey: "k3" }, { provider: "openai", apiKey: "k4" }]);
   assert.deepEqual(tries.map((t) => t.provider), ["gemini", "claude"]);
   assert.ok(tries.every((t) => t.patient === false));
-  assert.equal(aiStepSeconds("scenes", {}), 90);
+  assert.equal(aiStepSeconds("scenes", {}), 180, "3 minutes unless the user chose otherwise");
+  assert.equal(aiStepSeconds("scenes", {}, 90), 90);
+  assert.equal(aiStepSeconds("scenes", {}, 0), Infinity, "No limit: wait like before");
   assert.equal(aiStepSeconds("scenes", { ITV_AI_SCENES_SECONDS: "30" }), 30);
-  assert.ok(aiStepSeconds("scenes", {}) * tries.length <= 180);
+});
+
+test("the window's language list is the runner's, with who speaks each", async () => {
+  const { source, OUT } = await import("../scripts/make-language-list.mjs");
+  assert.equal(fs.readFileSync(OUT, "utf8").replace(/\r\n/g, "\n"), source(), "run node scripts/make-language-list.mjs");
+  const { languageList } = await import("../scripts/make-language-list.mjs");
+  const km = languageList().find((l) => l.code === "km");
+  assert.deepEqual(km.voices, ["Azure", "HeyGen (avatar video)"]);
+  assert.ok(!languageList().find((l) => l.code === "hu").voices.includes("The free voice"), "the free voice is English only");
+});
+
+// ---- items 5 to 9 (DECISIONS 191 to 195) -----------------------------------------------------
+
+import { keyPhrase, keyWord } from "./gates/scenes/keyphrase.mjs";
+import * as googlecloud from "./providers/tts/googlecloud.mjs";
+import * as azure from "./providers/tts/azure.mjs";
+import { writeWav } from "./providers/tts/gemini.mjs";
+import { screenTexts, applyScreenTexts } from "./language/screen.mjs";
+
+test("the free plan never cuts a phrase in the middle, and its big word means something", () => {
+  assert.equal(keyPhrase("Finally we show it to the class at the end of the lesson", 6), "show class end lesson");
+  assert.equal(keyPhrase("Look inside the Moon and find a core.", 5), "Look inside the Moon");
+  assert.equal(keyPhrase("Drink water.", 6), "Drink water");
+  assert.equal(keyWord("First drink a glass of water before your phone"), "drink");
+});
+
+const wav = (seconds) => writeWav({ channels: 1, rate: 24000, bits: 16, pcm: Buffer.alloc(Math.round(seconds * 24000) * 2) });
+
+test("Google Cloud: one call per sentence, each sentence's words in its own time, the key only in the header", async () => {
+  const seen = [];
+  const fetchImpl = async (url, init) => {
+    seen.push({ url, key: init.headers["x-goog-api-key"], body: JSON.parse(init.body) });
+    return new Response(JSON.stringify({ audioContent: wav(1).toString("base64") }), { status: 200 });
+  };
+  const r = await googlecloud.speak({ apiKey: "g-key", fetchImpl, voiceId: "hu-HU-Chirp3-HD-Kore", text: "Jó reggelt. Igyál vizet." });
+  assert.equal(seen.length, 2);
+  assert.ok(seen.every((x) => !x.url.includes("g-key") && x.key === "g-key"));
+  assert.equal(seen[0].body.voice.languageCode, "hu-HU");
+  assert.equal(r.ext, "wav");
+  assert.equal(r.words.find((w) => w.text === "Igyál").start, 1.25, "the second sentence starts after the first and the gap");
+});
+
+test("Azure: the key is region:key, Khmer goes as km-KH SSML, a refused key is one sentence", async () => {
+  assert.throws(() => azure.splitKey("abc"), /region:key/);
+  assert.deepEqual(azure.splitKey("SoutheastAsia:abc"), { region: "southeastasia", key: "abc" });
+  let body = "";
+  let url = "";
+  const ok = async (u, init) => {
+    url = u;
+    body = init.body;
+    return new Response(wav(0.5), { status: 200 });
+  };
+  const r = await azure.speak({ apiKey: "southeastasia:abc", fetchImpl: ok, voiceId: "km-KH-SreymomNeural", text: "សួស្តី។" });
+  assert.match(url, /^https:\/\/southeastasia\.tts\.speech\.microsoft\.com\//);
+  assert.match(body, /xml:lang="km-KH"><voice name="km-KH-SreymomNeural">សួស្តី។<\/voice>/);
+  assert.equal(r.words.length, 1);
+  await assert.rejects(azure.speak({ apiKey: "westeurope:bad", fetchImpl: async () => new Response("no", { status: 401 }), voiceId: "km-KH-PisethNeural", text: "a." }), /Azure refused the key/);
+});
+
+test("the words on screen: text params translated, objects, numbers and keywords never", () => {
+  const templates = [{ id: "statement", params: { line1: { maxWords: 5 }, line2: { maxWords: 4 }, object: { type: "object" } }, draw: { component: "x:statement", vars: { line1: "$line1", line2: "$line2", object: "$object" } } }];
+  const table = { scenes: [
+    { from: "S1", template: "statement", component: "x:statement", params: { line1: "Drink water", line2: "every day", object: "glass" }, vars: { line1: "Drink water", line2: "every day", object: "glass" } },
+    { from: "S2", component: "cta-close", vars: { action_line: "Comment GUIDE below", button_label: "GUIDE" } },
+  ] };
+  const items = screenTexts(table, templates);
+  assert.deepEqual(items.map((i) => i.text), ["Drink water", "every day", "Comment GUIDE below"]);
+  const next = applyScreenTexts(table, templates, items, ["ផឹកទឹក", "រៀងរាល់ថ្ងៃ", "Comment GUIDE ខាងក្រោម"]);
+  assert.equal(next.scenes[0].vars.line1, "ផឹកទឹក");
+  assert.equal(next.scenes[0].vars.object, "glass", "a drawn object keeps its name");
+  assert.equal(next.scenes[1].vars.button_label, "GUIDE", "the comment keyword stays");
+  assert.equal(next.scenes[0].screenSource.params.line1, "Drink water", "the words before are kept");
+  assert.equal(screenTexts(next, templates)[0].text, "Drink water", "a second run translates from the words before");
+});
+
+test("Free only is kept by the recipe", () => {
+  const base = { ...defaultRecipe({}), preset: "stick-world" };
+  assert.equal(normalizeRecipe({ ...base, freeOnly: true }).freeOnly, true);
+  assert.equal(normalizeRecipe(base).freeOnly, false);
+});
+
+test("Khmer keeps its vowel signs in every on-screen text of the plan", () => {
+  assert.equal(keyPhrase("ផឹកទឹក", 6), "ផឹកទឹក");
+  assert.equal(keyPhrase("ផឹកទឹកមួយកែវ មុនពេល មើលទូរស័ព្ទ", 6), "ផឹកទឹកមួយកែវ មុនពេល មើលទូរស័ព្ទ");
+  assert.match(shortTexts({ title: "t", summary: "s.", tags: ["ទម្លាប់"] }).description, /#ទម្លាប់/);
+});
+
+test("a video made from the ONE Video list takes its Identity's recipe: a Short stays a Short", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const { saveRecipe } = await import("./channels/recipe.mjs");
+  const base = tmp();
+  const identityDir = path.join(base, "identity");
+  const projectsDir = path.join(base, "videos");
+  fs.mkdirSync(projectsDir, { recursive: true });
+  saveRecipe(identityDir, { ...defaultRecipe({}), preset: "stick-world", format: "short", shortSeconds: 60 });
+  const r = spawnSync(process.execPath, [path.join(import.meta.dirname, "main.mjs"), "create-project"], { input: JSON.stringify({ projectsDir, identityDir, title: "Hello Cambodia", language: "en", identity: "x" }), encoding: "utf8" });
+  const last = JSON.parse(r.stdout.trim().split("\n").at(-1));
+  assert.equal(last.event, "result", r.stderr);
+  const project = JSON.parse(fs.readFileSync(path.join(last.data.dir, "project.json"), "utf8"));
+  assert.equal(project.recipe.preset, "stick-world");
+  assert.equal(project.recipe.format, "short");
 });

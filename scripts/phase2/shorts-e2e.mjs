@@ -13,7 +13,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const { values: args } = parseArgs({ options: { work: { type: "string" }, only: { type: "string" } } });
+const { values: args } = parseArgs({ options: { work: { type: "string" }, only: { type: "string" }, long: { type: "boolean" } } });
 if (!args.work) {
   console.error("Usage: node scripts/phase2/shorts-e2e.mjs --work <dir> [--only <preset,preset>]");
   process.exit(2);
@@ -90,7 +90,8 @@ function oneShort(preset, { khmer = false } = {}) {
   fs.mkdirSync(identityDir, { recursive: true });
   fs.mkdirSync(projectsDir, { recursive: true });
   const state = step("start screen", "channel-state", { identityDir, projectsDir, identity: {} });
-  const saved = step("recipe locked as a Short", "recipe-save", { identityDir, language: "en", recipe: { ...state.recipe, preset, format: "short", shortSeconds: 15, avatar: { on: false }, broll: { on: false }, music: { on: false, source: "synth", mood: "calm" } } });
+  const saved = step("recipe locked as a Short", "recipe-save", { identityDir, language: "en", recipe: { ...state.recipe, preset, format: args.long ? "long" : "short", shortSeconds: 15, targetLengthMin: 1, avatar: { on: false }, broll: { on: false }, music: { on: false, source: "synth", mood: "calm" } } });
+  if (args.long) return longOne(preset, { identityDir, projectsDir, saved, name });
   check("the recipe is a 15 second Short", saved.recipe.format === "short" && saved.recipe.shortSeconds === 15 && saved.recipe.targetLengthMin === 0.25);
   const video = step("a pasted script makes a video", "channel-video-new", { projectsDir, identityDir, identity: "test", language: "en", text: SCRIPT, textKind: "finished" });
   const projectDir = video.dir;
@@ -128,6 +129,33 @@ function oneShort(preset, { khmer = false } = {}) {
   for (const at of [1.5, 6, 11]) frame(out, at, path.join(work, `${name}-${at}s.png`));
 }
 
+// --long: the free rule-made plan of a long video (FIX_PLAN item 5): the Scenes tab's "Simple plan
+// without AI" now uses the preset's templates, with captions and a drifting ground
+function longOne(preset, { identityDir, projectsDir, saved, name }) {
+  const video = step("a pasted script makes a video", "channel-video-new", { projectsDir, identityDir, identity: "test", language: "en", text: SCRIPT, textKind: "finished" });
+  const projectDir = video.dir;
+  step("the free voice model", "voice-model-ensure", { voice: saved.recipe.voice.voice });
+  step("the free voice", "make-voice", { projectDir, identityDir, narrator: { provider: "kokoro", voice: saved.recipe.voice.voice }, music: null });
+  step("voice approved", "approve-gate", { projectDir, gate: "voice" });
+  step("Simple plan without AI", "simple-scenes", { projectDir, identityDir });
+  const table = JSON.parse(fs.readFileSync(path.join(projectDir, "scenes.json"), "utf8"));
+  check("the plan uses the preset's templates", table.scenes.filter((x) => x.template).length >= table.scenes.length - 1, [...new Set(table.scenes.map((x) => x.template))].join(" "));
+  step("scenes approved", "approve-gate", { projectDir, gate: "scenes" });
+  const gates = JSON.parse(fs.readFileSync(path.join(projectDir, "project.json"), "utf8")).gates;
+  if (gates.avatar?.state !== "skipped") step("no avatar", "skip-gate", { projectDir, gate: "avatar" });
+  const build = step("the build", "build-video", { projectDir, identityDir });
+  const page = fs.readFileSync(path.join(projectDir, "build", "index.html"), "utf8");
+  check("captions with the said word marked", page.includes("caption-pill-karaoke"));
+  if (preset === "motion-frames") check("a drifting ground", page.includes("grain-field"));
+  step("preview approved", "approve-gate", { projectDir, gate: "review" });
+  const r = step("the render", "render-video", { projectDir, identityDir, quality: "draft" });
+  check("1920x1080", probe(r.file) === "1920,1080");
+  const out = path.join(work, `${name}-long.mp4`);
+  fs.copyFileSync(r.file, out);
+  for (const at of [2, 7, 12]) frame(out, at, path.join(work, `${name}-long-${at}s.png`));
+  return build;
+}
+
 const list = PRESETS.filter((p) => !only || only.includes(p));
 for (const p of list) {
   try {
@@ -136,7 +164,7 @@ for (const p of list) {
     console.log(`  ${e.message}`);
   }
 }
-if (!only || only.includes("khmer")) {
+if (!args.long && (!only || only.includes("khmer"))) {
   try {
     oneShort("stick-world", { khmer: true });
   } catch (e) {

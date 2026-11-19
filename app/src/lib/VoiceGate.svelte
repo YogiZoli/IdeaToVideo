@@ -16,7 +16,7 @@
   import VoiceCards, { type Voice } from "./VoiceCards.svelte";
   import type { AppState, Gate } from "./api";
   import { runner, onProgress, errorText, importMusic } from "./api";
-  import { narratorProvider, voiceNeedsKey } from "./catalog";
+  import { narratorProvider, voiceNeedsKey, VOICE_SERVICES } from "./catalog";
   import { running } from "./work.svelte";
   import type { TabId } from "./tabs";
 
@@ -32,7 +32,19 @@
 
   let { app, dir, gate, scriptApproved, voiceInfo = null, changed, goto }: { app: AppState; dir: string; gate?: Gate; scriptApproved: boolean; voiceInfo?: Info | null; changed: () => Promise<void>; goto: (t: TabId) => void } = $props();
 
-  const provider = $derived(narratorProvider(app.config?.narrator.provider));
+  // this video's voice service: the Identity's (its recipe), unless changed here (DECISIONS 194)
+  let provider = $state<string>(untrack(() => narratorProvider(app.config?.narrator.provider)));
+  // the voice's language (Languages on the Script tab) and whether this service speaks it
+  let voiceLang = $state(untrack(() => app.config?.channel.contentLanguage ?? "en"));
+  let langProblem = $state<string | null>(null);
+  async function chooseService(p: string) {
+    provider = p;
+    voices = [];
+    voiceId = "";
+    lastVoice = null;
+    chooseOther = true;
+    await loadVoices();
+  }
   const hasKey = $derived(!voiceNeedsKey(provider) || !!app.keys[provider]);
   const hasEleven = $derived(!!app.keys["elevenlabs"]);
 
@@ -69,9 +81,16 @@
   const previous = $derived(!!lastVoice && voiceId === lastVoice);
 
   async function loadVoices() {
+    try {
+      const st = await runner<{ languages: { voice: string }; voiceProblem: string | null }>("languages-state", { projectDir: dir, narrator: { provider, ...(provider === "elevenlabs" ? { model: voiceModel } : {}) } });
+      voiceLang = st.languages.voice;
+      langProblem = st.voiceProblem;
+    } catch {
+      langProblem = null;
+    }
     if (!hasKey) return;
     try {
-      const r = await runner<{ voices: Voice[] }>("list-voices", { narrator: { provider } });
+      const r = await runner<{ voices: Voice[] }>("list-voices", { narrator: { provider }, language: voiceLang });
       voices = r.voices;
       try {
         const used = (await runner<{ used: { voice?: { provider: string; voice: string; model?: string | null } } }>("last-used", {})).used.voice;
@@ -133,7 +152,7 @@
   const reveal = () => setTimeout(() => result?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
 
   async function make() {
-    if (made && !(await ask(`Read the whole script again? ${provider === "elevenlabs" ? "This uses ElevenLabs characters from your plan" : "This uses your Gemini key"}, and the scenes and the preview are made again after it.`, { title: "Make the voice again", kind: "warning" }))) return;
+    if (made && !(await ask(`Read the whole script again? ${provider === "elevenlabs" ? "This uses ElevenLabs characters from your plan" : provider === "kokoro" ? "It runs on this computer, free" : provider === "googlecloud" ? "This uses your Google Cloud key" : provider === "azure" ? "This uses your Azure key" : "This uses your Gemini key"}, and the scenes and the preview are made again after it.`, { title: "Make the voice again", kind: "warning" }))) return;
     busy = true;
     error = "";
     step = "Starting...";
@@ -196,9 +215,22 @@
 
   {#if !scriptApproved}
     <Needs text="The voice reads the approved script. Approve the script first." tab="script" {goto} />
+  {:else}
+    <div class="service">
+      <label for="vservice" class="label">Voice service for this video</label>
+      <select id="vservice" value={provider} disabled={locked} onchange={(e) => chooseService(e.currentTarget.value)}>
+        {#each VOICE_SERVICES as v (v.id)}<option value={v.id}>{v.label}</option>{/each}
+        {#if !VOICE_SERVICES.some((v) => v.id === provider)}<option value={provider}>{provider === "gemini" ? "Gemini (older)" : provider}</option>{/if}
+      </select>
+      <span class="hint">{VOICE_SERVICES.find((v) => v.id === provider)?.note ?? ""} The recipe stays as it is.</span>
+    </div>
+    {#if langProblem}<p class="warn">{langProblem} Choose that service above, or another voice language on the Script tab.</p>{/if}
+  {/if}
+  {#if !scriptApproved}
+    <span class="hidden" aria-hidden="true"></span>
   {:else if !hasKey}
     <p class="hint">
-      {provider === "gemini" ? "The free voice uses a Gemini key. Add it on Settings, Connections." : "Add your ElevenLabs key on Settings, Connections. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use."}
+      {provider === "gemini" ? "The free voice uses a Gemini key. Add it on Settings, Connections." : provider === "googlecloud" ? "Add your Google Cloud key on Settings, Connections (a Cloud project with Text-to-Speech turned on)." : provider === "azure" ? "Add your Azure Speech key on Settings, Connections, as region:key." : "Add your ElevenLabs key on Settings, Connections. You pay ElevenLabs directly; the free ElevenLabs plan does not allow commercial use."}
     </p>
   {:else}
     <div class="grid">
@@ -290,4 +322,7 @@
   audio { width: 100%; }
   .hint { color: var(--muted-foreground); font-size: 13px; margin: 4px 0 0; }
   .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); }
+  .service { display: grid; gap: 4px; margin-bottom: 12px; }
+  .service select { max-width: 320px; }
+  .warn { margin: 0 0 12px; padding: 8px 12px; border-radius: 8px; background: var(--warning-surface); color: var(--warning-text); font-size: 14px; }
 </style>

@@ -26,14 +26,21 @@ const HEYGEN_VOICE = "ar be bg ca cs da de el en es fa fi fil fr he hi hr hu id 
 // Inside a HeyGen avatar video, the Fish and Mockingbird engines speak more (Khmer among them)
 const HEYGEN_VIDEO_EXTRA = "km lo si am bo br eu fo ht la sa sn sq".split(" ");
 
+// Google Cloud Text-to-Speech (its voice list, read 2026-11-19): no Khmer
+const GOOGLE = "af ar bg bn ca cs cy da de el en es et eu fi fil fr gl gu he hi hr hu id is it ja kn ko lt lv ml mr ms nb nl pa pl pt ro ru sk sr sv sw ta te th tr uk ur vi yue zh".split(" ");
+// Azure Speech: over 140 languages, Khmer among them (km-KH-PisethNeural, km-KH-SreymomNeural)
+const AZURE = [...new Set([...V4, "km", "lo", "si", "am", "eu", "sq", "ps", "my", "jv", "su", "zu", "so", "uz", "mn", "kk"])];
+
 /** provider -> model -> the languages it speaks (ISO 639-1, the app's codes). */
 export const VOICE_LANGUAGES = {
   kokoro: { kokoro: ["en"] },
+  googlecloud: { googlecloud: GOOGLE },
+  azure: { azure: AZURE },
   elevenlabs: { eleven_v4: V4, eleven_v3: V3, eleven_multilingual_v2: V2, eleven_turbo_v2_5: TURBO },
   heygen: { "heygen-voice-1": HEYGEN_VOICE, "avatar-video": [...new Set([...V4, ...HEYGEN_VOICE, ...HEYGEN_VIDEO_EXTRA])] },
 };
-export const PROVIDER_LABEL = { kokoro: "The free voice", elevenlabs: "ElevenLabs", heygen: "HeyGen" };
-export const CHECKED_ON = "2026-11-18";
+export const PROVIDER_LABEL = { kokoro: "The free voice", elevenlabs: "ElevenLabs", heygen: "HeyGen", googlecloud: "Google Cloud", azure: "Azure" };
+export const CHECKED_ON = "2026-11-19";
 
 const base = (lang) => String(lang ?? "").toLowerCase().split(/[-_]/)[0];
 
@@ -59,18 +66,26 @@ export function voiceProblem(provider, model, lang, label = languageLabel(lang))
   // a provider the table does not know (the older Gemini voice) is not judged here
   if (!VOICE_LANGUAGES[provider] || canSpeak(provider, model, lang)) return null;
   const who = PROVIDER_LABEL[provider] ?? provider;
-  const others = [...new Set(speakersOf(lang).filter((s) => s.provider !== provider || s.model !== model).map((s) => s.provider))];
-  const where = others.includes("heygen") && !others.includes("elevenlabs") && modelsFor("heygen", lang).every((m) => m === "avatar-video") ? "HeyGen can, inside an avatar video, with a voice on its Fish or Mockingbird engine" : others.length ? `${others.map((p) => PROVIDER_LABEL[p]).join(" or ")} can` : "none of the app's voices can yet";
+  const others = [...new Set(speakersOf(lang).filter((s) => s.provider !== provider).map((s) => s.provider))];
+  const named = others.map((p) => (p === "heygen" && modelsFor("heygen", lang).every((m) => m === "avatar-video") ? "HeyGen inside an avatar video" : PROVIDER_LABEL[p]));
+  const list = named.length > 1 ? `${named.slice(0, -1).join(", ")} or ${named.at(-1)}` : named[0];
+  const where = named.length ? `${list} can` : "none of the app's voices can yet";
   const which = model && provider === "elevenlabs" ? ` with ${model}` : "";
   return `${who} cannot speak ${label}${which}. ${where[0].toUpperCase()}${where.slice(1)}.`;
 }
 
 // Every language the app knows, with the label the user sees. The content languages of
 // catalog.ts are a subset; Khmer (km) is new (DECISIONS 189).
+// The content languages the app offers: every one whose letters the bundled fonts draw (Latin with
+// its extended letters, and Khmer with Noto Sans Khmer). A voice may speak more (Thai, Vietnamese,
+// Chinese, Arabic...); those come when a font for their letters is bundled (DECISIONS 195).
+export const CONTENT_LANGUAGES = ["en", "hu", "de", "es", "fr", "it", "pt", "nl", "pl", "ro", "cs", "sk", "sv", "da", "fi", "nb", "et", "lv", "lt", "hr", "sl", "ca", "tr", "id", "ms", "fil", "km"];
+
 export const LANGUAGE_LABELS = {
   en: "English", hu: "Hungarian", de: "German", es: "Spanish", fr: "French", it: "Italian", pt: "Portuguese", nl: "Dutch", pl: "Polish", ro: "Romanian",
   km: "Khmer", vi: "Vietnamese", th: "Thai", id: "Indonesian", ms: "Malay", fil: "Filipino", zh: "Chinese", ja: "Japanese", ko: "Korean", hi: "Hindi",
   ar: "Arabic", tr: "Turkish", ru: "Russian", uk: "Ukrainian", cs: "Czech", sk: "Slovak", sv: "Swedish", da: "Danish", fi: "Finnish", el: "Greek",
+  nb: "Norwegian", et: "Estonian", lv: "Latvian", lt: "Lithuanian", hr: "Croatian", sl: "Slovenian", ca: "Catalan",
 };
 export const languageLabel = (lang) => LANGUAGE_LABELS[base(lang)] ?? String(lang ?? "");
 

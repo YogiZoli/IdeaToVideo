@@ -77,10 +77,21 @@
     if (wants?.mood && r.music) r.music.mood = wants.mood;
   }
 
-  function chooseKind(k: "kokoro" | "elevenlabs") {
-    r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : { provider: "elevenlabs", voice: "" };
+  function chooseKind(k: Recipe["voice"]["provider"]) {
+    r.voice = k === "kokoro" ? { provider: "kokoro", voice: st.freeVoices[0]?.id ?? "am_michael" } : { provider: k, voice: "" };
+    cloudVoices = [];
     sample = "";
   }
+
+  // Google Cloud and Azure voices for the channel's language (DECISIONS 194)
+  let cloudVoices = $state<{ id: string; name: string; gender?: string | null }[]>([]);
+  $effect(() => {
+    const p = r.voice.provider;
+    if ((p !== "googlecloud" && p !== "azure") || !app.keys[p] || cloudVoices.length) return;
+    runner<{ voices: { id: string; name: string; gender?: string | null }[] }>("list-voices", { narrator: { provider: p }, language })
+      .then((v) => (cloudVoices = v.voices))
+      .catch((e) => (error = errorText(e)));
+  });
 
   // a sample of the free voice (its model comes down the first time)
   let sample = $state("");
@@ -162,7 +173,9 @@
     <span class="label">Voice</span>
     <div>
       <div class="opts">
+        <label class:off={!app.keys.googlecloud}><input type="radio" name="vkind" checked={r.voice.provider === "googlecloud"} disabled={!app.keys.googlecloud} onchange={() => chooseKind("googlecloud")} /> {st.voiceKinds.googlecloud}{app.keys.googlecloud ? "" : " (add the key in Settings, Connections)"}</label>
         <label><input type="radio" name="vkind" checked={r.voice.provider === "kokoro"} onchange={() => chooseKind("kokoro")} /> {st.voiceKinds.kokoro}</label>
+        <label class:off={!app.keys.azure}><input type="radio" name="vkind" checked={r.voice.provider === "azure"} disabled={!app.keys.azure} onchange={() => chooseKind("azure")} /> {st.voiceKinds.azure}{app.keys.azure ? "" : " (add the key in Settings, Connections)"}</label>
         <label class:off={!hasEleven}><input type="radio" name="vkind" checked={r.voice.provider === "elevenlabs"} disabled={!hasEleven} onchange={() => chooseKind("elevenlabs")} /> {st.voiceKinds.elevenlabs}{hasEleven ? "" : " (add the key in Settings, Connections)"}</label>
       </div>
       {#if r.voice.provider === "kokoro"}
@@ -174,6 +187,13 @@
         </div>
         {#if sample}<audio controls src={sample}></audio>{/if}
         <p class="hint">Reads English. The first time it downloads its model once, about 90 MB.</p>
+      {:else if r.voice.provider === "googlecloud" || r.voice.provider === "azure"}
+        <select aria-label="Cloud voice" bind:value={r.voice.voice}>
+          <option value="">Choose a voice</option>
+          {#if r.voice.voice && !cloudVoices.some((v) => v.id === r.voice.voice)}<option value={r.voice.voice}>{r.voice.name ?? r.voice.voice}</option>{/if}
+          {#each cloudVoices as v (v.id)}<option value={v.id}>{v.name}{v.gender ? ` (${v.gender})` : ""}</option>{/each}
+        </select>
+        <p class="hint">{r.voice.provider === "googlecloud" ? "Free up to a monthly amount, then billed to your Google Cloud project. Google has no Khmer." : "Khmer and the languages Google lacks. 500,000 characters a month free; commercial use needs Azure's paid tier."}</p>
       {:else}
         <select aria-label="ElevenLabs voice" bind:value={r.voice.voice}>
           <option value="">Choose a voice</option>
@@ -256,6 +276,12 @@
     <div class="opts">
       <label class="radio"><input type="radio" bind:group={r.format} value="long" /> Long form 16:9 (1920x1080)</label>
       <label class="radio"><input type="radio" bind:group={r.format} value="short" /> Short 9:16 (1080x1920)</label>
+    </div>
+  </div>
+  <div class="row">
+    <span class="label">Free only</span>
+    <div class="opts">
+      <label><input type="checkbox" bind:checked={r.freeOnly} /> Never use a paid service: no AI scene plan, no AI picture check, no HeyGen. The free way is used and the Preview tab says what was skipped.</label>
     </div>
   </div>
   <div class="row">

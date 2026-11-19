@@ -10,24 +10,66 @@
     {
       "identifier": "opener:allow-open-url",
       "allow": [
-        { "url": "https://aistudio.google.com/*" },
-        { "url": "https://openrouter.ai/*" },
-        { "url": "https://console.anthropic.com/*" },
-        { "url": "https://platform.openai.com/*" },
-        { "url": "https://platform.deepseek.com/*" },
-        { "url": "https://console.x.ai*" },
-        { "url": "https://elevenlabs.io/*" },
-        { "url": "https://app.heygen.com/*" },
-        { "url": "https://www.heygen.com/terms" },
-        { "url": "https://kie.ai/*" },
-        { "url": "https://app.vidiq.com/*" },
-        { "url": "https://pixabay.com/*" },
-        { "url": "https://unsplash.com/*" },
-        { "url": "https://studio.youtube.com/*" },
-        { "url": "https://www.youtube.com/playlist?list=*" },
-        { "url": "https://www.youtube.com/watch?v=*" },
-        { "url": "https://vidrev.app/*" },
-        { "url": "https://www.google.com/search?q=*" }
+        {
+          "url": "https://aistudio.google.com/*"
+        },
+        {
+          "url": "https://openrouter.ai/*"
+        },
+        {
+          "url": "https://console.anthropic.com/*"
+        },
+        {
+          "url": "https://platform.openai.com/*"
+        },
+        {
+          "url": "https://platform.deepseek.com/*"
+        },
+        {
+          "url": "https://console.x.ai*"
+        },
+        {
+          "url": "https://elevenlabs.io/*"
+        },
+        {
+          "url": "https://app.heygen.com/*"
+        },
+        {
+          "url": "https://www.heygen.com/terms"
+        },
+        {
+          "url": "https://kie.ai/*"
+        },
+        {
+          "url": "https://app.vidiq.com/*"
+        },
+        {
+          "url": "https://pixabay.com/*"
+        },
+        {
+          "url": "https://unsplash.com/*"
+        },
+        {
+          "url": "https://studio.youtube.com/*"
+        },
+        {
+          "url": "https://www.youtube.com/playlist?list=*"
+        },
+        {
+          "url": "https://www.youtube.com/watch?v=*"
+        },
+        {
+          "url": "https://vidrev.app/*"
+        },
+        {
+          "url": "https://www.google.com/search?q=*"
+        },
+        {
+          "url": "https://console.cloud.google.com/*"
+        },
+        {
+          "url": "https://portal.azure.com/*"
+        }
       ]
     },
     "opener:allow-reveal-item-in-dir",

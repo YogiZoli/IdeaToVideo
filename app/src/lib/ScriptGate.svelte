@@ -35,6 +35,7 @@
     saved,
     goto,
     openPage,
+    pasteFirst = false,
   }: {
     app: AppState;
     dir: string;
@@ -50,6 +51,8 @@
     saved: (s: AppState) => void;
     goto?: (t: "voice" | "research") => void;
     openPage?: (page: "cta" | "connections" | "avatar") => void;
+    /** the recipe says a pasted text is a finished script: the paste box opens first (DECISIONS 193) */
+    pasteFirst?: boolean;
   } = $props();
 
   const COMMANDS = ["write-script", "save-script"];
@@ -67,7 +70,7 @@
   let notice = $state("");
   let step = $state("");
   // "Write it myself": the empty editor without an AI script
-  let own = $state(false);
+  let own = $state(untrack(() => pasteFirst));
 
   const dirty = $derived(draft !== (markdown ?? "") && draft.trim() !== "");
   const stepLlm = $derived(llmFor(app.config, "script"));
@@ -201,7 +204,7 @@
 
   {#if editing}
     <div bind:this={result}>
-      <label for="script" class="label">Script {markdown ? "(you can edit it)" : "(write or paste it here)"}</label>
+      <label for="script" class="label">Script {markdown ? "(you can edit it)" : "(paste or write your finished script here)"}</label>
       <textarea id="script" bind:value={draft} disabled={locked} spellcheck="true" placeholder={"## Opening\nWhat the narrator says first...\n\n## Main part\n...\n\n## Closing\n..."}></textarea>
       <p class="hint">{words} words, about {Math.max(1, Math.round(words / 150))} minute{Math.round(words / 150) > 1 ? "s" : ""} of narration. Lines starting with ## are section titles; they are not read aloud.</p>
       <DictionaryFindings {dir} version={markdown} only="script" />
@@ -221,7 +224,8 @@
       <span class="say">The first step: the words of your video.</span>
     {/if}
     {#if !editing}
-      <Advanced><button type="button" disabled={locked} onclick={() => (own = true)}>Write it myself</button></Advanced>
+      <!-- never hidden under More: writing or pasting it is a first-class way (DECISIONS 193) -->
+      <button type="button" disabled={locked} onclick={() => (own = true)}>Write it myself</button>
       <button type="button" class="primary" disabled={locked} onclick={writeRecommended}>Write script (Recommended)</button>
     {:else}
       <Advanced>

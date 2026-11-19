@@ -16,6 +16,7 @@
         "model": {"type": "string", "minLength": 1, "maxLength": 200},
         "effort": {"enum": ["low", "medium", "high", "xhigh", "max", null]},
         "perStep": {"type": "boolean"},
+        "waitSeconds": {"type": "integer", "minimum": 0, "maximum": 3600, "$comment": "how long one AI may plan the scenes before the next key and then the rule-made plan; 0: no limit (DECISIONS 190)"},
         "steps": {
           "type": "object",
           "additionalProperties": false,

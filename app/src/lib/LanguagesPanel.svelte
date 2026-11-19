@@ -6,7 +6,7 @@
   import type { AppState } from "./api";
   import { runner, errorText } from "./api";
   import { llmFor, aiWithKey } from "./llm";
-  import { LANGUAGES } from "./catalog";
+  import { LANGUAGES, languageOption } from "./catalog";
   import ErrorBox from "./ErrorBox.svelte";
 
   let { app, dir, narrator = null }: { app: AppState; dir: string; narrator?: { provider: string; voice?: string | null; model?: string | null } | null } = $props();
@@ -98,7 +98,7 @@
         <label>
           <span>{text}</span>
           <select value={st.languages[key as "voice"]} onchange={(e) => set(key as "voice", e.currentTarget.value)}>
-            {#each LANGUAGES as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
+            {#each LANGUAGES as l (l.code)}<option value={l.code}>{languageOption(l)}</option>{/each}
           </select>
         </label>
       {/each}

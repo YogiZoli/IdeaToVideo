@@ -20,11 +20,13 @@ import { narrationFromMarkdown, wordCount, speakable } from "./narration.mjs";
 import * as elevenlabs from "../../providers/tts/elevenlabs.mjs";
 import * as gemini from "../../providers/tts/gemini.mjs";
 import * as kokoro from "../../providers/tts/kokoro.mjs";
+import * as googlecloud from "../../providers/tts/googlecloud.mjs";
+import * as azure from "../../providers/tts/azure.mjs";
 import { synthLoop } from "../../providers/music/synth.mjs";
 import { joinBlocks, mix, duration, clipAudio, silence } from "../../audio.mjs";
 import * as elevenlabsMusic from "../../providers/music/elevenlabs.mjs";
 
-export const VOICE_PROVIDERS = { elevenlabs, gemini, kokoro };
+export const VOICE_PROVIDERS = { elevenlabs, gemini, kokoro, googlecloud, azure };
 // The ElevenLabs models gate 2 offers. Eleven v4 (2026-09-28) is the default
 // since 2026-10-06 (Zoltan: clearly better, Hungarian works); Multilingual v2
 // stays for a voice that sounds better with it.

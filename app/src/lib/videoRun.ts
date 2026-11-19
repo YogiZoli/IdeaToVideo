@@ -139,9 +139,20 @@ export async function runRecipeVideo(c: RunCtx): Promise<RunEnd> {
     if (!made("scenes")) {
       c.step("Filling the scene templates");
       c.show("scenes", "recipe");
-      const ai = usableAi(c, "scenes");
+      // Free only (DECISIONS 192): the AI scene plan is skipped, the free rule-made plan is used
+      const ai = recipe.freeOnly ? null : usableAi(c, "scenes");
       if (ai) await runner("make-template-scenes", { projectDir: c.dir, llm: ai, look: c.look });
       else await runner("simple-template-scenes", { projectDir: c.dir, look: c.look });
+      if (recipe.freeOnly && usableAi(c, "scenes")) await noteOn(c, "free-scenes", "Free only: the scene plan was made by rule, not by the AI.");
+      // the words on screen in the video's screen language, when it is not the voice's (DECISIONS 189)
+      const textAi = usableAi(c, "texts");
+      if (textAi && !recipe.freeOnly) {
+        c.step("Translating the words on screen");
+        await runner("screen-translate", { projectDir: c.dir, llm: textAi }).catch(async (e) => {
+          if (stoppedByUser(e)) throw e;
+          await noteOn(c, "screen", `The words on screen were not translated: ${errorText(e)}`);
+        });
+      }
     }
     // after the voice: every shot starts on its word (runner/shots)
     c.step("Making the scene timing");
@@ -157,7 +168,8 @@ export async function runRecipeVideo(c: RunCtx): Promise<RunEnd> {
       await runner("skip-gate", { projectDir: c.dir, gate: "avatar" });
       await c.load();
     };
-    if (recipe.avatar.on && !c.keys["heygen"]) await noAvatar("no HeyGen key is set.");
+    if (recipe.avatar.on && recipe.freeOnly) await noAvatar("Free only is on, so HeyGen was skipped.");
+    else if (recipe.avatar.on && !c.keys["heygen"]) await noAvatar("no HeyGen key is set.");
     else if (recipe.avatar.on && recipe.avatar.lookId) {
       try {
         if (avatar !== "pending") {

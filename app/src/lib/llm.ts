@@ -24,7 +24,8 @@ export function llmFor(config: Pick<Config, "llm"> | null | undefined, step: Llm
   const base = config?.llm ?? { provider: "gemini", model: "gemini-3.5-flash" };
   const own = base.perStep ? base.steps?.[step] : undefined;
   const pick = own ?? base;
-  return { provider: pick.provider, model: pick.model, effort: pick.effort ?? null };
+  // the scene plan's time limit goes with every request (DECISIONS 190); 0 is no limit
+  return { provider: pick.provider, model: pick.model, effort: pick.effort ?? null, ...(typeof base.waitSeconds === "number" ? { waitSeconds: base.waitSeconds } : {}) };
 }
 
 /**

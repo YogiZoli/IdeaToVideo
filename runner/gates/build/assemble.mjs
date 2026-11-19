@@ -592,6 +592,8 @@ ${extra}    </script>
 
 // What a build moves with when the Identity has no Motion profile: cuts, a
 // plain background and the continuous camera push (motion/stage.mjs).
+// the captions of a rule-made plan: the said word lit in a pill (library/captions)
+export const RULE_CAPTIONS = "caption-pill-karaoke";
 export const BASE_MOTION = Object.freeze({ transition: { mood: "premium", primary: CUT, accent: null, energy: "calm", where: "every" }, background: { type: "plain", vars: {} }, camera: { move: "push" }, scenes: { off: [], style: {} } });
 
 // A sound a preset's block asks for (its `sound` in pack.json), made by code, on its second of the
@@ -667,7 +669,16 @@ export async function assemble(projectDir, { env = process.env, total, language,
   // Without a Motion profile the video still moves: cuts between scenes and
   // the continuous camera push (Zoltan, 2026-10-06: skipping the wizard must
   // not give a slideshow). An explicit motion: null keeps the bare build.
-  const profile = motion !== undefined ? motion : look.motion ?? BASE_MOTION;
+  let profile = motion !== undefined ? motion : look.motion ?? BASE_MOTION;
+  // the free rule-made plan never looks like slides (FIX_PLAN 2026-11-19, item 5, DECISIONS 191): with
+  // no Motion profile of the Identity's own, captions with the said word marked, and a slowly drifting
+  // ground under Motion Frames (the other presets draw their own ground)
+  if (proj.gates?.scenes?.mode === "default" && motion === undefined) {
+    const ownGround = proj.recipe?.preset && proj.recipe.preset !== "motion-frames";
+    // a preset's own motion (its camera) stays; only what it lacks is added
+    if (!look.motion) profile = { ...BASE_MOTION, background: ownGround ? BASE_MOTION.background : { type: "grain-field", vars: {} } };
+    if (profile && !profile.captions?.style) profile = { ...profile, captions: { style: RULE_CAPTIONS } };
+  }
   const read = (f, what) => {
     const p = path.join(projectDir, f);
     if (!fs.existsSync(p)) throw new Error(`There is no ${what} yet (${f}).`);

@@ -1,6 +1,8 @@
 // keys.mjs: "Test key" for the non-LLM services (PRD 5). Each check is one
 // cheap read-only request that needs a valid key and costs no credit.
 
+import * as googlecloud from "./tts/googlecloud.mjs";
+import * as azure from "./tts/azure.mjs";
 import { redact } from "./llm.mjs";
 import { testVidiq } from "./research/vidiq.mjs";
 import { balance as kieBalance } from "../generate/kie.mjs";
@@ -26,6 +28,15 @@ export async function testServiceKey({ service, apiKey, fetchImpl = fetch, timeo
   if (service === "kie") {
     const b = await kieBalance({ apiKey, fetchImpl });
     return { ok: true, message: `Kie AI key works${b.credits === null ? "" : `: ${b.credits} credits, about ${b.usd.toFixed(2)} USD`}.` };
+  }
+  // the two cloud voices (DECISIONS 194): listing the voices is free and proves the key
+  if (service === "googlecloud") {
+    const n = (await googlecloud.listVoices({ apiKey, fetchImpl, language: "en" })).length;
+    return { ok: true, message: `Google Cloud key works: ${n} English voices.` };
+  }
+  if (service === "azure") {
+    const n = (await azure.listVoices({ apiKey, fetchImpl, language: "km" })).length;
+    return { ok: true, message: `Azure key works: ${n} Khmer voice${n === 1 ? "" : "s"}.` };
   }
   const c = CHECKS[service];
   if (!c) throw new Error(`Unknown service: ${service}`);

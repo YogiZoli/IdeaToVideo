@@ -201,7 +201,8 @@ export function shortTexts(pack) {
   const sentences = String(pack.summary ?? "").replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
   let short = "";
   for (const s of sentences) if ((short + " " + s).trim().length <= 200) short = (short + " " + s).trim();
-  const tags = (pack.tags ?? []).map((t) => String(t).replace(/[^\p{L}\p{N}]/gu, "")).filter((t) => t.length > 1).slice(0, 4);
+  // \p{M}: Khmer and other scripts keep their vowel signs
+  const tags = (pack.tags ?? []).map((t) => String(t).replace(/[^\p{L}\p{M}\p{N}]/gu, "")).filter((t) => t.length > 1).slice(0, 4);
   const hashtags = ["#Shorts", ...tags.map((t) => `#${t}`)];
   return { title, titles: [title], description: `${short || title}
 
