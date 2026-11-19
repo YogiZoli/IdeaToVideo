@@ -174,7 +174,7 @@ test("step 3: the app's own sentence table from the voice timings", async () => 
 
 // ---- Gemini TTS ----------------------------------------------------------------------
 
-import { splitSentences, parseWav, writeWav, wordsByCharacters, speak as geminiSpeak, listVoices as geminiVoices } from "./providers/tts/gemini.mjs";
+import { splitSentences, parseWav, writeWav, wordsByCharacters, speak as geminiSpeak, speakMany as geminiMany, sentenceCuts, pausesOf, CHUNK_CHARS, listVoices as geminiVoices } from "./providers/tts/gemini.mjs";
 
 test("gemini: sentences split like the sentence table", () => {
   assert.deepEqual(splitSentences("One idea. Two ideas? Wait... not yet! \"Quoted.\" Tail"), ["One idea.", "Two ideas?", "Wait... not yet!", "\"Quoted.\"", "Tail"]);
@@ -192,27 +192,95 @@ test("gemini: words spread over the sentence by characters", () => {
   assert.deepEqual(w, [{ text: "ab", start: 1, end: 1.5, type: "word" }, { text: "cd", start: 1.5, end: 2, type: "word" }]);
 });
 
-test("gemini: one call per sentence, exact sentence times, key only in the header", async () => {
-  const oneSec = writeWav({ channels: 1, rate: 24000, bits: 16, pcm: Buffer.alloc(48000) }).toString("base64");
+// a tone, a pause, a tone: what one Gemini reading of two sentences looks like (DECISIONS 198)
+const toneWav = (parts) => {
+  const rate = 24000;
+  const pcm = Buffer.concat(parts.map(([sec, loud]) => {
+    const b = Buffer.alloc(Math.round(sec * rate) * 2);
+    if (loud) for (let i = 0; i < b.length / 2; i++) b.writeInt16LE(Math.round(Math.sin(i / 7) * 9000), i * 2);
+    return b;
+  }));
+  return writeWav({ channels: 1, rate, bits: 16, pcm });
+};
+
+test("gemini: two sentences in one request, cut at the pause between them, key only in the header", async () => {
+  const audio = toneWav([[1, true], [0.4, false], [1.2, true]]).toString("base64");
   const calls = [];
   const fetchImpl = async (url, init) => {
     calls.push({ url, init, body: JSON.parse(init.body) });
-    return { ok: true, status: 200, json: async () => ({ steps: [{ type: "model_output", content: [{ type: "audio", data: oneSec }] }] }) };
+    return { ok: true, status: 200, json: async () => ({ steps: [{ type: "model_output", content: [{ type: "audio", data: audio }] }] }) };
   };
   const r = await geminiSpeak({ apiKey: KEY, fetchImpl, voiceId: "Kore", text: "First one. Second one." });
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1, "one request for the whole text");
   assert.equal(calls[0].init.headers["x-goog-api-key"], KEY);
   assert.ok(!calls[0].url.includes(KEY));
   assert.equal(calls[0].body.model, "gemini-3.8-flash-tts");
   assert.deepEqual(calls[0].body.generation_config.speech_config, [{ voice: "Kore" }]);
-  assert.equal(calls[1].body.input[0].content[0].text, "Second one.");
+  assert.equal(calls[0].body.input[0].content[0].text, "First one. Second one.");
   assert.equal(r.ext, "wav");
-  const w = parseWav(r.audio);
-  assert.equal(w.pcm.length, 48000 * 2 + Math.round(0.25 * 24000) * 2); // two sentences + one gap
+  assert.equal(parseWav(r.audio).pcm.length, Math.round(2.6 * 24000) * 2, "nothing added, nothing lost");
   assert.equal(r.words[0].start, 0);
-  assert.equal(r.words[1].end, 1);
-  assert.equal(r.words[2].start, 1.25); // second sentence after the gap
-  assert.equal(r.words[3].end, 2.25);
+  assert.ok(Math.abs(r.words[1].end - 1) < 0.03, `first sentence ends where its sound ends: ${r.words[1].end}`);
+  assert.ok(Math.abs(r.words[2].start - 1.4) < 0.03, `second starts after the pause: ${r.words[2].start}`);
+  assert.ok(Math.abs(r.words[3].end - 2.6) < 0.03);
+});
+
+test("gemini: the blocks of a script come back one by one from one request", async () => {
+  const audio = toneWav([[1, true], [0.5, false], [1, true], [0.5, false], [1, true]]).toString("base64");
+  let n = 0;
+  let sent = "";
+  const fetchImpl = async (url, init) => {
+    n++;
+    sent = JSON.parse(init.body).input[0].content[0].text;
+    return { ok: true, status: 200, json: async () => ({ steps: [{ type: "model_output", content: [{ type: "audio", data: audio }] }] }) };
+  };
+  const out = await geminiMany({ apiKey: KEY, fetchImpl, texts: ["One here. Two here.", "Three here."] });
+  assert.equal(n, 1);
+  assert.equal(sent, "One here. Two here.\n\nThree here.", "a new block is a new paragraph");
+  assert.equal(out.length, 2);
+  const a = parseWav(out[0].audio);
+  const b = parseWav(out[1].audio);
+  assert.ok(Math.abs(a.pcm.length / 48000 - 2.75) < 0.03, "block one: two sentences up to the middle of the second pause");
+  assert.ok(Math.abs(b.pcm.length / 48000 - 1.25) < 0.03);
+  assert.ok(Math.abs(out[1].words[0].start - 0.25) < 0.03, "block two's words start after its own pause");
+});
+
+test("gemini: with no pause found, the letters place the cut, as before", () => {
+  const cuts = sentenceCuts(["aaaa.", "bbbbbbbbbbbbbb."], 4, []);
+  assert.equal(cuts.length, 1);
+  assert.ok(Math.abs(cuts[0].at - 1) < 0.01);
+  assert.deepEqual(pausesOf(parseWav(toneWav([[1, true]]))), []);
+});
+
+test("gemini: a long script is read in a few requests, never one per sentence", async () => {
+  const audio = toneWav([[0.5, true]]).toString("base64");
+  let n = 0;
+  const fetchImpl = async () => (n++, { ok: true, status: 200, json: async () => ({ steps: [{ type: "model_output", content: [{ type: "audio", data: audio }] }] }) });
+  const sentence = "This is one plain sentence of a long script, said at an even pace. ";
+  await geminiMany({ apiKey: KEY, fetchImpl, texts: [sentence.repeat(60), sentence.repeat(60)] });
+  const least = Math.ceil((sentence.length * 120) / CHUNK_CHARS);
+  assert.ok(n >= least && n <= least + 1, `${n} requests for 120 sentences`);
+});
+
+test("the voice step reads every block in one go when the voice can (DECISIONS 198)", { skip: !haveFf && "bundled ffmpeg not fetched" }, async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "itv-voice-many-"));
+  fs.writeFileSync(path.join(dir, "script.md"), ["# T", "", "## OPEN", "", "First part.", "", "## 1. Two", "", "Second part.", "", "## 2. Three", "", "Third part.", ""].join("\n"));
+  const seen = [];
+  VOICE_PROVIDERS.many = {
+    speak: async () => assert.fail("speak is not used when speakMany exists"),
+    speakMany: async ({ texts }) => (seen.push(texts), texts.map((t) => ({ audio: toneWav([[0.5, true]]), words: [{ text: t, start: 0, end: 0.5, type: "word" }], ext: "wav" }))),
+  };
+  try {
+    const info = await makeVoice({ projectDir: dir, narrator: { provider: "many", voice: "v" }, apiKey: KEY, env });
+    assert.deepEqual(seen, [["First part.", "Second part.", "Third part."]], "one call with all three blocks");
+    assert.equal(info.reused, 0);
+    const words = JSON.parse(fs.readFileSync(path.join(dir, "audio", "stt.json"), "utf8")).words;
+    assert.deepEqual(words.map((w) => w.text), ["First part.", "Second part.", "Third part."]);
+    assert.ok(words[1].start >= 0.5 && words[2].start >= 1, "each block in its place");
+  } finally {
+    delete VOICE_PROVIDERS.many;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // 2026-10-06: one busy answer used to fail the whole narration.
@@ -258,4 +326,9 @@ test("gemini: quota and key errors are plain and never show the key", async () =
   assert.equal(waited.length, 0, "a refused key is not tried again");
   await assert.rejects(geminiSpeak({ apiKey: "", text: "x." }), /No API key set for Gemini/);
   assert.equal((await geminiVoices()).length, 30);
+  // the day's free readings used up: said at once, no three minutes of waiting (DECISIONS 198)
+  const daily = async () => ({ ok: false, status: 429, text: async () => JSON.stringify({ error: { message: "Rate limit exceeded for model gemini-3.8-flash-tts (limit: 10 requests per day on Free Tier). Please retry in 50m52s." } }) });
+  waited.length = 0;
+  await assert.rejects(geminiSpeak({ apiKey: KEY, fetchImpl: daily, text: "x.", sleep: async (ms) => waited.push(ms) }), /used its readings for today.*50m52s/);
+  assert.equal(waited.length, 0, "a used-up day is not waited out");
 });
