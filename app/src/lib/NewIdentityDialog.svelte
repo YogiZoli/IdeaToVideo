@@ -5,7 +5,7 @@
   // switch in the top bar and from Identity, Manage Identity. Nothing ever makes an Identity by itself.
   import type { AppState } from "./api";
   import { saveSettings, duplicateIdentity, errorText } from "./api";
-  import { cleanConfig, defaultConfig, LANGUAGES } from "./catalog";
+  import { cleanConfig, defaultConfig, LANGUAGES, languageOption } from "./catalog";
   import { identityFromConfig, roomForIdentity, newIdentityProblem } from "./identity";
   import { fullPlanText } from "./edition";
 
@@ -64,7 +64,7 @@
       <label class="field">
         <span>Content language</span>
         <select bind:value={language}>
-          {#each LANGUAGES as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
+          {#each LANGUAGES as l (l.code)}<option value={l.code}>{languageOption(l)}</option>{/each}
         </select>
       </label>
       <label class="field">

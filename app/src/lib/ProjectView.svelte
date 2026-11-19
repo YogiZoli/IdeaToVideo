@@ -263,8 +263,10 @@
         setPilot("Building the preview");
         show("preview", "autopilot");
         await runner("build-video", { projectDir: dir, look });
-        const vcost = (await runner<{ text: string }>("visual-estimate", { projectDir: dir, llm: llmFor(app.config, "scenes") })).text;
-        if (await ask(`The preview is built. Let the AI check every picture against what is said, and swap the scenes that do not fit? With ${describeLlm(llmFor(app.config, "scenes"))} this costs ${vcost} from your AI key. No: the video renders as it is.`, { title: "Autopilot: check the pictures", kind: "info" })) {
+        const vcost = data?.project.recipe?.freeOnly ? "" : (await runner<{ text: string }>("visual-estimate", { projectDir: dir, llm: llmFor(app.config, "scenes") })).text;
+        // Free only (DECISIONS 192): the paid picture check is never asked
+        if (data?.project.recipe?.freeOnly) await noteOn("free-visual", "Free only: the AI picture check was skipped.");
+        else if (await ask(`The preview is built. Let the AI check every picture against what is said, and swap the scenes that do not fit? With ${describeLlm(llmFor(app.config, "scenes"))} this costs ${vcost} from your AI key. No: the video renders as it is.`, { title: "Autopilot: check the pictures", kind: "info" })) {
           setPilot("Checking the pictures");
           await runner("visual-check", { projectDir: dir, llm: llmFor(app.config, "scenes"), look }).catch(async (e) => {
             if (stoppedByUser(e)) throw e;
@@ -389,7 +391,7 @@
       {:else if active === "shots"}
         <ShotMapTab {dir} {look} busy={!!pilot} planned={["pending", "approved"].includes(data.project.gates.scenes?.state ?? "")} changed={load} goto={show} next={nextAfter("shots", hasHeygen, tabList)} />
       {:else if active === "script"}
-        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} keyword={data.project.keyword ?? null} calls={data.calls ?? null} changed={load} goto={show} {openPage} />
+        <ScriptGate {app} {dir} {saved} title={data.project.title} gate={data.project.gates.script} markdown={data.scriptMarkdown} briefLength={data.brief?.targetLengthMin} hasBrief={!!data.brief} fromCourse={!!data.project.series} keyword={data.project.keyword ?? null} calls={data.calls ?? null} changed={load} goto={show} {openPage} pasteFirst={data.project.recipe?.start?.text === "finished" || data.project.start?.kind === "finished"} />
       {:else if active === "voice"}
         <VoiceGate {app} {dir} voiceInfo={data.voiceInfo} gate={data.project.gates.voice} scriptApproved={data.project.gates.script?.state === "approved"} changed={load} goto={show} />
       {:else if active === "scenes"}

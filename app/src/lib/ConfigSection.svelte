@@ -8,7 +8,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import type { Config, KeyScope } from "./api";
   import { importLogo, errorText } from "./api";
-  import { LLM_PROVIDERS, LANGUAGES, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider, PRESETS } from "./catalog";
+  import { LLM_PROVIDERS, LANGUAGES, languageOption, SERVICE_KEY_URLS, GEMINI_VOICES, GEMINI_DEFAULT_VOICE, narratorProvider, PRESETS } from "./catalog";
   import type { StepId } from "./steps";
   import KeyField from "./KeyField.svelte";
   import AiSection from "./AiSection.svelte";
@@ -106,7 +106,7 @@
   <div class="field">
     <label for="lang">Content language</label>
     <select id="lang" value={config.channel.contentLanguage ?? "en"} onchange={(e) => pickLanguage(e.currentTarget.value)}>
-      {#each LANGUAGES as l}<option value={l.code}>{l.label}</option>{/each}
+      {#each LANGUAGES as l (l.code)}<option value={l.code}>{languageOption(l)}</option>{/each}
     </select>
   </div>
 {:else if id === "narrator"}

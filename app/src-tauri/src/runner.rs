@@ -173,6 +173,7 @@ const COMMANDS: &[(&str, Option<&[&str]>)] = &[
     ("languages-set", None),
     ("translation-make", Some(&["llm", "provider"])),
     ("translation-save", None),
+    ("screen-translate", Some(&["llm", "provider"])),
     ("preset-stylesheet", None),
     ("channel-video-new", None),
     ("night-candidates", None),

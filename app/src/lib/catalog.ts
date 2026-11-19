@@ -1,3 +1,4 @@
+import { VOICE_LANGUAGES } from "./voiceLanguages";
 // catalog.ts: static choices the UI offers. Provider labels and default models
 // mirror runner/providers/llm.mjs (SPEC 5 order); the runner stays the source of
 // truth for the actual calls.
@@ -49,6 +50,8 @@ export function effortChoices(provider: string, model: string): string[] {
 
 export const SERVICE_KEY_URLS: Record<string, string> = {
   elevenlabs: "https://elevenlabs.io/app/settings/api-keys",
+  googlecloud: "https://console.cloud.google.com/apis/credentials",
+  azure: "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices",
   heygen: "https://app.heygen.com/settings?nav=API",
   kie: "https://kie.ai/api-key",
   vidiq: "https://app.vidiq.com/account/settings/mcp",
@@ -56,20 +59,12 @@ export const SERVICE_KEY_URLS: Record<string, string> = {
   unsplash: "https://unsplash.com/oauth/applications",
 };
 
-export const LANGUAGES: { code: string; label: string; voice: string }[] = [
-  { code: "en", label: "English", voice: "en-US-AndrewNeural" },
-  { code: "hu", label: "Hungarian", voice: "hu-HU-TamasNeural" },
-  { code: "de", label: "German", voice: "de-DE-ConradNeural" },
-  { code: "es", label: "Spanish", voice: "es-ES-AlvaroNeural" },
-  { code: "fr", label: "French", voice: "fr-FR-HenriNeural" },
-  { code: "it", label: "Italian", voice: "it-IT-DiegoNeural" },
-  { code: "pt", label: "Portuguese", voice: "pt-BR-AntonioNeural" },
-  { code: "nl", label: "Dutch", voice: "nl-NL-MaartenNeural" },
-  { code: "pl", label: "Polish", voice: "pl-PL-MarekNeural" },
-  { code: "ro", label: "Romanian", voice: "ro-RO-EmilNeural" },
-  // Khmer (DECISIONS 189): no ElevenLabs model speaks it; HeyGen does inside an avatar video
-  { code: "km", label: "Khmer", voice: "km-KH-PisethNeural" },
-];
+// Every content language the app offers, with the voice services that speak it (voiceLanguages.ts,
+// written from the runner's table, DECISIONS 195). `voice`: the older Gemini default per language.
+const OLD_VOICE: Record<string, string> = { en: "en-US-AndrewNeural", hu: "hu-HU-TamasNeural", de: "de-DE-ConradNeural", es: "es-ES-AlvaroNeural", fr: "fr-FR-HenriNeural", it: "it-IT-DiegoNeural", pt: "pt-BR-AntonioNeural", nl: "nl-NL-MaartenNeural", pl: "pl-PL-MarekNeural", ro: "ro-RO-EmilNeural", km: "km-KH-PisethNeural" };
+export const LANGUAGES: { code: string; label: string; voice: string; voices: string[] }[] = VOICE_LANGUAGES.map((l) => ({ ...l, voice: OLD_VOICE[l.code] ?? OLD_VOICE.en }));
+/** "Khmer: Azure, HeyGen (avatar video)", for a language list. */
+export const languageOption = (l: { label: string; voices: string[] }) => `${l.label}: ${l.voices.length ? l.voices.join(", ") : "no voice yet"}`;
 
 export const DEFAULT_PRESET = "blue-professional";
 
@@ -94,6 +89,13 @@ export const PRESETS: { id: string; label: string }[] = [
 export const GEMINI_DEFAULT_VOICE = "Kore";
 export const GEMINI_VOICES = ["Kore", "Charon", "Puck", "Zephyr", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar", "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"];
 export const narratorProvider = (p: string | undefined) => (p === "edge-tts" || !p ? "gemini" : p);
+/** The voices a video can use, on the Voice tab (DECISIONS 194): Google Cloud first, the default. */
+export const VOICE_SERVICES: { id: string; label: string; note: string }[] = [
+  { id: "googlecloud", label: "Google Cloud", note: "The default. Free up to 4 million characters a month (Standard voices), then billed to your Google Cloud project. No Khmer." },
+  { id: "azure", label: "Azure", note: "For Khmer and the languages Google lacks. 500,000 characters a month free; commercial use needs Azure's paid tier." },
+  { id: "elevenlabs", label: "ElevenLabs", note: "Your own cloned voice. Paid by your ElevenLabs plan. No Khmer." },
+  { id: "kokoro", label: "Free voice on this computer", note: "Kokoro, English only, no key." },
+];
 // The voice that runs on this computer has no key (runner/providers/tts/kokoro.mjs).
 export const voiceNeedsKey = (p: string | undefined) => narratorProvider(p) !== "kokoro";
 

@@ -174,9 +174,9 @@ test("the card is the same Evergreen Traffic Card: the parser and the Playlist P
 
 test("every content language of the app comes back from the card, and catalog.ts has no other", () => {
   for (const code of Object.keys(LANGUAGE_NAMES)) assert.equal(parseTrafficCard(cardMarkdown({ answers: { lang: code } })).language, code, code);
-  const catalog = fs.readFileSync(new URL("../app/src/lib/catalog.ts", import.meta.url), "utf8");
-  const start = catalog.indexOf("export const LANGUAGES");
-  const codes = [...catalog.slice(start, catalog.indexOf("];", start)).matchAll(/code: "(\w+)"/g)].map((m) => m[1]);
+  // catalog.ts LANGUAGES comes from voiceLanguages.ts (DECISIONS 195)
+  const list = fs.readFileSync(new URL("../app/src/lib/voiceLanguages.ts", import.meta.url), "utf8");
+  const codes = [...list.matchAll(/"code": "(\w+)"/g)].map((m) => m[1]);
   assert.deepEqual(codes.sort(), Object.keys(LANGUAGE_NAMES).sort());
 });
 

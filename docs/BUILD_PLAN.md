@@ -414,20 +414,18 @@ app could not deliver; plain code outside the app could. Nine items; 1 to 4 are 
 |---|---|---|
 | 1 | Identity: the top bar (menu first, the switch on the right, fixed width), rename only the display name, one New Identity dialog | done (DECISIONS 187) |
 | 2 | Shorts 9:16: Format in the recipe and on each video, a 9:16 layout for every preset, 15 to 90 s, the avatar framed 9:16, the Short's Publishing Card | done (DECISIONS 188) |
-| 3 | Khmer and three languages per video: voice, captions, screen; translation on the Script tab; the voice capability table; Noto Sans Khmer | done, with one part open (DECISIONS 189) |
+| 3 | Khmer and three languages per video: voice, captions, screen; translation on the Script tab; the voice capability table; Noto Sans Khmer | done (DECISIONS 189, 194, 195) |
 | 4 | A stuck AI call never blocks a video: 90 s per try, the next key once, then the rule-made plan; Stop frees the queue; the Autopilot banner leaves | done (DECISIONS 190) |
-| 5 | The rule-made plan must look good (icons, changing layouts, characters, kinetic text, captions, motion) | todo |
-| 6 | A "Free only" switch on the recipe and the video | todo |
-| 7 | Script tab: a pasted finished script opens with the paste box and "Approve and continue" | todo |
-| 8 | Voice: choose the provider per video | todo |
-| 9 | The content language list with which voices can speak each | todo |
+| 5 | The rule-made plan must look good (icons, changing layouts, characters, kinetic text, captions, motion) | done (DECISIONS 191) |
+| 6 | A "Free only" switch on the recipe and the video | done (DECISIONS 192) |
+| 7 | Script tab: a pasted finished script opens with the paste box and "Approve and continue" | done (DECISIONS 193) |
+| 8 | Voice: choose the provider per video; Google Cloud (default) and Azure (Khmer) added | done (DECISIONS 194) |
+| 9 | The content language list with which voices can speak each | done (DECISIONS 195) |
 
-Open in item 3: a Khmer narration itself. No ElevenLabs model and not HeyGen's voice-only speech list
-Khmer (HeyGen's own capability list, read 2026-11-18); HeyGen speaks it only inside an avatar video, on its
-Fish and Mockingbird engines. The app now refuses to send Khmer to a voice that cannot speak it and says
-who can. Making the narration from a HeyGen avatar video's sound is not built.
+A Khmer narration: Azure speaks it (DECISIONS 194). HeyGen speaks it only inside an avatar video; taking
+the voice from an avatar video's sound is not built (Zoltan, 2026-11-19: not now).
 
-Next step: item 5, then 6 to 9, in that order.
+Phase 10 is done. Next: Zoltan tries a Khmer Short with the Azure voice in the installed app.
 
 ## Later (Zoltan's list, 2026-11-05, nothing of it is built)
 
@@ -441,7 +439,7 @@ In the order he liked them. Each one starts only when he says so.
 
 ## Next step
 
-Phase 10, item 5 (the free rule-made plan must look good), then 6 to 9. After them, Phase 9: macOS build, done on a Mac with Claude Code, no CI, for both apps (RecCut with `--config src-tauri/tauri.editor.conf.json`, DECISIONS 184). It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
+Phase 10 is done (DECISIONS 187 to 195). Zoltan tries a Khmer Short with Azure in the installed app. Then Phase 9: macOS build, done on a Mac with Claude Code, no CI, for both apps (RecCut with `--config src-tauri/tauri.editor.conf.json`, DECISIONS 184). It cannot be done on this Windows computer. First, Zoltan tries Phase 8 on the installer: a channel on Soft Clay
 Chronicle, one piece of history with research on, up to the render. Phases 3 to 7 too if he has not yet (one topic with research, one set of notes, one real recording, one strange
 question, one what-if story, one explainer with real places, one true story), and his decisions on the table above if he has made them. Still open in that table's spirit: Google's
 terms on showing Search Suggestions (DECISIONS 143), the Z-Image picture size (DECISIONS 146), whether captions on Night Case File should hide forbidden words (DECISIONS 159).

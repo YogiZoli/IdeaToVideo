@@ -1,10 +1,24 @@
 # STATUS: IdeaToVideo
 
-Frissítve: 2026-11-18 (a 2026-11-19-i javítási terv 1-4. pontja, DECISIONS 187-190)
+Frissítve: 2026-11-19 (a javítási terv mind a 9 pontja, Google Cloud és Azure hang, DECISIONS 187-195)
 
 End goal: helyben telepíthető asztali app, ami egy YouTube videót végigvisz ötlettől kész MP4-ig, a user saját gépén és kulcsaival, a HyperFrames motorral és a teljes HyperFrames registry katalógussal (234 komponens, DECISIONS 130).
 
 Fázisok (PRD 13): 0 pipeline Node-ra (**kész**) · 1 Tauri váz, onboarding, config és kulcstár, LLM (**kész, PR #2**) · 2 teljes menet a UI-ban (**kész, 2026-10-06, PR a main felé, merge-ölve**) · 3 pilot (**kész, 2026-10-07, PR #5**) · 4 kiadás (README kész; a többi később).
+
+## Now (2026-11-19, javítási terv 5-9, Google Cloud és Azure hang, DECISIONS 191-195)
+
+- **5. Az ingyenes terv szép lett.** A Scenes fül "Simple plan without AI" gombja és az elakadt AI helyett jövő terv most a stílus saját sablonjait használja szabály alapján: figurák, tárgyak, számok, lépések. Soha nincs félbevágott mondat a képen. Felirat a kimondott szó kiemelésével, Motion Framesben lassan úszó háttér.
+- **Az időkorlát a tiéd:** Settings, AI: 90 mp, 3 perc (alap), 5 perc vagy "No limit". Az AI-s sablonos terv (ez akadt el tegnap) most ugyanígy viselkedik.
+- **6. Free only** a receptben és minden videó indításánál: nincs AI jelenetterv, AI képellenőrzés, HeyGen; a Preview fül megmondja, mi maradt ki.
+- **7. Kész szöveg beillesztése:** a Script fül a beillesztő mezővel nyílik, a fő gomb "Approve and continue"; a "Write it myself" nincs a More alatt.
+- **8. Hang szolgáltató videónként** a Voice fülön: Google Cloud (alap), Azure, ElevenLabs, ingyenes helyi. A kulcsok: Settings, Connections. Google: kell hozzá számlázás a Cloud projekten (kártya), a Standard hangok havi 4 millió karakterig ingyenesek; khmerül nem tud. Azure: kulcs "régió:kulcs" alakban, pl. southeastasia:abc123; havi 500 000 karakter ingyen; khmerül tud (Piseth, Sreymom); a kereskedelmi jog az ingyenes szinten vitatott.
+- **9. Nyelvlista:** 27 nyelv, mindegyik mellett, melyik hang beszéli ("Khmer: Azure, HeyGen (avatar video)"). Csak olyan nyelv van benne, amelynek betűit az app ki tudja rajzolni.
+- **A képernyő szövege más nyelven, mint a hang:** a jelenetterv után az AI lefordítja a szövegeket; a tárgyak nevei, számok, kulcsszavak maradnak.
+- **Javított hiba:** a khmer magánhangzójelek eltűntek a jelenetek szövegéből, most megmaradnak.
+- **Javított hiba (DECISIONS 196):** a ONE Video listából indított videó nem kapta meg az Identity receptjét, ezért lett a Short receptből 16:9, alap stílus, félbevágott szöveg. Most minden úton bekerül a recept. A már elkészült videó nem változik: indítsd újra.
+- **Tesztek:** Node 747 zöld (2 élő kihagyva), audit 823 zöld 39 perc alatt, 0 USD, UI check 0 hiba, Rust 52 zöld. Valódi renderek: Stick World Short és khmer feliratos Short (42 lépés), ingyenes terv hosszú videóként Motion Frames és Night Case File (31 lépés), mind zöld. A Google és az Azure hang tesztje hamis szolgáltatóval fut; valódi kulccsal nem próbáltam, mert nincs kulcs.
+- **Nem kész:** HeyGen hang kimentése (most nem kérted), Narakeet (most nem), OpenArt (nincs nyilvános API-ja). Ikonok a Motion Frames saját sablonjaiban.
 
 ## Now (2026-11-18, javítási terv 1-4, DECISIONS 187-190, Phase 10 a BUILD_PLAN-ben)
 

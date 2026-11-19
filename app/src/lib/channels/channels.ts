@@ -5,7 +5,7 @@ export type Recipe = {
   schema?: string;
   engine: "script" | "recorded";
   preset: string;
-  voice: { provider: "kokoro" | "elevenlabs" | "recording"; voice: string; name?: string };
+  voice: { provider: "kokoro" | "elevenlabs" | "googlecloud" | "azure" | "recording"; voice: string; name?: string };
   avatar: { on: boolean; lookId: string | null; name?: string; engine?: string; layout?: string };
   music: { on: boolean; source: "synth" | "own"; mood: string };
   broll?: { on: boolean };
@@ -13,6 +13,8 @@ export type Recipe = {
   targetLengthMin: number;
   // long form 16:9, or a Short 9:16 of 15 to 90 seconds (DECISIONS 188)
   format?: "long" | "short";
+  // Free only: every paid step is skipped without a question (DECISIONS 192)
+  freeOnly?: boolean;
   shortSeconds?: number;
   updatedAt?: string;
   // what the start screen begins with, and the other direction's choices (phase 3)
@@ -119,10 +121,11 @@ export function recipeLines(r: Recipe, presets: PresetCard[], freeVoices: FreeVo
   return [
     { label: "Engine", value: "Script" },
     { label: "Style", value: preset },
-    { label: "Voice", value: r.voice.provider === "kokoro" ? `${free}, free, on this computer` : `${r.voice.name ?? "My voice"}, ElevenLabs` },
+    { label: "Voice", value: r.voice.provider === "kokoro" ? `${free}, free, on this computer` : r.voice.provider === "googlecloud" ? `${r.voice.name ?? r.voice.voice}, Google Cloud` : r.voice.provider === "azure" ? `${r.voice.name ?? r.voice.voice}, Azure` : `${r.voice.name ?? "My voice"}, ElevenLabs` },
     { label: "Avatar", value: r.avatar.on ? `On${r.avatar.name ? `, ${r.avatar.name}` : ""}` : "Off" },
     { label: "Music", value: !r.music.on ? "Off" : r.music.source === "own" ? "My own files" : `Made by code, ${r.music.mood}` },
     { label: "B-roll", value: r.broll?.on ? "On, free sources first" : "Off" },
+    ...(r.freeOnly ? [{ label: "Free only", value: "On, nothing paid" }] : []),
     { label: "Length", value: r.format === "short" ? `Short 9:16, ${r.shortSeconds ?? 60} seconds` : minutes(r.targetLengthMin) },
   ];
 }

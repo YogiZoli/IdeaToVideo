@@ -8,11 +8,12 @@
 
 import { COMPONENTS, paceOf } from "./roles.mjs";
 import { MAX_WORDS } from "./index.mjs";
+import { keyPhrase } from "./keyphrase.mjs";
 
 // How long a scene grows (target) and never grows past (longest): the
 // Identity's pace, roles.mjs PACES.
 
-const wordsOf = (t) => String(t).replace(/[^\p{L}\p{N}'’ -]+/gu, " ").split(/\s+/).filter(Boolean);
+const wordsOf = (t) => String(t).replace(/[^\p{L}\p{M}\p{N}'’ -]+/gu, " ").split(/\s+/).filter(Boolean);
 const lengthOf = (s) => s.dur ?? s.end - s.start;
 
 // The longest word is usually the one that carries the meaning.
@@ -20,8 +21,8 @@ const longestIndex = (ws) => ws.reduce((best, w, i) => (w.length > ws[best].leng
 
 // The words of a scene's first sentence, at most `max`.
 function phrase(sentences, max) {
-  const ws = wordsOf(sentences[0].text);
-  return ws.slice(0, max).join(" ") || sentences[0].text.slice(0, 40);
+  // the key words, never half a phrase (keyphrase.mjs, DECISIONS 191)
+  return keyPhrase(sentences[0].text, max) || sentences[0].text.slice(0, 40);
 }
 
 // The 2 to 4 words of a call sentence around its keyword, the keyword in

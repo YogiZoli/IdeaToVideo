@@ -14,6 +14,7 @@ import { testKey, PROVIDERS, onLlmEvent, setOtherKeys, LlmError } from "./provid
 import { DeadlineError, aiStepSeconds, aiTries, withDeadline, firstInTime } from "./deadline.mjs";
 import { videoLanguages, needsTranslation, voiceProblem, speakersOf, LANGUAGE_LABELS, CHECKED_ON } from "./language/index.mjs";
 import { sourceUnits, translationOf, saveTranslation, aiTranslate } from "./language/translate.mjs";
+import { translateScreen } from "./language/screen.mjs";
 import { testServiceKey } from "./providers/keys.mjs";
 import { validate, loadSchema } from "./schema/validate.mjs";
 import { createProject, loadProject, saveProject, recoverInterrupted, setGate, readBrief, appendLog, addNote, writeJson, writeAtomic } from "./project.mjs";
@@ -514,13 +515,19 @@ async function templateScenes({ projectDir, identityDir, look, llm }) {
   const project = loadProject(projectDir);
   const preset = loadPreset(project.recipe?.preset ?? (identityDir ? loadRecipe(identityDir)?.preset : null) ?? "motion-frames");
   saveProject(projectDir, setGate(project, "scenes", { state: "running", mode: llm ? "recommended" : "default" }));
+  // the AI has a time limit, the next saved key gets one try, then the rest goes by rule (DECISIONS 190)
+  const tries = llm ? aiTries(llm, llm.apiKey) : [];
   appendLog(projectDir, `scenes: ${preset.label} templates ${llm ? `with ${llm.provider}/${llm.model || "default model"}` : "by rule, no AI"}`);
   try {
     const r = await timed("scenes", jsonCount(projectDir, "sentences.json"), emit, () =>
-      makeTemplateScenes({ llm, projectDir, preset, language: project.language, title: project.title, off: offOf(look), identityDir: identityDir ?? null, videoId: path.basename(projectDir), onProgress: (p) => emit({ event: "progress", ...p }) }),
+      makeTemplateScenes({ llm: tries[0] ?? null, nextLlm: tries[1] ?? null, budgetSeconds: aiStepSeconds("scenes", process.env, llm?.waitSeconds), projectDir, preset, language: project.language, title: project.title, off: offOf(look), identityDir: identityDir ?? null, videoId: path.basename(projectDir), onProgress: (p) => emit({ event: "progress", ...p }) }),
     );
     brollBack(projectDir);
-    const next = setGate(loadProject(projectDir), "scenes", { state: "pending", mode: llm ? "recommended" : "default" });
+    if (r.timedOut) {
+      abandonWork();
+      addNote(projectDir, "scenes", `The AI did not finish the scene plan in time (at most ${aiStepSeconds("scenes", process.env, llm?.waitSeconds)} seconds per AI), so ${r.byRule} scenes were made by rule. You can plan again with AI on the Scenes tab.`);
+    }
+    const next = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: llm && !r.timedOut ? "recommended" : "default" });
     saveProject(projectDir, next);
     appendLog(projectDir, `scenes: done, ${r.scenes} scenes from ${r.parts} part${r.parts === 1 ? "" : "s"}, ${r.byRule} by rule${r.warnings.length ? `; ${r.warnings.slice(0, 3).join(" ")}` : ""}`);
     return { ...r, ...(await sceneRows(projectDir, { off: offOf(look) })), gate: next.gates.scenes, status: next.status };
@@ -619,8 +626,18 @@ const commands = {
   "channel-wizard-save": async ({ identityDir, ...input }) => wizardSave(identityDir, input),
   "channel-wizard-export": async ({ identityDir, ...input }) => wizardExport(identityDir, input),
 
-  "create-project": async ({ projectsDir, title, language, brief, autopilot, identity }) => {
-    const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot, identity });
+  "create-project": async ({ projectsDir, identityDir, title, language, brief, autopilot, identity }) => {
+    // a video made from the ONE Video list takes its Identity's recipe too: its style, voice, format
+    // (a Short), Free only. Before 2026-11-19 it had none, so a Short recipe gave a 16:9 video in the
+    // default style (DECISIONS 196). An Identity without a recipe yet: none, as before.
+    let recipe = null;
+    try {
+      const stored = identityDir ? loadRecipe(identityDir) : null;
+      recipe = stored ? recipeFor(stored, "script", { language }) : null;
+    } catch {
+      recipe = null;
+    }
+    const { id, dir } = createProject({ projectsDir, title, language, brief, autopilot, identity, recipe });
     return { id, dir };
   },
 
@@ -1027,10 +1044,11 @@ const commands = {
   "browser-ensure": async () => ensureBrowser({ onProgress: (p) => emit({ event: "progress", ...p }) }),
 
   // Gate 2: the voices of the user's account, for the picker (with previews).
-  "list-voices": async ({ narrator }) => {
+  "list-voices": async ({ narrator, language = "en" }) => {
     const p = VOICE_PROVIDERS[narrator?.provider];
     if (!p?.listVoices) throw new Error(`No voice list for ${narrator?.provider}.`);
-    return { voices: await p.listVoices({ apiKey: key() }) };
+    // Google and Azure list the voices of one language (DECISIONS 194)
+    return { voices: await p.listVoices({ apiKey: key(), language: String(language ?? "en").split("-")[0] }) };
   },
 
   // A voice sample, cached in the app's folder so the UI can play it.
@@ -1167,7 +1185,7 @@ const commands = {
     // A stuck AI never blocks a video (FIX_PLAN 2026-11-19, item 4, DECISIONS 190): a hard limit per
     // try, the next saved key once, then the free rule-made plan with a note on the Preview tab.
     const tries = aiTries(llm, key());
-    const limit = aiStepSeconds("scenes");
+    const limit = aiStepSeconds("scenes", process.env, llm.waitSeconds);
     const plan = async (ai) =>
       makeScenes({
           llm: ai,
@@ -1196,7 +1214,7 @@ const commands = {
       const r = got.result;
       const failed = got.failed;
       if (!r) {
-        const simple = await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look), pace: paceOfLook(look) });
+        const simple = project.recipe?.preset || (identityDir && loadRecipe(identityDir)?.preset) ? await templateScenes({ projectDir, identityDir, look, llm: null }) : await simpleScenes({ projectDir, title: project.title, themeIsLight: isLightLook(look), off: offOf(look), pace: paceOfLook(look) });
         brollBack(projectDir);
         addNote(projectDir, "scenes", `The AI did not make the scene plan in time (${failed.length} ${failed.length === 1 ? "try" : "tries"}, at most ${limit} seconds each), so the free rule-made plan was used. You can plan again with AI on the Scenes tab.`);
         project = setGate(loadProject(projectDir), "scenes", { state: project.autopilot ? "approved" : "pending", mode: "default" });
@@ -1218,7 +1236,11 @@ const commands = {
 
   // Default mode of gate 3: the plan without AI (gates/scenes/simple.mjs),
   // for when the AI is out of tokens or overloaded (Zoltan, 2026-10-05).
-  "simple-scenes": async ({ projectDir, look }) => {
+  "simple-scenes": async ({ projectDir, identityDir, look }) => {
+    // a video with a style preset gets its preset's own templates by rule: figures, icons,
+    // changing layouts, not text on a plain ground (FIX_PLAN 2026-11-19, item 5, DECISIONS 191)
+    // (a video without a recipe of its own takes its Identity's preset, as the template plan does)
+    if (loadProject(projectDir).recipe?.preset || (identityDir && loadRecipe(identityDir)?.preset)) return templateScenes({ projectDir, identityDir, look, llm: null });
     let project = setGate(loadProject(projectDir), "scenes", { state: "running", mode: "default" });
     saveProject(projectDir, project);
     appendLog(projectDir, "scenes: simple plan without AI");
@@ -1586,6 +1608,20 @@ const commands = {
     return { translation: saveTranslation(projectDir, lang, texts, { approve: false, by: "ai" }) };
   },
   "translation-save": async ({ projectDir, lang, texts, approve = false }) => ({ translation: saveTranslation(projectDir, lang, texts, { approve, by: "hand" }) }),
+  // the words on screen in the screen language, after the scene plan (language/screen.mjs)
+  "screen-translate": async ({ projectDir, llm }) => {
+    try {
+      const r = await withDeadline(() => translateScreen({ projectDir, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key(), patient: false } }), 240, "The AI did not finish the on-screen words within 4 minutes");
+      if (r.translated) appendLog(projectDir, `screen: ${r.translated} on-screen texts in ${r.language}`);
+      return r;
+    } catch (e) {
+      if (!(e instanceof LlmError || e instanceof DeadlineError)) throw e;
+      if (e instanceof DeadlineError) abandonWork();
+      const langs = videoLanguages(loadProject(projectDir));
+      addNote(projectDir, "screen", `The words on screen stay in ${LANGUAGE_LABELS[langs.voice] ?? langs.voice}: no AI could translate them (${friendlyMessage(e)}).`);
+      return { translated: 0, skipped: "no AI" };
+    }
+  },
 
   // The style sheet PNG of a preset, rendered from its tokens.
   "preset-stylesheet": async ({ identityDir, preset }) => {
@@ -1603,9 +1639,10 @@ const commands = {
   "night-save": async ({ projectsDir, shift }) => ({ shift: saveShift(projectsDir, shift) }),
   "night-clear": async ({ projectsDir }) => clearShift(projectsDir),
   "night-prepare": async ({ projectDir, identityDir }) => prepareForNight(projectDir, identityDir),
-  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "", format, shortSeconds }) => {
-    // the video may change the recipe's format and a Short's length (DECISIONS 188)
-    const recipe = withFormat(recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language }), { format, shortSeconds });
+  "channel-video-new": async ({ projectsDir, identityDir, identity, language = "en", topic = "", text = "", textKind = "notes", research = false, title = "", format, shortSeconds, freeOnly }) => {
+    // the video may change the recipe's format and a Short's length (DECISIONS 188), and Free only (192)
+    const base = withFormat(recipeFor(loadRecipe(identityDir) ?? defaultRecipe({}), "script", { language }), { format, shortSeconds });
+    const recipe = typeof freeOnly === "boolean" ? { ...base, freeOnly } : base;
     // a style whose scripts are fact-checked has research on, whatever was asked (DECISIONS 159)
     const { id, dir } = newScriptVideo({ projectsDir, identity, language, recipe, topic, text, textKind, research: research || loadPreset(recipe.preset).factChecked === true, title });
     return { id, dir };
@@ -1693,7 +1730,7 @@ const commands = {
 
   // The scene table from the preset's templates (gates/scenes/templates.mjs).
   // `simple-` is the same without the AI: planned by rule.
-  "make-template-scenes": async ({ projectDir, identityDir, llm, look }) => templateScenes({ projectDir, identityDir, look, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key() } }),
+  "make-template-scenes": async ({ projectDir, identityDir, llm, look }) => templateScenes({ projectDir, identityDir, look, llm: { provider: llm.provider, model: llm.model, effort: llm.effort ?? null, apiKey: key(), waitSeconds: llm.waitSeconds } }),
   "simple-template-scenes": async ({ projectDir, identityDir, look }) => templateScenes({ projectDir, identityDir, look, llm: null }),
 
   // Week batch: 7 ideas, 7 scripts, in one run, queued (channels/batch.mjs).

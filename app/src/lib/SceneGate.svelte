@@ -20,7 +20,7 @@
   import StepModel from "./StepModel.svelte";
   import BrollPanel from "./BrollPanel.svelte";
   import StockPanel from "./StockPanel.svelte";
-  import { llmFor, describeLlm } from "./llm";
+  import { llmFor, describeLlm, aiWithKey } from "./llm";
 
   let { app, dir, gate, voiceApproved, changed, goto, next, saved }: { app: AppState; dir: string; gate?: Gate; voiceApproved: boolean; changed: () => Promise<void>; goto: (t: TabId) => void; next: TabId; saved: (s: AppState) => void } = $props();
 
@@ -36,7 +36,7 @@
   type Insert = { kind: "segment" | "end"; slot?: string; keyword?: string; temperature?: string; name?: string | null; start: number; seconds: number; after: number };
   type Table = { rows: Row[]; gaps: { at: string; need: string }[]; warnings: string[]; scenes?: Scene[]; inserts?: Insert[] };
 
-  const COMMANDS = ["make-scenes", "simple-scenes", "refill-scene", "save-scenes"];
+  const COMMANDS = ["make-scenes", "simple-scenes", "refill-scene", "save-scenes", "screen-translate"];
   const job = $derived(running(dir, COMMANDS));
   let table = $state<Table>({ rows: [], gaps: [], warnings: [] });
   let edits = $state<Record<number, string>>({});
@@ -118,10 +118,17 @@
     const again = table.rows.length && !stale ? " The scenes in this table are replaced." : "";
     if (!(await ask(`The AI reads the whole scene catalog, picks the best 3 to 5 scene types for every sentence, then reads their code and picks the one that fits best. With ${describeLlm(stepLlm)} this costs ${cost} from your AI key.${again} Plan the scenes?`, { title: "Plan the scenes", kind: "info" }))) return;
     await run("make-scenes", { llm: stepLlm, look }, "Starting...");
+    await screenWords();
+  }
+  // the words on screen in the video's screen language, when it is not the voice's (DECISIONS 189)
+  async function screenWords() {
+    const ai = aiWithKey(llmFor(app.config, "texts"), app.keys);
+    if (ai) await run("screen-translate", { llm: ai }, "Translating the words on screen...");
   }
   async function simple() {
     if (table.rows.length && !stale && !(await ask("Make a simple plan without AI? The scenes in this table are replaced.", { title: "Simple plan", kind: "warning" }))) return;
     await run("simple-scenes", { look }, "Planning without AI...");
+    await screenWords();
   }
   async function swap(row: Row, component: string) {
     const cost = await price("refill-estimate", { llm: stepLlm, component });

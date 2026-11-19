@@ -20,6 +20,8 @@ pub const ALLOWED: &[&str] = &[
     "deepseek",
     "grok",
     "elevenlabs",
+    "googlecloud",
+    "azure",
     "heygen",
     "kie",
     "vidiq",

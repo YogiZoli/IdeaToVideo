@@ -27,7 +27,7 @@ const AGAIN = "Download the .md card at the end of the Brand Channel Wizard and 
 
 // The languages the wizard offers, as the app's language codes. Anything else
 // leaves the content language as it is.
-const LANGS = { english: "en", hungarian: "hu", magyar: "hu", german: "de", deutsch: "de", spanish: "es", "español": "es", french: "fr", "français": "fr", italian: "it", portuguese: "pt", dutch: "nl", polish: "pl", romanian: "ro", khmer: "km" };
+const LANGS = { english: "en", hungarian: "hu", magyar: "hu", german: "de", deutsch: "de", spanish: "es", "español": "es", french: "fr", "français": "fr", italian: "it", portuguese: "pt", dutch: "nl", polish: "pl", romanian: "ro", khmer: "km", czech: "cs", slovak: "sk", swedish: "sv", danish: "da", finnish: "fi", norwegian: "nb", estonian: "et", latvian: "lv", lithuanian: "lt", croatian: "hr", slovenian: "sl", catalan: "ca", turkish: "tr", indonesian: "id", malay: "ms", filipino: "fil" };
 
 const cut = (s, max) => String(s ?? "").trim().slice(0, max);
 
