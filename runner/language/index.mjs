@@ -30,16 +30,21 @@ const HEYGEN_VIDEO_EXTRA = "km lo si am bo br eu fo ht la sa sn sq".split(" ");
 const GOOGLE = "af ar bg bn ca cs cy da de el en es et eu fi fil fr gl gu he hi hr hu id is it ja kn ko lt lv ml mr ms nb nl pa pl pt ro ru sk sr sv sw ta te th tr uk ur vi yue zh".split(" ");
 // Azure Speech: over 140 languages, Khmer among them (km-KH-PisethNeural, km-KH-SreymomNeural)
 const AZURE = [...new Set([...V4, "km", "lo", "si", "am", "eu", "sq", "ps", "my", "jv", "su", "zu", "so", "uz", "mn", "kk"])];
+// The free Gemini voice (gemini-3.8-flash-tts, the app's default voice): 130 languages on its model
+// page, read 2026-11-19, Khmer among them, free of charge on the Gemini API's free tier, no card.
+// A live Khmer test read two sentences (DECISIONS 197). Its list has no Ukrainian, so neither has this.
+const GEMINI = ("af ak am ar as az be bg bn bs ca ceb cs da de dz el en es et eu fa fi fil fr gl gn gu ha he hi hr ht hu hy id ig is it ja jv ka kk km kn ko ky lb lg ln lo lt lv mai mk ml mn mni mr ms mt my nb ne nl nn ny or pa pl ps pt ro ru rw sat sd si sk sl so sq sr ss st sv sw ta te tg th ti tr ug uz vi yue zh").split(" ");
 
 /** provider -> model -> the languages it speaks (ISO 639-1, the app's codes). */
 export const VOICE_LANGUAGES = {
   kokoro: { kokoro: ["en"] },
+  gemini: { gemini: GEMINI },
   googlecloud: { googlecloud: GOOGLE },
   azure: { azure: AZURE },
   elevenlabs: { eleven_v4: V4, eleven_v3: V3, eleven_multilingual_v2: V2, eleven_turbo_v2_5: TURBO },
   heygen: { "heygen-voice-1": HEYGEN_VOICE, "avatar-video": [...new Set([...V4, ...HEYGEN_VOICE, ...HEYGEN_VIDEO_EXTRA])] },
 };
-export const PROVIDER_LABEL = { kokoro: "The free voice", elevenlabs: "ElevenLabs", heygen: "HeyGen", googlecloud: "Google Cloud", azure: "Azure" };
+export const PROVIDER_LABEL = { gemini: "Gemini (free)", kokoro: "The free voice", elevenlabs: "ElevenLabs", heygen: "HeyGen", googlecloud: "Google Cloud", azure: "Azure" };
 export const CHECKED_ON = "2026-11-19";
 
 const base = (lang) => String(lang ?? "").toLowerCase().split(/[-_]/)[0];
@@ -63,7 +68,7 @@ export const speakersOf = (lang) => Object.entries(VOICE_LANGUAGES).flatMap(([pr
  * null when it can. The voice gate refuses with it, the voice picker shows it.
  */
 export function voiceProblem(provider, model, lang, label = languageLabel(lang)) {
-  // a provider the table does not know (the older Gemini voice) is not judged here
+  // a provider the table does not know is not judged here
   if (!VOICE_LANGUAGES[provider] || canSpeak(provider, model, lang)) return null;
   const who = PROVIDER_LABEL[provider] ?? provider;
   const others = [...new Set(speakersOf(lang).filter((s) => s.provider !== provider).map((s) => s.provider))];

@@ -6,6 +6,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "label": "English",
     "voices": [
       "The free voice",
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -16,6 +17,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "hu",
     "label": "Hungarian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -26,6 +28,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "de",
     "label": "German",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -36,6 +39,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "es",
     "label": "Spanish",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -46,6 +50,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "fr",
     "label": "French",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -56,6 +61,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "it",
     "label": "Italian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -66,6 +72,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "pt",
     "label": "Portuguese",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -76,6 +83,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "nl",
     "label": "Dutch",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -86,6 +94,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "pl",
     "label": "Polish",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -96,6 +105,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "ro",
     "label": "Romanian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -106,6 +116,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "cs",
     "label": "Czech",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -116,6 +127,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "sk",
     "label": "Slovak",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -126,6 +138,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "sv",
     "label": "Swedish",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -136,6 +149,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "da",
     "label": "Danish",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -146,6 +160,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "fi",
     "label": "Finnish",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -156,6 +171,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "nb",
     "label": "Norwegian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -166,6 +182,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "et",
     "label": "Estonian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -176,6 +193,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "lv",
     "label": "Latvian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -186,6 +204,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "lt",
     "label": "Lithuanian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -196,6 +215,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "hr",
     "label": "Croatian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -206,6 +226,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "sl",
     "label": "Slovenian",
     "voices": [
+      "Gemini (free)",
       "Azure",
       "ElevenLabs",
       "HeyGen (avatar video)"
@@ -215,6 +236,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "ca",
     "label": "Catalan",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -225,6 +247,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "tr",
     "label": "Turkish",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -235,6 +258,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "id",
     "label": "Indonesian",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -245,6 +269,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "ms",
     "label": "Malay",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -255,6 +280,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "fil",
     "label": "Filipino",
     "voices": [
+      "Gemini (free)",
       "Google Cloud",
       "Azure",
       "ElevenLabs",
@@ -265,6 +291,7 @@ export const VOICE_LANGUAGES: { code: string; label: string; voices: string[] }[
     "code": "km",
     "label": "Khmer",
     "voices": [
+      "Gemini (free)",
       "Azure",
       "HeyGen (avatar video)"
     ]
